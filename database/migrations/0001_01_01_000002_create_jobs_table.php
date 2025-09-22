@@ -50,8 +50,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jobs');
+        // 先删除有外键约束的表
         Schema::dropIfExists('job_batches');
         Schema::dropIfExists('failed_jobs');
+
+        // 再删除被引用的表
+        Schema::dropIfExists('jobs');
     }
 };

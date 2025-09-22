@@ -42,8 +42,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // 先删除有外键约束的表
+        Schema::dropIfExists('sessions');
+
+        // 再删除被引用的表
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
     }
 };

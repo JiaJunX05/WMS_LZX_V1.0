@@ -1,0 +1,176 @@
+@extends("layouts.app")
+
+@section("title", "Create Color")
+@section("content")
+
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-template.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-template.css') }}">
+
+<div class="container-fluid py-4">
+    <!-- 提示信息 -->
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @foreach ($errors->all() as $error)
+                <div>{{ $error }}</div>
+            @endforeach
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    {{-- ========================================== --}}
+    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
+    {{-- ========================================== --}}
+    <div class="dashboard-header mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    {{-- 标题区域 --}}
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon-wrapper me-4">
+                                <i class="bi bi-plus-circle-fill"></i>
+                            </div>
+                            <div>
+                                <h2 class="dashboard-title mb-1">Create Color</h2>
+                                <p class="dashboard-subtitle mb-0">Add a new color to your product catalog</p>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- 操作按钮区域 --}}
+                    <div class="col-lg-4 text-lg-end">
+                        <a href="{{ route('admin.attribute_variant.color.index') }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容卡片 -->
+    <div class="card shadow-sm border-0">
+        <div class="row g-0">
+            <!-- 左侧图标区域 -->
+            <div class="col-md-5">
+                <div class="preview-section d-flex flex-column h-100 bg-light p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-palette me-2"></i>Color Information
+                        </h6>
+                    </div>
+                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center">
+                        <div class="text-center">
+                            <i class="bi bi-palette text-primary" style="font-size: 8rem;"></i>
+                            <p class="text-muted mt-3">Color Management</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧表单区域 -->
+            <div class="col-md-7">
+                <div class="card-body p-4">
+                    <!-- 表单标题 -->
+                    <h2 class="text-primary text-center mb-3">Create Color</h2>
+                    <p class="text-muted text-center">Add a new color to your product catalog</p>
+                    <hr>
+
+                    <!-- 表单内容 -->
+                    <form action="{{ route('admin.attribute_variant.color.store') }}" method="post">
+                        @csrf
+
+                        <div class="mb-4">
+                            <label for="color_name" class="form-label fw-bold">Color Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-palette text-primary"></i></span>
+                                <input type="text" class="form-control border-start-0" id="color_name" name="color_name" placeholder="Enter color name" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="color_hex" class="form-label fw-bold">Color Hex Code</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-hash text-primary"></i></span>
+                                <input type="text" class="form-control border-start-0" id="color_hex" name="color_hex" placeholder="Enter hex code (e.g., #FF0000)" required>
+                            </div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Enter the color's hex code (e.g., #FF0000 for red)
+                            </div>
+                            <!-- 添加颜色预览区域 -->
+                            <div class="mt-3">
+                                <div class="color-preview" id="color-preview" style="background-color: #f3f4f6;"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="color_rgb" class="form-label fw-bold">Color RGB Code</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-palette text-primary"></i></span>
+                                <input type="text" class="form-control border-start-0" id="color_rgb" name="color_rgb" placeholder="RGB code will be auto-generated" readonly>
+                            </div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-2"></i>
+                                RGB code is automatically generated from the hex code
+                            </div>
+                        </div>
+
+                        <!-- Color Status Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Color Status</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card h-100 border status-card selected" data-status="Available">
+                                        <label class="card-body d-flex align-items-center" style="cursor: pointer;">
+                                            <input type="radio" name="color_status" value="Available" class="form-check-input me-3" checked>
+                                            <div>
+                                                <h6 class="card-title mb-1">
+                                                    <i class="bi bi-check-circle me-2 text-success"></i>Available
+                                                </h6>
+                                                <p class="card-text text-muted small mb-0">Color is active and can be used</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="card h-100 border status-card" data-status="Unavailable">
+                                        <label class="card-body d-flex align-items-center" style="cursor: pointer;">
+                                            <input type="radio" name="color_status" value="Unavailable" class="form-check-input me-3">
+                                            <div>
+                                                <h6 class="card-title mb-1">
+                                                    <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
+                                                </h6>
+                                                <p class="card-text text-muted small mb-0">Color is inactive and cannot be used</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle-fill me-2"></i>Create Color
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section("scripts")
+    <script src="{{ asset('assets/js/color-management.js') }}"></script>
+@endsection

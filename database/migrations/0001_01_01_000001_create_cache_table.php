@@ -29,7 +29,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cache');
+        // 先删除有外键约束的表
         Schema::dropIfExists('cache_locks');
+
+        // 再删除被引用的表
+        Schema::dropIfExists('cache');
     }
 };

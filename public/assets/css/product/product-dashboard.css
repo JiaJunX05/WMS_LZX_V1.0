@@ -1,0 +1,750 @@
+/*
+|--------------------------------------------------------------------------
+| 产品仪表板样式表 (Product Dashboard Styles)
+|--------------------------------------------------------------------------
+|
+| 样式模块：
+| 1. 基础组件样式 - 通用组件样式
+| 2. 产品卡片样式 - 产品卡片布局和交互
+| 3. 筛选栏样式 - 左侧筛选侧边栏
+| 4. 按钮样式 - 各种按钮的样式定义
+| 5. 分页样式 - 分页组件的样式
+| 6. 文本样式 - 文本颜色和字重
+| 7. 表格样式 - 搜索框和表格相关
+|
+| @author WMS Team
+| @version 1.0.0
+*/
+
+/* =============================================================================
+   1. 基础组件样式 (Base Components)
+   ============================================================================= */
+
+/* 卡片基础样式 */
+.card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+/* 警告框样式 */
+.alert {
+    border: none;
+    border-radius: 10px;
+}
+
+/* =============================================================================
+   2. 产品卡片样式 (Product Cards)
+   ============================================================================= */
+
+/* 产品卡片容器 */
+.product-card {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 20px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 产品卡片悬停效果 */
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* 图片容器 */
+.product-card .image-container {
+    position: relative;
+    height: 180px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* 产品图片 */
+.product-card .image-container img {
+    max-height: 85%;
+    max-width: 85%;
+    object-fit: contain;
+}
+
+/* 无图片占位符 */
+.product-card .image-container .no-image {
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+/* 卡片内容区域 */
+.product-card .card-body {
+    padding: 1rem;
+    text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* SKU代码 */
+.product-card .sku-code {
+    font-size: 0.75rem;
+    color: #64748b;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* 产品名称 */
+.product-card .product-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.4;
+    margin: 0;
+    margin-bottom: 0.75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 2.5rem;
+}
+
+/* 标签样式 */
+.product-card .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: 6px;
+    letter-spacing: 0.025em;
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    transition: all 0.2s ease;
+}
+
+/* 标签悬停效果 */
+.product-card .badge:hover {
+    background: rgba(79, 70, 229, 0.15);
+}
+
+/* 卡片底部区域 */
+.product-card .card-footer {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
+}
+
+/* 卡片主要按钮 */
+.product-card .btn-primary {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+/* 卡片按钮悬停效果 */
+.product-card .btn-primary:hover {
+    background: linear-gradient(135deg, #4338ca, #4f46e5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+/* 卡片按钮图标 */
+.product-card .btn-primary i {
+    font-size: 1rem;
+}
+
+/* =============================================================================
+   3. 筛选栏样式 (Filter Sidebar)
+   ============================================================================= */
+
+/* 筛选侧边栏容器 */
+.filter-sidebar {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    position: sticky;
+    top: 20px;
+}
+
+/* 筛选标题区域 */
+.filter-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 筛选标题背景图案 */
+.filter-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+    pointer-events: none;
+}
+
+/* 筛选图标 */
+.filter-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+/* 筛选图标内容 */
+.filter-icon i {
+    font-size: 1.25rem;
+}
+
+/* 筛选标题文字 */
+.filter-header h5 {
+    font-weight: 700;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* 清除筛选按钮 */
+#clear-filters {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+/* 清除筛选按钮悬停效果 */
+#clear-filters:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* 筛选组 */
+.filter-group {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* 最后一个筛选组 */
+.filter-group:last-child {
+    border-bottom: none;
+}
+
+/* 筛选组标题 */
+.filter-group-header {
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* 筛选组标题悬停效果 */
+.filter-group-header:hover {
+    background: #f1f5f9;
+}
+
+/* 筛选组标题内容 */
+.filter-group-header .d-flex {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+/* 筛选组标题图标 */
+.filter-group-header i:first-child {
+    color: #4f46e5;
+    font-size: 1.1rem;
+}
+
+/* 筛选箭头 */
+.filter-arrow {
+    color: #6b7280;
+    transition: transform 0.3s ease;
+    font-size: 0.875rem;
+}
+
+/* 展开状态箭头 */
+.filter-group-header[aria-expanded="true"] .filter-arrow {
+    transform: rotate(180deg);
+}
+
+/* 筛选组内容 */
+.filter-group-content {
+    padding: 1rem 1.5rem;
+    background: white;
+}
+
+/* 分类选项 */
+.filter-option {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 分类选项悬停效果 */
+.filter-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+    transition: left 0.3s;
+}
+
+/* 分类选项悬停动画 */
+.filter-option:hover::before {
+    left: 100%;
+}
+
+/* 分类选项悬停状态 */
+.filter-option:hover {
+    background: #f0f4ff;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+}
+
+/* 分类选项激活状态 */
+.filter-option.active {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    transform: translateX(4px);
+}
+
+/* 激活状态隐藏悬停效果 */
+.filter-option.active::before {
+    display: none;
+}
+
+/* 筛选选项图标 */
+.filter-option-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(79, 70, 229, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+/* 激活状态图标 */
+.filter-option.active .filter-option-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 筛选选项图标内容 */
+.filter-option-icon i {
+    color: #4f46e5;
+    font-size: 1rem;
+}
+
+/* 激活状态图标内容 */
+.filter-option.active .filter-option-icon i {
+    color: white;
+}
+
+/* 筛选选项图片 */
+.filter-option-image {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* 筛选选项文字 */
+.filter-option span {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* 激活状态文字 */
+.filter-option.active span {
+    font-weight: 600;
+}
+
+/* 筛选选项计数 */
+.filter-option-count {
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* 激活状态计数 */
+.filter-option.active .filter-option-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* 复选框样式 */
+.filter-checkbox {
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+
+/* 复选框输入框 */
+.filter-checkbox-input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* 复选框标签 */
+.filter-checkbox-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 复选框标签悬停效果 */
+.filter-checkbox-label::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+    transition: left 0.3s;
+}
+
+/* 复选框标签悬停动画 */
+.filter-checkbox-label:hover::before {
+    left: 100%;
+}
+
+/* 复选框标签悬停状态 */
+.filter-checkbox-label:hover {
+    background: #f0f4ff;
+    border-color: rgba(79, 70, 229, 0.2);
+    transform: translateX(2px);
+}
+
+/* 复选框选中状态 */
+.filter-checkbox-input:checked + .filter-checkbox-label {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white;
+    border-color: #4f46e5;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+/* 选中状态隐藏悬停效果 */
+.filter-checkbox-input:checked + .filter-checkbox-label::before {
+    display: none;
+}
+
+/* 复选框文字 */
+.filter-checkbox-text {
+    font-weight: 500;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+/* 复选框计数 */
+.filter-checkbox-count {
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* 选中状态计数 */
+.filter-checkbox-input:checked + .filter-checkbox-label .filter-checkbox-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* =============================================================================
+   4. 按钮样式 (Button Styles)
+   ============================================================================= */
+
+/* 主按钮 */
+.btn-primary {
+    background: linear-gradient(to right, #4f46e5, #6366f1);
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.3s ease;
+}
+
+/* 主按钮悬停效果 */
+.btn-primary:hover {
+    background: linear-gradient(to right, #4338ca, #4f46e5);
+    transform: translateY(-1px);
+}
+
+/* =============================================================================
+   5. 分页样式 (Pagination Styles)
+   ============================================================================= */
+
+/* 分页容器 */
+.pagination {
+    margin: 0;
+    gap: 0.25rem;
+}
+
+/* 分页项 */
+.pagination .page-item {
+    margin: 0;
+}
+
+/* 分页链接 */
+.pagination .page-link {
+    border: none;
+    padding: 0.5rem 0.75rem;
+    margin: 0;
+    border-radius: 0.5rem;
+    color: #6b7280;
+    background-color: #f9fafb;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    min-width: 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 分页链接悬停效果 */
+.pagination .page-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+    transition: left 0.3s;
+}
+
+/* 分页链接悬停动画 */
+.pagination .page-link:hover::before {
+    left: 100%;
+}
+
+/* 分页链接悬停状态 */
+.pagination .page-link:hover {
+    background-color: #4f46e5;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
+}
+
+/* 分页链接激活状态 */
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+}
+
+/* 分页链接禁用状态 */
+.pagination .page-item.disabled .page-link {
+    color: #9ca3af;
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 分页链接禁用悬停效果 */
+.pagination .page-item.disabled .page-link:hover {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    transform: none;
+    box-shadow: none;
+}
+
+/* =============================================================================
+   6. 文本样式 (Text Styles)
+   ============================================================================= */
+
+/* 次要文本 */
+.text-muted {
+    color: #64748b !important;
+}
+
+/* 中等字重 */
+.fw-medium {
+    font-weight: 500 !important;
+    color: #1e293b;
+}
+
+/* =============================================================================
+   7. 表格样式 (Table Styles)
+   ============================================================================= */
+
+/* 搜索框 */
+.search-box {
+    position: relative;
+    width: 100%;
+}
+
+/* 搜索图标 */
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 1.1rem;
+    z-index: 2;
+}
+
+/* 搜索输入框 */
+.search-input {
+    height: 48px;
+    padding-left: 48px;
+    font-size: 0.95rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background-color: #f9fafb;
+    transition: all 0.3s ease;
+}
+
+/* 搜索输入框聚焦效果 */
+.search-input:focus {
+    background-color: #fff;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+/* =============================================================================
+   8. 响应式设计 (Responsive Design)
+   ============================================================================= */
+
+/* 大屏幕优化 (4列布局) */
+@media (min-width: 1200px) {
+    .product-card .image-container {
+        height: 200px;
+    }
+
+    .product-card .product-name {
+        font-size: 1rem;
+    }
+}
+
+/* 中等屏幕 (3列布局) */
+@media (max-width: 1199px) and (min-width: 992px) {
+    .product-card .image-container {
+        height: 180px;
+    }
+}
+
+/* 平板端适配 (2列布局) */
+@media (max-width: 991px) and (min-width: 768px) {
+    .filter-sidebar {
+        display: none;
+    }
+
+    .col-2 {
+        display: none;
+    }
+
+    .col-10 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .product-card .image-container {
+        height: 160px;
+    }
+
+    .product-card .product-name {
+        font-size: 0.85rem;
+        min-height: 2.2rem;
+    }
+}
+
+/* 手机端适配 (1列布局) */
+@media (max-width: 767px) {
+    .filter-sidebar {
+        display: none;
+    }
+
+    .col-2 {
+        display: none;
+    }
+
+    .col-10 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .product-card .image-container {
+        height: 200px;
+    }
+
+    .product-card .product-name {
+        font-size: 1rem;
+        min-height: unset;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+}

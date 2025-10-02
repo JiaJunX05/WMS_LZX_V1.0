@@ -1,0 +1,152 @@
+/**
+ * Global CSS Variables
+ * 全局 CSS 变量
+ *
+ * 统一的 CSS 变量定义，供整个系统使用
+ * 包括所有页面和组件
+ * 避免重复定义，便于维护和主题切换
+ */
+
+/* =============================================================================
+   CSS 变量定义 (CSS Variables)
+   ============================================================================= */
+:root {
+    /* 主色调 (Primary Colors) - 使用蓝色系 */
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --primary-light: #dbeafe;
+    --primary-dark: #1e40af;
+
+    /* 功能色 (Functional Colors) */
+    --success-color: #10b981;
+    --success-hover: #059669;
+    --success-light: #d1fae5;
+
+    --danger-color: #ef4444;
+    --danger-hover: #dc2626;
+    --danger-light: #fee2e2;
+
+    --warning-color: #f59e0b;
+    --warning-hover: #d97706;
+    --warning-light: #fef3c7;
+
+    --info-color: #06b6d4;
+    --info-hover: #0891b2;
+    --info-light: #cffafe;
+
+    /* 灰色调 (Gray Scale) */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+
+    /* 边框和圆角 (Borders & Border Radius) */
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-lg: 16px;
+    --border-color: var(--gray-200);
+    --border-color-light: var(--gray-100);
+
+    /* 阴影 (Shadows) */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* 间距 (Spacing) */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* 字体大小 (Font Sizes) */
+    --font-xs: 0.75rem;
+    --font-sm: 0.875rem;
+    --font-base: 1rem;
+    --font-lg: 1.125rem;
+    --font-xl: 1.25rem;
+    --font-2xl: 1.5rem;
+    --font-3xl: 1.875rem;
+
+    /* 字体粗细 (Font Weights) */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* 过渡动画 (Transitions) */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+
+    /* 页面布局 (Layout) */
+    --page-min-height: 600px;
+    --page-min-height-mobile: 400px;
+    --sidebar-width: 300px;
+    --header-height: 60px;
+
+    /* 状态指示器 (Status Indicators) */
+    --status-available: var(--success-color);
+    --status-unavailable: var(--danger-color);
+    --status-pending: var(--warning-color);
+
+    /* 卡片样式 (Card Styles) */
+    --card-bg: #ffffff;
+    --card-border: var(--border-color);
+    --card-shadow: var(--shadow-md);
+    --card-radius: var(--border-radius);
+
+    /* 按钮样式 (Button Styles) */
+    --btn-radius: var(--border-radius-sm);
+    --btn-padding: 0.5rem 1rem;
+    --btn-padding-sm: 0.25rem 0.75rem;
+    --btn-padding-lg: 0.75rem 1.5rem;
+
+    /* 系统特有颜色 (System Specific Colors) */
+    --value-color: #1f2937;
+    --value-bg: #f8fafc;
+    --badge-color: #3b82f6;
+    --badge-bg: #dbeafe;
+
+    /* Alert 系统颜色 (Alert System Colors) */
+    --alert-success-bg: #d1fae5;
+    --alert-success-border: #10b981;
+    --alert-success-text: #065f46;
+
+    --alert-info-bg: #dbeafe;
+    --alert-info-border: #3b82f6;
+    --alert-info-text: #1e40af;
+
+    --alert-warning-bg: #fef3c7;
+    --alert-warning-border: #f59e0b;
+    --alert-warning-text: #92400e;
+
+    --alert-danger-bg: #fee2e2;
+    --alert-danger-border: #ef4444;
+    --alert-danger-text: #991b1b;
+}
+
+/* =============================================================================
+   响应式断点 (Responsive Breakpoints)
+   ============================================================================= */
+@media (max-width: 768px) {
+    :root {
+        --page-min-height: var(--page-min-height-mobile);
+        --sidebar-width: 100%;
+        --spacing-lg: 1rem;
+        --spacing-xl: 1.5rem;
+    }
+}
+
+/* =============================================================================
+   深色模式支持 (Dark Mode Support) - 预留
+   ============================================================================= */
+/* 深色模式变量可以在这里定义，目前保持浅色模式 */

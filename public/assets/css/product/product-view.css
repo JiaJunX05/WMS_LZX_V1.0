@@ -1,0 +1,1037 @@
+/*
+|--------------------------------------------------------------------------
+| 产品查看页面样式表 (Product View Page Styles)
+|--------------------------------------------------------------------------
+|
+| 样式模块：
+| 1. 基础组件样式 - 通用组件样式
+| 2. 按钮样式 - 各种按钮的样式定义
+| 3. 产品图片展示样式 - 图片画廊和交互
+| 4. 操作按钮样式 - Action buttons 和交互元素
+| 5. 状态标签样式 - 状态徽章
+| 6. 通用样式 - 字体和其他通用样式
+| 7. 响应式设计 - 移动端适配
+|
+| @author WMS Team
+| @version 1.0.0
+*/
+
+/* =============================================================================
+   1. 基础组件样式 (Base Components)
+   ============================================================================= */
+
+/* 卡片基础样式 */
+.card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+/* 警告框样式 */
+.alert {
+    border: none;
+    border-radius: 10px;
+}
+
+/* =============================================================================
+   2. 按钮样式 (Button Styles)
+   ============================================================================= */
+
+/* 主按钮 */
+.btn-primary {
+    background: linear-gradient(to right, #4f46e5, #6366f1);
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.3s ease;
+}
+
+/* 主按钮悬停效果 */
+.btn-primary:hover {
+    background: linear-gradient(to right, #4338ca, #4f46e5);
+    transform: translateY(-1px);
+}
+
+/* =============================================================================
+   3. 产品图片展示样式 (Product Image Gallery Styles)
+   ============================================================================= */
+
+/* 图片展示容器 */
+.product-image-gallery {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100%;
+}
+
+/* 主图片容器 */
+.main-image-container {
+    position: relative;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* 主图片包装器 */
+.main-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+/* 主图片包装器悬停效果 */
+.main-image-wrapper:hover {
+    transform: scale(1.02);
+}
+
+/* 主图片 */
+.main-image {
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+}
+
+/* 主图片悬停效果 */
+.main-image:hover {
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+    transform: scale(1.01);
+}
+
+/* 图片操作按钮组 */
+.image-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+/* 主图片包装器悬停时显示操作按钮 */
+.main-image-wrapper:hover .image-controls {
+    opacity: 1;
+}
+
+/* 控制按钮基础样式 */
+.control-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #374151;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+/* 控制按钮悬停效果 */
+.control-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    color: #1f2937;
+}
+
+/* 放大按钮特殊样式 */
+.zoom-btn:hover {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+}
+
+/* 全屏按钮特殊样式 */
+.fullscreen-btn:hover {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+/* 图片计数器 */
+.image-counter {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* 主图片包装器悬停时显示计数器 */
+.main-image-wrapper:hover .image-counter {
+    opacity: 1;
+}
+
+/* 导航按钮 - 左右两侧 */
+.nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    background: rgba(108, 117, 125, 0.8);
+    border: 1px solid rgba(108, 117, 125, 0.3);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+}
+
+/* 主图片包装器悬停时显示导航按钮 */
+.main-image-wrapper:hover .nav-button {
+    opacity: 1;
+}
+
+/* 导航按钮悬停效果 */
+.nav-button:hover {
+    background: rgba(108, 117, 125, 1);
+    border-color: rgba(108, 117, 125, 0.6);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* 导航按钮激活效果 */
+.nav-button:active {
+    transform: translateY(-50%) scale(0.9);
+    background: rgba(108, 117, 125, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 左侧导航按钮 */
+.nav-button-left {
+    left: 15px;
+}
+
+/* 右侧导航按钮 */
+.nav-button-right {
+    right: 15px;
+}
+
+/* 幻灯片指示器 */
+.slideshow-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+/* 幻灯片指示器点 */
+.slideshow-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 激活的指示器 */
+.slideshow-indicator.active {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.2);
+}
+
+/* 指示器悬停效果 */
+.slideshow-indicator:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+}
+
+/* 无图片占位符 */
+.no-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+}
+
+/* 占位符内容 */
+.placeholder-content {
+    text-align: center;
+    color: #6c757d;
+}
+
+/* 占位符图标 */
+.placeholder-content i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* 占位符标题 */
+.placeholder-content h6 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* 占位符描述 */
+.placeholder-content p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* 缩略图导航 */
+.thumbnail-nav {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 缩略图标题 */
+.thumbnail-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.thumbnail-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.thumbnail-title i {
+    color: #6366f1;
+    font-size: 1.1rem;
+}
+
+/* 缩略图滚动容器 */
+.thumbnail-scroll {
+    display: flex;
+    gap: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+}
+
+/* 隐藏缩略图滚动条 */
+.thumbnail-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* 缩略图项 */
+.thumbnail-item {
+    position: relative;
+    flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 缩略图图片容器 */
+.thumbnail-image {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 缩略图项图片 */
+.thumbnail-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+/* 缩略图项悬停效果 */
+.thumbnail-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.thumbnail-item:hover img {
+    transform: scale(1.1);
+}
+
+/* 激活的缩略图项 */
+.thumbnail-item.active {
+    border-color: #6366f1;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* 缩略图覆盖层 */
+.thumbnail-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: white;
+    font-size: 1.2rem;
+}
+
+/* 悬停时显示覆盖层 */
+.thumbnail-item:hover .thumbnail-overlay {
+    opacity: 1;
+}
+
+/* 缩略图标签 */
+.thumbnail-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    color: white;
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 8px 4px 4px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+
+/* 条形码区域 */
+.barcode-section {
+    padding: 20px;
+    background: #f5f5f5;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 条形码标题 */
+.barcode-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+/* 条形码标题组 */
+.barcode-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+/* 条形码标题图标 */
+.barcode-title i {
+    color: #6366f1;
+    font-size: 1.1rem;
+}
+
+/* 复制按钮 */
+.barcode-copy-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #6366f1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.barcode-copy-btn:hover {
+    background: #6366f1;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* 条形码内容区域 */
+.barcode-content {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+/* 条形码图片容器 */
+.barcode-image-container {
+    margin-bottom: 12px;
+}
+
+/* 条形码图片 */
+.barcode-image {
+    max-width: 100%;
+    height: 60px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+/* 条形码数字容器 */
+.barcode-number-container {
+    margin-top: 8px;
+}
+
+/* 条形码数字 */
+.barcode-number {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 600;
+    letter-spacing: 1px;
+    background: #f8f9fa;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: inline-block;
+    min-width: 120px;
+}
+
+/* =============================================================================
+   4. 操作按钮样式 (Action Buttons Styles)
+   ============================================================================= */
+
+/* 操作按钮容器 */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 操作按钮基础样式 */
+.btn-action {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* 操作按钮悬停效果 */
+.btn-action:hover {
+    background-color: #4f46e5;
+    color: white;
+}
+
+/* 可用状态按钮悬停效果 */
+.btn-action.available:hover {
+    background-color: #10b981;
+    color: white;
+}
+
+/* 不可用状态按钮悬停效果 */
+.btn-action.unavailable:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* 删除按钮悬停效果 */
+.btn-action.delete:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* 下拉按钮悬停效果 */
+.btn-action.dropdown-toggle:hover {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+/* 隐藏下拉箭头 */
+.dropdown-toggle::after {
+    display: none !important;
+}
+
+.dropdown-toggle::before {
+    display: none !important;
+}
+
+/* 下拉菜单样式 */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 180px;
+}
+
+.dropdown-item {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item:hover {
+    background-color: #f8fafc;
+    color: #1e293b;
+}
+
+.dropdown-item.text-danger:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+/* =============================================================================
+   5. 产品信息卡片样式 (Product Info Card Styles)
+   ============================================================================= */
+
+/* 产品名称区域 */
+.product-name-section {
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.product-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 价格和状态容器 */
+.price-status-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.product-price {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #059669;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.product-status {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* 产品信息容器 */
+.product-info-container {
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+}
+
+/* 产品信息网格 */
+.product-info-grid {
+    display: flex;
+    padding: 24px;
+    gap: 32px;
+    position: relative;
+    z-index: 2;
+}
+
+/* 信息列 */
+.info-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 信息项 */
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f8fafc;
+    transition: all 0.3s ease;
+}
+
+.info-item:hover {
+    background: #f8fafc;
+    margin: 0 -16px;
+    padding: 16px;
+    border-radius: 12px;
+    border-bottom: 1px solid transparent;
+}
+
+/* 信息图标 */
+.info-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.info-icon i {
+    color: white;
+    font-size: 1.1rem;
+}
+
+/* 信息内容 */
+.info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: #1e293b;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* 产品描述 */
+.product-description {
+    padding: 24px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.description-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.description-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 2px;
+}
+
+.description-text {
+    color: #6b7280;
+    line-height: 1.6;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* =============================================================================
+   5. 状态标签样式 (Status Badge Styles)
+   ============================================================================= */
+
+/* 状态标签基础样式 */
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid transparent;
+}
+
+/* 可用状态标签 */
+.status-badge.available {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: #10b981;
+}
+
+/* 不可用状态标签 */
+.status-badge.unavailable {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    color: #dc2626;
+    border-color: #fca5a5;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+.status-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* =============================================================================
+   6. 通用样式 (Common Styles)
+   ============================================================================= */
+
+/* 等宽字体 */
+.font-monospace {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+}
+
+/* =============================================================================
+   7. 响应式设计 (Responsive Design)
+   ============================================================================= */
+
+/* 平板端适配 */
+@media (max-width: 768px) {
+    .main-image-container {
+        min-height: 300px;
+    }
+
+    .thumbnail-item {
+        width: 60px;
+        height: 60px;
+    }
+
+    .product-badges {
+        padding: 15px;
+    }
+
+    .barcode-section {
+        padding: 15px;
+    }
+
+    .zoom-button .btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .nav-button {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .nav-button-left {
+        left: 10px;
+    }
+
+    .nav-button-right {
+        right: 10px;
+    }
+
+    .zoom-button {
+        top: 10px;
+        right: 10px;
+    }
+
+    .slideshow-indicators {
+        bottom: 15px;
+    }
+
+    .slideshow-indicator {
+        width: 6px;
+        height: 6px;
+    }
+
+.action-buttons {
+    gap: 6px;
+}
+
+.btn-action {
+    width: 32px;
+    height: 32px;
+    }
+
+    .dropdown-menu {
+        min-width: 160px;
+    }
+
+    .dropdown-item {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    /* 产品信息响应式 */
+    .product-name-section {
+        padding: 20px 20px 16px;
+    }
+
+    .product-name {
+        font-size: 1.3rem;
+    }
+
+    .product-price {
+        font-size: 1.6rem;
+    }
+
+    .product-info-grid {
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .info-column {
+        gap: 16px;
+    }
+
+    .info-item {
+        padding: 12px 0;
+    }
+
+    .info-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .info-icon i {
+        font-size: 1rem;
+    }
+
+    .product-description {
+        padding: 20px;
+    }
+}
+
+/* 手机端适配 */
+@media (max-width: 576px) {
+    .btn-action {
+        width: 30px;
+        height: 30px;
+    }
+
+    .action-buttons {
+        gap: 4px;
+    }
+
+    .dropdown-menu {
+        min-width: 140px;
+    }
+
+    .dropdown-item {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    /* 产品信息手机端 */
+    .product-name-section {
+        padding: 16px 16px 12px;
+    }
+
+    .product-name {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    .product-price {
+        font-size: 1.4rem;
+        margin-bottom: 12px;
+    }
+
+    .product-info-grid {
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .info-column {
+        gap: 12px;
+    }
+
+    .info-item {
+        padding: 10px 0;
+        gap: 10px;
+    }
+
+    .info-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .info-icon i {
+    font-size: 0.9rem;
+}
+
+    .info-label {
+        font-size: 0.8rem;
+    }
+
+    .info-value {
+        font-size: 0.9rem;
+    }
+
+    .product-description {
+        padding: 16px;
+    }
+
+    .description-title {
+        font-size: 0.9rem;
+    }
+
+    .description-text {
+        font-size: 0.85rem;
+    }
+}

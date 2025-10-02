@@ -1,0 +1,522 @@
+/*
+|--------------------------------------------------------------------------
+| 映射管理特有樣式表 (Mapping Management Specific Styles)
+|--------------------------------------------------------------------------
+|
+| 🎯 此文件只包含Mapping Management特有的樣式
+|
+| ✅ 使用此文件的模塊：
+| - Mapping Management (category_mappings/mapping/dashboard.blade.php)
+|
+| 📋 依賴關係：
+| - 需要先載入 common/dashboard-template.css (公用樣式)
+| - 此文件提供Mapping Management特有的樣式
+|
+| 🔧 Mapping特有的樣式：
+| 1. 映射分組列表 - Category和Subcategory的特殊顯示方式
+| 2. Category圖標和圖片 - 64x64px Category顯示
+| 3. Subcategory圖標和圖片 - 40x40px Subcategory顯示
+| 4. 映射展開箭頭 - 特殊的展開/收縮效果
+| 5. 狀態顯示 - 映射狀態信息顯示
+|
+| @author WMS Team
+| @version 6.0.0 - Mapping Specific Only
+| @specific_module mapping
+*/
+
+/* =============================================================================
+   1. 映射列表樣式 (Mapping List Styles) - Mapping Management特有
+   ============================================================================= */
+
+/* 📍 映射分組容器 */
+.mapping-group {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mapping-group:last-child {
+    border-bottom: none;
+}
+
+/* 🏢 Category區域樣式 */
+.mapping-zone {
+    background: linear-gradient(to right, #f8fafc, #f1f5f9);
+    border-bottom: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.mapping-zone:hover {
+    background: linear-gradient(to right, #f8fafc, #f0f4f8);
+}
+
+/* 📍 Zone圖標包裝器 */
+.zone-icon-wrapper {
+    position: relative;
+}
+
+
+/* 📍 Zone圖標樣式 - 64x64px (Location特有尺寸) */
+.zone-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 3px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15), 0 4px 12px -4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.zone-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(2, 132, 199, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 13px;
+}
+
+.zone-icon:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25), 0 8px 20px -8px rgba(0, 0, 0, 0.15);
+    border-color: #0ea5e9;
+}
+
+.zone-icon:hover::before {
+    opacity: 1;
+}
+
+.zone-icon i {
+    font-size: 1.75rem;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* 📝 Zone信息區域 */
+.zone-info {
+    flex: 1;
+}
+
+.zone-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.025em;
+}
+
+.zone-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* 📊 Subcategory計數樣式 */
+.rack-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.rack-count i {
+    color: #0ea5e9;
+}
+
+/* 📍 位置文字樣式 */
+.mapping-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+/* 🔽 Zone展開箭頭 - Location特有的展開效果 */
+.zone-expand-arrow {
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.zone-expand-arrow:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+.zone-expand-arrow i {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+/* 🏗️ Subcategory區域樣式 */
+.mapping-racks {
+    background-color: #ffffff;
+}
+
+.mapping-rack {
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.mapping-rack:last-child {
+    border-bottom: none;
+}
+
+.mapping-rack:hover {
+    background-color: #f8fafc;
+}
+
+
+/* 📦 Subcategory圖標樣式 - 40x40px (Mapping特有尺寸) */
+.rack-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.15), 0 2px 8px -2px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.rack-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(2, 132, 199, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 6px;
+}
+
+.rack-icon:hover {
+    transform: scale(1.1) translateY(-1px);
+    box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.25), 0 4px 12px -4px rgba(0, 0, 0, 0.15);
+    border-color: #0ea5e9;
+}
+
+.rack-icon:hover::before {
+    opacity: 1;
+}
+
+.rack-icon i {
+    font-size: 1.2rem;
+    color: #0ea5e9;
+    position: relative;
+    z-index: 1;
+}
+
+/* 📊 Subcategory狀態顯示 - Mapping特有功能 */
+.rack-capacity {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+/* =============================================================================
+   2. 視圖模式樣式 (View Mode Styles) - Location特有的視圖切換
+   ============================================================================= */
+
+/* 🔲 網格視圖樣式 */
+.mapping-list.grid-view .mapping-group {
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.mapping-list.grid-view .mapping-group:hover {
+    box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* 📝 列表視圖樣式 */
+.mapping-list.list-view .mapping-group {
+    border-left: 4px solid #667eea;
+    margin-bottom: 1rem;
+}
+
+/* =============================================================================
+   3. Location特有響應式設計 (Location Specific Responsive Design)
+   ============================================================================= */
+
+/* 📱 平板端適配 (768px以下) - Location特有調整 */
+@media (max-width: 768px) {
+    .mapping-zone .zone-info {
+        margin-left: 0;
+        margin-top: 1rem;
+    }
+
+    .mapping-rack .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* 📱 手機端適配 (576px以下) - Location特有調整 */
+@media (max-width: 576px) {
+    .zone-image, .zone-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .rack-image, .rack-icon {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* =============================================================================
+   4. Size Management卡片樣式 (Size Management Card Styles) - 用於卡片排版
+   ============================================================================= */
+
+/* 分類卡片 */
+.category-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #d1d5db;
+}
+
+/* 分類卡片頭部 */
+.category-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.category-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.category-icon i {
+    font-size: 20px !important;
+    color: white !important;
+    z-index: 2;
+    position: relative;
+    display: inline-block !important;
+    font-family: "Bootstrap Icons" !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+}
+
+.category-info {
+    flex: 1;
+}
+
+.category-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.category-subtitle {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.category-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.count-badge {
+    background: #e5e7eb;
+    color: #374151;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+}
+
+.btn-expand {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-expand:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn-expand.expanded {
+    background: #3b82f6;
+    color: white;
+    transform: rotate(180deg);
+}
+
+/* 分類內容區域 */
+.category-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.category-content.expanded {
+    max-height: 800px;
+    padding: 20px;
+}
+
+/* 尺寸網格 */
+.sizes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.size-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.size-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.size-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.size-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.size-status.available {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.size-status.unavailable {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.size-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.size-item:hover .size-actions {
+    opacity: 1;
+}
+
+/* Bootstrap 顏色類支持 */
+.category-icon.bg-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important; }
+.category-icon.bg-info { background: linear-gradient(135deg, #06b6d4, #0891b2) !important; }
+.category-icon.bg-success { background: linear-gradient(135deg, #10b981, #059669) !important; }
+.category-icon.bg-warning { background: linear-gradient(135deg, #f59e0b, #d97706) !important; }
+.category-icon.bg-danger { background: linear-gradient(135deg, #ef4444, #dc2626) !important; }
+.category-icon.bg-secondary { background: linear-gradient(135deg, #6b7280, #4b5563) !important; }
+
+/* =============================================================================
+   📋 Location特有CSS類索引 (Location Specific CSS Class Index)
+   ============================================================================= */
+
+/*
+🗺️ Location Management特有樣式快速查找：
+
+🏢 Zone樣式類：
+- .mapping-group         → 位置分組容器 (行28)
+- .mapping-zone          → Zone區域 (行35)
+- .zone-icon-wrapper      → Zone圖標包裝器 (行44)
+- .zone-image             → Zone圖片 64x64px (行47)
+- .zone-icon              → Zone圖標 64x64px (行81)
+- .zone-info              → Zone信息區域 (行115)
+- .zone-title             → Zone標題 (行120)
+- .zone-meta              → Zone元數據 (行129)
+- .zone-expand-arrow      → Zone展開箭頭 (行154)
+
+🏗️ Subcategory樣式類：
+- .mapping-racks         → Subcategory容器 (行167)
+- .mapping-rack          → 單個Subcategory (行170)
+- .rack-image             → Subcategory圖片 40x40px (行183)
+- .rack-icon              → Subcategory圖標 40x40px (行217)
+- .rack-count             → Subcategory計數顯示 (行135)
+- .rack-capacity          → Subcategory狀態顯示 (行251)
+
+🎨 視圖模式類：
+- .mapping-list.grid-view → 網格視圖 (行261)
+- .mapping-list.list-view → 列表視圖 (行272)
+
+⚠️ 注意：
+- 此文件只包含Location Management特有的樣式
+- 公用樣式已在 common/dashboard-template.css 中定義
+- 需要與 common/dashboard-template.css 配合使用
+*/

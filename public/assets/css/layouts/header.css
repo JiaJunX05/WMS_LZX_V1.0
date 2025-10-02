@@ -1,0 +1,57 @@
+/* ======================
+   1. 导航栏基础样式
+====================== */
+.custom-navbar {
+    background: linear-gradient(to right, #1a1f25, #1e242c);
+    padding: 0.8rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(99, 255, 251, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* ======================
+   2. Logo 相关样式
+====================== */
+.navbar-brand {
+    align-items: center;
+    display: inline-flex;
+    font-size: 1.5rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.navbar-brand i {
+    color: #63fffb;
+    filter: drop-shadow(0 0 8px rgba(99, 255, 251, 0.5));
+    font-size: 1.8rem;
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover i {
+    transform: rotate(-10deg);
+}
+
+.brand-text {
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(45deg, #63fffb, #9f63ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(99, 255, 251, 0.2));
+}
+
+/* ======================
+   3. 响应式布局
+====================== */
+@media (max-width: 991.98px) {
+    .custom-navbar {
+        padding: 0.8rem 1rem;
+    }
+
+    .brand-text {
+        font-size: 1.2rem;
+    }
+}

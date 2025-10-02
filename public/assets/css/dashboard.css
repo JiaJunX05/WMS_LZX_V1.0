@@ -1,0 +1,419 @@
+/*
+|--------------------------------------------------------------------------
+| 管理面板仪表板样式表 (Admin Dashboard Styles)
+|--------------------------------------------------------------------------
+|
+| 🎯 此CSS文件专门用于管理面板的仪表板页面
+|
+| ✅ 使用此文件的页面：
+| - Admin Dashboard (admin/dashboard.blade.php)
+|
+| 🔧 包含的样式类别：
+| 1. 仪表板网格布局 - 响应式卡片网格
+| 2. 统计卡片样式 - 数据展示卡片
+| 3. 进度条和图表 - 可视化数据
+| 4. 动画效果 - 悬停和加载动画
+| 5. 响应式设计 - 移动端适配
+|
+| @author WMS Team
+| @version 1.0.0
+| @specific_module admin_dashboard
+*/
+
+/* =============================================================================
+   变量定义 (CSS Variables) - Dashboard 专用变量
+   ============================================================================= */
+:root {
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #06b6d4;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* =============================================================================
+   仪表板容器样式 (Dashboard Container Styles)
+   ============================================================================= */
+.dashboard-container {
+    padding: 2rem 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.dashboard-subtitle {
+    font-size: 1.125rem;
+    color: var(--gray-600);
+    margin-bottom: 0;
+}
+
+/* =============================================================================
+   仪表板网格布局 (Dashboard Grid Layout)
+   ============================================================================= */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+}
+
+.dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-color);
+}
+
+.dashboard-card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.dashboard-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.dashboard-card-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.25rem;
+    color: white;
+}
+
+.dashboard-card-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 0;
+}
+
+.dashboard-card-body {
+    padding: 1.5rem;
+}
+
+/* =============================================================================
+   统计卡片样式 (Statistics Card Styles)
+   ============================================================================= */
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.stat-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    font-size: 0.875rem;
+    color: white;
+}
+
+/* =============================================================================
+   进度条样式 (Progress Bar Styles)
+   ============================================================================= */
+.progress-container {
+    margin-top: 1rem;
+}
+
+.progress-label {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-bottom: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.progress-bar-custom {
+    height: 0.5rem;
+    background-color: var(--gray-200);
+    border-radius: 0.25rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+    border-radius: 0.25rem;
+    transition: width 0.8s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* =============================================================================
+   图表容器样式 (Chart Container Styles)
+   ============================================================================= */
+.chart-container {
+    position: relative;
+    height: 200px;
+    margin-top: 1rem;
+}
+
+.chart-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+/* =============================================================================
+   颜色主题 (Color Themes)
+   ============================================================================= */
+.theme-primary .dashboard-card-icon {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+.theme-success .dashboard-card-icon {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+}
+
+.theme-danger .dashboard-card-icon {
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+}
+
+.theme-warning .dashboard-card-icon {
+    background: linear-gradient(135deg, var(--warning-color), #d97706);
+}
+
+.theme-info .dashboard-card-icon {
+    background: linear-gradient(135deg, var(--info-color), #0891b2);
+}
+
+.theme-purple .dashboard-card-icon {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.theme-indigo .dashboard-card-icon {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+/* =============================================================================
+   动画效果 (Animation Effects)
+   ============================================================================= */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-card {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.dashboard-card:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-card:nth-child(2) { animation-delay: 0.2s; }
+.dashboard-card:nth-child(3) { animation-delay: 0.3s; }
+.dashboard-card:nth-child(4) { animation-delay: 0.4s; }
+.dashboard-card:nth-child(5) { animation-delay: 0.5s; }
+.dashboard-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* 加载动画 */
+.loading-skeleton {
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* =============================================================================
+   响应式设计 (Responsive Design)
+   ============================================================================= */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem 0;
+    }
+
+    .dashboard-title {
+        font-size: 2rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .dashboard-card-header {
+        padding: 1rem;
+    }
+
+    .dashboard-card-body {
+        padding: 1rem;
+    }
+
+    .dashboard-card-title {
+        font-size: 1.125rem;
+    }
+
+    .dashboard-card-icon {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-title {
+        font-size: 1.75rem;
+    }
+
+    .dashboard-card-title {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dashboard-card-icon {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* =============================================================================
+   特殊效果 (Special Effects)
+   ============================================================================= */
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dashboard-card:hover::before {
+    opacity: 1;
+}
+
+/* 数据更新动画 */
+.stat-value.updated {
+    animation: pulse 0.6s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* =============================================================================
+   工具类 (Utility Classes)
+   ============================================================================= */
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.shadow-custom {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.border-gradient {
+    border: 2px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, var(--primary-color), var(--info-color)) border-box;
+}

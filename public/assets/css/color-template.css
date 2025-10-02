@@ -1,0 +1,200 @@
+/*
+|--------------------------------------------------------------------------
+| 颜色管理系统样式表 (Color Management System Styles)
+|--------------------------------------------------------------------------
+|
+| 样式模块：
+| 1. 颜色预览样式 - 颜色预览相关样式
+| 2. 颜色管理特有样式 - 与common/dashboard-template.css不重复的样式
+|
+| 注意：基础样式（如dashboard-header、statistics-section、buttons等）
+| 已在 common/dashboard-template.css 中定义，此处不重复
+|
+| @author WMS Team
+| @version 1.0.0
+*/
+
+/* =============================================================================
+   1. 颜色预览样式 (Color Preview Styles) - 颜色管理特有
+   ============================================================================= */
+
+/* 表单中的颜色预览 */
+.color-preview {
+    width: 100%;
+    height: 64px;
+    border-radius: 16px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: block;
+    background-color: #f3f4f6;
+}
+
+.color-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.color-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.color-preview:hover::before {
+    opacity: 1;
+}
+
+/* 表格中的颜色预览 */
+.color-preview-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: block;
+    background-color: #cccccc;
+}
+
+.color-preview-small::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.color-preview-small:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.color-preview-small:hover::before {
+    opacity: 1;
+}
+
+/* 颜色预览图标样式 */
+.color-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.color-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 大尺寸颜色预览 */
+.color-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.color-image:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* =============================================================================
+   2. 颜色管理特有样式 (Color Management Specific Styles)
+   ============================================================================= */
+
+/* 字体样式 - 用于HEX和RGB代码显示 */
+.font-monospace {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+}
+
+/* 颜色预览容器样式 */
+.color-preview-container {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+/* 颜色输入组样式 */
+.color-input-group {
+    position: relative;
+}
+
+.color-input-group .input-group-text {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-right: none;
+    color: #667eea;
+}
+
+.color-input-group .form-control {
+    border-left: none;
+}
+
+.color-input-group .form-control:focus {
+    border-left: none;
+}
+
+/* 颜色管理特有的响应式样式 */
+@media (max-width: 576px) {
+    .color-preview {
+        height: 48px;
+        border-radius: 12px;
+    }
+
+    .color-preview-small {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+    }
+
+    .color-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+
+    .color-image {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        font-size: 1.2rem;
+    }
+}

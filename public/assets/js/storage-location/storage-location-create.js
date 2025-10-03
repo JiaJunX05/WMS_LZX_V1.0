@@ -58,24 +58,17 @@ function bindEvents() {
         sortBtn.addEventListener('click', toggleSortOrder);
     }
 
-    // 删除位置按钮事件委托
+// 删除映射按钮事件委托
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-location')) {
-            const locationItem = e.target.closest('.location-list-item');
-            const zoneId = locationItem.dataset.zoneId;
-            const rackId = locationItem.dataset.rackId;
+        if (e.target.closest('.remove-item')) {
+            const button = e.target.closest('.remove-item');
+            const index = parseInt(button.getAttribute('data-index'));
 
-            // 找到并移除对应的位置
-            const index = locationList.findIndex(location =>
-                location.zoneId === zoneId && location.rackId === rackId
-            );
-
-            if (index !== -1) {
+            if (!isNaN(index)) {
                 removeLocation(index);
             }
         }
     });
-
 }
 
 function handleZoneChange() {
@@ -175,7 +168,7 @@ function isLocationExists(zoneId, rackId) {
 }
 
 function highlightExistingLocation(zoneId, rackId) {
-    const existingLocations = document.querySelectorAll('.location-list-item');
+    const existingLocations = document.querySelectorAll('.value-item');
     for (let item of existingLocations) {
         const itemZoneId = item.dataset.zoneId;
         const itemRackId = item.dataset.rackId;
@@ -237,7 +230,7 @@ function updateLocationList() {
     let html = '';
     locationList.forEach((location, index) => {
         html += `
-            <div class="location-list-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in" data-zone-id="${location.zoneId}" data-rack-id="${location.rackId}">
+            <div class="value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in" data-zone-id="${location.zoneId}" data-rack-id="${location.rackId}">
                 <div class="d-flex align-items-center">
                     <i class="bi bi-geo-alt text-primary me-2"></i>
                     <div class="location-combination">
@@ -246,7 +239,7 @@ function updateLocationList() {
                         <span class="rack-badge">${location.rackName}</span>
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger remove-location">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
                     <i class="bi bi-trash me-1"></i>Remove
                 </button>
             </div>
@@ -568,7 +561,7 @@ function toggleSortOrder() {
 
 function sortLocationList() {
     const locationList = document.getElementById('locationList');
-    const items = Array.from(locationList.querySelectorAll('.location-list-item'));
+    const items = Array.from(locationList.querySelectorAll('.value-item'));
 
     if (items.length <= 1) return;
 

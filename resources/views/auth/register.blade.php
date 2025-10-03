@@ -40,7 +40,7 @@
                     </div>
                 </div>
                 <a href="{{ route('staff_management') }}" class="btn btn-primary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Home
+                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
                 </a>
             </div>
         </div>

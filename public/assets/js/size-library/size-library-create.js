@@ -55,21 +55,25 @@ function bindEvents() {
         clearFormBtn.addEventListener('click', clearForm);
     }
 
-    // 事件委托：删除尺码值按钮
+    // 删除映射按钮事件委托
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-size-value')) {
-            const index = parseInt(e.target.closest('.remove-size-value').getAttribute('onclick').match(/\d+/)[0]);
-            removeSizeValue(index);
+        if (e.target.closest('.remove-item')) {
+            const button = e.target.closest('.remove-item');
+            const index = parseInt(button.getAttribute('data-index'));
+
+            if (!isNaN(index)) {
+                removeSizeValue(index);
+            }
         }
     });
 
         // 状态卡片选择
         const statusCards = document.querySelectorAll('.status-card');
-    statusCards.forEach(card => {
-        card.addEventListener('click', function() {
-            selectStatusCard(this);
+        statusCards.forEach(card => {
+            card.addEventListener('click', function() {
+                selectStatusCard(this);
+            });
         });
-    });
 
     // 排序按钮
     const sortBtn = document.getElementById('sortSizes');
@@ -198,7 +202,7 @@ function updateSizeList() {
             sizeList.filter(i => i.sizeValue.toLowerCase() === item.sizeValue.toLowerCase()).length > 1;
 
         // 根据是否为重复项设置不同的样式
-        const baseClasses = 'size-value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
         const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
 
         sizeItem.className = `${baseClasses} ${duplicateClasses}`;
@@ -211,7 +215,7 @@ function updateSizeList() {
                 <span class="size-value-text fw-medium">${item.sizeValue}</span>
                 ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-size-value" onclick="removeSizeValue(${index})">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
                 <i class="bi bi-trash me-1"></i>Remove
             </button>
         `;
@@ -220,7 +224,7 @@ function updateSizeList() {
 }
 
 function highlightExistingSizeValue(sizeValue) {
-    const existingValues = document.querySelectorAll('.size-value-item');
+    const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
         const value = item.querySelector('.size-value-text').textContent.trim();
         if (value.toLowerCase() === sizeValue.toLowerCase()) {
@@ -585,7 +589,7 @@ function toggleSortOrder() {
 
 function sortSizeValuesList() {
     const sizeValuesList = document.getElementById('sizeValuesList');
-    const items = Array.from(sizeValuesList.querySelectorAll('.size-value-item'));
+    const items = Array.from(sizeValuesList.querySelectorAll('.value-item'));
 
     if (items.length <= 1) return;
 

@@ -173,281 +173,9 @@
     color: var(--gray-400);
 }
 
-/* =============================================================================
-   4. 图片上传样式 (Image Upload Styles)
-   ============================================================================= */
 
-/* 图片上传容器 */
-.image-upload-container {
-    position: relative;
-    margin-bottom: var(--spacing-md);
-}
 
-/* 图片上传区域 */
-.image-upload-area {
-    border: 2px dashed var(--gray-300);
-    border-radius: var(--border-radius);
-    background: var(--gray-50);
-    padding: var(--spacing-xl);
-    text-align: center;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    position: relative;
-    overflow: hidden;
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
-.image-upload-area:hover {
-    border-color: var(--primary-color);
-    background: var(--primary-light);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.image-upload-area.dragover {
-    border-color: var(--success-color);
-    background: var(--success-light);
-    transform: scale(1.02);
-}
-
-/* 图片上传内容 */
-.image-upload-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
-.image-upload-content i {
-    font-size: 3rem;
-    color: var(--gray-400);
-    margin-bottom: var(--spacing-md);
-    transition: all var(--transition-normal);
-}
-
-.image-upload-area:hover .image-upload-content i {
-    color: var(--primary-color);
-    transform: scale(1.1);
-}
-
-.image-upload-content h6 {
-    color: var(--gray-600);
-    font-weight: var(--font-semibold);
-    margin-bottom: var(--spacing-sm);
-    transition: all var(--transition-normal);
-}
-
-.image-upload-area:hover .image-upload-content h6 {
-    color: var(--primary-color);
-}
-
-.image-upload-content p {
-    color: var(--gray-500);
-    font-size: var(--font-sm);
-    margin: 0;
-    transition: all var(--transition-normal);
-}
-
-.image-upload-area:hover .image-upload-content p {
-    color: var(--gray-600);
-}
-
-/* 图片预览 */
-.preview-image {
-    max-width: 100%;
-    max-height: 200px;
-    width: auto;
-    height: auto;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-md);
-    object-fit: cover;
-}
-
-/* 图片预览时的上传区域样式 */
-.image-upload-area.has-image {
-    border: 2px solid var(--success-color);
-    background: var(--card-bg);
-    padding: var(--spacing-sm);
-}
-
-.image-upload-area.has-image .image-upload-content {
-    display: none;
-}
-
-/* 图片删除按钮 */
-.image-remove-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: all var(--transition-normal);
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.image-upload-area.has-image .image-remove-btn {
-    opacity: 0.8;
-}
-
-.image-upload-area.has-image:hover .image-remove-btn {
-    opacity: 1;
-}
-
-.image-remove-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.image-remove-btn:active {
-    transform: scale(0.95);
-}
-
-/* 图片上传进度条 */
-.image-upload-progress {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--gray-200);
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
-    overflow: hidden;
-    display: none;
-}
-
-.image-upload-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
-    width: 0%;
-    transition: width var(--transition-normal);
-}
-
-/* 图片上传错误状态 */
-.image-upload-area.error {
-    border-color: var(--danger-color);
-    background: var(--danger-light);
-}
-
-.image-upload-area.error .image-upload-content i {
-    color: var(--danger-color);
-}
-
-.image-upload-area.error .image-upload-content h6 {
-    color: var(--danger-color);
-}
-
-/* 图片上传成功状态 */
-.image-upload-area.success {
-    border-color: var(--success-color);
-    background: var(--success-light);
-}
-
-/* =============================================================================
-   5. 快速操作按钮区域样式 (Quick Actions)
-   ============================================================================= */
-
-/* 快速操作按钮区域 */
-.quick-actions {
-    margin-top: auto;
-    padding-top: 2rem;
-}
-
-.quick-actions .btn {
-    font-size: 0.875rem;
-    padding: 0.75rem 1rem;
-    border-radius: var(--border-radius-sm);
-    font-weight: 500;
-    transition: all 0.2s ease;
-    border-width: 2px;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    margin-bottom: var(--spacing-sm);
-}
-
-.quick-actions .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-}
-
-/* 快速操作按钮样式 */
-.quick-actions .btn-outline-success {
-    background: #f8f9fa;
-    border: 2px solid #22c55e;
-    color: #22c55e;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.quick-actions .btn-outline-success:hover {
-    background: #22c55e;
-    border-color: #22c55e;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
-}
-
-.quick-actions .btn-outline-info {
-    background: #f8f9fa;
-    border: 2px solid #17a2b8;
-    color: #17a2b8;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.quick-actions .btn-outline-info:hover {
-    background: #17a2b8;
-    border-color: #17a2b8;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.2);
-}
-
-.quick-actions .btn-outline-secondary {
-    background: #f8f9fa;
-    border: 2px solid #6b7280;
-    color: #6b7280;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.quick-actions .btn-outline-secondary:hover {
-    background: #6b7280;
-    border-color: #6b7280;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2);
-}
-
-.quick-actions .btn i {
-    margin-right: var(--spacing-sm);
-}
-
-/* 分隔线样式 */
-.quick-actions hr {
-    border-color: var(--gray-300);
-    opacity: 0.5;
-}
 
 /* =============================================================================
    5. 列表样式 (List Styles)
@@ -466,8 +194,8 @@
     background: var(--gray-50);
 }
 
-/* 通用列表项目 */
-.list-item {
+/* 通用列表项目 - 使用统一的 item-value-item 类名 */
+.item-value-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -480,33 +208,33 @@
 }
 
 /* 重复项目高亮样式 */
-.list-item.duplicate-highlight {
+.item-value-item.duplicate-highlight {
     background: #fff3cd !important;
     border-color: #ffc107 !important;
     box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.25) !important;
     animation: duplicatePulse 0.6s ease-in-out;
 }
 
-.list-item:hover {
+.item-value-item:hover {
     border-color: var(--primary-color);
     box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
 }
 
 /* 列表内容 */
-.list-item .d-flex {
+.item-value-item .d-flex {
     align-items: center;
     gap: 0.5rem;
 }
 
-.list-item .item-text {
+.item-value-item .item-text {
     font-weight: 600;
     color: var(--gray-700);
     font-size: 0.9rem;
 }
 
 /* 删除按钮 */
-.list-item .remove-item {
+.item-value-item .remove-item {
     padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     border-radius: var(--border-radius-sm);
@@ -520,14 +248,14 @@
     gap: 0.25rem;
 }
 
-.list-item .remove-item:hover {
+.item-value-item .remove-item:hover {
     background: var(--danger-color);
     color: white;
     transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-.list-item .remove-item:active {
+.item-value-item .remove-item:active {
     transform: scale(0.95);
 }
 
@@ -539,88 +267,6 @@
     color: var(--gray-500);
     font-style: italic;
     padding: 2rem;
-}
-
-/* =============================================================================
-   7. 状态卡片样式 (Status Card Styles) - 使用 form-template.css 样式
-   ============================================================================= */
-
-/* 状态卡片基础样式 */
-.status-card {
-    transition: all var(--transition-normal);
-    cursor: pointer;
-    border: 2px solid var(--border-color);
-    background-color: var(--card-bg);
-    border-radius: var(--card-radius);
-    box-shadow: var(--shadow-sm);
-}
-
-/* 状态卡片悬停效果 */
-.status-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--primary-color);
-}
-
-/* Available 状态卡片选中效果 */
-.status-card.selected[data-status="Available"] {
-    border-color: var(--success-color) !important;
-    background-color: var(--success-light);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-}
-
-.status-card.selected[data-status="Available"] .card-title {
-    color: var(--success-color) !important;
-}
-
-.status-card.selected[data-status="Available"] .text-success {
-    color: var(--success-color) !important;
-}
-
-/* Unavailable 状态卡片选中效果 */
-.status-card.selected[data-status="Unavailable"] {
-    border-color: var(--danger-color) !important;
-    background-color: var(--danger-light);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
-}
-
-.status-card.selected[data-status="Unavailable"] .card-title {
-    color: var(--danger-color) !important;
-}
-
-.status-card.selected[data-status="Unavailable"] .text-danger {
-    color: var(--danger-color) !important;
-}
-
-/* 状态卡片标签样式 */
-.status-card label {
-    cursor: pointer;
-    margin-bottom: 0;
-    width: 100%;
-}
-
-/* 状态卡片单选按钮样式 */
-.status-card .form-check-input {
-    margin-top: 0;
-}
-
-.status-card .form-check-input:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-/* Available 状态的单选按钮选中样式 */
-.status-card.selected[data-status="Available"] .form-check-input:checked {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-}
-
-/* Unavailable 状态的单选按钮选中样式 */
-.status-card.selected[data-status="Unavailable"] .form-check-input:checked {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
 }
 
 /* =============================================================================
@@ -907,9 +553,7 @@
     animation: fadeIn 0.3s ease;
 }
 
-.list-item {
-    animation: slideIn 0.3s ease;
-}
+/* 列表项目动画样式已移至 form-table-list.css 统一管理 */
 
 /* =============================================================================
    15. 滚动条样式 (Scrollbar Styles)

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('category_image', 255)->nullable();
+            $table->string('category_image', 500)->nullable();
             $table->string('category_name', 255)->unique();
             $table->enum('category_status', ['Available', 'Unavailable'])->default('Available');
             $table->timestamps();

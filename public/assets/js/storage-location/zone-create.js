@@ -242,7 +242,7 @@ function updateZoneList() {
             zoneList.filter(i => i.zoneName.toLowerCase() === item.zoneName.toLowerCase()).length > 1;
 
         // 根据是否为重复项设置不同的样式
-        const baseClasses = 'item-value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
         const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
 
         zoneItem.className = `${baseClasses} ${duplicateClasses}`;
@@ -271,7 +271,7 @@ function updateZoneList() {
 }
 
 function highlightExistingZone(zoneName) {
-    const existingValues = document.querySelectorAll('.item-value-item');
+    const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
         const value = item.querySelector('.item-value-text').textContent.trim();
         if (value.toLowerCase() === zoneName.toLowerCase()) {
@@ -545,7 +545,7 @@ function toggleSortOrder() {
 
 function sortZoneValuesList() {
     const zoneValuesList = document.getElementById('zoneValuesList');
-    const items = Array.from(zoneValuesList.querySelectorAll('.item-value-item'));
+    const items = Array.from(zoneValuesList.querySelectorAll('.value-item'));
 
     if (items.length <= 1) return;
 

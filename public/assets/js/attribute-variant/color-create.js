@@ -8,6 +8,9 @@
  * - 状态管理
  * - 表单验证和提交
  * - 批量创建支持
+ *
+ * @author WMS Team
+ * @version 1.0.0
  */
 
 // 颜色列表数组
@@ -101,9 +104,9 @@ function bindEvents() {
     }
 
     // 颜色代码输入框实时预览
-    const colorHexInput = document.getElementById('color_hex');
-    if (colorHexInput) {
-        colorHexInput.addEventListener('input', function() {
+    const colorHexPreviewInput = document.getElementById('color_hex');
+    if (colorHexPreviewInput) {
+        colorHexPreviewInput.addEventListener('input', function() {
             updateColorPreview();
         });
     }
@@ -504,7 +507,7 @@ function selectStatusCard(card) {
 
 function updateColorPreview() {
     const colorHexInput = document.getElementById('color_hex');
-    const colorPreview = document.getElementById('colorPreview');
+    const colorPreview = document.getElementById('color-preview');
 
     if (colorHexInput && colorPreview) {
         const colorValue = colorHexInput.value.trim();

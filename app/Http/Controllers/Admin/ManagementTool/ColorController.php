@@ -1,0 +1,416 @@
+<?php
+
+namespace App\Http\Controllers\Admin\ManagementTool;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Models\ManagementTool\Color;
+
+/**
+ * 颜色管理控制器
+ *
+ * 功能模块：
+ * - 颜色列表展示：搜索、筛选、分页
+ * - 颜色操作：创建、编辑、删除、状态管理
+ * - 颜色代码管理：HEX、RGB 代码
+ *
+ * @author WMS Team
+ * @version 1.0.0
+ */
+class ColorController extends Controller
+{
+    /**
+     * 显示颜色列表页面
+     */
+    public function index(Request $request)
+    {
+        if ($request->ajax()) {
+            try {
+                $query = Color::query();
+
+                // 搜索功能
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $query->where(function($q) use ($search) {
+                        $q->where('color_name', 'like', "%{$search}%")
+                          ->orWhere('color_hex', 'like', "%{$search}%")
+                          ->orWhere('color_rgb', 'like', "%{$search}%");
+                    });
+                }
+
+                // 状态筛选
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $query->where('color_status', $request->status_filter);
+                }
+
+                $colors = $query->paginate(10);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $colors->items(),
+                    'pagination' => [
+                        'current_page' => $colors->currentPage(),
+                        'last_page' => $colors->lastPage(),
+                        'per_page' => $colors->perPage(),
+                        'total' => $colors->total(),
+                        'from' => $colors->firstItem(),
+                        'to' => $colors->lastItem(),
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Color management error: ' . $e->getMessage());
+                return response()->json(['error' => 'Failed to fetch colors'], 500);
+            }
+        }
+
+        $colors = Color::paginate(10);
+        return view('admin.management.colors.dashboard', compact('colors'));
+    }
+
+    /**
+     * 显示创建颜色表单
+     */
+    public function create()
+    {
+        return view('admin.management.colors.create');
+    }
+
+    /**
+     * 存储新颜色
+     */
+    public function store(Request $request)
+    {
+        // 与 BrandController 的实现保持一致：有数组走批量，否则走单个
+        if ($request->has('colors') && is_array($request->input('colors'))) {
+            return $this->storeMultipleColors($request);
+        }
+
+        return $this->storeSingleColor($request);
+    }
+
+    /**
+     * 单个存储颜色
+     */
+    private function storeSingleColor(Request $request)
+    {
+        // 校验
+        $request->validate([
+            'color_name' => 'required|string|max:255|unique:colors,color_name',
+            'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'color_rgb' => 'nullable|string|max:255',
+            'color_status' => 'required|in:Available,Unavailable',
+        ]);
+
+        try {
+            $colorData = [
+                'color_name' => $request->input('color_name') ?? $request->input('colorName'),
+                'color_hex' => $request->input('color_hex') ?? $request->input('colorHex'),
+                'color_rgb' => $request->input('color_rgb') ?? $request->input('colorRgb'),
+                'color_status' => $request->input('color_status') ?? $request->input('colorStatus'),
+            ];
+
+            $color = Color::create($colorData);
+
+            Log::info('Color created successfully (single)', [
+                'color_id' => $color->id,
+                'color_name' => $colorData['color_name']
+            ]);
+
+            $message = 'Color created successfully!';
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'data' => $color
+                ]);
+            }
+
+            return redirect()->route('admin.management_tool.color.index')
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            Log::error('Color creation failed (single): ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create color: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to create color: ' . $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * 批量存储颜色（统一入口）
+     */
+    private function storeMultipleColors(Request $request)
+    {
+        // 仅处理批量数组
+        $colors = $request->input('colors', []);
+        $createdColors = [];
+        $errors = [];
+
+        foreach ($colors as $index => $colorData) {
+
+            // 兼容前端字段命名（camelCase -> snake_case）
+            // 前端：colorName / colorHex / colorRgb / colorStatus
+            // 后端期望：color_name / color_hex / color_rgb / color_status
+            if (isset($colorData['colorName']) && !isset($colorData['color_name'])) {
+                $colorData['color_name'] = $colorData['colorName'];
+            }
+            if (isset($colorData['colorHex']) && !isset($colorData['color_hex'])) {
+                $colorData['color_hex'] = $colorData['colorHex'];
+            }
+            if (isset($colorData['colorRgb']) && !isset($colorData['color_rgb'])) {
+                $colorData['color_rgb'] = $colorData['colorRgb'];
+            }
+            if (isset($colorData['colorStatus']) && !isset($colorData['color_status'])) {
+                $colorData['color_status'] = $colorData['colorStatus'];
+            }
+
+            $validator = \Validator::make($colorData, [
+                'color_name' => 'required|string|max:255',
+                'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+                'color_rgb' => 'nullable|string|max:255',
+                'color_status' => 'required|in:Available,Unavailable',
+            ]);
+
+            if ($validator->fails()) {
+                $errors[] = "Color " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
+                continue;
+            }
+
+            // 检查颜色名称是否已存在
+            $existingColor = Color::where('color_name', $colorData['color_name'])->first();
+
+            if ($existingColor) {
+                $errors[] = "Color " . ($index + 1) . ": Color name '{$colorData['color_name']}' already exists";
+                continue;
+            }
+
+            try {
+                $colorRecord = [
+                    'color_name' => $colorData['color_name'],
+                    'color_hex' => $colorData['color_hex'],
+                    'color_rgb' => $colorData['color_rgb'] ?? null,
+                    'color_status' => $colorData['color_status'],
+                ];
+
+                $color = Color::create($colorRecord);
+                $createdColors[] = $color;
+            } catch (\Exception $e) {
+                $errors[] = "Color " . ($index + 1) . ": " . $e->getMessage();
+            }
+        }
+
+        if ($request->ajax()) {
+            if (count($errors) > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Some colors failed to create',
+                    'errors' => $errors,
+                    'created_count' => count($createdColors)
+                ], 422);
+            } else {
+                return response()->json([
+                    'success' => true,
+                    'message' => count($createdColors) . ' colors created successfully',
+                    'data' => $createdColors
+                ]);
+            }
+        }
+
+        if (count($errors) > 0) {
+            return back()->withErrors(['error' => implode('; ', $errors)])
+                ->withInput();
+        }
+
+        return redirect()->route('admin.management_tool.color.index')
+            ->with('success', count($createdColors) . ' colors created successfully');
+    }
+
+    /**
+     * 显示编辑颜色表单
+     */
+    public function edit($id)
+    {
+        $color = Color::findOrFail($id);
+        return view('admin.management.colors.update', compact('color'));
+    }
+
+    /**
+     * 更新颜色信息
+     */
+    public function update(Request $request, $id)
+    {
+        $color = Color::findOrFail($id);
+
+        $request->validate([
+            'color_name' => 'required|string|max:255|unique:colors,color_name,' . $id,
+            'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'color_rgb' => 'nullable|string|max:255',
+            'color_status' => 'required|in:Available,Unavailable',
+        ]);
+
+        try {
+            $color->update([
+                'color_name' => $request->color_name,
+                'color_hex' => $request->color_hex,
+                'color_rgb' => $request->color_rgb,
+                'color_status' => $request->color_status,
+            ]);
+
+            Log::info('Color updated successfully', ['color_id' => $id, 'color_name' => $request->color_name]);
+
+            // 返回 JSON 响应
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Color updated successfully!',
+                    'data' => $color
+                ]);
+            }
+
+            return redirect()->route('admin.management_tool.color.index')
+                ->with('success', 'Color updated successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Color update failed: ' . $e->getMessage());
+
+            // 返回 JSON 错误响应
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update color: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to update color: ' . $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * 设置颜色为可用状态
+     */
+    public function setAvailable($id)
+    {
+        try {
+            $color = Color::findOrFail($id);
+            $color->update(['color_status' => 'Available']);
+
+            Log::info('Color set to available', ['color_id' => $id]);
+
+            // 返回 JSON 响应
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Color has been set to available status',
+                    'data' => $color
+                ]);
+            }
+
+            return redirect()->route('admin.management_tool.color.index')
+                ->with('success', 'Color has been set to available status');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to set color available: ' . $e->getMessage());
+
+            // 返回 JSON 错误响应
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to set color available: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to set color available: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 设置颜色为不可用状态
+     */
+    public function setUnavailable($id)
+    {
+        try {
+            $color = Color::findOrFail($id);
+            $color->update(['color_status' => 'Unavailable']);
+
+            Log::info('Color set to unavailable', ['color_id' => $id]);
+
+            // 返回 JSON 响应
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Color has been set to unavailable status',
+                    'data' => $color
+                ]);
+            }
+
+            return redirect()->route('admin.management_tool.color.index')
+                ->with('success', 'Color has been set to unavailable status');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to set color unavailable: ' . $e->getMessage());
+
+            // 返回 JSON 错误响应
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to set color unavailable: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to set color unavailable: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 删除颜色
+     */
+    public function destroy($id)
+    {
+        try {
+            $color = Color::findOrFail($id);
+            $color->delete();
+
+            Log::info('Color deleted successfully', ['color_id' => $id]);
+
+            // 返回 JSON 响应
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Color deleted successfully!',
+                    'data' => [
+                        'id' => $id,
+                        'name' => $color->color_name
+                    ]
+                ]);
+            }
+
+            return redirect()->route('admin.management_tool.color.index')
+                ->with('success', 'Color deleted successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Color deletion failed: ' . $e->getMessage());
+
+            // 返回 JSON 错误响应
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete color: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to delete color: ' . $e->getMessage()]);
+        }
+    }
+}

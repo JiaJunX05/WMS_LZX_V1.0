@@ -57,17 +57,11 @@ function bindEvents() {
 
     // 删除映射按钮事件委托
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-mapping')) {
-            const mappingItem = e.target.closest('.mapping-list-item');
-            const categoryId = mappingItem.dataset.categoryId;
-            const subcategoryId = mappingItem.dataset.subcategoryId;
+        if (e.target.closest('.remove-item')) {
+            const button = e.target.closest('.remove-item');
+            const index = parseInt(button.getAttribute('data-index'));
 
-            // 找到并移除对应的映射
-            const index = mappingList.findIndex(mapping =>
-                mapping.categoryId === categoryId && mapping.subcategoryId === subcategoryId
-            );
-
-            if (index !== -1) {
+            if (!isNaN(index)) {
                 removeMapping(index);
             }
         }
@@ -179,10 +173,18 @@ function addMapping() {
 
 // 从列表中移除映射
 function removeMapping(index) {
-    mappingList.splice(index, 1);
-    updateMappingList();
-    updateUI();
-    showAlert('Mapping removed', 'info');
+    console.log('Removing mapping at index:', index);
+    console.log('Mapping list before removal:', mappingList);
+
+    if (index >= 0 && index < mappingList.length) {
+        mappingList.splice(index, 1);
+        console.log('Mapping list after removal:', mappingList);
+        updateMappingList();
+        updateUI();
+    } else {
+        console.error('Invalid index:', index);
+        showAlert('Error: Invalid mapping index', 'error');
+    }
 }
 
 // 更新映射列表显示
@@ -197,7 +199,7 @@ function updateMappingList() {
     let html = '';
     mappingList.forEach((mapping, index) => {
         html += `
-            <div class="mapping-list-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in" data-category-id="${mapping.categoryId}" data-subcategory-id="${mapping.subcategoryId}">
+            <div class="value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in" data-category-id="${mapping.categoryId}" data-subcategory-id="${mapping.subcategoryId}">
                 <div class="d-flex align-items-center">
                     <i class="bi bi-link-45deg text-primary me-2"></i>
                     <div class="mapping-combination">
@@ -206,9 +208,9 @@ function updateMappingList() {
                         <span class="subcategory-badge">${mapping.subcategoryName}</span>
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger remove-mapping">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
+                <i class="bi bi-trash me-1"></i>Remove
+            </button>
             </div>
         `;
     });

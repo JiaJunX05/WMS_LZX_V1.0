@@ -13,9 +13,7 @@ return new class extends Migration
     {
         Schema::create('genders', function (Blueprint $table) {
             $table->id();
-            $table->string('gender_name', 50);                                    // 性别名称：Men, Women, Kids, Unisex
-            $table->string('gender_code', 10)->unique();                          // 性别代码：M, W, K, U (用于SKU、条形码等)
-            $table->text('gender_description')->nullable();                       // 性别描述：详细说明、尺寸指南等
+            $table->string('gender_name', 50);      // 性别名称：Men, Women, Kids, Unisex
             $table->enum('gender_status', ['Available', 'Unavailable'])->default('Available');
             $table->timestamps();
         });

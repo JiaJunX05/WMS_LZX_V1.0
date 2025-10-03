@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('zone_id')->constrained('zones')->onDelete('cascade');
             $table->foreignId('rack_id')->constrained('racks')->onDelete('cascade');
             $table->unsignedInteger('current_usage')->default(0);
+            $table->enum('location_status', ['Available', 'Unavailable'])->default('Available'); // 位置状态：Available, Unavailable
             $table->timestamps();
 
             $table->unique(['zone_id', 'rack_id']); // 确保同一个 Zone 里的 Rack Number 唯一

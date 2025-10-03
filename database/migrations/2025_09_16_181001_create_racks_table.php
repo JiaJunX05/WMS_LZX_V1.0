@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('racks', function (Blueprint $table) {
             $table->id();
-            $table->string('rack_image', 255)->nullable();
+            $table->string('rack_image', 500)->nullable();
             $table->string('rack_number', 255)->unique();
             $table->unsignedInteger('capacity')->default(50);
             $table->enum('rack_status', ['Available', 'Unavailable'])->default('Available');

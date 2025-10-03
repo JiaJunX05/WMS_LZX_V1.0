@@ -3,7 +3,7 @@
 @section("title", "Stock Movement History")
 @section("content")
 
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-template.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/common/dashboard-template.css') }}">
 
 <style>
 /* 实时筛选器样式 */

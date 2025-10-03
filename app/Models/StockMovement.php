@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\ProductVariants\Product;
-use App\Models\ProductVariants\ProductVariant;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\User;
 
 class StockMovement extends Model

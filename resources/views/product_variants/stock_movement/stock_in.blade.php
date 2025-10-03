@@ -3,7 +3,7 @@
 @section("title", "Stock In")
 @section("content")
 
-<link rel="stylesheet" href="{{ asset('assets/css/mapping-management.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/common/dashboard-template.css') }}">
 <div class="container-fluid py-4">
     <!-- Alert Messages -->
     @if(session('success'))

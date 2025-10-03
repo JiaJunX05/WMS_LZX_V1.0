@@ -3,7 +3,7 @@
 @section("title", "Stock Management")
 @section("content")
 
-<link rel="stylesheet" href="{{ asset('assets/css/mapping-management.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/common/dashboard-template.css') }}">
 <div class="container-fluid py-4">
     <!-- Alert Messages -->
     @if(session('success'))
@@ -364,7 +364,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"> 
+                <h5 class="modal-title">
                     <i class="bi bi-clock-history text-info me-2"></i>
                     My Stock Movement History
                 </h5>

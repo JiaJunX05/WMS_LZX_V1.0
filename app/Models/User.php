@@ -71,7 +71,14 @@ class User extends Authenticatable
 
     // 获取账号角色
     public function getAccountRole(): string {
-        return $this->account->account_role ?? '';
+        $role = $this->account->account_role ?? '';
+
+        // 如果不是 SuperAdmin 或 Admin，默认当作 Staff
+        if ($role !== 'SuperAdmin' && $role !== 'Admin') {
+            return 'Staff';
+        }
+
+        return $role;
     }
 
     // 根据账号角色返回对应的仪表路由名称
@@ -80,8 +87,18 @@ class User extends Authenticatable
         return match($role) {
             'SuperAdmin' => 'superadmin.dashboard',
             'Admin' => 'admin.dashboard',
-            'Staff' => 'staff.dashboard',
+            'Staff' => 'product.index', // Staff 直接进入产品管理页面
             default => 'login', // 默认重定向到登录页面
+        };
+    }
+
+    // 根据账号角色返回对应的用户管理路由名称
+    public function userManagementRoute(): string {
+        $role = $this->getAccountRole();
+        return match($role) {
+            'SuperAdmin' => 'superadmin.users.management',
+            'Admin' => 'admin.users.management',
+            default => 'login', // 非管理员重定向到登录页面
         };
     }
 

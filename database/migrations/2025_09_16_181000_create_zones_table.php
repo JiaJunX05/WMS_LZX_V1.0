@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('zones', function (Blueprint $table) {
             $table->id();
-            $table->string('zone_image', 255)->nullable();
+            $table->string('zone_image', 500)->nullable();
             $table->string('zone_name', 255)->unique();
             $table->string('location', 255)->nullable();
             $table->enum('zone_status', ['Available', 'Unavailable'])->default('Available');

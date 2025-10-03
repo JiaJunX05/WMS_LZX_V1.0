@@ -1,0 +1,81 @@
+/* =============================================================================
+   1. 状态选择卡片样式 (Status Selection Card Styles)
+   ============================================================================= */
+
+/* 状态卡片基础样式 */
+.status-card {
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    border: 2px solid var(--border-color);
+    background-color: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 状态卡片悬停效果 */
+.status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+/* Available 状态卡片选中效果 */
+.status-card.selected[data-status="Available"] {
+    border-color: var(--success-color) !important;
+    background-color: var(--success-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.status-card.selected[data-status="Available"] .card-title {
+    color: var(--success-color) !important;
+}
+
+.status-card.selected[data-status="Available"] .text-success {
+    color: var(--success-color) !important;
+}
+
+/* Unavailable 状态卡片选中效果 */
+.status-card.selected[data-status="Unavailable"] {
+    border-color: var(--danger-color) !important;
+    background-color: var(--danger-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.status-card.selected[data-status="Unavailable"] .card-title {
+    color: var(--danger-color) !important;
+}
+
+.status-card.selected[data-status="Unavailable"] .text-danger {
+    color: var(--danger-color) !important;
+}
+
+/* 状态卡片标签样式 */
+.status-card label {
+    cursor: pointer;
+    margin-bottom: 0;
+    width: 100%;
+}
+
+/* 状态卡片单选按钮样式 */
+.status-card .form-check-input {
+    margin-top: 0;
+}
+
+.status-card .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Available 状态的单选按钮选中样式 */
+.status-card.selected[data-status="Available"] .form-check-input:checked {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+/* Unavailable 状态的单选按钮选中样式 */
+.status-card.selected[data-status="Unavailable"] .form-check-input:checked {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}

@@ -6,22 +6,19 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Picqer\Barcode\BarcodeGeneratorPNG;
-use App\Models\ProductVariants\Product;
-use App\Models\ProductVariants\ProductVariant;
-use App\Models\ProductVariants\Image;
-use App\Models\AttributeVariants\AttributeVariant;
-use App\Models\AttributeVariants\Brand;
-use App\Models\AttributeVariants\Color;
-use App\Models\AttributeVariants\SizeMappings\SizeClothing;
-use App\Models\AttributeVariants\SizeMappings\SizeShoes;
-use App\Models\AttributeVariants\SizeMappings\SizeType;
-use App\Models\AttributeVariants\Gender;
-use App\Models\CategoryMappings\Category;
-use App\Models\CategoryMappings\Subcategory;
-use App\Models\CategoryMappings\Mapping;
-use App\Models\StorageLocations\Zone;
-use App\Models\StorageLocations\Rack;
-use App\Models\StorageLocations\Location;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Image;
+use App\Models\AttributeVariant;
+use App\Models\ManagementTool\Brand;
+use App\Models\ManagementTool\Color;
+use App\Models\SizeLibrary\SizeLibrary;
+use App\Models\CategoryMapping\Category;
+use App\Models\CategoryMapping\Subcategory;
+use App\Models\CategoryMapping\Mapping;
+use App\Models\StorageLocation\Zone;
+use App\Models\StorageLocation\Rack;
+use App\Models\StorageLocation\Location;
 use Illuminate\Support\Str;
 use App\Models\User;
 
@@ -57,8 +54,7 @@ class ProductController extends Controller
                     'rack',
                     'variants.attributeVariant.brand',
                     'variants.attributeVariant.color',
-                    'variants.attributeVariant.size.clothingSize.gender',
-                    'variants.attributeVariant.size.shoeSize.gender',
+                    'variants.attributeVariant.size',
                     'variants.attributeVariant.size.category'
                 ]);
 
@@ -130,13 +126,8 @@ class ProductController extends Controller
                             'subcategory_name' => $product->subcategory->subcategory_name ?? 'N/A',
                             'brand_name' => $attributeVariant && $attributeVariant->brand ? $attributeVariant->brand->brand_name : 'N/A',
                             'color_name' => $attributeVariant && $attributeVariant->color ? $attributeVariant->color->color_name : 'N/A',
-                            'size_name' => $attributeVariant && $attributeVariant->size ?
-                                ($attributeVariant->size->size_value ??
-                                    ($attributeVariant->size->clothingSize ? $attributeVariant->size->clothingSize->size_value :
-                                        ($attributeVariant->size->shoeSize ? $attributeVariant->size->shoeSize->size_value : 'N/A'))) : 'N/A',
-                            'gender_name' => $attributeVariant && $attributeVariant->size ?
-                                ($attributeVariant->size->clothingSize && $attributeVariant->size->clothingSize->gender ? $attributeVariant->size->clothingSize->gender->gender_name :
-                                    ($attributeVariant->size->shoeSize && $attributeVariant->size->shoeSize->gender ? $attributeVariant->size->shoeSize->gender->gender_name : 'N/A')) : 'N/A',
+                            'size_name' => $attributeVariant && $attributeVariant->size ? $attributeVariant->size->size_value : 'N/A',
+                            'gender_name' => 'N/A', // SizeLibrary 不包含性别信息
                             'zone_name' => $product->zone->zone_name ?? 'N/A',
                             'rack_name' => $product->rack->rack_number ?? 'N/A',
                             'product_status' => $product->product_status,
@@ -203,8 +194,7 @@ class ProductController extends Controller
         $subcategories = Subcategory::all();
         $brands = Brand::all();
         $colors = Color::all();
-        $sizes = SizeType::with(['clothingSize.gender', 'shoeSize.gender', 'category'])->get();
-        $genders = Gender::all();
+        $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
         $zones = Zone::all();
         $racks = Rack::all();
         $locations = Location::with('zone', 'rack')->get();
@@ -226,7 +216,7 @@ class ProductController extends Controller
         $suggestedBarcode = $this->generateBarcodeNumber($suggestedSKU);
 
         return view('product_variants.products.create', compact(
-            'categories', 'subcategories', 'brands', 'colors', 'sizes', 'genders', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
+            'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
         ));
     }
 
@@ -261,19 +251,7 @@ class ProductController extends Controller
                 'subcategory_id' => 'required|exists:subcategories,id',
                 'brand_id' => 'required|exists:brands,id',
                 'color_id' => 'required|exists:colors,id',
-                'gender_id' => 'required|exists:genders,id',
-                'size_id' => [
-                    'required',
-                    function ($attribute, $value, $fail) {
-                        // 检查尺寸是否存在于size_clothings或size_shoes表中
-                        $existsInClothing = \DB::table('size_clothings')->where('id', $value)->exists();
-                        $existsInShoes = \DB::table('size_shoes')->where('id', $value)->exists();
-
-                        if (!$existsInClothing && !$existsInShoes) {
-                            $fail('The selected size does not exist.');
-                        }
-                    },
-                ],
+                'size_id' => 'required|exists:size_libraries,id',
                 'zone_id' => 'required|exists:zones,id',
                 'rack_id' => 'nullable|exists:racks,id',
                 'detail_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -416,8 +394,7 @@ class ProductController extends Controller
                 'images',
                 'variants.attributeVariant.brand',
                 'variants.attributeVariant.color',
-                'variants.attributeVariant.size.clothingSize.gender',
-                'variants.attributeVariant.size.shoeSize.gender'
+                'variants.attributeVariant.size'
             ])->findOrFail($id);
 
             return view('product_variants.products.view', compact('product'));
@@ -446,15 +423,13 @@ class ProductController extends Controller
             'rack',
             'variants.attributeVariant.brand',
             'variants.attributeVariant.color',
-            'variants.attributeVariant.size.clothingSize.gender',
-            'variants.attributeVariant.size.shoeSize.gender'
+            'variants.attributeVariant.size'
         ])->findOrFail($id);
         $categories = Category::all();
         $subcategories = Subcategory::all();
         $brands = Brand::all();
         $colors = Color::all();
-        $sizes = SizeType::with(['clothingSize.gender', 'shoeSize.gender', 'category'])->get();
-        $genders = Gender::all();
+        $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
         $zones = Zone::all();
         $racks = Rack::all();
         $locations = Location::with('zone', 'rack')->get();
@@ -474,7 +449,7 @@ class ProductController extends Controller
         }
 
         return view('product_variants.products.update', compact(
-            'product', 'categories', 'subcategories', 'brands', 'colors', 'sizes', 'genders', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
+            'product', 'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
         ));
     }
 
@@ -500,19 +475,7 @@ class ProductController extends Controller
                 'subcategory_id' => 'required|exists:subcategories,id',
                 'brand_id' => 'required|exists:brands,id',
                 'color_id' => 'required|exists:colors,id',
-                'gender_id' => 'required|exists:genders,id',
-                'size_id' => [
-                    'required',
-                    function ($attribute, $value, $fail) {
-                        // 检查尺寸是否存在于size_clothings或size_shoes表中
-                        $existsInClothing = \DB::table('size_clothings')->where('id', $value)->exists();
-                        $existsInShoes = \DB::table('size_shoes')->where('id', $value)->exists();
-
-                        if (!$existsInClothing && !$existsInShoes) {
-                            $fail('The selected size does not exist.');
-                        }
-                    },
-                ],
+                'size_id' => 'required|exists:size_libraries,id',
                 'zone_id' => 'required|exists:zones,id',
                 'rack_id' => 'nullable|exists:racks,id',
                 'detail_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',

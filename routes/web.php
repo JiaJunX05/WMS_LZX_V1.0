@@ -1,23 +1,24 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// =============================================================================
+// 控制器引用 (Controller Imports)
+// =============================================================================
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\SuperAdmin\SuperController;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Staff\StaffController;
-use App\Http\Controllers\Admin\StorageLocations\ZoneController;
-use App\Http\Controllers\Admin\StorageLocations\RackController;
-use App\Http\Controllers\Admin\StorageLocations\LocationController;
-use App\Http\Controllers\Admin\CategoryMappings\CategoryController;
-use App\Http\Controllers\Admin\CategoryMappings\SubcategoryController;
-use App\Http\Controllers\Admin\CategoryMappings\MappingController;
-use App\Http\Controllers\Admin\AttributeVariants\BrandController;
-use App\Http\Controllers\Admin\AttributeVariants\ColorController;
-use App\Http\Controllers\Admin\AttributeVariants\SizeMappings\SizeTypeController;
-use App\Http\Controllers\Admin\AttributeVariants\SizeMappings\SizeClothingController;
-use App\Http\Controllers\Admin\AttributeVariants\SizeMappings\SizeShoesController;
-use App\Http\Controllers\Admin\AttributeVariants\GenderController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ManagementTool\BrandController;
+use App\Http\Controllers\Admin\ManagementTool\ColorController;
+use App\Http\Controllers\Admin\ManagementTool\GenderController;
+use App\Http\Controllers\Admin\SizeLibrary\LibraryController;
+use App\Http\Controllers\Admin\SizeLibrary\TemplateController;
+use App\Http\Controllers\Admin\CategoryMapping\CategoryController;
+use App\Http\Controllers\Admin\CategoryMapping\SubcategoryController;
+use App\Http\Controllers\Admin\CategoryMapping\MappingController;
+use App\Http\Controllers\Admin\StorageLocation\ZoneController;
+use App\Http\Controllers\Admin\StorageLocation\RackController;
+use App\Http\Controllers\Admin\StorageLocation\LocationController;
 use App\Http\Controllers\StockController;
 
 /*
@@ -55,8 +56,8 @@ Route::middleware(['auth'])->group(function () {
         $role = $user->getAccountRole();
 
         return match($role) {
-            'SuperAdmin' => redirect()->route('superadmin.staff_management'),
-            'Admin' => redirect()->route('admin.staff_management'),
+            'SuperAdmin' => redirect()->route('superadmin.users.management'),
+            'Admin' => redirect()->route('admin.users.management'),
             default => abort(403, 'Access denied')
         };
     })->name('staff_management');
@@ -67,8 +68,8 @@ Route::middleware(['auth'])->group(function () {
         $role = $user->getAccountRole();
 
         return match($role) {
-            'SuperAdmin' => redirect()->route('superadmin.create_user'),
-            'Admin' => redirect()->route('admin.create_staff'),
+            'SuperAdmin' => redirect()->route('superadmin.users.create'),
+            'Admin' => redirect()->route('admin.users.create'),
             default => abort(403, 'Access denied')
         };
     })->name('register');
@@ -77,34 +78,65 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
 
     // =============================================================================
+    // 产品管理路由 (Product Management Routes)
+    // 所有认证用户都可以访问产品管理功能
+    // =============================================================================
+    Route::prefix('product')->name('product.')->group(function () {
+        Route::get('/index', [ProductController::class, 'index'])->name('index');
+        Route::get('/create', [ProductController::class, 'create'])->name('create');
+        Route::post('/store', [ProductController::class, 'store'])->name('store');
+        Route::get('/view/{id}', [ProductController::class, 'view'])->name('view');
+        Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [ProductController::class, 'update'])->name('update');
+        Route::patch('/available/{id}', [ProductController::class, 'setAvailable'])->name('available');
+        Route::patch('/unavailable/{id}', [ProductController::class, 'setUnavailable'])->name('unavailable');
+        Route::delete('/destroy/{id}', [ProductController::class, 'destroy'])->name('destroy');
+    });
+
+    // =============================================================================
+    // 库存管理路由 (Stock Management Routes)
+    // 所有认证用户都可以访问库存管理功能
+    // =============================================================================
+    Route::prefix('staff')->middleware(['auth'])->name('staff.')->group(function () {
+
+        // 库存管理页面
+        Route::get('/stock-management', [StockController::class, 'stockManagement'])->name('stock_management');
+        Route::get('/stock-in-page', [StockController::class, 'stockInPage'])->name('stock_in_page');
+        Route::get('/stock-out-page', [StockController::class, 'stockOutPage'])->name('stock_out_page');
+        Route::post('/stock-in', [StockController::class, 'stockIn'])->name('stock_in');
+        Route::post('/stock-out', [StockController::class, 'stockOut'])->name('stock_out');
+        Route::get('/stock-history/{id}', [StockController::class, 'getUserStockHistory'])->name('staff.stock_history');
+    });
+
+    // 公共库存历史报告功能 - 所有认证用户都可以访问
+    Route::get('/stock-history', [StockController::class, 'stockHistoryReport'])->name('stock_history');
+    Route::get('/api/stock-history', [StockController::class, 'getStockHistory'])->name('api.stock_history');
+    Route::get('/api/product-stock-history/{id}', [StockController::class, 'getProductStockHistory'])->name('api.product_stock_history');
+    Route::get('/api/stock-statistics', [StockController::class, 'getStockStatistics'])->name('api.stock_statistics');
+
+    // =============================================================================
     // SuperAdmin 路由 (SuperAdmin Routes)
     // 超级管理员：拥有所有权限，可以管理所有用户
     // =============================================================================
     Route::prefix('superadmin')->middleware(['role:SuperAdmin'])->name('superadmin.')->group(function () {
 
         // 仪表板
-        Route::get('/dashboard', [SuperController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/data', [DashboardController::class, 'getData'])->name('dashboard.data');
 
-        // 员工管理
-        Route::get('/staff-management', [SuperController::class, 'showUserList'])->name('staff_management');
-
-        // 用户创建
-        Route::get('/create-user', [AuthController::class, 'showRegisterForm'])->name('create_user');
-        Route::post('/create-user', [AuthController::class, 'register'])->name('create_user.submit');
-
-        // 用户编辑
-        Route::get('/staff/{id}/edit', [SuperController::class, 'showUpdateForm'])->name('update_user');
-        Route::put('/staff/{id}/update', [SuperController::class, 'update'])->name('update_user_submit');
-
-        // 用户删除
-        Route::delete('/staff/{id}/delete', [SuperController::class, 'deleteAccount'])->name('delete_user');
-
-        // 账户状态管理
-        Route::patch('/staff/{id}/unavailable', [SuperController::class, 'unavailableAccount'])->name('set_unavailable');
-        Route::patch('/staff/{id}/available', [SuperController::class, 'availableAccount'])->name('set_available');
-
-        // 角色更改
-        Route::patch('/staff/{id}/change-role', [SuperController::class, 'changeRole'])->name('change_role');
+        // 用户管理路由组
+        Route::prefix('users')->name('users.')->group(function () {
+            // 用户列表
+            Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
+            Route::get('/create', [AuthController::class, 'showRegisterForm'])->name('create');
+            Route::post('/create', [AuthController::class, 'register'])->name('create.submit');
+            Route::get('/{id}/edit', [AuthController::class, 'showUpdateForm'])->name('edit');
+            Route::put('/{id}/update', [AuthController::class, 'updateUser'])->name('update');
+            Route::delete('/{id}/delete', [AuthController::class, 'deleteAccount'])->name('delete');
+            Route::patch('/{id}/unavailable', [AuthController::class, 'unavailableAccount'])->name('unavailable');
+            Route::patch('/{id}/available', [AuthController::class, 'availableAccount'])->name('available');
+            Route::patch('/{id}/change-role', [AuthController::class, 'changeAccountRole'])->name('change_role');
+        });
     });
 
     // =============================================================================
@@ -114,22 +146,19 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->middleware(['role:Admin'])->name('admin.')->group(function () {
 
         // 仪表板
-        Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/data', [DashboardController::class, 'getData'])->name('dashboard.data');
 
-        // 员工管理
-        Route::get('/staff-management', [AdminController::class, 'showUserList'])->name('staff_management');
-
-        // 员工创建
-        Route::get('/create-staff', [AuthController::class, 'showRegisterForm'])->name('create_staff');
-        Route::post('/create-staff', [AuthController::class, 'register'])->name('create_staff.submit');
-
-        // 员工编辑
-        Route::get('/staff/{id}/edit', [AdminController::class, 'showUpdateForm'])->name('update_user');
-        Route::put('/staff/{id}/update', [AdminController::class, 'update'])->name('update_user_submit');
-
-        // 账户状态管理
-        Route::patch('/staff/{id}/unavailable', [AdminController::class, 'unavailableAccount'])->name('set_unavailable');
-        Route::patch('/staff/{id}/available', [AdminController::class, 'availableAccount'])->name('set_available');
+        // 用户管理路由组
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
+            Route::get('/create', [AuthController::class, 'showRegisterForm'])->name('create');
+            Route::post('/create', [AuthController::class, 'register'])->name('create.submit');
+            Route::get('/{id}/edit', [AuthController::class, 'showUpdateForm'])->name('edit');
+            Route::put('/{id}/update', [AuthController::class, 'updateUser'])->name('update');
+            Route::patch('/{id}/unavailable', [AuthController::class, 'unavailableAccount'])->name('unavailable');
+            Route::patch('/{id}/available', [AuthController::class, 'availableAccount'])->name('available');
+        });
 
         // =============================================================================
         // 存储位置管理路由 (Storage Locations Management Routes)
@@ -165,8 +194,11 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/index', [LocationController::class, 'index'])->name('index');
                 Route::get('/create', [LocationController::class, 'create'])->name('create');
                 Route::post('/store', [LocationController::class, 'store'])->name('store');
+                Route::get('/{id}/view', [LocationController::class, 'view'])->name('view');
                 Route::get('/{id}/edit', [LocationController::class, 'edit'])->name('edit');
                 Route::put('/{id}/update', [LocationController::class, 'update'])->name('update');
+                Route::patch('/{id}/available', [LocationController::class, 'setAvailable'])->name('available');
+                Route::patch('/{id}/unavailable', [LocationController::class, 'setUnavailable'])->name('unavailable');
                 Route::delete('/{id}/delete', [LocationController::class, 'destroy'])->name('destroy');
             });
         });
@@ -205,8 +237,11 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/index', [MappingController::class, 'index'])->name('index');
                 Route::get('/create', [MappingController::class, 'create'])->name('create');
                 Route::post('/store', [MappingController::class, 'store'])->name('store');
+                Route::get('/{id}/view', [MappingController::class, 'view'])->name('view');
                 Route::get('/{id}/edit', [MappingController::class, 'edit'])->name('edit');
                 Route::put('/{id}/update', [MappingController::class, 'update'])->name('update');
+                Route::patch('/{id}/available', [MappingController::class, 'setAvailable'])->name('available');
+                Route::patch('/{id}/unavailable', [MappingController::class, 'setUnavailable'])->name('unavailable');
                 Route::delete('/{id}/delete', [MappingController::class, 'destroy'])->name('destroy');
             });
         });
@@ -214,7 +249,7 @@ Route::middleware(['auth'])->group(function () {
         // =============================================================================
         // 属性变量管理路由 (Attribute Variant Management Routes)
         // =============================================================================
-        Route::prefix('attribute_variant')->name('attribute_variant.')->group(function () {
+        Route::prefix('management_tool')->name('management_tool.')->group(function () {
 
             // 品牌管理 (Brand Management)
             Route::prefix('brand')->name('brand.')->group(function () {
@@ -251,82 +286,38 @@ Route::middleware(['auth'])->group(function () {
                 Route::patch('/{id}/unavailable', [GenderController::class, 'setUnavailable'])->name('unavailable');
                 Route::delete('/{id}/delete', [GenderController::class, 'destroy'])->name('destroy');
             });
+        });
 
-            // 尺寸类型管理 (Size Type Management)
-            Route::prefix('size_type')->name('size_type.')->group(function () {
-                Route::get('/index', [SizeTypeController::class, 'index'])->name('index');
-                Route::get('/create', [SizeTypeController::class, 'create'])->name('create');
-                Route::post('/store', [SizeTypeController::class, 'store'])->name('store');
-                Route::get('/{id}/edit', [SizeTypeController::class, 'edit'])->name('edit');
-                Route::put('/{id}/update', [SizeTypeController::class, 'update'])->name('update');
-                Route::patch('/{id}/available', [SizeTypeController::class, 'setAvailable'])->name('available');
-                Route::patch('/{id}/unavailable', [SizeTypeController::class, 'setUnavailable'])->name('unavailable');
-                Route::delete('/{id}/delete', [SizeTypeController::class, 'destroy'])->name('destroy');
+        // =============================================================================
+        // 尺码库管理路由 (Size Library Management Routes)
+        // =============================================================================
+        Route::prefix('size_library')->name('size_library.')->group(function () {
+            // 尺码库管理 (Size Library Management)
+            Route::prefix('library')->name('library.')->group(function () {
+                Route::get('/index', [LibraryController::class, 'index'])->name('index');
+                Route::get('/create', [LibraryController::class, 'create'])->name('create');
+                Route::post('/store', [LibraryController::class, 'store'])->name('store');
+                Route::get('/{id}/view', [LibraryController::class, 'view'])->name('view');
+                Route::get('/{id}/edit', [LibraryController::class, 'edit'])->name('edit');
+                Route::put('/{id}/update', [LibraryController::class, 'update'])->name('update');
+                Route::patch('/{id}/available', [LibraryController::class, 'setAvailable'])->name('available');
+                Route::patch('/{id}/unavailable', [LibraryController::class, 'setUnavailable'])->name('unavailable');
+                Route::delete('/{id}/delete', [LibraryController::class, 'destroy'])->name('destroy');
             });
 
-            // 衣服尺寸管理 (Size Clothing Management)
-            Route::prefix('size_clothing')->name('size_clothing.')->group(function () {
-                Route::get('/index', [SizeClothingController::class, 'index'])->name('index');
-                Route::get('/create', [SizeClothingController::class, 'create'])->name('create');
-                Route::post('/store', [SizeClothingController::class, 'store'])->name('store');
-                Route::get('/{id}/edit', [SizeClothingController::class, 'edit'])->name('edit');
-                Route::put('/{id}/update', [SizeClothingController::class, 'update'])->name('update');
-                Route::patch('/{id}/available', [SizeClothingController::class, 'setAvailable'])->name('available');
-                Route::patch('/{id}/unavailable', [SizeClothingController::class, 'setUnavailable'])->name('unavailable');
-                Route::delete('/{id}/delete', [SizeClothingController::class, 'destroy'])->name('destroy');
-            });
-
-            // 鞋子尺寸管理 (Size Shoes Management)
-            Route::prefix('size_shoes')->name('size_shoes.')->group(function () {
-                Route::get('/index', [SizeShoesController::class, 'index'])->name('index');
-                Route::get('/create', [SizeShoesController::class, 'create'])->name('create');
-                Route::post('/store', [SizeShoesController::class, 'store'])->name('store');
-                Route::get('/{id}/edit', [SizeShoesController::class, 'edit'])->name('edit');
-                Route::put('/{id}/update', [SizeShoesController::class, 'update'])->name('update');
-                Route::patch('/{id}/available', [SizeShoesController::class, 'setAvailable'])->name('available');
-                Route::patch('/{id}/unavailable', [SizeShoesController::class, 'setUnavailable'])->name('unavailable');
-                Route::delete('/{id}/delete', [SizeShoesController::class, 'destroy'])->name('destroy');
+            // 尺码模板管理 (Size Template Management)
+            Route::prefix('template')->name('template.')->group(function () {
+                Route::get('/index', [TemplateController::class, 'index'])->name('index');
+                Route::get('/create', [TemplateController::class, 'create'])->name('create');
+                Route::post('/store', [TemplateController::class, 'store'])->name('store');
+                Route::delete('/{id}/delete', [TemplateController::class, 'destroy'])->name('destroy');
+                Route::get('/{id}/view', [TemplateController::class, 'view'])->name('view');
+                Route::get('/{id}/edit', [TemplateController::class, 'edit'])->name('edit');
+                Route::put('/{id}/update', [TemplateController::class, 'update'])->name('update');
+                Route::patch('/{id}/available', [TemplateController::class, 'setAvailable'])->name('available');
+                Route::patch('/{id}/unavailable', [TemplateController::class, 'setUnavailable'])->name('unavailable');
+                Route::post('/available-size-libraries', [TemplateController::class, 'getAvailableSizeLibraries'])->name('available-size-libraries');
             });
         });
     });
-
-    // =============================================================================
-    // 产品管理路由 (Product Management Routes)
-    // 所有认证用户都可以访问产品管理功能
-    // =============================================================================
-    Route::prefix('product')->name('product.')->group(function () {
-        Route::get('/index', [ProductController::class, 'index'])->name('index');
-        Route::get('/create', [ProductController::class, 'create'])->name('create');
-        Route::post('/store', [ProductController::class, 'store'])->name('store');
-        Route::get('/view/{id}', [ProductController::class, 'view'])->name('view');
-        Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [ProductController::class, 'update'])->name('update');
-        Route::patch('/available/{id}', [ProductController::class, 'setAvailable'])->name('available');
-        Route::patch('/unavailable/{id}', [ProductController::class, 'setUnavailable'])->name('unavailable');
-        Route::delete('/destroy/{id}', [ProductController::class, 'destroy'])->name('destroy');
-    });
-
-    // =============================================================================
-    // Staff 路由 (Staff Routes)
-    // 员工：基础权限，只能访问自己的仪表板
-    // =============================================================================
-    Route::prefix('staff')->middleware(['role:Staff'])->name('staff.')->group(function () {
-        Route::get('/dashboard', [StaffController::class, 'index'])->name('dashboard');
-
-        // 库存管理路由
-        Route::get('/stock-management', [StaffController::class, 'stockManagement'])->name('stock_management');
-        Route::get('/stock-in-page', [StaffController::class, 'stockInPage'])->name('stock_in_page');
-        Route::get('/stock-out-page', [StaffController::class, 'stockOutPage'])->name('stock_out_page');
-        Route::post('/stock-in', [StaffController::class, 'stockIn'])->name('stock_in');
-        Route::post('/stock-out', [StaffController::class, 'stockOut'])->name('stock_out');
-        Route::get('/stock-history/{id}', [StaffController::class, 'getStockHistory'])->name('staff.stock_history');
-
-    });
-
-    // 公共库存历史报告功能 - 所有认证用户都可以访问
-    Route::get('/stock-history', [StockController::class, 'stockHistoryReport'])->name('stock_history');
-    Route::get('/api/stock-history', [StockController::class, 'getStockHistory'])->name('api.stock_history');
-    Route::get('/api/product-stock-history/{id}', [StockController::class, 'getProductStockHistory'])->name('api.product_stock_history');
-    Route::get('/api/stock-statistics', [StockController::class, 'getStockStatistics'])->name('api.stock_statistics');
-
 });

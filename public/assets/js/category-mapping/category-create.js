@@ -234,7 +234,7 @@ function updateCategoryList() {
             categoryList.filter(i => i.categoryName.toLowerCase() === item.categoryName.toLowerCase()).length > 1;
 
         // 根据是否为重复项设置不同的样式
-        const baseClasses = 'item-value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
         const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
 
         categoryItem.className = `${baseClasses} ${duplicateClasses}`;
@@ -260,7 +260,7 @@ function updateCategoryList() {
 }
 
 function highlightExistingCategory(categoryName) {
-    const existingValues = document.querySelectorAll('.item-value-item');
+    const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
         const value = item.querySelector('.item-value-text').textContent.trim();
         if (value.toLowerCase() === categoryName.toLowerCase()) {
@@ -529,7 +529,7 @@ function toggleSortOrder() {
 
 function sortCategoryValuesList() {
     const categoryValuesList = document.getElementById('categoryValuesList');
-    const items = Array.from(categoryValuesList.querySelectorAll('.item-value-item'));
+    const items = Array.from(categoryValuesList.querySelectorAll('.value-item'));
 
     if (items.length <= 1) return;
 

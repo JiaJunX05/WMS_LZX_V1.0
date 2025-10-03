@@ -236,7 +236,7 @@ function updateRackList() {
             rackList.filter(i => i.rackNumber.toLowerCase() === item.rackNumber.toLowerCase()).length > 1;
 
         // 根据是否为重复项设置不同的样式
-        const baseClasses = 'item-value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
         const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
 
         rackItem.className = `${baseClasses} ${duplicateClasses}`;
@@ -265,7 +265,7 @@ function updateRackList() {
 }
 
 function highlightExistingRack(rackNumber) {
-    const existingValues = document.querySelectorAll('.item-value-item');
+    const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
         const value = item.querySelector('.item-value-text').textContent.trim();
         if (value.toLowerCase() === rackNumber.toLowerCase()) {
@@ -539,7 +539,7 @@ function toggleSortOrder() {
 
 function sortRackValuesList() {
     const rackValuesList = document.getElementById('rackValuesList');
-    const items = Array.from(rackValuesList.querySelectorAll('.item-value-item'));
+    const items = Array.from(rackValuesList.querySelectorAll('.value-item'));
 
     if (items.length <= 1) return;
 

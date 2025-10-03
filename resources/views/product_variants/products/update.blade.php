@@ -9,14 +9,6 @@
     $brand = $attributeVariant && $attributeVariant->brand ? $attributeVariant->brand : null;
     $color = $attributeVariant && $attributeVariant->color ? $attributeVariant->color : null;
     $size = $attributeVariant && $attributeVariant->size ? $attributeVariant->size : null;
-    $gender = null;
-    if ($size) {
-        if ($size->clothingSize && $size->clothingSize->gender) {
-            $gender = $size->clothingSize->gender;
-        } elseif ($size->shoeSize && $size->shoeSize->gender) {
-            $gender = $size->shoeSize->gender;
-        }
-    }
 @endphp
 
 <link rel="stylesheet" href="{{ asset('assets/css/product/product-update.css') }}">
@@ -256,48 +248,22 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 form-section">
-                                <label for="gender_id" class="form-label">Select Gender <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-primary"></i></span>
-                                    <select class="form-select" id="gender_id" name="gender_id" required>
-                                        <option selected disabled value="">Select a Gender</option>
-                                        @foreach($genders as $genderOption)
-                                            <option value="{{ $genderOption->id }}" {{ $gender && $gender->id == $genderOption->id ? 'selected' : '' }}>
-                                                {{ strtoupper($genderOption->gender_name) }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="form-text">
-                                    <small class="text-muted">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Select category and gender to see available sizes
-                                    </small>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 form-section">
+                            <div class="col-md-12 form-section">
                                 <label for="size_id" class="form-label">Select Size <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-rulers text-primary"></i></span>
-                                    <select class="form-select" id="size_id" name="size_id" required>
-                                        <option selected disabled value="">Select a Size</option>
+                                    <select class="form-select" id="size_id" name="size_id" required disabled>
+                                        <option selected disabled value="">Select Category First</option>
                                         @php
                                             $sizesByCategory = $sizes->groupBy('category.category_name');
                                         @endphp
                                         @foreach($sizesByCategory as $categoryName => $categorySizes)
                                             <optgroup label="{{ $categoryName ?? 'Other' }}">
-                                                @foreach($categorySizes as $size)
-                                                    <option value="{{ $size->id }}"
-                                                            {{ $attributeVariant && $attributeVariant->size_id == $size->id ? 'selected' : '' }}
-                                                            data-gender-id="{{ $size->gender ? $size->gender->id : '' }}"
-                                                            data-gender="{{ $size->gender ? $size->gender->gender_name : 'N/A' }}"
-                                                            data-category="{{ $size->category ? $size->category->category_name : 'N/A' }}">
-                                                        {{ strtoupper($size->size_value) }}
-                                                        @if($size->gender)
-                                                            ({{ $size->gender->gender_name }})
-                                                        @endif
+                                                @foreach($categorySizes as $sizeOption)
+                                                    <option value="{{ $sizeOption->id }}"
+                                                            {{ $attributeVariant && $attributeVariant->size_id == $sizeOption->id ? 'selected' : '' }}
+                                                            data-category="{{ $sizeOption->category ? $sizeOption->category->id : '' }}">
+                                                        {{ strtoupper($sizeOption->size_value) }}
                                                     </option>
                                                 @endforeach
                                             </optgroup>
@@ -307,7 +273,7 @@
                                 <div class="form-text">
                                     <small class="text-muted">
                                         <i class="bi bi-info-circle me-1"></i>
-                                        Available sizes will appear based on selected category and gender
+                                        Available sizes will appear based on selected category
                                     </small>
                                 </div>
                             </div>
@@ -443,18 +409,16 @@
         console.log('初始化Update页面功能...');
         initializeUpdatePageFeatures();
 
-        // Gender 选择变化时更新 Size 选项
+        // Category 选择变化时更新 Size 选项
         const categorySelect = document.getElementById('category_id');
-        const genderSelect = document.getElementById('gender_id');
         const sizeSelect = document.getElementById('size_id');
 
-        if (categorySelect && genderSelect && sizeSelect) {
-            // 页面加载时根据当前选择的分类和性别过滤尺寸
+        if (categorySelect && sizeSelect) {
+            // 页面加载时根据当前选择的分类过滤尺寸
             updateSizeOptions();
 
             // 添加事件监听器
             categorySelect.addEventListener('change', updateSizeOptions);
-            genderSelect.addEventListener('change', updateSizeOptions);
         }
 
         // 测试checkbox功能
@@ -467,7 +431,6 @@
         // 更新尺寸选项的函数
         function updateSizeOptions() {
             const selectedCategoryId = categorySelect.value;
-            const selectedGenderId = genderSelect.value;
             const currentSizeId = '{{ $attributeVariant ? $attributeVariant->size_id : "" }}';
 
             // 清空尺寸选项
@@ -480,55 +443,21 @@
                 return;
             }
 
-            if (!selectedGenderId) {
-                // 如果没有选择性别，禁用尺寸选择
-                sizeSelect.disabled = true;
-                sizeSelect.innerHTML = '<option selected disabled value="">Select Gender First</option>';
-                return;
-            }
-
             // 启用尺寸选择
             sizeSelect.disabled = false;
 
-            // 根据选择的分类和性别过滤尺寸
+            // 根据选择的分类过滤尺寸
             const filteredSizes = window.allSizes.filter(size => {
                 // 检查尺寸是否属于选择的分类
-                const belongsToCategory = size.category && size.category.id == selectedCategoryId;
-
-                if (!belongsToCategory) {
-                    return false;
-                }
-
-                // 检查是否是衣服尺寸且性别匹配
-                if (size.clothing_size && size.clothing_size.gender_id == selectedGenderId) {
-                    return true;
-                }
-                // 检查是否是鞋子尺寸且性别匹配
-                if (size.shoe_size && size.shoe_size.gender_id == selectedGenderId) {
-                    return true;
-                }
-                return false;
+                return size.category && size.category.id == selectedCategoryId;
             });
 
             // 添加过滤后的尺寸选项
             filteredSizes.forEach(size => {
                 const option = document.createElement('option');
                 option.value = size.id;
-
-                // 确定尺寸值和类型
-                let sizeValue = '';
-                let sizeType = '';
-                if (size.clothing_size) {
-                    sizeValue = size.clothing_size.size_value;
-                    sizeType = 'Clothing';
-                } else if (size.shoe_size) {
-                    sizeValue = size.shoe_size.size_value;
-                    sizeType = 'Shoes';
-                }
-
-                option.textContent = `${sizeValue.toUpperCase()} (${sizeType})`;
-                option.dataset.sizeType = sizeType;
-                option.dataset.sizeValue = sizeValue;
+                option.textContent = size.size_value.toUpperCase();
+                option.dataset.sizeValue = size.size_value;
 
                 // 如果是当前选中的尺寸，设置为选中
                 if (size.id == currentSizeId) {
@@ -542,7 +471,7 @@
             if (filteredSizes.length === 0) {
                 const noSizeOption = document.createElement('option');
                 noSizeOption.disabled = true;
-                noSizeOption.textContent = 'No sizes available for selected category and gender';
+                noSizeOption.textContent = 'No sizes available for selected category';
                 sizeSelect.appendChild(noSizeOption);
                 sizeSelect.disabled = true;
             }

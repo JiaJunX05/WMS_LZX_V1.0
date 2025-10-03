@@ -203,6 +203,9 @@
                                 <i class="bi bi-chevron-left"></i>
                             </a>
                         </li>
+                        <li class="page-item active" id="current-page">
+                            <span class="page-link" id="page-number">1</span>
+                        </li>
                         <li class="page-item disabled" id="next-page">
                             <a class="page-link" href="#" aria-label="Next">
                                 <i class="bi bi-chevron-right"></i>

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('brands', function (Blueprint $table) {
             $table->id();
-            $table->string('brand_image', 255)->nullable();     // 品牌图片
+            $table->string('brand_image', 500)->nullable();     // 品牌图片
             $table->string('brand_name', 255)->unique();        // 品牌名称：耐克、阿迪达斯
             $table->enum('brand_status', ['Available', 'Unavailable'])->default('Available');
             $table->timestamps();

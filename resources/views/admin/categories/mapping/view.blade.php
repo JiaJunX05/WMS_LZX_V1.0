@@ -237,5 +237,6 @@
     window.deleteMappingUrl = "{{ route('admin.category_mapping.mapping.destroy', ['id' => ':id']) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/category-mapping/category-mapping-view.js') }}"></script>
+<script src="{{ asset('assets/js/common/mapping-common.js') }}"></script>
+<script src="{{ asset('assets/js/category-mapping/mapping-view.js') }}"></script>
 @endsection

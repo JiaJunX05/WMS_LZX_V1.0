@@ -224,5 +224,6 @@
     window.getAvailableSizeLibrariesUrl = "{{ route('admin.size_library.template.available-size-libraries') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/size-library/size-template-create.js') }}"></script>
+<script src="{{ asset('assets/js/common/template-common.js') }}"></script>
+<script src="{{ asset('assets/js/size-library/template-create.js') }}"></script>
 @endsection

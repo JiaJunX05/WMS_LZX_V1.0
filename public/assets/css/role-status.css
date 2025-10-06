@@ -1,0 +1,384 @@
+/**
+ * 角色和狀態選擇樣式 (Role & Status Selection Styles)
+ *
+ * 功能模塊：
+ * - 角色選擇卡片樣式
+ * - 狀態選擇卡片樣式
+ * - 選中狀態效果
+ * - 懸停效果
+ * - 響應式設計
+ *
+ * @author WMS Team
+ * @version 1.0.0
+ */
+
+/* =============================================================================
+   1. 基礎變量 (Base Variables)
+   ============================================================================= */
+
+:root {
+    /* 角色顏色 */
+    --role-staff-color: #28a745;
+    --role-admin-color: #ffc107;
+    --role-superadmin-color: #dc3545;
+
+    /* 狀態顏色 */
+    --status-available-color: #28a745;
+    --status-unavailable-color: #6c757d;
+
+    /* 通用顏色 */
+    --role-card-border: #e9ecef;
+    --role-card-shadow: rgba(0, 0, 0, 0.1);
+    --role-card-shadow-hover: rgba(0, 0, 0, 0.15);
+    --role-card-shadow-selected: rgba(13, 110, 253, 0.25);
+
+    /* 過渡效果 */
+    --role-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =============================================================================
+   2. 角色選擇樣式 (Role Selection Styles)
+   ============================================================================= */
+
+/* 🎭 角色選擇容器 */
+.role-selection-container {
+    margin-bottom: 2rem;
+}
+
+.role-selection-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--bs-primary);
+}
+
+.role-selection-title i {
+    margin-right: 0.75rem;
+    font-size: 1.5rem;
+}
+
+/* 🎯 角色卡片容器 */
+.role-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 🃏 角色卡片基礎樣式 - 使用原版設計 */
+.role-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.role-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.role-card.selected {
+    border-color: #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+}
+
+.role-card.selected .card-title {
+    color: #0d6efd !important;
+}
+
+/* 📋 角色卡片內容 - 使用原版設計 */
+.role-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.role-card-radio {
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.role-card-info {
+    flex: 1;
+}
+
+.role-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #000 !important;
+}
+
+.role-card-description {
+    font-size: 0.875rem;
+    color: #6c757d !important;
+    margin: 0;
+}
+
+/* 🎨 特定角色樣式 - 使用原版圖標顏色 */
+.role-card[data-role="Staff"] .card-title {
+    color: #10b981 !important;
+}
+
+.role-card[data-role="Admin"] .card-title {
+    color: #ffc107 !important;
+}
+
+.role-card[data-role="SuperAdmin"] .card-title {
+    color: #dc3545 !important;
+}
+
+/* =============================================================================
+   3. 狀態選擇樣式 (Status Selection Styles)
+   ============================================================================= */
+
+/* 🔄 狀態選擇容器 */
+.status-selection-container {
+    margin-bottom: 2rem;
+}
+
+.status-selection-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--bs-primary);
+}
+
+.status-selection-title i {
+    margin-right: 0.75rem;
+    font-size: 1.5rem;
+}
+
+/* 🎯 狀態卡片容器 */
+.status-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 🃏 狀態卡片基礎樣式 - 使用原版設計 */
+.status-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.status-card.selected {
+    border-color: #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+}
+
+.status-card.selected .card-title {
+    color: #ffc107;
+}
+
+/* 📋 狀態卡片內容 - 使用原版設計 */
+.status-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status-card-radio {
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.status-card-info {
+    flex: 1;
+}
+
+.status-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #000 !important;
+}
+
+.status-card-description {
+    font-size: 0.875rem;
+    color: #6c757d !important;
+    margin: 0;
+}
+
+/* 🎨 特定狀態樣式 - 使用原版圖標顏色 */
+.status-card[data-status="Available"] .card-title {
+    color: #198754 !important;
+}
+
+.status-card[data-status="Unavailable"] .card-title {
+    color: #dc3545 !important;
+}
+
+/* =============================================================================
+   4. 響應式設計 (Responsive Design)
+   ============================================================================= */
+
+/* 📱 平板設備 */
+@media (max-width: 768px) {
+    .role-cards-container,
+    .status-cards-container {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .role-card,
+    .status-card {
+        padding: 1.25rem;
+    }
+
+    .role-card-icon,
+    .status-card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+
+    .role-card-title,
+    .status-card-title {
+        font-size: 1rem;
+    }
+}
+
+/* 📱 手機設備 */
+@media (max-width: 576px) {
+    .role-selection-title,
+    .status-selection-title {
+        font-size: 1.125rem;
+    }
+
+    .role-card,
+    .status-card {
+        padding: 1rem;
+    }
+
+    .role-card-content,
+    .status-card-content {
+        gap: 0.75rem;
+    }
+
+    .role-card-icon,
+    .status-card-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* =============================================================================
+   5. 動畫效果 (Animation Effects)
+   ============================================================================= */
+
+/* ✨ 卡片進入動畫 */
+@keyframes cardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.role-card,
+.status-card {
+    animation: cardSlideIn 0.5s ease-out;
+}
+
+.role-card:nth-child(2),
+.status-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.role-card:nth-child(3),
+.status-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+/* ✨ 選中狀態脈衝動畫 */
+@keyframes selectedPulse {
+    0% {
+        box-shadow: 0 8px 25px var(--role-card-shadow-selected);
+    }
+    50% {
+        box-shadow: 0 8px 25px var(--role-card-shadow-selected), 0 0 0 4px rgba(13, 110, 253, 0.1);
+    }
+    100% {
+        box-shadow: 0 8px 25px var(--role-card-shadow-selected);
+    }
+}
+
+.role-card.selected,
+.status-card.selected {
+    animation: selectedPulse 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   6. 無障礙設計 (Accessibility)
+   ============================================================================= */
+
+/* 🎯 焦點狀態 */
+.role-card:focus,
+.status-card:focus {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+/* 🎯 高對比度模式 */
+@media (prefers-contrast: high) {
+    .role-card,
+    .status-card {
+        border-width: 3px;
+    }
+
+    .role-card.selected,
+    .status-card.selected {
+        border-width: 4px;
+    }
+}
+
+/* 🎯 減少動畫模式 */
+@media (prefers-reduced-motion: reduce) {
+    .role-card,
+    .status-card {
+        transition: none;
+        animation: none;
+    }
+
+    .role-card:hover,
+    .status-card:hover {
+        transform: none;
+    }
+}
+
+/* =============================================================================
+   7. 打印樣式 (Print Styles)
+   ============================================================================= */
+
+@media print {
+    .role-card,
+    .status-card {
+        border: 2px solid #000;
+        box-shadow: none;
+        break-inside: avoid;
+    }
+
+    .role-card.selected,
+    .status-card.selected {
+        background: #f8f9fa;
+    }
+}

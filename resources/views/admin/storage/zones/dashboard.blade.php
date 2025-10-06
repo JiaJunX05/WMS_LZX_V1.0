@@ -230,6 +230,7 @@
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/zone-common.js') }}"></script>
 <script src="{{ asset('assets/js/storage-location/zone-dashboard.js') }}"></script>
 @endsection
 

@@ -54,14 +54,16 @@
                     </div>
 
                     <!-- 预览图片 -->
-                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center" data-original-content="">
-                        @if($subcategory->subcategory_image)
+                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center" id="image-preview"
+                         data-original-content="@if($subcategory->subcategory_image && file_exists(public_path('assets/images/' . $subcategory->subcategory_image)))<img src='{{ asset('assets/images/' . $subcategory->subcategory_image) }}' alt='Preview' id='preview-image' class='img-fluid rounded-3' style='max-width: 100%; max-height: 280px; object-fit: contain;'>@else<div class='text-center text-muted'><i class='bi bi-image fs-1 mb-3 d-block'></i><p class='mb-0'>No image uploaded</p><small>Upload an image to see preview</small></div>@endif">
+                        @if($subcategory->subcategory_image && file_exists(public_path('assets/images/' . $subcategory->subcategory_image)))
                             <img src="{{ asset('assets/images/' . $subcategory->subcategory_image) }}" alt="Preview" id="preview-image"
                                 class="img-fluid rounded-3" style="max-width: 100%; max-height: 280px; object-fit: contain;">
                         @else
-                            <div class="text-center">
-                                <i class="bi bi-image text-primary" style="font-size: 8rem;"></i>
-                                <p class="text-muted mt-3">No image available</p>
+                            <div class="text-center text-muted">
+                                <i class="bi bi-image fs-1 mb-3 d-block"></i>
+                                <p class="mb-0">No image uploaded</p>
+                                <small>Upload an image to see preview</small>
                             </div>
                         @endif
                     </div>
@@ -159,8 +161,11 @@
 @section("scripts")
     <script>
         // JavaScript URL definitions
+        window.updateSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.update', ['id' => ':id']) }}";
         window.subcategoryManagementRoute = "{{ route('admin.category_mapping.subcategory.index') }}";
     </script>
-    <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-    <script src="{{ asset('assets/js/category-mapping/subcategory-update.js') }}"></script>
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/subcategory-common.js') }}"></script>
+<script src="{{ asset('assets/js/category-mapping/subcategory-update.js') }}"></script>
 @endsection

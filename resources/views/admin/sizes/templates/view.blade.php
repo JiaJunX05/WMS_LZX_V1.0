@@ -232,7 +232,8 @@
 </div>
 
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/size-library/size-template-view.js') }}"></script>
+<script src="{{ asset('assets/js/common/template-common.js') }}"></script>
+<script src="{{ asset('assets/js/size-library/template-view.js') }}"></script>
 
 <script>
     // 设置全局变量

@@ -238,6 +238,8 @@
     window.brandManagementRoute = "{{ route('admin.management_tool.brand.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/attribute-variant/brand-create.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/brand-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/brand-create.js') }}"></script>
 @endsection
 

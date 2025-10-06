@@ -228,6 +228,18 @@
 @endsection
 
 @section("scripts")
-    <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-    <script src="{{ asset('assets/js/category-mapping/subcategory-dashboard.js') }}"></script>
+<script>
+    // Set subcategory management related URLs
+    window.subcategoryManagementRoute = "{{ route('admin.category_mapping.subcategory.index') }}";
+    window.editSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.edit', ['id' => ':id']) }}";
+    window.deleteSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.destroy', ['id' => ':id']) }}";
+    window.availableSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.available', ['id' => ':id']) }}";
+    window.unavailableSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.unavailable', ['id' => ':id']) }}";
+
+    // Pass current user role to JavaScript
+    window.currentUserRole = "{{ $globalUserRole ?? '' }}";
+</script>
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/subcategory-common.js') }}"></script>
+<script src="{{ asset('assets/js/category-mapping/subcategory-dashboard.js') }}"></script>
 @endsection

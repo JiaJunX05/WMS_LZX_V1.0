@@ -128,13 +128,14 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('users')->name('users.')->group(function () {
             // 用户列表
             Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
+            Route::get('/stats', [AuthController::class, 'getUserStats'])->name('stats');
             Route::get('/create', [AuthController::class, 'showRegisterForm'])->name('create');
             Route::post('/create', [AuthController::class, 'register'])->name('create.submit');
             Route::get('/{id}/edit', [AuthController::class, 'showUpdateForm'])->name('edit');
             Route::put('/{id}/update', [AuthController::class, 'updateUser'])->name('update');
             Route::delete('/{id}/delete', [AuthController::class, 'deleteAccount'])->name('delete');
-            Route::patch('/{id}/unavailable', [AuthController::class, 'unavailableAccount'])->name('unavailable');
-            Route::patch('/{id}/available', [AuthController::class, 'availableAccount'])->name('available');
+            Route::patch('/{id}/unavailable', [AuthController::class, 'setUnavailable'])->name('unavailable');
+            Route::patch('/{id}/available', [AuthController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/change-role', [AuthController::class, 'changeAccountRole'])->name('change_role');
         });
     });
@@ -152,12 +153,13 @@ Route::middleware(['auth'])->group(function () {
         // 用户管理路由组
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
+            Route::get('/stats', [AuthController::class, 'getUserStats'])->name('stats');
             Route::get('/create', [AuthController::class, 'showRegisterForm'])->name('create');
             Route::post('/create', [AuthController::class, 'register'])->name('create.submit');
             Route::get('/{id}/edit', [AuthController::class, 'showUpdateForm'])->name('edit');
             Route::put('/{id}/update', [AuthController::class, 'updateUser'])->name('update');
-            Route::patch('/{id}/unavailable', [AuthController::class, 'unavailableAccount'])->name('unavailable');
-            Route::patch('/{id}/available', [AuthController::class, 'availableAccount'])->name('available');
+            Route::patch('/{id}/unavailable', [AuthController::class, 'setUnavailable'])->name('unavailable');
+            Route::patch('/{id}/available', [AuthController::class, 'setAvailable'])->name('available');
         });
 
         // =============================================================================

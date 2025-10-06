@@ -10,61 +10,38 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面
+    // 初始化区域更新页面
     initializeZoneUpdate();
 });
 
 function initializeZoneUpdate() {
-    // 绑定事件监听器
-    bindEvents();
+    // 使用通用函數初始化區域頁面
+    initializeZonePage({
+        events: {
+            formSubmit: function(e) {
+                e.preventDefault();
 
-    // 初始化状态卡片选择
-    initializeStatusCards();
+                // 获取表单数据
+                const formData = new FormData(e.target);
+                const zoneData = Object.fromEntries(formData);
+
+                // 验证表单数据
+                if (!validateZoneForm(zoneData)) {
+                    return;
+                }
+
+                // 提交表单
+                submitZoneForm(formData);
+            }
+        }
+    });
 }
 
 function bindEvents() {
-    // 图片上传预览
+    // 图片上传预览 - 使用 update 页面专用函数
     const imageInput = document.getElementById('input_image');
-    const previewContainer = document.querySelector('.preview-container');
-
-    if (imageInput && previewContainer) {
-        console.log('Image upload elements found');
-
-        imageInput.addEventListener('change', function(e) {
-            console.log('Image input changed:', e.target.files);
-            handleImagePreview(e);
-        });
-
-        // 点击预览区域触发文件选择
-        previewContainer.addEventListener('click', function() {
-            console.log('Preview container clicked');
-            imageInput.click();
-        });
-
-        // 拖拽上传支持
-        previewContainer.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            previewContainer.classList.add('dragover');
-        });
-
-        previewContainer.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            previewContainer.classList.remove('dragover');
-        });
-
-        previewContainer.addEventListener('drop', function(e) {
-            e.preventDefault();
-            previewContainer.classList.remove('dragover');
-
-            const files = e.dataTransfer.files;
-            console.log('Files dropped:', files);
-            if (files.length > 0) {
-                imageInput.files = files;
-                handleImagePreview({ target: imageInput });
-            }
-        });
-    } else {
-        console.error('Image upload elements not found');
+    if (imageInput) {
+        imageInput.addEventListener('change', previewUploadedImage);
     }
 
     // 表单提交事件

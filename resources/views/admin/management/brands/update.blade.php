@@ -74,7 +74,7 @@
                     </div>
 
                     <!-- 预览图片 -->
-                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center"
+                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center" id="image-preview"
                          data-original-content="@if($brand->brand_image && file_exists(public_path('assets/images/' . $brand->brand_image)))<img src='{{ asset('assets/images/' . $brand->brand_image) }}' alt='Preview' id='preview-image' class='img-fluid rounded-3' style='max-width: 100%; max-height: 280px; object-fit: contain;'>@else<div class='text-center text-muted'><i class='bi bi-image fs-1 mb-3 d-block'></i><p class='mb-0'>No image uploaded</p><small>Upload an image to see preview</small></div>@endif">
                         @if($brand->brand_image && file_exists(public_path('assets/images/' . $brand->brand_image)))
                             <img src="{{ asset('assets/images/' . $brand->brand_image) }}" alt="Preview" id="preview-image"
@@ -173,8 +173,11 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
+    window.updateBrandUrl = "{{ route('admin.management_tool.brand.update', ['id' => ':id']) }}";
     window.brandManagementRoute = "{{ route('admin.management_tool.brand.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/attribute-variant/brand-update.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/brand-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/brand-update.js') }}"></script>
 @endsection

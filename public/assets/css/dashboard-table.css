@@ -341,3 +341,34 @@
         font-size: var(--font-xs);
     }
 }
+
+/* =============================================================================
+   6. 用戶信息樣式 (User Info Styles)
+   ============================================================================= */
+
+/* 👤 用戶信息容器 */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 🎭 用戶頭像 */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--gray-100);
+    border-radius: 50%;
+    color: var(--gray-500);
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+/* 📝 用戶名稱 */
+.user-info span {
+    line-height: 1.4;
+    vertical-align: middle;
+}

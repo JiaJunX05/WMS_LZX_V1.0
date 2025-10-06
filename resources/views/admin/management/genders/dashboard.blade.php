@@ -230,5 +230,7 @@
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 </script>
-<script src="{{ asset('assets/js/attribute-variant/gender-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/gender-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/gender-dashboard.js') }}"></script>
 @endsection

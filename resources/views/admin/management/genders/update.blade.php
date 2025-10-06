@@ -150,8 +150,10 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
+    window.updateGenderUrl = "{{ route('admin.management_tool.gender.update', ['id' => ':id']) }}";
     window.genderManagementRoute = "{{ route('admin.management_tool.gender.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/attribute-variant/gender-update.js') }}"></script>
+<script src="{{ asset('assets/js/common/gender-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/gender-update.js') }}"></script>
 @endsection

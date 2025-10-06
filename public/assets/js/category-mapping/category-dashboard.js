@@ -246,8 +246,7 @@ class CategoryDashboard {
     }
 
     getStatusClass(status) {
-        const statusMap = { 'Available': 'available', 'Unavailable': 'unavailable' };
-        return statusMap[status] || 'default';
+        return getCategoryStatusClass(status);
     }
 
     showNoResults() {
@@ -323,41 +322,10 @@ class CategoryDashboard {
      * @param {number} categoryId 分类ID
      */
     deleteCategory(categoryId) {
-        if (!confirm('Are you sure you want to delete this category?')) {
-            return;
-        }
-
-        const url = window.deleteCategoryUrl.replace(':id', categoryId);
-
-        // 显示加载状态
-        showAlert('Deleting category...', 'info');
-
-        fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+        deleteCategory(categoryId, {
+            onSuccess: () => {
+                this.fetchCategories();
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || 'Category deleted successfully!', 'success');
-                // 重新加载数据
-                this.fetchCategories(this.currentPage);
-            } else {
-                showAlert(data.message || 'Failed to delete category', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting category:', error);
-            showAlert('Error deleting category: ' + error.message, 'danger');
         });
     }
 
@@ -366,41 +334,10 @@ class CategoryDashboard {
      * @param {number} categoryId 分类ID
      */
     setAvailable(categoryId) {
-        if (!confirm('Are you sure you want to activate this category?')) {
-            return;
-        }
-
-        const url = window.availableCategoryUrl.replace(':id', categoryId);
-
-        // 显示加载状态
-        showAlert('Activating category...', 'info');
-
-        fetch(url, {
-            method: 'PATCH',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+        setCategoryAvailable(categoryId, {
+            onSuccess: () => {
+                this.fetchCategories();
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || 'Category activated successfully!', 'success');
-                // 重新加载数据
-                this.fetchCategories(this.currentPage);
-            } else {
-                showAlert(data.message || 'Failed to activate category', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error activating category:', error);
-            showAlert('Error activating category: ' + error.message, 'danger');
         });
     }
 
@@ -409,41 +346,10 @@ class CategoryDashboard {
      * @param {number} categoryId 分类ID
      */
     setUnavailable(categoryId) {
-        if (!confirm('Are you sure you want to deactivate this category?')) {
-            return;
-        }
-
-        const url = window.unavailableCategoryUrl.replace(':id', categoryId);
-
-        // 显示加载状态
-        showAlert('Deactivating category...', 'info');
-
-        fetch(url, {
-            method: 'PATCH',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+        setCategoryUnavailable(categoryId, {
+            onSuccess: () => {
+                this.fetchCategories();
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || 'Category deactivated successfully!', 'success');
-                // 重新加载数据
-                this.fetchCategories(this.currentPage);
-            } else {
-                showAlert(data.message || 'Failed to deactivate category', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error deactivating category:', error);
-            showAlert('Error deactivating category: ' + error.message, 'danger');
         });
     }
 }
@@ -452,11 +358,7 @@ class CategoryDashboard {
 // 图片预览功能 (Image Preview Functions)
 // ========================================
 
-// 图片预览函数 - 用于模态框显示
-function previewImage(src) {
-    document.getElementById('previewImage').src = src;
-    new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
-}
+// previewImage 函數已移至 category-common.js
 
 // =============================================================================
 // 全局实例初始化 (Global Instance Initialization)
@@ -473,8 +375,7 @@ $(document).ready(function() {
 // Alert 系统 (Alert System)
 // ========================================
 
-// showAlert 函数现在使用统一的 alert 系统
-// 在页面加载时引入 alert-system.js 即可使用
+// showAlert 函數已移至 alert-system.js
 
 // 使用原生JavaScript的DOMContentLoaded作为备用
 document.addEventListener('DOMContentLoaded', function() {

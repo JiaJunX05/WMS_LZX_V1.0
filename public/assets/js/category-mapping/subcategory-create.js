@@ -13,22 +13,72 @@
 let subcategoryList = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面
-    initializeSubcategoryCreate();
+    // 使用通用函數初始化子分類頁面
+    initializeSubcategoryPage({
+        events: {
+            formSubmit: function(e) {
+                e.preventDefault();
+
+                // 检查是否有子分类
+                if (subcategoryList.length === 0) {
+                    showAlert('Please add at least one subcategory', 'warning');
+                    return;
+                }
+
+                // 预提交重复检查
+                const duplicates = [];
+                const seen = new Set();
+                for (const item of subcategoryList) {
+                    const combination = item.subcategoryName.toLowerCase();
+                    if (seen.has(combination)) {
+                        duplicates.push(item.subcategoryName);
+                    } else {
+                        seen.add(combination);
+                    }
+                }
+
+                if (duplicates.length > 0) {
+                    showAlert(`Duplicate subcategory names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+                    return;
+                }
+
+                // 准备提交数据
+                const formData = new FormData();
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                // 添加子分类数据
+                subcategoryList.forEach((item, index) => {
+                    // 添加子分类文本数据
+                    formData.append(`subcategories[${index}][subcategoryName]`, item.subcategoryName);
+                    formData.append(`subcategories[${index}][subcategoryStatus]`, item.subcategoryStatus);
+
+                    // 添加图片文件（如果有）
+                    if (item.subcategoryImageFile) {
+                        formData.append(`images[${index}]`, item.subcategoryImageFile);
+                    }
+                });
+
+                // 使用通用函數提交
+                createSubcategory(formData, {
+                    url: window.createSubcategoryUrl,
+                    redirect: window.subcategoryManagementRoute
+                });
+            }
+        },
+        onInit: function() {
+            // 綁定特定事件
+            bindEvents();
+
+            // 初始化狀態
+            updateUI();
+
+            // 如果已有子分類數據，顯示子分類區域
+            if (subcategoryList.length > 0) {
+                showSubcategoryValuesArea();
+            }
+        }
+    });
 });
-
-function initializeSubcategoryCreate() {
-    // 绑定事件监听器
-    bindEvents();
-
-    // 初始化状态
-    updateUI();
-
-    // 如果已有子分类数据，显示子分类区域
-    if (subcategoryList.length > 0) {
-        showSubcategoryValuesArea();
-    }
-}
 
 function bindEvents() {
     // 子分类名称输入框回车事件
@@ -63,13 +113,8 @@ function bindEvents() {
         }
     });
 
-    // 状态卡片选择
-    const statusCards = document.querySelectorAll('.status-card');
-    statusCards.forEach(card => {
-        card.addEventListener('click', function() {
-            selectStatusCard(this);
-        });
-    });
+    // 状态卡片选择 - 使用通用函数
+    // initializeStatusCardSelection() 在 initializeSubcategoryPage() 中调用
 
     // 排序按钮
     const sortBtn = document.getElementById('sortSubcategories');
@@ -88,49 +133,8 @@ function bindEvents() {
         addFashionSubcategoriesBtn.addEventListener('click', addFashionSubcategories);
     }
 
-    // 图片上传预览
-    const imageInput = document.getElementById('subcategory_image');
-    const imageUploadArea = document.getElementById('imageUploadArea');
-
-    if (imageInput && imageUploadArea) {
-        console.log('Image upload elements found');
-
-        imageInput.addEventListener('change', function(e) {
-            console.log('Image input changed:', e.target.files);
-            handleImagePreview(e);
-        });
-
-        // 点击上传区域触发文件选择
-        imageUploadArea.addEventListener('click', function() {
-            console.log('Image upload area clicked');
-            imageInput.click();
-        });
-
-        // 拖拽上传支持
-        imageUploadArea.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            imageUploadArea.classList.add('dragover');
-        });
-
-        imageUploadArea.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            imageUploadArea.classList.remove('dragover');
-        });
-
-        imageUploadArea.addEventListener('drop', function(e) {
-            e.preventDefault();
-            imageUploadArea.classList.remove('dragover');
-
-            const files = e.dataTransfer.files;
-            console.log('Files dropped:', files);
-            if (files.length > 0) {
-                imageInput.files = files;
-                handleImagePreview({ target: imageInput });
-            }
-        });
-    } else {
-        console.error('Image upload elements not found');
-    }
+    // 图片上传预览 - 使用通用函数
+    // bindSubcategoryEvents() 在 initializeSubcategoryPage() 中调用
 }
 
 function addSubcategory() {
@@ -162,7 +166,7 @@ function addSubcategory() {
     addSubcategoryToArray(subcategoryName, subcategoryStatus.value, subcategoryImageFile);
 
     // 检查是否重复并显示相应提示
-    if (isSubcategoryExists(subcategoryName)) {
+    if (isSubcategoryExists(subcategoryList, subcategoryName)) {
         showAlert(`Subcategory name "${subcategoryName}" already exists in the list`, 'warning');
         highlightExistingSubcategory(subcategoryName);
     } else {
@@ -198,11 +202,7 @@ function addSubcategoryToArray(subcategoryName, subcategoryStatus, subcategoryIm
     resetImageWithoutMessage();
 }
 
-function isSubcategoryExists(subcategoryName) {
-    // 检查列表中是否有多个相同的子分类名称
-    const count = subcategoryList.filter(item => item.subcategoryName.toLowerCase() === subcategoryName.toLowerCase()).length;
-    return count > 1; // 如果有超过1个，说明有重复
-}
+// isSubcategoryExists 函數已移至 subcategory-common.js
 
 function removeSubcategory(index) {
     console.log('Removing subcategory at index:', index);
@@ -229,7 +229,7 @@ function updateSubcategoryList() {
         const subcategoryItem = document.createElement('div');
 
         // 检查是否为重复项
-        const isDuplicate = isSubcategoryExists(item.subcategoryName) &&
+        const isDuplicate = isSubcategoryExists(subcategoryList, item.subcategoryName) &&
             subcategoryList.filter(i => i.subcategoryName.toLowerCase() === item.subcategoryName.toLowerCase()).length > 1;
 
         // 根据是否为重复项设置不同的样式
@@ -258,29 +258,11 @@ function updateSubcategoryList() {
     });
 }
 
-function highlightExistingSubcategory(subcategoryName) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.item-value-text').textContent.trim();
-        if (value.toLowerCase() === subcategoryName.toLowerCase()) {
-            // 添加高亮样式
-            item.classList.add('duplicate-highlight');
-
-            // 滚动到该元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒后移除高亮
-            setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
-            }, 3000);
-            break;
-        }
-    }
-}
+// highlightExistingSubcategory 函數已移至 subcategory-common.js
 
 function addSubcategoryToList(subcategoryName, subcategoryStatus, subcategoryImageFile = null) {
     // 检查是否为重复项
-    if (isSubcategoryExists(subcategoryName)) {
+    if (isSubcategoryExists(subcategoryList, subcategoryName)) {
         console.log('Duplicate detected in batch add, skipping:', subcategoryName);
         return; // 跳过重复项，不添加到列表
     }
@@ -487,20 +469,7 @@ function updateSubcategoryValuesCount() {
     }
 }
 
-function selectStatusCard(card) {
-    // 移除所有选中状态
-    const allCards = document.querySelectorAll('.status-card');
-    allCards.forEach(c => c.classList.remove('selected'));
-
-    // 添加选中状态到当前卡片
-    card.classList.add('selected');
-
-    // 更新对应的单选按钮
-    const radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-        radio.checked = true;
-    }
-}
+// selectStatusCard 函數已移至 subcategory-common.js
 
 // showAlert 函数现在使用统一的 alert 系统
 // 在页面加载时引入 alert-system.js 即可使用
@@ -628,185 +597,9 @@ function addMultipleSubcategories(subcategories) {
     }
 }
 
-function handleImagePreview(event) {
-    const file = event.target.files[0];
-    if (file) {
-        // 验证文件类型
-        if (!file.type.startsWith('image/')) {
-            showAlert('Please select a valid image file', 'warning');
-            return;
-        }
+// 圖片預覽相關函數已移至 subcategory-common.js
 
-        // 验证文件大小 (5MB限制)
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert('Image size must be less than 5MB', 'warning');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const previewImage = document.getElementById('preview-image');
-            const previewIcon = document.getElementById('preview-icon');
-            const imageUploadArea = document.getElementById('imageUploadArea');
-            const imageUploadContent = document.getElementById('imageUploadContent');
-
-            if (previewImage && previewIcon && imageUploadArea && imageUploadContent) {
-                previewImage.src = e.target.result;
-                previewImage.classList.remove('d-none');
-                previewIcon.classList.add('d-none');
-                imageUploadArea.classList.add('has-image');
-
-                // 添加删除按钮
-                addImageRemoveButton();
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function addImageRemoveButton() {
-    const imageUploadArea = document.getElementById('imageUploadArea');
-    const existingRemoveBtn = imageUploadArea.querySelector('.image-remove-btn');
-
-    if (!existingRemoveBtn) {
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'image-remove-btn';
-        removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-        removeBtn.title = 'Remove image';
-        removeBtn.addEventListener('click', removeImage);
-        imageUploadArea.appendChild(removeBtn);
-    }
-}
-
-function removeImage() {
-    const imageInput = document.getElementById('subcategory_image');
-    const previewImage = document.getElementById('preview-image');
-    const previewIcon = document.getElementById('preview-icon');
-    const imageUploadArea = document.getElementById('imageUploadArea');
-    const imageUploadContent = document.getElementById('imageUploadContent');
-    const removeBtn = imageUploadArea.querySelector('.image-remove-btn');
-
-    if (imageInput && previewImage && previewIcon && imageUploadArea && imageUploadContent) {
-        // 重置文件输入
-        imageInput.value = '';
-
-        // 隐藏预览图片，显示上传图标
-        previewImage.classList.add('d-none');
-        previewIcon.classList.remove('d-none');
-        imageUploadArea.classList.remove('has-image');
-
-        // 移除删除按钮
-        if (removeBtn) {
-            removeBtn.remove();
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
-
-function resetImageWithoutMessage() {
-    const imageInput = document.getElementById('subcategory_image');
-    const previewImage = document.getElementById('preview-image');
-    const previewIcon = document.getElementById('preview-icon');
-    const imageUploadArea = document.getElementById('imageUploadArea');
-    const imageUploadContent = document.getElementById('imageUploadContent');
-    const removeBtn = imageUploadArea.querySelector('.image-remove-btn');
-
-    if (imageInput && previewImage && previewIcon && imageUploadArea && imageUploadContent) {
-        // 重置文件输入
-        imageInput.value = '';
-
-        // 隐藏预览图片，显示上传图标
-        previewImage.classList.add('d-none');
-        previewIcon.classList.remove('d-none');
-        imageUploadArea.classList.remove('has-image');
-
-        // 移除删除按钮
-        if (removeBtn) {
-            removeBtn.remove();
-        }
-
-        // 不显示任何消息
-    }
-}
-
-// 表单提交前验证
-document.getElementById('subcategoryForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    // 检查是否有子分类
-    if (subcategoryList.length === 0) {
-        showAlert('Please add at least one subcategory', 'warning');
-        return;
-    }
-
-    // 预提交重复检查
-    const duplicates = [];
-    const seen = new Set();
-    for (const item of subcategoryList) {
-        const combination = item.subcategoryName.toLowerCase();
-        if (seen.has(combination)) {
-            duplicates.push(item.subcategoryName);
-        } else {
-            seen.add(combination);
-        }
-    }
-
-    if (duplicates.length > 0) {
-        showAlert(`Duplicate subcategory names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
-        return;
-    }
-
-    // 准备提交数据
-    const formData = new FormData();
-    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-
-    // 添加子分类数据
-    subcategoryList.forEach((item, index) => {
-
-        // 添加子分类文本数据
-        formData.append(`subcategories[${index}][subcategoryName]`, item.subcategoryName);
-        formData.append(`subcategories[${index}][subcategoryStatus]`, item.subcategoryStatus);
-
-        // 添加图片文件（如果有）
-        if (item.subcategoryImageFile) {
-            formData.append(`images[${index}]`, item.subcategoryImageFile);
-        }
-    });
-
-    // 提交数据
-    fetch(window.createSubcategoryUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message || 'Subcategories created successfully', 'success');
-
-            // 延迟重定向到dashboard，让用户看到成功消息
-            setTimeout(() => {
-                window.location.href = window.subcategoryManagementRoute || '/admin/category-mapping/subcategory';
-            }, 2000);
-        } else {
-            showAlert(data.message || 'Failed to create subcategories', 'error');
-        }
-    })
-    .catch(error => {
-        showAlert('Error creating subcategories: ' + error.message, 'error');
-    });
-});
+// 表單提交處理已移至 initializeSubcategoryPage 的 events.formSubmit 中
 
 // ========================================
 // Alert 系统 (Alert System)

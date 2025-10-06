@@ -237,5 +237,6 @@
     window.deleteLocationUrl = "{{ route('admin.storage_locations.location.destroy', ['id' => ':id']) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/storage-location/storage-location-view.js') }}"></script>
+<script src="{{ asset('assets/js/common/location-common.js') }}"></script>
+<script src="{{ asset('assets/js/storage-location/location-view.js') }}"></script>
 @endsection

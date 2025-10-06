@@ -246,5 +246,6 @@
 </script>
 
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/category-mapping/category-mapping-create.js') }}"></script>
+<script src="{{ asset('assets/js/common/mapping-common.js') }}"></script>
+<script src="{{ asset('assets/js/category-mapping/mapping-create.js') }}"></script>
 @endsection

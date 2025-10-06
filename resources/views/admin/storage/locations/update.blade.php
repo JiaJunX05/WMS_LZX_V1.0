@@ -233,6 +233,6 @@
     window.locationManagementRoute = "{{ route('admin.storage_locations.location.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/common/update-common.js') }}"></script>
-<script src="{{ asset('assets/js/storage-location/storage-location-update.js') }}"></script>
+<script src="{{ asset('assets/js/common/location-common.js') }}"></script>
+<script src="{{ asset('assets/js/storage-location/location-update.js') }}"></script>
 @endsection

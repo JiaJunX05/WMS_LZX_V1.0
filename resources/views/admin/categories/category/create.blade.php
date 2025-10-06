@@ -239,6 +239,8 @@
     window.categoryManagementRoute = "{{ route('admin.category_mapping.category.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/category-common.js') }}"></script>
 <script src="{{ asset('assets/js/category-mapping/category-create.js') }}"></script>
 @endsection
 

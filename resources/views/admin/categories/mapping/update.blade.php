@@ -3,9 +3,10 @@
 @section("title", "Update Category Mapping")
 @section("content")
 
-<link rel="stylesheet" href="{{ asset('assets/css/common/dashboard-template.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/common/update-page.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 <div class="container-fluid py-4">
 
@@ -234,6 +235,6 @@
 
 @section("scripts")
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/common/update-common.js') }}"></script>
-<script src="{{ asset('assets/js/category-mapping/category-mapping-update.js') }}"></script>
+<script src="{{ asset('assets/js/common/mapping-common.js') }}"></script>
+<script src="{{ asset('assets/js/category-mapping/mapping-update.js') }}"></script>
 @endsection

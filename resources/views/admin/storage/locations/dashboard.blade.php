@@ -191,5 +191,6 @@
 
 {{-- 引入Alert系统和位置管理JavaScript文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/storage-location/storage-location-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/common/location-common.js') }}"></script>
+<script src="{{ asset('assets/js/storage-location/location-dashboard.js') }}"></script>
 @endsection

@@ -239,6 +239,7 @@
     window.genderManagementRoute = "{{ route('admin.management_tool.gender.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/attribute-variant/gender-create.js') }}"></script>
+<script src="{{ asset('assets/js/common/gender-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/gender-create.js') }}"></script>
 @endsection
 

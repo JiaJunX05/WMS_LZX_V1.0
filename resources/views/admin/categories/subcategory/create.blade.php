@@ -239,5 +239,7 @@
     window.subcategoryManagementRoute = "{{ route('admin.category_mapping.subcategory.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/subcategory-common.js') }}"></script>
 <script src="{{ asset('assets/js/category-mapping/subcategory-create.js') }}"></script>
 @endsection

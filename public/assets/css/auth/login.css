@@ -201,6 +201,7 @@ a.text-decoration-none:hover::after {
         transform: scale(1);
         filter: brightness(1);
     }
+
 }
 
 @keyframes overlayFadeIn {
@@ -225,3 +226,4 @@ a.text-decoration-none:hover::after {
     75% { transform: translateX(-5px); }
     100% { transform: translateX(0); }
 }
+

@@ -187,5 +187,6 @@
 
 {{-- 引入模板管理JavaScript文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/size-library/size-template-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/common/template-common.js') }}"></script>
+<script src="{{ asset('assets/js/size-library/template-dashboard.js') }}"></script>
 @endsection

@@ -1,10 +1,11 @@
 /**
- * 区域管理Dashboard JavaScript 类
+ * Zone Dashboard JavaScript
+ * 区域仪表板页面交互逻辑
  *
- * 功能模块：
+ * 功能：
  * - 区域数据管理：搜索、筛选、分页
  * - 区域操作：编辑、删除、状态管理
- * - 事件处理：表单提交
+ * - 事件处理：表单提交、图片预览
  *
  * @author WMS Team
  * @version 1.0.0
@@ -32,14 +33,10 @@ class ZoneDashboard {
     // 事件绑定模块 (Event Binding Module)
     // =============================================================================
     bindEvents() {
-        // 搜索功能 - 添加防抖
-        let searchTimeout;
+        // 搜索功能
         $('#search-input').on('keyup', (e) => {
-            clearTimeout(searchTimeout);
             this.searchTerm = $(e.target).val();
-            searchTimeout = setTimeout(() => {
-                this.handleSearch();
-            }, 300);
+            this.handleSearch();
         });
 
         // 筛选功能
@@ -73,8 +70,6 @@ class ZoneDashboard {
                 this.fetchZones(this.currentPage + 1);
             }
         });
-
-        // Bootstrap dropdown 自动处理，无需自定义定位
     }
 
     // =============================================================================
@@ -104,11 +99,8 @@ class ZoneDashboard {
         const params = this.getSearchParams(page);
         const apiRoute = window.zoneManagementRoute;
 
-        console.log('Fetching zones with params:', params);
-
         $.get(apiRoute, params)
             .done((response) => {
-                console.log('Zones response:', response);
                 if (response.data && response.data.length > 0) {
                     this.renderZones(response.data);
                     this.updatePaginationInfo(response);
@@ -120,7 +112,6 @@ class ZoneDashboard {
                 this.generatePagination(response);
             })
             .fail((xhr, status, error) => {
-                console.error('Failed to fetch zones:', error);
                 this.showAlert('Failed to load zones, please try again', 'danger');
             });
     }
@@ -129,7 +120,6 @@ class ZoneDashboard {
      * 处理搜索
      */
     handleSearch() {
-        console.log('Handling search with term:', this.searchTerm);
         this.fetchZones(1);
     }
 
@@ -137,7 +127,6 @@ class ZoneDashboard {
      * 处理筛选
      */
     handleFilter() {
-        console.log('Handling filter with status:', this.statusFilter);
         this.fetchZones(1);
     }
 
@@ -428,13 +417,5 @@ $(document).ready(function() {
     // 检查当前页面是否是dashboard页面（有table-body元素）
     if ($("#table-body").length > 0) {
         zoneDashboard = new ZoneDashboard();
-    }
-});
-
-// 使用原生JavaScript的DOMContentLoaded作为备用
-document.addEventListener('DOMContentLoaded', function() {
-    // 如果jQuery没有加载，使用原生JavaScript初始化
-    if (typeof $ === 'undefined') {
-        console.warn('jQuery is not loaded. Zone dashboard functionality may not work properly.');
     }
 });

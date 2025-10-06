@@ -256,6 +256,7 @@ class RackDashboard {
     }
 
     getStatusClass(status) {
+        // 使用 rack-common.js 中的狀態映射邏輯
         const statusMap = { 'Available': 'available', 'Unavailable': 'unavailable' };
         return statusMap[status] || 'default';
     }
@@ -390,34 +391,24 @@ class RackDashboard {
         form.submit();
     }
 
-    // 显示提示信息
+    // 显示提示信息 - 使用通用函數
     showAlert(message, type) {
-        // 创建提示信息元素
-        const alertHtml = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-
-        // 在页面顶部显示提示信息
-        $('.container-fluid').prepend(alertHtml);
-
-        // 3秒后自动隐藏
-        setTimeout(() => {
-            $('.alert').fadeOut();
-        }, 3000);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(message, type);
+        } else {
+            // 備用實現
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            $('.container-fluid').prepend(alertHtml);
+            setTimeout(() => {
+                $('.alert').fadeOut();
+            }, 3000);
+        }
     }
-}
-
-// ========================================
-// 图片预览功能 (Image Preview Functions)
-// ========================================
-
-// 图片预览函数 - 用于模态框显示
-function previewImage(src) {
-    document.getElementById('previewImage').src = src;
-    new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
 }
 
 // =============================================================================

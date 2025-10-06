@@ -177,8 +177,10 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
+    window.updateColorUrl = "{{ route('admin.management_tool.color.update', ['id' => ':id']) }}";
     window.colorManagementRoute = "{{ route('admin.management_tool.color.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/attribute-variant/color-update.js') }}"></script>
+<script src="{{ asset('assets/js/common/color-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/color-update.js') }}"></script>
 @endsection

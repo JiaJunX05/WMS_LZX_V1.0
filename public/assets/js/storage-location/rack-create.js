@@ -13,22 +13,29 @@
 let rackList = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面
-    initializeRackCreate();
+    // 使用通用函數初始化貨架頁面
+    initializeRackPage({
+        events: {
+            formSubmit: function(e) {
+                e.preventDefault();
+
+                // 检查是否有货架
+                if (rackList.length === 0) {
+                    showAlert('Please add at least one rack', 'warning');
+                    return;
+                }
+
+                // 验证所有货架数据
+                if (!validateRackData()) {
+                    return;
+                }
+
+                // 提交表单
+                submitRackForm();
+            }
+        }
+    });
 });
-
-function initializeRackCreate() {
-    // 绑定事件监听器
-    bindEvents();
-
-    // 初始化状态
-    updateUI();
-
-    // 如果已有货架数据，显示货架列表
-    if (rackList.length > 0) {
-        showRackValuesArea();
-    }
-}
 
 function bindEvents() {
     // 货架编号输入框回车事件

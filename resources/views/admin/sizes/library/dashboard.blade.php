@@ -186,7 +186,8 @@
     window.unavailableSizeLibraryUrl = "{{ route('admin.size_library.library.unavailable', ['id' => ':id']) }}";
 </script>
 
-{{-- 引入尺码库管理JavaScript文件 --}}
+{{-- 引入尺碼庫管理JavaScript文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/size-library/size-library-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/common/library-common.js') }}"></script>
+<script src="{{ asset('assets/js/size-library/library-dashboard.js') }}"></script>
 @endsection

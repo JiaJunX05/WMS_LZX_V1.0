@@ -252,5 +252,7 @@
     window.rackManagementRoute = "{{ route('admin.storage_locations.rack.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/rack-common.js') }}"></script>
 <script src="{{ asset('assets/js/storage-location/rack-create.js') }}"></script>
 @endsection

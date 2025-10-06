@@ -63,16 +63,31 @@ class AuthController extends Controller
     }
 
     public function showRegisterForm() {
-        return view('auth.register');
+        $userRole = Auth::user()->getAccountRole();
+        return view('auth.register', compact('userRole'));
     }
 
+    /**
+     * 存儲新用戶
+     */
     public function register(Request $request) {
+        // 與 GenderController 的實現保持一致：有數組走批量，否則走單個
+        if ($request->has('users') && is_array($request->input('users'))) {
+            return $this->storeMultipleUsers($request);
+        }
+
+        return $this->storeSingleUser($request);
+    }
+
+    /**
+     * 單個存儲用戶
+     */
+    private function storeSingleUser(Request $request) {
         try {
             $currentUserRole = Auth::user()->getAccountRole();
-            $requestedRole = $request->account_role ?? 'Staff';
 
             // Permission check
-            if ($currentUserRole === 'Admin' && $requestedRole !== 'Staff') {
+            if ($currentUserRole === 'Admin' && $request->account_role !== 'Staff') {
                 return redirect()->back()
                                 ->withErrors(['error' => 'You can only create Staff accounts.'])
                                 ->withInput();
@@ -88,8 +103,8 @@ class AuthController extends Controller
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
                 'password' => ['required', 'string', 'min:6', 'confirmed'],
-                'account_role' => ['nullable', 'string', 'in:SuperAdmin,Admin,Staff'],
-                'account_status' => ['nullable', 'string', 'in:Available,Unavailable'],
+                'account_role' => ['required', 'string', 'in:SuperAdmin,Admin,Staff'],
+                'account_status' => ['required', 'string', 'in:Available,Unavailable'],
             ]);
 
             $user = User::create([
@@ -100,33 +115,292 @@ class AuthController extends Controller
 
             Account::create([
                 'user_id' => $user->id,
-                'account_role' => $requestedRole,
-                'account_status' => $request->account_status ?? 'Available',
+                'account_role' => $request->account_role,
+                'account_status' => $request->account_status,
             ]);
 
-            Log::info('Registration success', [
+            Log::info('User created successfully (single)', [
                 'user_id' => $user->id,
-                'email' => $user->email,
-                'role' => $requestedRole,
-                'created_by' => Auth::user()->id
+                'created_by' => Auth::id(),
+                'role' => $request->account_role,
+                'status' => $request->account_status
+            ]);
+
+            $message = 'User created successfully!';
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'data' => $user
+                ]);
+            }
+
+            // Redirect based on current user role
+            if ($currentUserRole === 'SuperAdmin') {
+                return redirect()->route('superadmin.users.management')
+                                ->with('success', $message);
+            } else {
+                return redirect()->route('admin.users.management')
+                                ->with('success', $message);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('User creation failed (single): ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create user: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                            ->withErrors(['error' => 'Failed to create user: ' . $e->getMessage()])
+                            ->withInput();
+        }
+    }
+
+    /**
+     * 批量存儲用戶（統一入口）
+     */
+    private function storeMultipleUsers(Request $request) {
+        try {
+            $currentUserRole = Auth::user()->getAccountRole();
+
+            // 僅處理批量數組
+            $users = $request->input('users', []);
+            $createdUsers = [];
+            $errors = [];
+
+            foreach ($users as $index => $userData) {
+                // 兼容前端字段命名（camelCase -> snake_case）
+                // 前端：userName / userEmail / userPassword / accountRole / accountStatus
+                // 后端期望：name / email / password / account_role / account_status
+                if (isset($userData['userName']) && !isset($userData['name'])) {
+                    $userData['name'] = $userData['userName'];
+                }
+                if (isset($userData['userEmail']) && !isset($userData['email'])) {
+                    $userData['email'] = $userData['userEmail'];
+                }
+                if (isset($userData['userPassword']) && !isset($userData['password'])) {
+                    $userData['password'] = $userData['userPassword'];
+                }
+                if (isset($userData['accountRole']) && !isset($userData['account_role'])) {
+                    $userData['account_role'] = $userData['accountRole'];
+                }
+                if (isset($userData['accountStatus']) && !isset($userData['account_status'])) {
+                    $userData['account_status'] = $userData['accountStatus'];
+                }
+
+                $validator = \Validator::make($userData, [
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|string|email|max:255',
+                    'password' => 'required|string|min:6',
+                    'account_role' => 'required|string|in:SuperAdmin,Admin,Staff',
+                    'account_status' => 'required|string|in:Available,Unavailable',
+                ]);
+
+                if ($validator->fails()) {
+                    $errors[] = "User " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
+                    continue;
+                }
+
+                // Permission check for each user
+                if ($currentUserRole === 'Admin' && $userData['account_role'] !== 'Staff') {
+                    $errors[] = "User " . ($index + 1) . ": You can only create Staff accounts";
+                    continue;
+                }
+
+                // 檢查郵箱是否已存在
+                $existingUser = User::where('email', $userData['email'])->first();
+
+                if ($existingUser) {
+                    $errors[] = "User " . ($index + 1) . ": Email '{$userData['email']}' already exists";
+                    continue;
+                }
+
+                try {
+                    $userRecord = [
+                        'name' => $userData['name'],
+                        'email' => $userData['email'],
+                        'password' => Hash::make($userData['password']),
+                    ];
+
+                    $user = User::create($userRecord);
+
+                    Account::create([
+                        'user_id' => $user->id,
+                        'account_role' => $userData['account_role'],
+                        'account_status' => $userData['account_status'],
+                    ]);
+
+                    $createdUsers[] = $user;
+                } catch (\Exception $e) {
+                    $errors[] = "User " . ($index + 1) . ": " . $e->getMessage();
+                }
+            }
+
+            if ($request->ajax()) {
+                if (count($errors) > 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Some users failed to create',
+                        'errors' => $errors,
+                        'created_count' => count($createdUsers)
+                    ], 422);
+                } else {
+                    return response()->json([
+                        'success' => true,
+                        'message' => count($createdUsers) . ' users created successfully',
+                        'data' => $createdUsers
+                    ]);
+                }
+            }
+
+            if (count($errors) > 0) {
+                return redirect()->back()
+                                ->withErrors(['error' => implode('; ', $errors)])
+                                ->withInput();
+            }
+
+            Log::info('Users created successfully (bulk)', [
+                'created_count' => count($createdUsers),
+                'created_by' => Auth::id(),
+                'created_by_role' => $currentUserRole
             ]);
 
             // Redirect based on current user role
-            $currentUserRole = Auth::user()->getAccountRole();
             if ($currentUserRole === 'SuperAdmin') {
                 return redirect()->route('superadmin.users.management')
-                                ->with('success', 'User has been created successfully.');
-            } elseif ($currentUserRole === 'Admin') {
-                return redirect()->route('admin.users.management')
-                                ->with('success', 'User has been created successfully.');
+                                ->with('success', count($createdUsers) . ' users created successfully');
             } else {
-                return redirect()->route('staff_management')
-                                ->with('success', 'User has been created successfully.');
+                return redirect()->route('admin.users.management')
+                                ->with('success', count($createdUsers) . ' users created successfully');
             }
+
         } catch (\Exception $e) {
-            Log::error('Registration error: ' . $e->getMessage());
+            Log::error('Bulk user creation error: ' . $e->getMessage());
             return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred during registration. Please try again.'])
+                            ->withErrors(['error' => 'An error occurred during bulk user creation. Please try again.'])
+                            ->withInput();
+        }
+    }
+
+    /**
+     * 显示批量创建用户表单
+     */
+    public function showBulkCreateForm() {
+        $globalUserRole = Auth::user()->getAccountRole();
+        return view('auth.bulk-create', compact('globalUserRole'));
+    }
+
+    /**
+     * 批量创建用户
+     */
+    public function bulkCreateUsers(Request $request) {
+        try {
+            $currentUserRole = Auth::user()->getAccountRole();
+            $requestedRole = $request->default_role ?? 'Staff';
+
+            // Permission check
+            if ($currentUserRole === 'Admin' && $requestedRole !== 'Staff') {
+                return redirect()->back()
+                                ->withErrors(['error' => 'You can only create Staff accounts.'])
+                                ->withInput();
+            }
+
+            if ($currentUserRole === 'Staff') {
+                return redirect()->back()
+                                ->withErrors(['error' => 'You do not have permission to create accounts.'])
+                                ->withInput();
+            }
+
+            $userCount = (int) $request->user_count;
+            if ($userCount < 1 || $userCount > 10) {
+                return redirect()->back()
+                                ->withErrors(['error' => 'You can only create 1-10 users at once.'])
+                                ->withInput();
+            }
+
+            $request->validate([
+                'default_role' => ['required', 'string', 'in:SuperAdmin,Admin,Staff'],
+                'default_status' => ['required', 'string', 'in:Available,Unavailable'],
+                'default_password' => ['required', 'string', 'min:6'],
+            ]);
+
+            $createdUsers = [];
+            $errors = [];
+
+            for ($i = 1; $i <= $userCount; $i++) {
+                try {
+                    $name = $request->input("user_{$i}_name");
+                    $email = $request->input("user_{$i}_email");
+
+                    if (empty($name) || empty($email)) {
+                        $errors[] = "User {$i}: Name and email are required";
+                        continue;
+                    }
+
+                    // Check if email already exists
+                    if (User::where('email', $email)->exists()) {
+                        $errors[] = "User {$i}: Email {$email} already exists";
+                        continue;
+                    }
+
+                    $user = User::create([
+                        'name' => $name,
+                        'email' => $email,
+                        'password' => Hash::make($request->default_password),
+                    ]);
+
+                    Account::create([
+                        'user_id' => $user->id,
+                        'account_role' => $requestedRole,
+                        'account_status' => $request->default_status,
+                    ]);
+
+                    $createdUsers[] = $user;
+
+                } catch (\Exception $e) {
+                    $errors[] = "User {$i}: " . $e->getMessage();
+                }
+            }
+
+            if (count($createdUsers) > 0) {
+                Log::info('Bulk user creation completed', [
+                    'created_count' => count($createdUsers),
+                    'requested_count' => $userCount,
+                    'role' => $requestedRole,
+                    'status' => $request->default_status,
+                    'created_by' => Auth::user()->id
+                ]);
+
+                $successMessage = count($createdUsers) . ' users created successfully';
+                if (count($errors) > 0) {
+                    $successMessage .= '. Some users failed to create: ' . implode(', ', $errors);
+                }
+
+                // Redirect based on current user role
+                if ($currentUserRole === 'SuperAdmin') {
+                    return redirect()->route('superadmin.users.management')
+                                    ->with('success', $successMessage);
+                } else {
+                    return redirect()->route('admin.users.management')
+                                    ->with('success', $successMessage);
+                }
+            } else {
+                return redirect()->back()
+                                ->withErrors(['error' => 'No users were created. ' . implode(', ', $errors)])
+                                ->withInput();
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Bulk user creation error: ' . $e->getMessage());
+            return redirect()->back()
+                            ->withErrors(['error' => 'An error occurred during bulk user creation. Please try again.'])
                             ->withInput();
         }
     }
@@ -209,6 +483,7 @@ class AuthController extends Controller
 
                 // 返回分页数据
                 return response()->json([
+                    'success' => true,
                     'data' => $users->map(function ($user) {
                         return [
                             'id' => $user->id,
@@ -229,13 +504,85 @@ class AuthController extends Controller
                 ]);
             } catch (\Exception $e) {
                 Log::error('User management error: ' . $e->getMessage());
-                return response()->json(['error' => 'Failed to fetch users'], 500);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch users',
+                    'error' => $e->getMessage()
+                ], 500);
             }
         }
 
         // 如果不是 AJAX 请求，返回视图
         $globalUserRole = Auth::user()->getAccountRole();
-        return view('auth.user-dashboard', compact('globalUserRole'));
+        return view('auth.dashboard', compact('globalUserRole'));
+    }
+
+    /**
+     * 获取用户统计数据
+     */
+    public function getUserStats(Request $request) {
+        try {
+            $currentUserRole = Auth::user()->getAccountRole();
+
+            $query = User::query()->with('account');
+
+            // 根据角色限制查看权限
+            if ($currentUserRole === 'Admin') {
+                $query->whereHas('account', function ($accountQuery) {
+                    $accountQuery->where('account_role', 'Staff');
+                });
+            }
+
+            $totalUsers = $query->count();
+
+            // Available和Unavailable統計也需要重新計算，不受當前查詢限制影響
+            if ($currentUserRole === 'Admin') {
+                // Admin用戶只能看到Staff用戶的狀態
+                $availableUsers = $query->whereHas('account', function ($accountQuery) {
+                    $accountQuery->where('account_status', 'Available');
+                })->count();
+                $unavailableUsers = $query->whereHas('account', function ($accountQuery) {
+                    $accountQuery->where('account_status', 'Unavailable');
+                })->count();
+            } else {
+                // SuperAdmin可以看到所有用戶的狀態
+                $availableUsers = User::query()->whereHas('account', function ($accountQuery) {
+                    $accountQuery->where('account_status', 'Available');
+                })->count();
+                $unavailableUsers = User::query()->whereHas('account', function ($accountQuery) {
+                    $accountQuery->where('account_status', 'Unavailable');
+                })->count();
+            }
+
+            // Admin Users 統計需要重新計算，不受當前查詢限制影響
+            $adminUsersQuery = User::query()->with('account');
+            if ($currentUserRole === 'Admin') {
+                // Admin用戶只能看到Staff，所以Admin Users為0
+                $adminUsers = 0;
+            } else {
+                // SuperAdmin可以看到所有Admin和SuperAdmin用戶
+                $adminUsers = $adminUsersQuery->whereHas('account', function ($accountQuery) {
+                    $accountQuery->whereIn('account_role', ['Admin', 'SuperAdmin']);
+                })->count();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_users' => $totalUsers,
+                    'available_users' => $availableUsers,
+                    'unavailable_users' => $unavailableUsers,
+                    'admin_users' => $adminUsers,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('User stats error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -272,9 +619,10 @@ class AuthController extends Controller
             if ($currentUserRole === 'Admin') {
                 // Admin 只能编辑 Staff 用户
                 if ($user->account && $user->account->account_role !== 'Staff') {
-                    return redirect()->back()
-                                    ->withErrors(['error' => 'You can only edit staff accounts'])
-                                    ->withInput();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You can only edit staff accounts'
+                    ], 403);
                 }
             }
 
@@ -325,15 +673,24 @@ class AuthController extends Controller
                 'data' => $request->except('password', 'password_confirmation')
             ]);
 
-            // 根据当前用户角色重定向
-            if ($currentUserRole === 'SuperAdmin') {
-                return redirect()->route('superadmin.users.management')
-                                ->with('success', 'User updated successfully.');
-            } else {
-                return redirect()->route('admin.users.management')
-                                ->with('success', 'Staff information updated successfully!');
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'User updated successfully',
+                'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->account->account_role ?? 'N/A',
+                    'status' => $user->account->account_status ?? 'N/A',
+                ]
+            ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             // 错误日志
             Log::error('User update failed', [
@@ -343,22 +700,25 @@ class AuthController extends Controller
                 'error_message' => $e->getMessage()
             ]);
 
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred while updating the user. Please try again.'])
-                            ->withInput();
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the user. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
     /**
      * 设置账户为不可用
      */
-    public function unavailableAccount(Request $request, $id) {
+    public function setUnavailable($id) {
         try {
             // 检查是否尝试将自己设置为不可用
             if (Auth::id() == $id) {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You cannot set yourself to unavailable status'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot set yourself to unavailable status'
+                ], 403);
             }
 
             $user = User::with('account')->findOrFail($id);
@@ -368,9 +728,10 @@ class AuthController extends Controller
             if ($currentUserRole === 'Admin') {
                 // Admin 只能管理 Staff 用户
                 if ($user->account && $user->account->account_role !== 'Staff') {
-                    return redirect()->back()
-                                    ->withErrors(['error' => 'You can only manage staff accounts'])
-                                    ->withInput();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You can only manage staff accounts'
+                    ], 403);
                 }
             }
 
@@ -384,18 +745,22 @@ class AuthController extends Controller
                     'updated_by_role' => $currentUserRole
                 ]);
 
-                // 根据当前用户角色重定向
-                if ($currentUserRole === 'SuperAdmin') {
-                    return redirect()->route('superadmin.users.management')
-                                    ->with('success', 'Account has been set to unavailable status');
-                } else {
-                    return redirect()->route('admin.users.management')
-                                    ->with('success', 'Staff account has been set to unavailable status');
-                }
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Account has been set to unavailable status',
+                    'data' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->account->account_role ?? 'N/A',
+                        'status' => $user->account->account_status ?? 'N/A',
+                    ]
+                ]);
             } else {
-                return redirect()->back()
-                                ->withErrors(['error' => 'Account not found'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Account not found'
+                ], 404);
             }
         } catch (\Exception $e) {
             Log::error('Failed to set account to Unavailable', [
@@ -405,16 +770,18 @@ class AuthController extends Controller
                 'error_message' => $e->getMessage()
             ]);
 
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred while setting account status. Please try again.'])
-                            ->withInput();
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while setting account status. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
     /**
      * 设置账户为可用
      */
-    public function availableAccount(Request $request, $id) {
+    public function setAvailable($id) {
         try {
             $user = User::with('account')->findOrFail($id);
             $currentUserRole = Auth::user()->getAccountRole();
@@ -423,9 +790,10 @@ class AuthController extends Controller
             if ($currentUserRole === 'Admin') {
                 // Admin 只能管理 Staff 用户
                 if ($user->account && $user->account->account_role !== 'Staff') {
-                    return redirect()->back()
-                                    ->withErrors(['error' => 'You can only manage staff accounts'])
-                                    ->withInput();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You can only manage staff accounts'
+                    ], 403);
                 }
             }
 
@@ -439,18 +807,22 @@ class AuthController extends Controller
                     'updated_by_role' => $currentUserRole
                 ]);
 
-                // 根据当前用户角色重定向
-                if ($currentUserRole === 'SuperAdmin') {
-                    return redirect()->route('superadmin.users.management')
-                                    ->with('success', 'Account has been set to available status');
-                } else {
-                    return redirect()->route('admin.users.management')
-                                    ->with('success', 'Staff account has been set to available status');
-                }
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Account has been set to available status',
+                    'data' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->account->account_role ?? 'N/A',
+                        'status' => $user->account->account_status ?? 'N/A',
+                    ]
+                ]);
             } else {
-                return redirect()->back()
-                                ->withErrors(['error' => 'Account not found'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Account not found'
+                ], 404);
             }
         } catch (\Exception $e) {
             Log::error('Failed to set account to Available', [
@@ -460,9 +832,11 @@ class AuthController extends Controller
                 'error_message' => $e->getMessage()
             ]);
 
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred while setting account status. Please try again.'])
-                            ->withInput();
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while setting account status. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -475,9 +849,10 @@ class AuthController extends Controller
 
             // 只有 SuperAdmin 可以修改角色
             if ($currentUserRole !== 'SuperAdmin') {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You do not have permission to change roles'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to change roles'
+                ], 403);
             }
 
             $user = User::with('account')->findOrFail($id);
@@ -496,13 +871,29 @@ class AuthController extends Controller
                     'updated_by' => Auth::id()
                 ]);
 
-                return redirect()->route('superadmin.users.management')
-                                ->with('success', 'Account role changed successfully.');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Account role changed successfully',
+                    'data' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->account->account_role ?? 'N/A',
+                        'status' => $user->account->account_status ?? 'N/A',
+                    ]
+                ]);
             } else {
-                return redirect()->back()
-                                ->withErrors(['error' => 'Account not found.'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Account not found'
+                ], 404);
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Failed to change account role', [
                 'user_id' => $id,
@@ -510,9 +901,11 @@ class AuthController extends Controller
                 'error_message' => $e->getMessage()
             ]);
 
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred. Please try again.'])
-                            ->withInput();
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -525,28 +918,41 @@ class AuthController extends Controller
 
             // 只有 SuperAdmin 可以删除用户
             if ($currentUserRole !== 'SuperAdmin') {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You do not have permission to delete accounts'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to delete accounts'
+                ], 403);
             }
 
             // 检查是否尝试删除自己
             if (Auth::id() == $id) {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You cannot delete your own account'])
-                                ->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot delete your own account'
+                ], 403);
             }
 
             $user = User::findOrFail($id);
+            $userName = $user->name;
+            $userEmail = $user->email;
             $user->delete();
 
             Log::info('User deleted', [
                 'user_id' => $id,
+                'user_name' => $userName,
+                'user_email' => $userEmail,
                 'deleted_by' => Auth::id()
             ]);
 
-            return redirect()->route('superadmin.users.management')
-                            ->with('success', 'User deleted successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'User deleted successfully',
+                'data' => [
+                    'id' => $id,
+                    'name' => $userName,
+                    'email' => $userEmail,
+                ]
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to delete user', [
                 'user_id' => $id,
@@ -554,9 +960,11 @@ class AuthController extends Controller
                 'error_message' => $e->getMessage()
             ]);
 
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred while deleting the user. Please try again.'])
-                            ->withInput();
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting the user. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

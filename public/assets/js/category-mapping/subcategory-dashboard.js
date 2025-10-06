@@ -246,8 +246,7 @@ class SubcategoryDashboard {
     }
 
     getStatusClass(status) {
-        const statusMap = { 'Available': 'available', 'Unavailable': 'unavailable' };
-        return statusMap[status] || 'default';
+        return getSubcategoryStatusClass(status);
     }
 
     showNoResults() {
@@ -323,41 +322,10 @@ class SubcategoryDashboard {
      * @param {number} subcategoryId 子分类ID
      */
     deleteSubcategory(subcategoryId) {
-        if (!confirm('Are you sure you want to delete this subcategory?')) {
-            return;
-        }
-
-        const url = window.deleteSubcategoryUrl.replace(':id', subcategoryId);
-
-        // 显示加载状态
-        showAlert('Deleting subcategory...', 'info');
-
-        fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+        deleteSubcategory(subcategoryId, {
+            onSuccess: () => {
+                this.fetchSubcategories();
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || 'Subcategory deleted successfully!', 'success');
-                // 重新加载数据
-                this.fetchSubcategories(this.currentPage);
-            } else {
-                showAlert(data.message || 'Failed to delete subcategory', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting subcategory:', error);
-            showAlert('Error deleting subcategory: ' + error.message, 'danger');
         });
     }
 
@@ -366,41 +334,10 @@ class SubcategoryDashboard {
      * @param {number} subcategoryId 子分类ID
      */
     setAvailable(subcategoryId) {
-        if (!confirm('Are you sure you want to activate this subcategory?')) {
-            return;
-        }
-
-        const url = window.availableSubcategoryUrl.replace(':id', subcategoryId);
-
-        // 显示加载状态
-        showAlert('Activating subcategory...', 'info');
-
-        fetch(url, {
-            method: 'PATCH',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+        setSubcategoryAvailable(subcategoryId, {
+            onSuccess: () => {
+                this.fetchSubcategories();
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || 'Subcategory activated successfully!', 'success');
-                // 重新加载数据
-                this.fetchSubcategories(this.currentPage);
-            } else {
-                showAlert(data.message || 'Failed to activate subcategory', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error activating subcategory:', error);
-            showAlert('Error activating subcategory: ' + error.message, 'danger');
         });
     }
 
@@ -409,41 +346,10 @@ class SubcategoryDashboard {
      * @param {number} subcategoryId 子分类ID
      */
     setUnavailable(subcategoryId) {
-        if (!confirm('Are you sure you want to deactivate this subcategory?')) {
-            return;
-        }
-
-        const url = window.unavailableSubcategoryUrl.replace(':id', subcategoryId);
-
-        // 显示加载状态
-        showAlert('Deactivating subcategory...', 'info');
-
-        fetch(url, {
-            method: 'PATCH',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+        setSubcategoryUnavailable(subcategoryId, {
+            onSuccess: () => {
+                this.fetchSubcategories();
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || 'Subcategory deactivated successfully!', 'success');
-                // 重新加载数据
-                this.fetchSubcategories(this.currentPage);
-            } else {
-                showAlert(data.message || 'Failed to deactivate subcategory', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error deactivating subcategory:', error);
-            showAlert('Error deactivating subcategory: ' + error.message, 'danger');
         });
     }
 }
@@ -452,11 +358,7 @@ class SubcategoryDashboard {
 // 图片预览功能 (Image Preview Functions)
 // ========================================
 
-// 图片预览函数 - 用于模态框显示
-function previewImage(src) {
-    document.getElementById('previewImage').src = src;
-    new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
-}
+// previewImage 函數已移至 subcategory-common.js
 
 // =============================================================================
 // 全局实例初始化 (Global Instance Initialization)
@@ -473,8 +375,7 @@ $(document).ready(function() {
 // Alert 系统 (Alert System)
 // ========================================
 
-// showAlert 函数现在使用统一的 alert 系统
-// 在页面加载时引入 alert-system.js 即可使用
+// showAlert 函數已移至 alert-system.js
 
 // 使用原生JavaScript的DOMContentLoaded作为备用
 document.addEventListener('DOMContentLoaded', function() {

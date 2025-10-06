@@ -192,7 +192,8 @@
     window.unavailableMappingUrl = "{{ route('admin.category_mapping.mapping.unavailable', ['id' => ':id']) }}";
 </script>
 
-{{-- 引入分类映射管理JavaScript文件 --}}
+{{-- 引入映射管理JavaScript文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/category-mapping/category-mapping-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/common/mapping-common.js') }}"></script>
+<script src="{{ asset('assets/js/category-mapping/mapping-dashboard.js') }}"></script>
 @endsection

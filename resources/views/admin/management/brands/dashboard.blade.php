@@ -245,5 +245,7 @@
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 </script>
-<script src="{{ asset('assets/js/attribute-variant/brand-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/brand-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/brand-dashboard.js') }}"></script>
 @endsection

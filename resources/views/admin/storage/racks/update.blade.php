@@ -53,7 +53,7 @@
                     </div>
 
                     <!-- Preview Image -->
-                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center"
+                    <div class="preview-container flex-grow-1 d-flex align-items-center justify-content-center" id="image-preview"
                          data-original-content="@if($rack->rack_image && file_exists(public_path('assets/images/' . $rack->rack_image)))<img src='{{ asset('assets/images/' . $rack->rack_image) }}' alt='Preview' id='preview-image' class='img-fluid rounded-3' style='max-width: 100%; max-height: 280px; object-fit: contain;'>@else<div class='text-center text-muted'><i class='bi bi-image fs-1 mb-3 d-block'></i><p class='mb-0'>No image uploaded</p><small>Upload an image to see preview</small></div>@endif">
                         @if($rack->rack_image && file_exists(public_path('assets/images/' . $rack->rack_image)))
                             <img src="{{ asset('assets/images/' . $rack->rack_image) }}" alt="Preview" id="preview-image"
@@ -172,5 +172,7 @@
     window.rackManagementRoute = "{{ route('admin.storage_locations.rack.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
+<script src="{{ asset('assets/js/common/rack-common.js') }}"></script>
 <script src="{{ asset('assets/js/storage-location/rack-update.js') }}"></script>
 @endsection

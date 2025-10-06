@@ -13,22 +13,29 @@
 let zoneList = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面
-    initializeZoneCreate();
+    // 使用通用函數初始化區域頁面
+    initializeZonePage({
+        events: {
+            formSubmit: function(e) {
+                e.preventDefault();
+
+                // 检查是否有区域
+                if (zoneList.length === 0) {
+                    showAlert('Please add at least one zone', 'warning');
+                    return;
+                }
+
+                // 验证所有区域数据
+                if (!validateZoneData()) {
+                    return;
+                }
+
+                // 提交表单
+                submitZoneForm();
+            }
+        }
+    });
 });
-
-function initializeZoneCreate() {
-    // 绑定事件监听器
-    bindEvents();
-
-    // 初始化状态
-    updateUI();
-
-    // 如果已有区域数据，显示区域列表
-    if (zoneList.length > 0) {
-        showZoneValuesArea();
-    }
-}
 
 function bindEvents() {
     // 区域名称输入框回车事件

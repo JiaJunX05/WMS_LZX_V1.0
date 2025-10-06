@@ -256,5 +256,6 @@
     window.colorManagementRoute = "{{ route('admin.management_tool.color.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/attribute-variant/color-create.js') }}"></script>
+<script src="{{ asset('assets/js/common/color-common.js') }}"></script>
+<script src="{{ asset('assets/js/management/color-create.js') }}"></script>
 @endsection

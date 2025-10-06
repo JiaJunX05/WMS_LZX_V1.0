@@ -44,9 +44,15 @@ class GenderController extends Controller
 
                 $genders = $query->paginate(10);
 
+                // 為每個 gender 添加 sizes count
+                $gendersWithCounts = $genders->items();
+                foreach ($gendersWithCounts as $gender) {
+                    $gender->sizes_count = $gender->sizeTemplates()->count();
+                }
+
                 return response()->json([
                     'success' => true,
-                    'data' => $genders->items(),
+                    'data' => $gendersWithCounts,
                     'pagination' => [
                         'current_page' => $genders->currentPage(),
                         'last_page' => $genders->lastPage(),

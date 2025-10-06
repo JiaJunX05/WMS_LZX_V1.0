@@ -241,5 +241,6 @@
     window.sizeLibraryManagementRoute = "{{ route('admin.size_library.library.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/size-library/size-library-create.js') }}"></script>
+<script src="{{ asset('assets/js/common/library-common.js') }}"></script>
+<script src="{{ asset('assets/js/size-library/library-create.js') }}"></script>
 @endsection

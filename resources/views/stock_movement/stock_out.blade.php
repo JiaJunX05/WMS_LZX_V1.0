@@ -1,6 +1,6 @@
 @extends("layouts.app")
 
-@section("title", "Stock In")
+@section("title", "Stock Out")
 @section("content")
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
@@ -16,11 +16,11 @@
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
                             <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-plus-circle-fill"></i>
+                                <i class="bi bi-dash-circle-fill"></i>
                             </div>
                             <div>
-                                <h2 class="dashboard-title mb-1">Stock In</h2>
-                                <p class="dashboard-subtitle mb-0">Scan products to add inventory</p>
+                                <h2 class="dashboard-title mb-1">Stock Out</h2>
+                                <p class="dashboard-subtitle mb-0">Scan products to remove inventory</p>
                             </div>
                         </div>
                     </div>
@@ -40,23 +40,23 @@
 
     <!-- 扫描区域 -->
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-success text-white">
+        <div class="card-header bg-danger text-white">
             <h5 class="mb-0">
                 <i class="bi bi-upc-scan me-2"></i>
                 Barcode Scanner
             </h5>
         </div>
-        <div class="card-body">
+            <div class="card-body">
             <div class="input-group mb-3">
                 <span class="input-group-text bg-light">
-                    <i class="bi bi-upc-scan text-success"></i>
+                    <i class="bi bi-upc-scan text-danger"></i>
                 </span>
                 <input type="text" class="form-control" id="barcode-scanner"
                        placeholder="請使用掃描槍掃描條碼..." aria-label="Barcode Scanner">
                 <span class="input-group-text">
-                    <i class="bi bi-check-circle text-success">Scan Barcode</i>
+                    <i class="bi bi-check-circle text-danger">Scan Barcode</i>
                 </span>
-            </div>
+                        </div>
             <div class="form-text mt-2">
                 <i class="bi bi-info-circle me-1"></i>
                 請使用掃描槍掃描條碼 (手動輸入已禁用)
@@ -70,11 +70,11 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-3">
                     <h5 class="mb-0 fw-semibold">Scanned Products</h5>
-                    <span class="badge bg-success" id="scanned-products-count">0 products</span>
+                    <span class="badge bg-danger" id="scanned-products-count">0 products</span>
                 </div>
                 <div class="d-flex gap-2">
                     <span class="badge bg-primary fs-6 me-2" id="scanned-count">0 items scanned</span>
-                    <button class="btn btn-outline-danger btn-sm" onclick="clearAllScanned()" id="clear-all-btn" disabled>
+                    <button class="btn btn-outline-danger btn-sm" id="clear-all-btn" disabled>
                         <i class="bi bi-trash me-1"></i>
                         Clear All
                     </button>
@@ -108,9 +108,9 @@
         <div class="card-body text-center py-5">
             <i class="bi bi-upc-scan display-1 text-muted mb-3"></i>
             <h5 class="text-muted mb-2">No Products Scanned Yet</h5>
-            <p class="text-muted mb-0">Start scanning product barcodes to add them to the stock in list</p>
-        </div>
-    </div>
+            <p class="text-muted mb-0">Start scanning product barcodes to add them to the stock out list</p>
+                    </div>
+                </div>
 
     <!-- 提交按钮区域 -->
     <div class="card shadow-sm border-0 mt-4" id="submit-section" style="display: none;">
@@ -119,19 +119,19 @@
                 <label for="reference-number" class="form-label fw-medium">
                     <i class="bi bi-tag text-primary me-1"></i>
                     Reference Number <span class="text-danger">*</span>
-                </label>
+                        </label>
                 <input type="text" class="form-control" id="reference-number" required
-                       placeholder="e.g., PO-2024-001, INV-001">
-                <div class="form-text">Required reference number for tracking this stock in batch</div>
-            </div>
+                       placeholder="e.g., SO-2024-001, OUT-001">
+                <div class="form-text">Required reference number for tracking this stock out batch</div>
+                    </div>
 
-            <button class="btn btn-success w-100" onclick="submitStockIn()" id="submit-btn">
+            <button class="btn btn-danger w-100" onclick="submitStockOut()" id="submit-btn">
                 <i class="bi bi-check-circle me-2"></i>
-                Submit Stock In
+                Submit Stock Out
             </button>
 
-        </div>
-    </div>
+                    </div>
+                </div>
 
 </div>
 
@@ -139,12 +139,12 @@
 
 @section("scripts")
 <script>
-    // Set stock in related URLs
-    window.stockInPageRoute = "{{ route('staff.stock_in_page') }}";
-    window.stockInRoute = "{{ route('staff.stock_in') }}";
+    // Set stock out related URLs
+    window.stockOutPageRoute = "{{ route('staff.stock_out_page') }}";
+    window.stockOutRoute = "{{ route('staff.stock_out') }}";
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
 </script>
 
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/stock-movement/stock-in.js') }}"></script>
+<script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

@@ -132,7 +132,7 @@ class SubcategoryDashboard {
                 this.generatePagination(response);
             })
             .fail((xhr, status, error) => {
-                this.showAlert('Failed to load subcategories, please try again', 'danger');
+                this.showAlert('Failed to load subcategories', 'danger');
             });
     }
 
@@ -373,7 +373,7 @@ class SubcategoryDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error deleting subcategory: ' + error.message, 'error');
+            this.showAlert('Failed to delete subcategory', 'error');
         });
     }
 
@@ -418,7 +418,7 @@ class SubcategoryDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting subcategory available: ' + error.message, 'error');
+            this.showAlert('Failed to set subcategory available', 'error');
         });
     }
 
@@ -463,7 +463,7 @@ class SubcategoryDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting subcategory unavailable: ' + error.message, 'error');
+            this.showAlert('Failed to set subcategory unavailable', 'error');
         });
     }
 
@@ -608,7 +608,7 @@ function removeSubcategory(index) {
         showAlert('Subcategory removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid subcategory index', 'error');
+        showAlert('Failed to remove subcategory', 'error');
     }
 }
 
@@ -1074,7 +1074,7 @@ function handleUpdateFormSubmit(form) {
         }
     })
     .catch(error => {
-        showAlert('Error updating subcategory: ' + error.message, 'error');
+            showAlert('Failed to update subcategory', 'error');
     })
     .finally(() => {
         // 恢復按鈕狀態
@@ -1161,7 +1161,7 @@ function validateSubcategoryData() {
     }
 
     if (duplicates.length > 0) {
-        showAlert(`Duplicate subcategory names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        showAlert('Duplicate subcategory names found. Please remove duplicates before submitting.', 'error');
         return false;
     }
 
@@ -1223,7 +1223,7 @@ function submitSubcategoryForm() {
         }
     })
     .catch(error => {
-        showAlert('Error creating subcategories: ' + error.message, 'error');
+        showAlert('Some subcategories failed to create', 'error');
     });
 }
 

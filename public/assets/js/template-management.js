@@ -810,14 +810,14 @@ function updateTemplateStatus(id, status) {
             }
         }
     })
-    .catch(error => {
-        console.error(`Error setting template to ${status.toLowerCase()}:`, error);
-        if (typeof window.showAlert === 'function') {
-            window.showAlert(`Error updating template status: ${error.message}`, 'error');
-        } else {
-            alert(`Error updating template status: ${error.message}`);
-        }
-    });
+        .catch(error => {
+            console.error(`Error setting template to ${status.toLowerCase()}:`, error);
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to update template status', 'error');
+            } else {
+                alert('Failed to update template status');
+            }
+        });
 }
 
 /**
@@ -1398,9 +1398,9 @@ function deleteTemplateFromView(templateId) {
         } else {
             console.error('Delete failed:', data);
             if (typeof window.showAlert === 'function') {
-                window.showAlert(data.message || 'Failed to delete template', 'error');
+                window.showAlert('Failed to delete template', 'error');
             } else {
-                alert(data.message || 'Failed to delete template');
+                alert('Failed to delete template');
             }
         }
     })

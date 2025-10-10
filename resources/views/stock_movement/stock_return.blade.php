@@ -74,7 +74,7 @@
                 </div>
                 <div class="d-flex gap-2">
                     <span class="badge bg-primary fs-6 me-2" id="scanned-count">0 items scanned</span>
-                    <button class="btn btn-outline-danger btn-sm" onclick="clearAllScanned()" id="clear-all-btn" disabled>
+                    <button class="btn btn-outline-danger btn-sm" id="clear-all-btn" disabled>
                         <i class="bi bi-trash me-1"></i>
                         Clear All
                     </button>
@@ -146,5 +146,5 @@
 </script>
 
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/stock-movement/stock-return.js') }}"></script>
+<script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

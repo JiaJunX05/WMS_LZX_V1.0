@@ -272,6 +272,16 @@ function setUserUnavailable(userId, options = {}) {
  * @param {Object} options - 配置選項
  */
 function changeUserRole(userId, newRole, options = {}) {
+    // 檢查是否是修改自己
+    if (window.currentUserId && parseInt(userId) === parseInt(window.currentUserId)) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('You cannot change your own role', 'warning');
+        } else {
+            alert('You cannot change your own role');
+        }
+        return Promise.resolve();
+    }
+
     const defaultOptions = {
         successMessage: 'User role changed successfully!',
         errorMessage: 'Failed to change user role',

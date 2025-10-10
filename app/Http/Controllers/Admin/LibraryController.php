@@ -22,6 +22,94 @@ use Illuminate\Validation\ValidationException;
  */
 class LibraryController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_LIBRARIES = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const LIBRARY_RULES = [
+        'category_id' => 'required|exists:categories,id',
+        'size_value' => 'required|string|max:20',
+    ];
+
+    private const LIBRARY_STATUS_RULES = [
+        'size_status' => 'required|in:Available,Unavailable',
+    ];
+
+    /**
+     * Normalize library data from frontend
+     */
+    private function normalizeLibraryData(array $libraryData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($libraryData['categoryId']) && !isset($libraryData['category_id'])) {
+            $libraryData['category_id'] = $libraryData['categoryId'];
+        }
+        if (isset($libraryData['sizeValue']) && !isset($libraryData['size_value'])) {
+            $libraryData['size_value'] = $libraryData['sizeValue'];
+        }
+        if (isset($libraryData['sizeStatus']) && !isset($libraryData['size_status'])) {
+            $libraryData['size_status'] = $libraryData['sizeStatus'];
+        }
+
+        return $libraryData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'size_libraries_category_id_size_value_unique') !== false) {
+            return 'Size value already exists for this category. Please choose a different value.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("SizeLibrary {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示尺码库列表页面
      */
@@ -158,11 +246,9 @@ class LibraryController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'category_id' => 'required|exists:categories,id',
-                'size_value' => 'required|string|max:20',
-                'size_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::LIBRARY_RULES, self::LIBRARY_STATUS_RULES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查同一类别下尺码值是否已存在（排除当前记录）
             $existingSize = SizeLibrary::where('category_id', $validatedData['category_id'])
@@ -193,7 +279,7 @@ class LibraryController extends Controller
                 'size_status' => $validatedData['size_status'],
             ]);
 
-            Log::info('SizeLibrary updated successfully', [
+            $this->logOperation('updated', [
                 'size_library_id' => $id,
                 'category_id' => $validatedData['category_id'],
                 'size_value' => $validatedData['size_value']
@@ -213,22 +299,7 @@ class LibraryController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('SizeLibrary update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update size library: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update size library: ' . $e->getMessage(), $e);
         }
     }
 
@@ -243,7 +314,7 @@ class LibraryController extends Controller
             $sizeLibrary = SizeLibrary::findOrFail($id);
             $sizeLibrary->update(['size_status' => 'Available']);
 
-            Log::info('SizeLibrary set to available', ['size_library_id' => $id]);
+            $this->logOperation('set to available', ['size_library_id' => $id]);
 
             $message = 'Size library has been set to available status';
 
@@ -259,21 +330,7 @@ class LibraryController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Failed to set size library available: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to set size library available: ' . $e->getMessage();
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message]);
+            return $this->handleError(request(), 'Failed to set size library available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -288,7 +345,7 @@ class LibraryController extends Controller
             $sizeLibrary = SizeLibrary::findOrFail($id);
             $sizeLibrary->update(['size_status' => 'Unavailable']);
 
-            Log::info('SizeLibrary set to unavailable', ['size_library_id' => $id]);
+            $this->logOperation('set to unavailable', ['size_library_id' => $id]);
 
             $message = 'Size library has been set to unavailable status';
 
@@ -304,21 +361,7 @@ class LibraryController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Failed to set size library unavailable: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to set size library unavailable: ' . $e->getMessage();
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message]);
+            return $this->handleError(request(), 'Failed to set size library unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -334,7 +377,7 @@ class LibraryController extends Controller
             $deletedData = $sizeLibrary->toArray(); // 保存删除前的数据用于日志
             $sizeLibrary->delete();
 
-            Log::info('SizeLibrary deleted successfully', [
+            $this->logOperation('deleted', [
                 'size_library_id' => $id,
                 'deleted_data' => $deletedData
             ]);
@@ -353,21 +396,7 @@ class LibraryController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('SizeLibrary deletion failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to delete size library: ' . $e->getMessage();
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message]);
+            return $this->handleError(request(), 'Failed to delete size library: ' . $e->getMessage(), $e);
         }
     }
 
@@ -434,27 +463,51 @@ class LibraryController extends Controller
     private function storeMultipleLibraries(Request $request)
     {
         $libraries = $request->libraries;
+
+        // 限制批量创建数量
+        if (count($libraries) > self::MAX_BULK_LIBRARIES) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_LIBRARIES . ' libraries at once');
+        }
+
         $createdLibraries = [];
         $errors = [];
 
+        // 预处理：收集所有尺码组合进行批量检查
+        $combinationsToCheck = [];
         foreach ($libraries as $index => $libraryData) {
-            $validator = \Validator::make($libraryData, [
-                'category_id' => 'required|exists:categories,id',
-                'size_value' => 'required|string|max:20',
-                // 'size_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-            ]);
+            $libraryData = $this->normalizeLibraryData($libraryData);
+            if (isset($libraryData['category_id']) && isset($libraryData['size_value'])) {
+                $combinationsToCheck[] = [
+                    'category_id' => $libraryData['category_id'],
+                    'size_value' => $libraryData['size_value']
+                ];
+            }
+        }
+
+        $existingCombinations = SizeLibrary::where(function($query) use ($combinationsToCheck) {
+            foreach ($combinationsToCheck as $combination) {
+                $query->orWhere(function($q) use ($combination) {
+                    $q->where('category_id', $combination['category_id'])
+                      ->where('size_value', $combination['size_value']);
+                });
+            }
+        })->get(['category_id', 'size_value'])->map(function($item) {
+            return $item->category_id . '_' . $item->size_value;
+        })->toArray();
+
+        foreach ($libraries as $index => $libraryData) {
+            $libraryData = $this->normalizeLibraryData($libraryData);
+
+            $validator = \Validator::make($libraryData, self::LIBRARY_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Library " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
                 continue;
             }
 
-            // 检查尺码值是否已存在
-            $existingLibrary = SizeLibrary::where('category_id', $libraryData['category_id'])
-                ->where('size_value', $libraryData['size_value'])
-                ->first();
-
-            if ($existingLibrary) {
+            // 检查尺码组合是否已存在
+            $combinationKey = $libraryData['category_id'] . '_' . $libraryData['size_value'];
+            if (in_array($combinationKey, $existingCombinations)) {
                 $errors[] = "Library " . ($index + 1) . ": This size value already exists for the selected category";
                 continue;
             }
@@ -466,8 +519,16 @@ class LibraryController extends Controller
                     'size_status' => 'Available', // 默認為 Available
                 ]);
                 $createdLibraries[] = $library;
+
+                $this->logOperation('created (batch)', [
+                    'library_id' => $library->id,
+                    'category_id' => $libraryData['category_id'],
+                    'size_value' => $libraryData['size_value']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Library " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Library " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -505,12 +566,13 @@ class LibraryController extends Controller
     {
         try {
             // 验证请求数据
-            $validatedData = $request->validate([
+            $rules = [
                 'category_id' => 'required|exists:categories,id',
                 'size_values' => 'required|array|min:1',
                 'size_values.*' => 'required|string|max:20',
-                // 'size_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-            ]);
+            ];
+
+            $validatedData = $request->validate($rules);
 
             $categoryId = $validatedData['category_id'];
             $sizeValues = $validatedData['size_values'];
@@ -548,7 +610,7 @@ class LibraryController extends Controller
                 $createdSizes[] = $sizeLibrary;
             }
 
-            Log::info('SizeLibrary created successfully', [
+            $this->logOperation('created (single)', [
                 'category_id' => $categoryId,
                 'size_values' => $sizeValues,
                 'count' => count($createdSizes)
@@ -585,21 +647,7 @@ class LibraryController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('SizeLibrary creation failed: ' . $e->getMessage(), [
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to create size library: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to create size library: ' . $e->getMessage(), $e);
         }
     }
 

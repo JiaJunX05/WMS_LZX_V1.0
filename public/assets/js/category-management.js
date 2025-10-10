@@ -130,7 +130,7 @@ class CategoryDashboard {
                 this.generatePagination(response);
             })
             .fail((xhr, status, error) => {
-                this.showAlert('Failed to load categories, please try again', 'danger');
+                this.showAlert('Failed to load categories', 'danger');
             });
     }
 
@@ -546,7 +546,7 @@ function removeCategory(index) {
         showAlert('Category removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid category index', 'error');
+        showAlert('Failed to remove category', 'error');
     }
 }
 
@@ -1009,7 +1009,7 @@ function submitCategoryForm() {
         }
     })
     .catch(error => {
-        showAlert('Error creating categories: ' + error.message, 'error');
+        showAlert('Some categories failed to create', 'error');
     });
 }
 
@@ -1066,7 +1066,7 @@ function handleUpdateFormSubmit(form) {
         }
     })
     .catch(error => {
-        showAlert('Error updating category: ' + error.message, 'error');
+        showAlert('Failed to update category', 'error');
     })
     .finally(() => {
         // 恢復按鈕狀態
@@ -1248,7 +1248,7 @@ function handleCategoryRequest(url, method, data, options = {}) {
             }
         })
         .catch(error => {
-            showAlert('Error: ' + error.message, 'error');
+            showAlert('Operation failed', 'error');
             if (onError) {
                 onError(error);
             }
@@ -1422,7 +1422,7 @@ function bindCategoryEvents(config = {}) {
             }
 
             if (duplicates.length > 0) {
-                showAlert(`Duplicate category names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+                showAlert('Duplicate category names found. Please remove duplicates before submitting.', 'error');
                 return;
             }
 

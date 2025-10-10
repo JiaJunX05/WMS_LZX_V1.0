@@ -378,7 +378,7 @@ class ZoneDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error deleting zone: ' + error.message, 'error');
+            this.showAlert('Failed to delete zone', 'error');
         });
     }
 
@@ -423,7 +423,7 @@ class ZoneDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting zone available: ' + error.message, 'error');
+            this.showAlert('Failed to set zone available', 'error');
         });
     }
 
@@ -468,7 +468,7 @@ class ZoneDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting zone unavailable: ' + error.message, 'error');
+            this.showAlert('Failed to set zone unavailable', 'error');
         });
     }
 
@@ -628,7 +628,7 @@ function removeZone(index) {
         showAlert('Zone removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid zone index', 'error');
+        showAlert('Failed to remove zone', 'error');
     }
 }
 
@@ -1101,14 +1101,19 @@ function handleUpdateFormSubmit(form) {
                 window.location.href = window.zoneManagementRoute || '/admin/storage-locations/zone/index';
             }, 2000);
         } else {
-            showAlert(data.message || 'Failed to update zone', 'error');
+            // 简化错误信息，类似 mapping 页面
+            if (data.message && data.message.includes('Some zones failed to create')) {
+                showAlert('Some zones failed to create', 'error');
+            } else {
+                showAlert(data.message || 'Failed to update zone', 'error');
+            }
         }
     })
     .catch(error => {
         if (error.message.includes('already been taken') || error.message.includes('zone_name')) {
             showAlert('This zone name already exists. Please choose a different name.', 'warning');
         } else {
-            showAlert('Error updating zone: ' + error.message, 'error');
+            showAlert('Failed to update zone', 'error');
         }
     })
     .finally(() => {
@@ -1318,7 +1323,7 @@ function validateZoneData() {
     }
 
     if (duplicates.length > 0) {
-        showAlert(`Duplicate zone names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        showAlert('Duplicate zone names found. Please remove duplicates before submitting.', 'error');
         return false;
     }
 
@@ -1377,11 +1382,17 @@ function submitZoneForm() {
                 window.location.href = window.zoneManagementRoute || '/admin/storage-locations/zone/index';
             }, 2000);
         } else {
-            showAlert(data.message || 'Failed to create zones', 'error');
+            // 简化错误信息，类似 mapping 页面
+            if (data.message && data.message.includes('Some zones failed to create')) {
+                showAlert('Some zones failed to create', 'error');
+            } else {
+                showAlert(data.message || 'Failed to create zones', 'error');
+            }
         }
     })
     .catch(error => {
-        showAlert('Error creating zones: ' + error.message, 'error');
+        // 简化错误信息
+        showAlert('Some zones failed to create', 'error');
     });
 }
 

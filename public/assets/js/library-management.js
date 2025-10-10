@@ -625,14 +625,14 @@ function updateLibraryStatus(id, status) {
             }
         }
     })
-    .catch(error => {
-        console.error(`Error setting library to ${status.toLowerCase()}:`, error);
-        if (typeof window.showAlert === 'function') {
-            window.showAlert(`Error updating library status: ${error.message}`, 'error');
-        } else {
-            alert(`Error updating library status: ${error.message}`);
-        }
-    });
+        .catch(error => {
+            console.error(`Error setting library to ${status.toLowerCase()}:`, error);
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to update library status', 'error');
+            } else {
+                alert('Failed to update library status');
+            }
+        });
 }
 
 function bindSearchEvents() {
@@ -894,7 +894,7 @@ function removeSizeValue(index) {
         updateUI();
         window.showAlert('Size value removed successfully', 'success');
     } else {
-        window.showAlert('Error: Invalid size value index', 'error');
+        window.showAlert('Failed to remove size value', 'error');
     }
 }
 
@@ -1270,7 +1270,7 @@ function handleFormSubmit(e) {
     }
 
     if (duplicates.length > 0) {
-        window.showAlert(`Duplicate size values found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        window.showAlert('Duplicate size values found. Please remove duplicates before submitting.', 'error');
         return;
     }
 
@@ -1290,7 +1290,7 @@ function handleFormSubmit(e) {
             }, 2000);
         },
         function(error) {
-            window.showAlert(error || 'Error creating size library', 'error');
+            window.showAlert(error || 'Some size libraries failed to create', 'error');
         }
     );
 }
@@ -1457,9 +1457,9 @@ function deleteLibraryFromView(libraryId) {
             checkAndRedirectIfEmpty();
         } else {
             if (typeof window.showAlert === 'function') {
-                window.showAlert(data.message || 'Failed to delete library', 'error');
+                window.showAlert('Failed to delete library', 'error');
             } else {
-                alert(data.message || 'Failed to delete library');
+                alert('Failed to delete library');
             }
         }
     })

@@ -1,38 +1,5 @@
 ﻿/* Materio 風格的產品創建頁面樣式 */
-.card {
-    border: 1px solid #e7eaf3;
-    border-radius: 0.75rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e7eaf3;
-    padding: 1rem 1.25rem;
-}
-
-.card-body {
-    padding: 1.25rem;
-}
-
-/* 表單樣式 */
-.form-label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-}
-
-.form-control, .form-select {
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
-}
+/* 基础样式已移至 dashboard-header.css 和 variables.css */
 
 /* 圖片上傳區域 */
 .image-upload-area {
@@ -233,68 +200,12 @@
     }
 }
 
-/* 狀態卡片 */
-.status-card {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
+/* 狀態卡片样式已移至 form-status.css */
 
-.status-card:hover {
-    border-color: #e9ecef;
-    transform: translateY(-2px);
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
-}
+/* 按鈕樣式已移至 dashboard-header.css */
 
-.status-card.selected {
-    border-color: #3b82f6;
-    background-color: #f0f8ff;
-}
-
-.status-card label {
-    cursor: pointer;
-    margin-bottom: 0;
-}
-
-/* 按鈕樣式 */
-.btn {
-    border-radius: 0.375rem;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-}
-
-.btn-primary:hover {
-    background-color: #2563eb;
-    border-color: #2563eb;
-}
-
-.btn-outline-secondary {
-    color: #6c757d;
-    border-color: #ced4da;
-}
-
-.btn-outline-secondary:hover {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: white;
-}
-
-/* 響應式設計 */
+/* 響應式設計 - 只保留产品特有的样式 */
 @media (max-width: 768px) {
-    .container-fluid {
-        padding: 1rem;
-    }
-
-    .card-body {
-        padding: 1rem;
-    }
-
     .image-upload-area {
         min-height: 150px;
         padding: 1.5rem;

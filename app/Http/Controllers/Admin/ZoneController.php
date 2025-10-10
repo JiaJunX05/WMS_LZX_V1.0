@@ -9,6 +9,91 @@ use App\Models\StorageLocation\Zone;
 
 class ZoneController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_ZONES = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const ZONE_RULES = [
+        'zone_name' => 'required|string|max:255',
+        'location' => 'required|string|max:255',
+    ];
+
+    private const ZONE_IMAGE_RULES = [
+        'zone_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ];
+
+    /**
+     * Normalize zone data from frontend
+     */
+    private function normalizeZoneData(array $zoneData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($zoneData['zoneName']) && !isset($zoneData['zone_name'])) {
+            $zoneData['zone_name'] = $zoneData['zoneName'];
+        }
+        if (isset($zoneData['zoneStatus']) && !isset($zoneData['zone_status'])) {
+            $zoneData['zone_status'] = $zoneData['zoneStatus'];
+        }
+
+        return $zoneData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'zones_zone_name_unique') !== false) {
+            return 'Zone name already exists. Please choose a different name.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Zone {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -74,11 +159,10 @@ class ZoneController extends Controller
     private function storeSingleZone(Request $request)
     {
         // 校验
-        $request->validate([
-            'zone_name' => 'required|string|max:255|unique:zones,zone_name',
-            'location' => 'required|string|max:255',
-            'zone_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        $rules = array_merge(self::ZONE_RULES, self::ZONE_IMAGE_RULES);
+        $rules['zone_name'] .= '|unique:zones,zone_name';
+
+        $request->validate($rules);
 
         try {
             $zoneData = [
@@ -102,7 +186,7 @@ class ZoneController extends Controller
 
             $zone = Zone::create($zoneData);
 
-            Log::info('Zone created successfully (single)', [
+            $this->logOperation('created (single)', [
                 'zone_id' => $zone->id,
                 'zone_name' => $zoneData['zone_name']
             ]);
@@ -121,19 +205,7 @@ class ZoneController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Zone creation failed (single): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create zone: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create zone: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create zone: ' . $e->getMessage(), $e);
         }
     }
 
@@ -144,25 +216,31 @@ class ZoneController extends Controller
     {
         // 仅处理批量数组
         $zones = $request->input('zones', []);
+
+        // 限制批量创建数量
+        if (count($zones) > self::MAX_BULK_ZONES) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_ZONES . ' zones at once');
+        }
+
         $createdZones = [];
         $errors = [];
 
+        // 预处理：收集所有区域名称进行批量检查
+        $zoneNamesToCheck = [];
         foreach ($zones as $index => $zoneData) {
-
-            // 兼容前端字段命名（camelCase -> snake_case）
-            // 前端：zoneName / zoneStatus
-            // 后端期望：zone_name / zone_status
-            if (isset($zoneData['zoneName']) && !isset($zoneData['zone_name'])) {
-                $zoneData['zone_name'] = $zoneData['zoneName'];
+            $zoneData = $this->normalizeZoneData($zoneData);
+            if (isset($zoneData['zone_name'])) {
+                $zoneNamesToCheck[] = $zoneData['zone_name'];
             }
-            if (isset($zoneData['zoneStatus']) && !isset($zoneData['zone_status'])) {
-                $zoneData['zone_status'] = $zoneData['zoneStatus'];
-            }
+        }
 
-            $validator = \Validator::make($zoneData, [
-                'zone_name' => 'required|string|max:255',
-                'location' => 'required|string|max:255',
-            ]);
+        // 批量检查区域名称是否已存在
+        $existingZoneNames = Zone::whereIn('zone_name', $zoneNamesToCheck)->pluck('zone_name')->toArray();
+
+        foreach ($zones as $index => $zoneData) {
+            $zoneData = $this->normalizeZoneData($zoneData);
+
+            $validator = \Validator::make($zoneData, self::ZONE_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Zone " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -170,9 +248,7 @@ class ZoneController extends Controller
             }
 
             // 检查区域名称是否已存在
-            $existingZone = Zone::where('zone_name', $zoneData['zone_name'])->first();
-
-            if ($existingZone) {
+            if (in_array($zoneData['zone_name'], $existingZoneNames)) {
                 $errors[] = "Zone " . ($index + 1) . ": Zone name '{$zoneData['zone_name']}' already exists";
                 continue;
             }
@@ -199,8 +275,15 @@ class ZoneController extends Controller
 
                 $zone = Zone::create($zoneRecord);
                 $createdZones[] = $zone;
+
+                $this->logOperation('created (batch)', [
+                    'zone_id' => $zone->id,
+                    'zone_name' => $zoneData['zone_name']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Zone " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Zone " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -248,12 +331,10 @@ class ZoneController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'zone_name' => 'required|string|max:255',
-                'location' => 'required|string|max:255',
-                'zone_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'zone_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::ZONE_RULES, self::ZONE_IMAGE_RULES);
+            $rules['zone_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查区域名称是否已存在（排除当前记录）
             $existingZone = Zone::where('zone_name', $validatedData['zone_name'])
@@ -296,7 +377,7 @@ class ZoneController extends Controller
 
             $zone->update($zoneData);
 
-            Log::info('Zone updated successfully', [
+            $this->logOperation('updated', [
                 'zone_id' => $id,
                 'zone_name' => $validatedData['zone_name'],
                 'location' => $validatedData['location'],
@@ -341,22 +422,7 @@ class ZoneController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Zone update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update zone: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update zone: ' . $e->getMessage(), $e);
         }
     }
 
@@ -366,7 +432,7 @@ class ZoneController extends Controller
             $zone = Zone::findOrFail($id);
             $zone->update(['zone_status' => 'Available']);
 
-            Log::info('Zone set to available', ['zone_id' => $id]);
+            $this->logOperation('set to available', ['zone_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -381,17 +447,7 @@ class ZoneController extends Controller
                 ->with('success', 'Zone has been set to available status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set zone available: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set zone available: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set zone available: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set zone available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -401,7 +457,7 @@ class ZoneController extends Controller
             $zone = Zone::findOrFail($id);
             $zone->update(['zone_status' => 'Unavailable']);
 
-            Log::info('Zone set to unavailable', ['zone_id' => $id]);
+            $this->logOperation('set to unavailable', ['zone_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -416,17 +472,7 @@ class ZoneController extends Controller
                 ->with('success', 'Zone has been set to unavailable status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set zone unavailable: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set zone unavailable: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set zone unavailable: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set zone unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -441,7 +487,7 @@ class ZoneController extends Controller
 
             $zone->delete();
 
-            Log::info('Zone deleted successfully', ['zone_id' => $id]);
+            $this->logOperation('deleted', ['zone_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -459,17 +505,7 @@ class ZoneController extends Controller
                 ->with('success', 'Zone deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Zone deletion failed: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete zone: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete zone: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete zone: ' . $e->getMessage(), $e);
         }
     }
 }

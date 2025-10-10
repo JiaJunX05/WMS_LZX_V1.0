@@ -139,7 +139,7 @@ class GenderDashboard {
                 this.generatePagination(response);
             })
             .fail((xhr, status, error) => {
-                this.showAlert('Failed to load genders, please try again', 'danger');
+                this.showAlert('Failed to load genders', 'danger');
             });
     }
 
@@ -378,7 +378,7 @@ class GenderDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error deleting gender: ' + error.message, 'error');
+            this.showAlert('Failed to delete gender', 'error');
         });
     }
 
@@ -423,7 +423,7 @@ class GenderDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting gender available: ' + error.message, 'error');
+            this.showAlert('Failed to set gender available', 'error');
         });
     }
 
@@ -468,7 +468,7 @@ class GenderDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting gender unavailable: ' + error.message, 'error');
+            this.showAlert('Failed to set gender unavailable', 'error');
         });
     }
 
@@ -606,7 +606,7 @@ function removeGender(index) {
         showAlert('Gender removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid gender index', 'error');
+        showAlert('Failed to remove gender', 'error');
     }
 }
 
@@ -1061,7 +1061,7 @@ function handleUpdateFormSubmit(form) {
         if (error.message.includes('already been taken') || error.message.includes('gender_name')) {
             showAlert('This gender name already exists. Please choose a different name.', 'warning');
         } else {
-            showAlert('Error updating gender: ' + error.message, 'error');
+            showAlert('Failed to update gender', 'error');
         }
     })
     .finally(() => {
@@ -1118,7 +1118,7 @@ function validateGenderData() {
     }
 
     if (duplicates.length > 0) {
-        showAlert(`Duplicate gender names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        showAlert('Duplicate gender names found. Please remove duplicates before submitting.', 'error');
         return false;
     }
 
@@ -1175,7 +1175,7 @@ function submitGenderForm() {
         }
     })
     .catch(error => {
-        showAlert('Error creating genders: ' + error.message, 'error');
+        showAlert('Some genders failed to create', 'error');
     });
 }
 

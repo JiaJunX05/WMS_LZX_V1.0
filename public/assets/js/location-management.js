@@ -524,7 +524,7 @@ function loadLocations() {
     })
     .catch(error => {
         console.error('Error loading locations:', error);
-        window.showAlert('Error loading locations: ' + error.message, 'error');
+        showAlert('Failed to load locations', 'error');
     });
 }
 
@@ -1001,7 +1001,7 @@ function removeLocation(index) {
         updateUI(locationList);
         window.showAlert('Location removed successfully', 'success');
     } else {
-        window.showAlert('Error: Invalid location index', 'error');
+        window.showAlert('Failed to remove location', 'error');
     }
 }
 
@@ -1160,7 +1160,7 @@ function handleFormSubmit(e) {
     }
 
     if (duplicates.length > 0) {
-        window.showAlert(`Duplicate combinations found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        window.showAlert('Duplicate combinations found. Please remove duplicates before submitting.', 'error');
         return;
     }
 
@@ -1180,7 +1180,12 @@ function handleFormSubmit(e) {
             }, 2000);
         },
         function(error) {
-            window.showAlert(error || 'Error creating locations', 'error');
+            // 简化错误信息，类似 mapping 页面
+            if (error && error.includes('Some locations failed to create')) {
+                window.showAlert('Some locations failed to create', 'error');
+            } else {
+                window.showAlert(error || 'Failed to create locations', 'error');
+            }
         }
     );
 }
@@ -1241,7 +1246,7 @@ function handleUpdateFormSubmit(e) {
             }, 1500);
         },
         function(error) {
-            window.showAlert(error || 'Failed to update location', 'error');
+            showAlert('Failed to update location', 'error');
         }
     );
 
@@ -1387,12 +1392,12 @@ function deleteLocationFromView(locationId) {
             // 檢查是否還有資料，如果沒有就跳轉回 index
             checkAndRedirectIfEmpty();
         } else {
-            window.showAlert(data.message || 'Failed to delete location', 'error');
+            showAlert('Failed to delete location', 'error');
         }
     })
     .catch(error => {
         console.error('Delete error:', error);
-        window.showAlert('Failed to delete location', 'error');
+        showAlert('Failed to delete location', 'error');
     })
     .finally(() => {
         // 重置刪除狀態
@@ -1482,12 +1487,12 @@ function updateLocationStatus(id, status) {
             window.showAlert(`Location status updated to ${status.toLowerCase()} successfully!`, 'success');
             loadLocations(); // 重新加載數據
         } else {
-            window.showAlert(`Failed to update location status to ${status.toLowerCase()}`, 'error');
+            showAlert('Failed to update location status', 'error');
         }
     })
     .catch(error => {
         console.error(`Error setting location to ${status.toLowerCase()}:`, error);
-        window.showAlert(`Error updating location status: ${error.message}`, 'error');
+        showAlert('Failed to update location status', 'error');
     });
 }
 

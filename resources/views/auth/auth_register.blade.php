@@ -78,12 +78,6 @@
                                     </button>
                                 </div>
                                 <small class="text-muted">Enter user name and click + to add</small>
-                                <div class="mt-2">
-                                    <small class="text-info">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        <span id="userCountText">No users added yet</span>
-                                    </small>
-                                </div>
                             </div>
 
                             <div class="mb-4">
@@ -262,42 +256,6 @@
                             </div>
                         </div>
 
-                        <!-- 状态选择 -->
-                        <div class="mb-4" id="statusSelection" style="display: none;">
-                            <hr class="my-4">
-                            <h5 class="mb-3">
-                                <i class="bi bi-toggle-on text-primary me-2"></i>Account Status
-                            </h5>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="card h-100 status-card selected" data-status="Available">
-                                        <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                            <input type="radio" name="account_status" value="Available" class="form-check-input me-3" checked>
-                                            <div>
-                                                <div class="fw-semibold text-success">
-                                                    <i class="bi bi-check-circle-fill me-2"></i>Available
-                                                </div>
-                                                <small class="text-muted">User can login and use normally</small>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card h-100 status-card" data-status="Unavailable">
-                                        <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                            <input type="radio" name="account_status" value="Unavailable" class="form-check-input me-3">
-                                            <div>
-                                                <div class="fw-semibold text-secondary">
-                                                    <i class="bi bi-slash-circle-fill me-2"></i>Unavailable
-                                                </div>
-                                                <small class="text-muted">User cannot login to the system</small>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- 提交按钮 -->
                         <div id="submitSection" style="display: none;">
                             <hr class="my-4">
@@ -321,5 +279,5 @@
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
-<script src="{{ asset('assets/js/auth/auth-create.js') }}"></script>
+<script src="{{ asset('assets/js/auth/auth-management.js') }}"></script>
 @endsection

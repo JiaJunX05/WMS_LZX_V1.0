@@ -20,6 +20,94 @@ use App\Models\ManagementTool\Color;
  */
 class ColorController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_COLORS = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const COLOR_RULES = [
+        'color_name' => 'required|string|max:255',
+        'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+        'color_rgb' => 'nullable|string|max:255',
+    ];
+
+    /**
+     * Normalize color data from frontend
+     */
+    private function normalizeColorData(array $colorData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($colorData['colorName']) && !isset($colorData['color_name'])) {
+            $colorData['color_name'] = $colorData['colorName'];
+        }
+        if (isset($colorData['colorHex']) && !isset($colorData['color_hex'])) {
+            $colorData['color_hex'] = $colorData['colorHex'];
+        }
+        if (isset($colorData['colorRgb']) && !isset($colorData['color_rgb'])) {
+            $colorData['color_rgb'] = $colorData['colorRgb'];
+        }
+        if (isset($colorData['colorStatus']) && !isset($colorData['color_status'])) {
+            $colorData['color_status'] = $colorData['colorStatus'];
+        }
+
+        return $colorData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'colors_color_name_unique') !== false) {
+            return 'Color name already exists. Please choose a different name.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Color {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示颜色列表页面
      */
@@ -95,12 +183,10 @@ class ColorController extends Controller
     private function storeSingleColor(Request $request)
     {
         // 校验
-        $request->validate([
-            'color_name' => 'required|string|max:255|unique:colors,color_name',
-            'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
-            'color_rgb' => 'nullable|string|max:255',
-            // 'color_status' => 'required|in:Available,Unavailable', // Removed validation
-        ]);
+        $rules = self::COLOR_RULES;
+        $rules['color_name'] .= '|unique:colors,color_name';
+
+        $request->validate($rules);
 
         try {
             $colorData = [
@@ -112,7 +198,7 @@ class ColorController extends Controller
 
             $color = Color::create($colorData);
 
-            Log::info('Color created successfully (single)', [
+            $this->logOperation('created (single)', [
                 'color_id' => $color->id,
                 'color_name' => $colorData['color_name']
             ]);
@@ -131,19 +217,7 @@ class ColorController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Color creation failed (single): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create color: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create color: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create color: ' . $e->getMessage(), $e);
         }
     }
 
@@ -154,33 +228,32 @@ class ColorController extends Controller
     {
         // 仅处理批量数组
         $colors = $request->input('colors', []);
+
+        // 限制批量创建数量
+        if (count($colors) > self::MAX_BULK_COLORS) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_COLORS . ' colors at once');
+        }
+
         $createdColors = [];
         $errors = [];
 
+        // 预处理：收集所有颜色名称进行批量检查
+        $colorNamesToCheck = [];
         foreach ($colors as $index => $colorData) {
+            $colorData = $this->normalizeColorData($colorData);
+            if (isset($colorData['color_name'])) {
+                $colorNamesToCheck[] = $colorData['color_name'];
+            }
+        }
 
-            // 兼容前端字段命名（camelCase -> snake_case）
-            // 前端：colorName / colorHex / colorRgb / colorStatus
-            // 后端期望：color_name / color_hex / color_rgb / color_status
-            if (isset($colorData['colorName']) && !isset($colorData['color_name'])) {
-                $colorData['color_name'] = $colorData['colorName'];
-            }
-            if (isset($colorData['colorHex']) && !isset($colorData['color_hex'])) {
-                $colorData['color_hex'] = $colorData['colorHex'];
-            }
-            if (isset($colorData['colorRgb']) && !isset($colorData['color_rgb'])) {
-                $colorData['color_rgb'] = $colorData['colorRgb'];
-            }
-            if (isset($colorData['colorStatus']) && !isset($colorData['color_status'])) {
-                $colorData['color_status'] = $colorData['colorStatus'];
-            }
+        $existingColorNames = Color::whereIn('color_name', $colorNamesToCheck)
+            ->pluck('color_name')
+            ->toArray();
 
-            $validator = \Validator::make($colorData, [
-                'color_name' => 'required|string|max:255',
-                'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
-                'color_rgb' => 'nullable|string|max:255',
-                // 'color_status' => 'required|in:Available,Unavailable', // Removed validation
-            ]);
+        foreach ($colors as $index => $colorData) {
+            $colorData = $this->normalizeColorData($colorData);
+
+            $validator = \Validator::make($colorData, self::COLOR_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Color " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -188,9 +261,7 @@ class ColorController extends Controller
             }
 
             // 检查颜色名称是否已存在
-            $existingColor = Color::where('color_name', $colorData['color_name'])->first();
-
-            if ($existingColor) {
+            if (in_array($colorData['color_name'], $existingColorNames)) {
                 $errors[] = "Color " . ($index + 1) . ": Color name '{$colorData['color_name']}' already exists";
                 continue;
             }
@@ -205,8 +276,15 @@ class ColorController extends Controller
 
                 $color = Color::create($colorRecord);
                 $createdColors[] = $color;
+
+                $this->logOperation('created (batch)', [
+                    'color_id' => $color->id,
+                    'color_name' => $colorData['color_name']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Color " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Color " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -260,12 +338,10 @@ class ColorController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'color_name' => 'required|string|max:255',
-                'color_hex' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
-                'color_rgb' => 'nullable|string|max:255',
-                'color_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = self::COLOR_RULES;
+            $rules['color_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查颜色名称是否已存在（排除当前记录）
             $existingColor = Color::where('color_name', $validatedData['color_name'])
@@ -296,7 +372,7 @@ class ColorController extends Controller
                 'color_status' => $validatedData['color_status'],
             ]);
 
-            Log::info('Color updated successfully', [
+            $this->logOperation('updated', [
                 'color_id' => $id,
                 'color_name' => $validatedData['color_name'],
                 'color_hex' => $validatedData['color_hex'],
@@ -341,22 +417,7 @@ class ColorController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Color update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update color: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update color: ' . $e->getMessage(), $e);
         }
     }
 
@@ -369,7 +430,7 @@ class ColorController extends Controller
             $color = Color::findOrFail($id);
             $color->update(['color_status' => 'Available']);
 
-            Log::info('Color set to available', ['color_id' => $id]);
+            $this->logOperation('set to available', ['color_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -384,17 +445,7 @@ class ColorController extends Controller
                 ->with('success', 'Color has been set to available status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set color available: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set color available: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set color available: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set color available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -407,7 +458,7 @@ class ColorController extends Controller
             $color = Color::findOrFail($id);
             $color->update(['color_status' => 'Unavailable']);
 
-            Log::info('Color set to unavailable', ['color_id' => $id]);
+            $this->logOperation('set to unavailable', ['color_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -422,17 +473,7 @@ class ColorController extends Controller
                 ->with('success', 'Color has been set to unavailable status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set color unavailable: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set color unavailable: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set color unavailable: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set color unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -445,7 +486,7 @@ class ColorController extends Controller
             $color = Color::findOrFail($id);
             $color->delete();
 
-            Log::info('Color deleted successfully', ['color_id' => $id]);
+            $this->logOperation('deleted', ['color_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -463,17 +504,7 @@ class ColorController extends Controller
                 ->with('success', 'Color deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Color deletion failed: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete color: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete color: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete color: ' . $e->getMessage(), $e);
         }
     }
 }

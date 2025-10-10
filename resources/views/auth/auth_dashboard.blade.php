@@ -232,6 +232,9 @@
     // `{{ $globalUserRole ?? '' }}`: `?? ''` is to prevent errors when `$globalUserRole` is undefined.
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 
+    // Pass current user ID to JavaScript to prevent self-modification
+    window.currentUserId = {{ Auth::id() ?? 0 }};
+
     // User operation related URLs - dynamically set based on current user role
     @if($globalUserRole === 'SuperAdmin')
         window.editUserUrl = "{{ route('superadmin.users.edit', ':id') }}";
@@ -255,5 +258,5 @@
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
-<script src="{{ asset('assets/js/auth/auth-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/auth/auth-management.js') }}"></script>
 @endsection

@@ -378,7 +378,7 @@ class RackDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error deleting rack: ' + error.message, 'error');
+            this.showAlert('Failed to delete rack', 'error');
         });
     }
 
@@ -423,7 +423,7 @@ class RackDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting rack available: ' + error.message, 'error');
+            this.showAlert('Failed to set rack available', 'error');
         });
     }
 
@@ -468,7 +468,7 @@ class RackDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting rack unavailable: ' + error.message, 'error');
+            this.showAlert('Failed to set rack unavailable', 'error');
         });
     }
 
@@ -623,7 +623,7 @@ function removeRack(index) {
         showAlert('Rack removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid rack index', 'error');
+        showAlert('Failed to remove rack', 'error');
     }
 }
 
@@ -1083,14 +1083,19 @@ function handleUpdateFormSubmit(form) {
                 window.location.href = window.rackManagementRoute || '/admin/storage-locations/rack/index';
             }, 2000);
         } else {
-            showAlert(data.message || 'Failed to update rack', 'error');
+            // 简化错误信息，类似 mapping 页面
+            if (data.message && data.message.includes('Some racks failed to create')) {
+                showAlert('Some racks failed to create', 'error');
+            } else {
+                showAlert(data.message || 'Failed to update rack', 'error');
+            }
         }
     })
     .catch(error => {
         if (error.message.includes('already been taken') || error.message.includes('rack_number')) {
             showAlert('This rack number already exists. Please choose a different number.', 'warning');
         } else {
-            showAlert('Error updating rack: ' + error.message, 'error');
+            showAlert('Failed to update rack', 'error');
         }
     })
     .finally(() => {
@@ -1301,7 +1306,7 @@ function validateRackData() {
     }
 
     if (duplicates.length > 0) {
-        showAlert(`Duplicate rack numbers found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        showAlert('Duplicate rack numbers found. Please remove duplicates before submitting.', 'error');
         return false;
     }
 
@@ -1360,11 +1365,17 @@ function submitRackForm() {
                 window.location.href = window.rackManagementRoute || '/admin/storage-locations/rack/index';
             }, 2000);
         } else {
-            showAlert(data.message || 'Failed to create racks', 'error');
+            // 简化错误信息，类似 mapping 页面
+            if (data.message && data.message.includes('Some racks failed to create')) {
+                showAlert('Some racks failed to create', 'error');
+            } else {
+                showAlert(data.message || 'Failed to create racks', 'error');
+            }
         }
     })
     .catch(error => {
-        showAlert('Error creating racks: ' + error.message, 'error');
+        // 简化错误信息
+        showAlert('Some racks failed to create', 'error');
     });
 }
 

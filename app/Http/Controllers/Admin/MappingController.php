@@ -23,6 +23,90 @@ use App\Models\CategoryMapping\Subcategory;
  */
 class MappingController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_MAPPINGS = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const MAPPING_RULES = [
+        'category_id' => 'required|exists:categories,id',
+        'subcategory_id' => 'required|exists:subcategories,id',
+    ];
+
+    /**
+     * Normalize mapping data from frontend
+     */
+    private function normalizeMappingData(array $mappingData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($mappingData['categoryId']) && !isset($mappingData['category_id'])) {
+            $mappingData['category_id'] = $mappingData['categoryId'];
+        }
+        if (isset($mappingData['subcategoryId']) && !isset($mappingData['subcategory_id'])) {
+            $mappingData['subcategory_id'] = $mappingData['subcategoryId'];
+        }
+        if (isset($mappingData['mappingStatus']) && !isset($mappingData['mapping_status'])) {
+            $mappingData['mapping_status'] = $mappingData['mappingStatus'];
+        }
+
+        return $mappingData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'mappings_category_id_subcategory_id_unique') !== false) {
+            return 'Mapping combination already exists. Please choose a different combination.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Mapping {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示分类映射管理页面
      *
@@ -93,26 +177,49 @@ class MappingController extends Controller
                 $createdCount = 0;
                 $errors = [];
 
+                // 限制批量创建数量
+                if (count($mappings) > self::MAX_BULK_MAPPINGS) {
+                    return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_MAPPINGS . ' mappings at once');
+                }
+
+                // 预处理：收集所有映射组合进行批量检查
+                $combinationsToCheck = [];
+                foreach ($mappings as $index => $mappingData) {
+                    $mappingData = $this->normalizeMappingData($mappingData);
+                    if (isset($mappingData['category_id']) && isset($mappingData['subcategory_id'])) {
+                        $combinationsToCheck[] = [
+                            'category_id' => $mappingData['category_id'],
+                            'subcategory_id' => $mappingData['subcategory_id']
+                        ];
+                    }
+                }
+
+                $existingCombinations = Mapping::where(function($query) use ($combinationsToCheck) {
+                    foreach ($combinationsToCheck as $combination) {
+                        $query->orWhere(function($q) use ($combination) {
+                            $q->where('category_id', $combination['category_id'])
+                              ->where('subcategory_id', $combination['subcategory_id']);
+                        });
+                    }
+                })->get(['category_id', 'subcategory_id'])->map(function($item) {
+                    return $item->category_id . '_' . $item->subcategory_id;
+                })->toArray();
+
                 foreach ($mappings as $index => $mappingData) {
                     try {
+                        $mappingData = $this->normalizeMappingData($mappingData);
+
                         // 验证每个映射数据
-                        $validator = \Validator::make($mappingData, [
-                            'category_id' => 'required|exists:categories,id',
-                            'subcategory_id' => 'required|exists:subcategories,id',
-                            // 'mapping_status' => 'nullable|in:Available,Unavailable', // 移除驗證，默認為 Available
-                        ]);
+                        $validator = \Validator::make($mappingData, self::MAPPING_RULES);
 
                         if ($validator->fails()) {
                             $errors["mappings.{$index}"] = $validator->errors()->all();
                             continue;
                         }
 
-                        // 检查映射是否已存在
-                        $existing = Mapping::where('category_id', $mappingData['category_id'])
-                            ->where('subcategory_id', $mappingData['subcategory_id'])
-                            ->first();
-
-                        if ($existing) {
+                        // 检查映射组合是否已存在
+                        $combinationKey = $mappingData['category_id'] . '_' . $mappingData['subcategory_id'];
+                        if (in_array($combinationKey, $existingCombinations)) {
                             $category = Category::find($mappingData['category_id']);
                             $subcategory = Subcategory::find($mappingData['subcategory_id']);
                             $errors["mappings.{$index}"] = ["Mapping combination {$category->category_name} - {$subcategory->subcategory_name} already exists"];
@@ -126,8 +233,15 @@ class MappingController extends Controller
                         ]);
 
                         $createdCount++;
+
+                        $this->logOperation('created (batch)', [
+                            'category_id' => $mappingData['category_id'],
+                            'subcategory_id' => $mappingData['subcategory_id']
+                        ]);
                     } catch (\Exception $e) {
-                        $errors["mappings.{$index}"] = [$e->getMessage()];
+                        $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                        $errorMessage = $simplifiedError ?: $e->getMessage();
+                        $errors["mappings.{$index}"] = [$errorMessage];
                     }
                 }
 
@@ -142,7 +256,7 @@ class MappingController extends Controller
                     return back()->withErrors($errors)->withInput();
                 }
 
-                Log::info('Mappings created successfully', [
+                $this->logOperation('created (batch)', [
                     'count' => $createdCount,
                     'mappings' => $mappings
                 ]);
@@ -158,10 +272,7 @@ class MappingController extends Controller
                     ->with('success', "Successfully created {$createdCount} mapping(s)!");
             } else {
                 // 单个创建模式
-                $request->validate([
-                    'category_id' => 'required|exists:categories,id',
-                    'subcategory_id' => 'required|exists:subcategories,id',
-                ]);
+                $request->validate(self::MAPPING_RULES);
 
                 // 检查映射是否已存在
                 $existing = Mapping::where('category_id', $request->category_id)
@@ -189,7 +300,7 @@ class MappingController extends Controller
                     'subcategory_id' => $request->subcategory_id,
                 ]);
 
-                Log::info('Mapping created successfully', [
+                $this->logOperation('created (single)', [
                     'category_id' => $request->category_id,
                     'subcategory_id' => $request->subcategory_id
                 ]);
@@ -206,17 +317,7 @@ class MappingController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Mapping creation failed: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create mapping: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create mapping: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create mapping: ' . $e->getMessage(), $e);
         }
     }
 
@@ -308,11 +409,10 @@ class MappingController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'category_id' => 'required|exists:categories,id',
-                'subcategory_id' => 'required|exists:subcategories,id',
-                'mapping_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = self::MAPPING_RULES;
+            $rules['mapping_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查映射组合是否已存在（排除当前记录）
             $existingMapping = Mapping::where('category_id', $validatedData['category_id'])
@@ -345,7 +445,7 @@ class MappingController extends Controller
                 'mapping_status' => $validatedData['mapping_status'],
             ]);
 
-            Log::info('Mapping updated successfully', [
+            $this->logOperation('updated', [
                 'mapping_id' => $id,
                 'category_id' => $validatedData['category_id'],
                 'subcategory_id' => $validatedData['subcategory_id'],
@@ -373,21 +473,7 @@ class MappingController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Mapping update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update mapping: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to update mapping: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to update mapping: ' . $e->getMessage(), $e);
         }
     }
 
@@ -403,7 +489,7 @@ class MappingController extends Controller
             $mapping = Mapping::findOrFail($id);
             $mapping->delete();
 
-            Log::info('Mapping deleted successfully', ['mapping_id' => $id]);
+            $this->logOperation('deleted', ['mapping_id' => $id]);
 
             if (request()->ajax()) {
                 return response()->json([
@@ -416,16 +502,7 @@ class MappingController extends Controller
                 ->with('success', 'Mapping deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Mapping deletion failed: ' . $e->getMessage());
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete mapping: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete mapping: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete mapping: ' . $e->getMessage(), $e);
         }
     }
 
@@ -441,7 +518,7 @@ class MappingController extends Controller
             $mapping = Mapping::findOrFail($id);
             $mapping->update(['mapping_status' => 'Available']);
 
-            Log::info('Mapping set to available', ['mapping_id' => $id]);
+            $this->logOperation('set to available', ['mapping_id' => $id]);
 
             if (request()->ajax()) {
                 return response()->json([
@@ -453,16 +530,7 @@ class MappingController extends Controller
             return back()->with('success', 'Mapping status updated to available successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set mapping available: ' . $e->getMessage());
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update mapping status: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to update mapping status: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to update mapping status: ' . $e->getMessage(), $e);
         }
     }
 
@@ -478,7 +546,7 @@ class MappingController extends Controller
             $mapping = Mapping::findOrFail($id);
             $mapping->update(['mapping_status' => 'Unavailable']);
 
-            Log::info('Mapping set to unavailable', ['mapping_id' => $id]);
+            $this->logOperation('set to unavailable', ['mapping_id' => $id]);
 
             if (request()->ajax()) {
                 return response()->json([
@@ -490,16 +558,7 @@ class MappingController extends Controller
             return back()->with('success', 'Mapping status updated to unavailable successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set mapping unavailable: ' . $e->getMessage());
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update mapping status: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to update mapping status: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to update mapping status: ' . $e->getMessage(), $e);
         }
     }
 }

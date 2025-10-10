@@ -373,7 +373,7 @@ class BrandDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error deleting brand: ' + error.message, 'error');
+            this.showAlert('Failed to delete brand', 'error');
         });
     }
 
@@ -418,7 +418,7 @@ class BrandDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting brand available: ' + error.message, 'error');
+            this.showAlert('Failed to set brand available', 'error');
         });
     }
 
@@ -463,7 +463,7 @@ class BrandDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting brand unavailable: ' + error.message, 'error');
+            this.showAlert('Failed to set brand unavailable', 'error');
         });
     }
 
@@ -610,7 +610,7 @@ function removeBrand(index) {
         showAlert('Brand removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid brand index', 'error');
+        showAlert('Failed to remove brand', 'error');
     }
 }
 
@@ -1076,7 +1076,7 @@ function handleUpdateFormSubmit(form) {
         }
     })
     .catch(error => {
-        showAlert('Error updating brand: ' + error.message, 'error');
+        showAlert('Failed to update brand', 'error');
     })
     .finally(() => {
         // 恢復按鈕狀態
@@ -1163,7 +1163,7 @@ function validateBrandData() {
     }
 
     if (duplicates.length > 0) {
-        showAlert(`Duplicate brand names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        showAlert('Duplicate brand names found. Please remove duplicates before submitting.', 'error');
         return false;
     }
 
@@ -1225,7 +1225,7 @@ function submitBrandForm() {
         }
     })
     .catch(error => {
-        showAlert('Error creating brands: ' + error.message, 'error');
+        showAlert('Some brands failed to create', 'error');
     });
 }
 

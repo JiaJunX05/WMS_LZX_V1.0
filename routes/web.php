@@ -101,6 +101,7 @@ Route::middleware(['auth'])->group(function () {
 
         // 库存管理页面
         Route::get('/stock-management', [StockController::class, 'stockManagement'])->name('stock_management');
+        Route::get('/stock-detail', [StockController::class, 'stockDetail'])->name('stock_detail');
         Route::get('/stock-in-page', [StockController::class, 'stockInPage'])->name('stock_in_page');
         Route::get('/stock-out-page', [StockController::class, 'stockOutPage'])->name('stock_out_page');
         Route::get('/stock-return-page', [StockController::class, 'stockReturnPage'])->name('stock_return_page');

@@ -139,7 +139,7 @@ class ColorDashboard {
                 this.generatePagination(response);
             })
             .fail((xhr, status, error) => {
-                this.showAlert('Failed to load colors, please try again', 'danger');
+                this.showAlert('Failed to load colors', 'danger');
             });
     }
 
@@ -378,7 +378,7 @@ class ColorDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error deleting color: ' + error.message, 'error');
+            this.showAlert('Failed to delete color', 'error');
         });
     }
 
@@ -423,7 +423,7 @@ class ColorDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting color available: ' + error.message, 'error');
+            this.showAlert('Failed to set color available', 'error');
         });
     }
 
@@ -468,7 +468,7 @@ class ColorDashboard {
             }
         })
         .catch(error => {
-            this.showAlert('Error setting color unavailable: ' + error.message, 'error');
+            this.showAlert('Failed to set color unavailable', 'error');
         });
     }
 
@@ -663,7 +663,7 @@ function removeColor(index) {
         showAlert('Color removed successfully', 'success');
     } else {
         console.error('Invalid index:', index);
-        showAlert('Error: Invalid color index', 'error');
+        showAlert('Failed to remove color', 'error');
     }
 }
 
@@ -1136,7 +1136,7 @@ function handleUpdateFormSubmit(form) {
         if (error.message.includes('already been taken') || error.message.includes('color_name')) {
             showAlert('This color name already exists. Please choose a different name.', 'warning');
         } else {
-            showAlert('Error updating color: ' + error.message, 'error');
+            showAlert('Failed to update color', 'error');
         }
     })
     .finally(() => {
@@ -1266,7 +1266,7 @@ function validateColorData() {
     }
 
     if (duplicates.length > 0) {
-        showAlert(`Duplicate color names found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        showAlert('Duplicate color names found. Please remove duplicates before submitting.', 'error');
         return false;
     }
 
@@ -1325,7 +1325,7 @@ function submitColorForm() {
         }
     })
     .catch(error => {
-        showAlert('Error creating colors: ' + error.message, 'error');
+        showAlert('Some colors failed to create', 'error');
     });
 }
 

@@ -9,6 +9,91 @@ use App\Models\StorageLocation\Rack;
 
 class RackController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_RACKS = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const RACK_RULES = [
+        'rack_number' => 'required|string|max:255',
+        'capacity' => 'nullable|integer|min:1',
+    ];
+
+    private const RACK_IMAGE_RULES = [
+        'rack_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ];
+
+    /**
+     * Normalize rack data from frontend
+     */
+    private function normalizeRackData(array $rackData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($rackData['rackNumber']) && !isset($rackData['rack_number'])) {
+            $rackData['rack_number'] = $rackData['rackNumber'];
+        }
+        if (isset($rackData['rackStatus']) && !isset($rackData['rack_status'])) {
+            $rackData['rack_status'] = $rackData['rackStatus'];
+        }
+
+        return $rackData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'racks_rack_number_unique') !== false) {
+            return 'Rack number already exists. Please choose a different number.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Rack {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -73,12 +158,10 @@ class RackController extends Controller
     private function storeSingleRack(Request $request)
     {
         // 校验
-        $request->validate([
-            'rack_number' => 'required|string|max:255|unique:racks,rack_number',
-            'capacity' => 'nullable|integer|min:1',
-            'rack_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            // rack_status 不再需要验证，默认为 Available
-        ]);
+        $rules = array_merge(self::RACK_RULES, self::RACK_IMAGE_RULES);
+        $rules['rack_number'] .= '|unique:racks,rack_number';
+
+        $request->validate($rules);
 
         try {
             $rackData = [
@@ -102,7 +185,7 @@ class RackController extends Controller
 
             $rack = Rack::create($rackData);
 
-            Log::info('Rack created successfully (single)', [
+            $this->logOperation('created (single)', [
                 'rack_id' => $rack->id,
                 'rack_number' => $rackData['rack_number']
             ]);
@@ -121,19 +204,7 @@ class RackController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Rack creation failed (single): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create rack: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create rack: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create rack: ' . $e->getMessage(), $e);
         }
     }
 
@@ -144,26 +215,31 @@ class RackController extends Controller
     {
         // 仅处理批量数组
         $racks = $request->input('racks', []);
+
+        // 限制批量创建数量
+        if (count($racks) > self::MAX_BULK_RACKS) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_RACKS . ' racks at once');
+        }
+
         $createdRacks = [];
         $errors = [];
 
+        // 预处理：收集所有货架编号进行批量检查
+        $rackNumbersToCheck = [];
         foreach ($racks as $index => $rackData) {
-
-            // 兼容前端字段命名（camelCase -> snake_case）
-            // 前端：rackNumber / rackStatus
-            // 后端期望：rack_number / rack_status
-            if (isset($rackData['rackNumber']) && !isset($rackData['rack_number'])) {
-                $rackData['rack_number'] = $rackData['rackNumber'];
+            $rackData = $this->normalizeRackData($rackData);
+            if (isset($rackData['rack_number'])) {
+                $rackNumbersToCheck[] = $rackData['rack_number'];
             }
-            if (isset($rackData['rackStatus']) && !isset($rackData['rack_status'])) {
-                $rackData['rack_status'] = $rackData['rackStatus'];
-            }
+        }
 
-            $validator = \Validator::make($rackData, [
-                'rack_number' => 'required|string|max:255',
-                'capacity' => 'nullable|integer|min:1',
-                // rack_status 不再需要验证，默认为 Available
-            ]);
+        // 批量检查货架编号是否已存在
+        $existingRackNumbers = Rack::whereIn('rack_number', $rackNumbersToCheck)->pluck('rack_number')->toArray();
+
+        foreach ($racks as $index => $rackData) {
+            $rackData = $this->normalizeRackData($rackData);
+
+            $validator = \Validator::make($rackData, self::RACK_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Rack " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -171,9 +247,7 @@ class RackController extends Controller
             }
 
             // 检查货架编号是否已存在
-            $existingRack = Rack::where('rack_number', $rackData['rack_number'])->first();
-
-            if ($existingRack) {
+            if (in_array($rackData['rack_number'], $existingRackNumbers)) {
                 $errors[] = "Rack " . ($index + 1) . ": Rack number '{$rackData['rack_number']}' already exists";
                 continue;
             }
@@ -200,8 +274,15 @@ class RackController extends Controller
 
                 $rack = Rack::create($rackRecord);
                 $createdRacks[] = $rack;
+
+                $this->logOperation('created (batch)', [
+                    'rack_id' => $rack->id,
+                    'rack_number' => $rackData['rack_number']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Rack " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Rack " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -249,12 +330,10 @@ class RackController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'rack_number' => 'required|string|max:255',
-                'capacity' => 'required|integer|min:1',
-                'rack_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'rack_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::RACK_RULES, self::RACK_IMAGE_RULES);
+            $rules['rack_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查货架编号是否已存在（排除当前记录）
             $existingRack = Rack::where('rack_number', $validatedData['rack_number'])
@@ -297,7 +376,7 @@ class RackController extends Controller
 
             $rack->update($rackData);
 
-            Log::info('Rack updated successfully', [
+            $this->logOperation('updated', [
                 'rack_id' => $id,
                 'rack_number' => $validatedData['rack_number'],
                 'capacity' => $validatedData['capacity'],
@@ -342,22 +421,7 @@ class RackController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Rack update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update rack: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update rack: ' . $e->getMessage(), $e);
         }
     }
 
@@ -367,7 +431,7 @@ class RackController extends Controller
             $rack = Rack::findOrFail($id);
             $rack->update(['rack_status' => 'Available']);
 
-            Log::info('Rack set to available', ['rack_id' => $id]);
+            $this->logOperation('set to available', ['rack_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -382,17 +446,7 @@ class RackController extends Controller
                 ->with('success', 'Rack has been set to available status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set rack available: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set rack available: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set rack available: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set rack available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -402,7 +456,7 @@ class RackController extends Controller
             $rack = Rack::findOrFail($id);
             $rack->update(['rack_status' => 'Unavailable']);
 
-            Log::info('Rack set to unavailable', ['rack_id' => $id]);
+            $this->logOperation('set to unavailable', ['rack_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -417,17 +471,7 @@ class RackController extends Controller
                 ->with('success', 'Rack has been set to unavailable status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set rack unavailable: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set rack unavailable: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set rack unavailable: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set rack unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -442,7 +486,7 @@ class RackController extends Controller
 
             $rack->delete();
 
-            Log::info('Rack deleted successfully', ['rack_id' => $id]);
+            $this->logOperation('deleted', ['rack_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -460,17 +504,7 @@ class RackController extends Controller
                 ->with('success', 'Rack deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Rack deletion failed: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete rack: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete rack: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete rack: ' . $e->getMessage(), $e);
         }
     }
 }

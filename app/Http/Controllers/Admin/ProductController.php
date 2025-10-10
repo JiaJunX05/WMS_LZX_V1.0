@@ -12,6 +12,7 @@ use App\Models\Image;
 use App\Models\AttributeVariant;
 use App\Models\ManagementTool\Brand;
 use App\Models\ManagementTool\Color;
+use App\Models\ManagementTool\Gender;
 use App\Models\SizeLibrary\SizeLibrary;
 use App\Models\CategoryMapping\Category;
 use App\Models\CategoryMapping\Subcategory;
@@ -36,6 +37,138 @@ use App\Models\User;
  */
 class ProductController extends Controller
 {
+    // Constants for better maintainability
+    private const DEFAULT_PER_PAGE = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const PRODUCT_RULES = [
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string|max:1000',
+        'price' => 'required|numeric|min:0.01',
+        'quantity' => 'required|integer|min:1',
+        'category_id' => 'required|exists:categories,id',
+        'subcategory_id' => 'required|exists:subcategories,id',
+        'brand_id' => 'required|exists:brands,id',
+        'color_id' => 'required|exists:colors,id',
+        'size_id' => 'required|exists:size_libraries,id',
+        'gender_id' => 'required|exists:genders,id',
+        'zone_id' => 'required|exists:zones,id',
+        'rack_id' => 'nullable|exists:racks,id',
+        'product_status' => 'required|in:Available,Unavailable',
+    ];
+
+    private const PRODUCT_IMAGE_RULES = [
+        'cover_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'detail_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ];
+
+    private const PRODUCT_UPDATE_IMAGE_RULES = [
+        'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'detail_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'remove_image.*' => 'nullable|integer|exists:images,id',
+    ];
+
+    /**
+     * Normalize product data from frontend
+     */
+    private function normalizeProductData(array $productData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($productData['productName']) && !isset($productData['name'])) {
+            $productData['name'] = $productData['productName'];
+        }
+        if (isset($productData['productStatus']) && !isset($productData['product_status'])) {
+            $productData['product_status'] = $productData['productStatus'];
+        }
+        if (isset($productData['categoryId']) && !isset($productData['category_id'])) {
+            $productData['category_id'] = $productData['categoryId'];
+        }
+        if (isset($productData['subcategoryId']) && !isset($productData['subcategory_id'])) {
+            $productData['subcategory_id'] = $productData['subcategoryId'];
+        }
+        if (isset($productData['brandId']) && !isset($productData['brand_id'])) {
+            $productData['brand_id'] = $productData['brandId'];
+        }
+        if (isset($productData['colorId']) && !isset($productData['color_id'])) {
+            $productData['color_id'] = $productData['colorId'];
+        }
+        if (isset($productData['sizeId']) && !isset($productData['size_id'])) {
+            $productData['size_id'] = $productData['sizeId'];
+        }
+        if (isset($productData['genderId']) && !isset($productData['gender_id'])) {
+            $productData['gender_id'] = $productData['genderId'];
+        }
+        if (isset($productData['zoneId']) && !isset($productData['zone_id'])) {
+            $productData['zone_id'] = $productData['zoneId'];
+        }
+        if (isset($productData['rackId']) && !isset($productData['rack_id'])) {
+            $productData['rack_id'] = $productData['rackId'];
+        }
+
+        return $productData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false) {
+            if (strpos($errorMessage, 'sku_code') !== false) {
+                return 'SKU code already exists. Please choose a different code.';
+            }
+            if (strpos($errorMessage, 'barcode_number') !== false) {
+                return 'Barcode number already exists. Please choose a different number.';
+            }
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Product {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 产品列表页面
      *
@@ -105,7 +238,7 @@ class ProductController extends Controller
                 }
 
                 // 分页设置
-                $perPage = $request->input('perPage', 10);
+                $perPage = $request->input('perPage', self::DEFAULT_PER_PAGE);
                 $products = $query->paginate($perPage);
 
                 // 返回分页数据
@@ -144,8 +277,7 @@ class ProductController extends Controller
                     ],
                 ]);
             } catch (\Exception $e) {
-                Log::error('Product management error: ' . $e->getMessage());
-                return response()->json(['error' => 'Failed to fetch products'], 500);
+                return $this->handleError($request, 'Failed to fetch products: ' . $e->getMessage(), $e);
             }
         }
 
@@ -194,6 +326,7 @@ class ProductController extends Controller
         $subcategories = Subcategory::all();
         $brands = Brand::all();
         $colors = Color::all();
+        $genders = Gender::all();
         $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
         $zones = Zone::all();
         $racks = Rack::all();
@@ -216,7 +349,7 @@ class ProductController extends Controller
         $suggestedBarcode = $this->generateBarcodeNumber($suggestedSKU);
 
         return view('product_variants.products.create', compact(
-            'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
+            'categories', 'subcategories', 'brands', 'colors', 'genders', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
         ));
     }
 
@@ -240,24 +373,11 @@ class ProductController extends Controller
             \Log::info('=== PRODUCT STORE DEBUG END ===');
 
             // 验证请求数据
-            $request->validate([
-                'cover_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'price' => 'required|numeric|min:0.01',
-                'quantity' => 'required|integer|min:1',
-                'sku_code' => 'nullable|string|max:255|unique:product_variants,sku_code',
-                'category_id' => 'required|exists:categories,id',
-                'subcategory_id' => 'required|exists:subcategories,id',
-                'brand_id' => 'required|exists:brands,id',
-                'color_id' => 'required|exists:colors,id',
-                'size_id' => 'required|exists:size_libraries,id',
-                'zone_id' => 'required|exists:zones,id',
-                'rack_id' => 'nullable|exists:racks,id',
-                'detail_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'barcode_number' => 'required|string|max:255|unique:product_variants,barcode_number',
-                'product_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::PRODUCT_RULES, self::PRODUCT_IMAGE_RULES);
+            $rules['sku_code'] = 'nullable|string|max:255|unique:product_variants,sku_code';
+            $rules['barcode_number'] = 'required|string|max:255|unique:product_variants,barcode_number';
+
+            $request->validate($rules);
 
             // 自动生成SKU（如果用户没有提供）
             $skuCode = $request->sku_code;
@@ -340,6 +460,7 @@ class ProductController extends Controller
                 'brand_id' => $request->brand_id,
                 'color_id' => $request->color_id,
                 'size_id' => $request->size_id,
+                'gender_id' => $request->gender_id,
             ]);
 
             \Log::info('Attribute variant created for variant ID: ' . $productVariant->id);
@@ -364,16 +485,15 @@ class ProductController extends Controller
             // 生成条形码图片（可选）
             $this->generateBarcodeImage($barcodeNumber, $skuCode, $productVariant->id);
 
-            // 調試 AJAX 檢測
-            \Log::info('AJAX Detection Debug:');
-            \Log::info('request->ajax(): ' . ($request->ajax() ? 'true' : 'false'));
-            \Log::info('request->wantsJson(): ' . ($request->wantsJson() ? 'true' : 'false'));
-            \Log::info('X-Requested-With header: ' . ($request->header('X-Requested-With') ?? 'not set'));
-            \Log::info('Accept header: ' . ($request->header('Accept') ?? 'not set'));
+            $this->logOperation('created', [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'sku_code' => $skuCode,
+                'barcode_number' => $barcodeNumber
+            ]);
 
             // 如果是 AJAX 请求，返回 JSON 响应
             if ($request->ajax() || $request->wantsJson()) {
-                \Log::info('Returning JSON response');
                 return response()->json([
                     'success' => true,
                     'message' => 'Product created successfully',
@@ -381,27 +501,15 @@ class ProductController extends Controller
                 ]);
             }
 
-            \Log::info('Returning redirect response');
-
             return redirect()->route('product.index')
                             ->with('success', 'Product created successfully');
         } catch (\Exception $e) {
-            Log::error('Product creation error: ' . $e->getMessage());
+            // 清理已上传的图片
             if (isset($imageName) && file_exists($directory . '/' . $imageName)) {
                 unlink($directory . '/' . $imageName);
             }
 
-            // 如果是 AJAX 请求，返回 JSON 错误响应
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Product creation failed: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->back()
-                            ->withInput()
-                            ->withErrors(['error' => 'Product creation failed: ' . $e->getMessage()]);
+            return $this->handleError($request, 'Product creation failed: ' . $e->getMessage(), $e);
         }
     }
 
@@ -427,13 +535,7 @@ class ProductController extends Controller
 
             return view('product_variants.products.view', compact('product'));
         } catch (\Exception $e) {
-            Log::error('Failed to load product view', [
-                'product_id' => $id,
-                'error_message' => $e->getMessage()
-            ]);
-
-            return redirect()->route('product.index')
-                            ->withErrors(['error' => 'Product not found or failed to load.']);
+            return $this->handleError(request(), 'Product not found or failed to load: ' . $e->getMessage(), $e);
         }
     }
 
@@ -457,6 +559,7 @@ class ProductController extends Controller
         $subcategories = Subcategory::all();
         $brands = Brand::all();
         $colors = Color::all();
+        $genders = Gender::all();
         $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
         $zones = Zone::all();
         $racks = Rack::all();
@@ -477,7 +580,7 @@ class ProductController extends Controller
         }
 
         return view('product_variants.products.update', compact(
-            'product', 'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
+            'product', 'categories', 'subcategories', 'brands', 'colors', 'genders', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
         ));
     }
 
@@ -492,25 +595,11 @@ class ProductController extends Controller
     {
         try {
             // 验证请求数据
-            $request->validate([
-                'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'price' => 'required|numeric|min:0.01',
-                'quantity' => 'required|integer|min:1',
-                'sku_code' => 'required|string|max:255',
-                'category_id' => 'required|exists:categories,id',
-                'subcategory_id' => 'required|exists:subcategories,id',
-                'brand_id' => 'required|exists:brands,id',
-                'color_id' => 'required|exists:colors,id',
-                'size_id' => 'required|exists:size_libraries,id',
-                'zone_id' => 'required|exists:zones,id',
-                'rack_id' => 'nullable|exists:racks,id',
-                'detail_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'remove_image.*' => 'nullable|integer|exists:images,id',
-                'barcode_number' => 'required|string|max:255',
-                'product_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::PRODUCT_RULES, self::PRODUCT_UPDATE_IMAGE_RULES);
+            $rules['sku_code'] = 'required|string|max:255';
+            $rules['barcode_number'] = 'required|string|max:255';
+
+            $request->validate($rules);
 
             $product = Product::with(['variants.attributeVariant'])->findOrFail($id);
             $variant = $product->variants->first();
@@ -574,6 +663,7 @@ class ProductController extends Controller
                     $variant->attributeVariant->brand_id = $request->brand_id;
                     $variant->attributeVariant->color_id = $request->color_id;
                     $variant->attributeVariant->size_id = $request->size_id;
+                    $variant->attributeVariant->gender_id = $request->gender_id;
                     $variant->attributeVariant->save();
                 } else {
                     // 如果不存在属性变体，创建一个新的
@@ -582,6 +672,7 @@ class ProductController extends Controller
                         'brand_id' => $request->brand_id,
                         'color_id' => $request->color_id,
                         'size_id' => $request->size_id,
+                        'gender_id' => $request->gender_id,
                     ]);
                 }
             }
@@ -639,6 +730,13 @@ class ProductController extends Controller
                 }
             }
 
+            $this->logOperation('updated', [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'sku_code' => $request->sku_code,
+                'barcode_number' => $request->barcode_number
+            ]);
+
             // 檢查是否為 AJAX 請求
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -651,19 +749,7 @@ class ProductController extends Controller
             return redirect()->route('product.index')
                             ->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
-            Log::error('Product update error: ' . $e->getMessage());
-
-            // 檢查是否為 AJAX 請求
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Product update failed: ' . $e->getMessage()
-                ], 422);
-            }
-
-            return redirect()->back()
-                            ->withInput()
-                            ->withErrors(['error' => 'Product update failed: ' . $e->getMessage()]);
+            return $this->handleError($request, 'Product update failed: ' . $e->getMessage(), $e);
         }
     }
 
@@ -719,6 +805,11 @@ class ProductController extends Controller
             // 删除产品记录
             $product->delete();
 
+            $this->logOperation('deleted', [
+                'product_id' => $id,
+                'product_name' => $product->name
+            ]);
+
             if (request()->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -729,17 +820,7 @@ class ProductController extends Controller
             return redirect()->route('product.index')
                             ->with('success', 'Product deleted successfully');
         } catch (\Exception $e) {
-            Log::error('Product deletion error: ' . $e->getMessage());
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete product: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->back()
-                            ->withErrors(['error' => 'Failed to delete product: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete product: ' . $e->getMessage(), $e);
         }
     }
 
@@ -756,7 +837,7 @@ class ProductController extends Controller
             $product->product_status = 'Available';
             $product->save();
 
-            Log::info('Product set to Available', [
+            $this->logOperation('set to available', [
                 'product_id' => $product->id,
                 'product_name' => $product->name
             ]);
@@ -772,21 +853,7 @@ class ProductController extends Controller
             return redirect()->back()
                             ->with('success', 'Product has been set to available status');
         } catch (\Exception $e) {
-            Log::error('Failed to set product to Available', [
-                'product_id' => $id,
-                'error_message' => $e->getMessage()
-            ]);
-
-            // 檢查是否為 AJAX 請求
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'An error occurred while setting product status. Please try again.'
-                ], 422);
-            }
-
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred while setting product status. Please try again.']);
+            return $this->handleError(request(), 'Failed to set product to available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -803,7 +870,7 @@ class ProductController extends Controller
             $product->product_status = 'Unavailable';
             $product->save();
 
-            Log::info('Product set to Unavailable', [
+            $this->logOperation('set to unavailable', [
                 'product_id' => $product->id,
                 'product_name' => $product->name
             ]);
@@ -819,21 +886,7 @@ class ProductController extends Controller
             return redirect()->back()
                             ->with('success', 'Product has been set to unavailable status');
         } catch (\Exception $e) {
-            Log::error('Failed to set product to Unavailable', [
-                'product_id' => $id,
-                'error_message' => $e->getMessage()
-            ]);
-
-            // 檢查是否為 AJAX 請求
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'An error occurred while setting product status. Please try again.'
-                ], 422);
-            }
-
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred while setting product status. Please try again.']);
+            return $this->handleError(request(), 'Failed to set product to unavailable: ' . $e->getMessage(), $e);
         }
     }
 

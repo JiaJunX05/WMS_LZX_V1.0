@@ -20,6 +20,86 @@ use App\Models\ManagementTool\Gender;
  */
 class GenderController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_GENDERS = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const GENDER_RULES = [
+        'gender_name' => 'required|string|max:255',
+    ];
+
+    /**
+     * Normalize gender data from frontend
+     */
+    private function normalizeGenderData(array $genderData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($genderData['genderName']) && !isset($genderData['gender_name'])) {
+            $genderData['gender_name'] = $genderData['genderName'];
+        }
+        if (isset($genderData['genderStatus']) && !isset($genderData['gender_status'])) {
+            $genderData['gender_status'] = $genderData['genderStatus'];
+        }
+
+        return $genderData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'genders_gender_name_unique') !== false) {
+            return 'Gender name already exists. Please choose a different name.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Gender {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示性别列表页面
      */
@@ -99,10 +179,10 @@ class GenderController extends Controller
     private function storeSingleGender(Request $request)
     {
         // 校验
-        $request->validate([
-            'gender_name' => 'required|string|max:255|unique:genders,gender_name',
-            // 'gender_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-        ]);
+        $rules = self::GENDER_RULES;
+        $rules['gender_name'] .= '|unique:genders,gender_name';
+
+        $request->validate($rules);
 
         try {
             $genderData = [
@@ -112,7 +192,7 @@ class GenderController extends Controller
 
             $gender = Gender::create($genderData);
 
-            Log::info('Gender created successfully (single)', [
+            $this->logOperation('created (single)', [
                 'gender_id' => $gender->id,
                 'gender_name' => $genderData['gender_name']
             ]);
@@ -131,19 +211,7 @@ class GenderController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Gender creation failed (single): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create gender: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create gender: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create gender: ' . $e->getMessage(), $e);
         }
     }
 
@@ -154,25 +222,32 @@ class GenderController extends Controller
     {
         // 仅处理批量数组
         $genders = $request->input('genders', []);
+
+        // 限制批量创建数量
+        if (count($genders) > self::MAX_BULK_GENDERS) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_GENDERS . ' genders at once');
+        }
+
         $createdGenders = [];
         $errors = [];
 
+        // 预处理：收集所有性别名称进行批量检查
+        $genderNamesToCheck = [];
         foreach ($genders as $index => $genderData) {
-
-            // 兼容前端字段命名（camelCase -> snake_case）
-            // 前端：genderName / genderStatus
-            // 后端期望：gender_name / gender_status
-            if (isset($genderData['genderName']) && !isset($genderData['gender_name'])) {
-                $genderData['gender_name'] = $genderData['genderName'];
+            $genderData = $this->normalizeGenderData($genderData);
+            if (isset($genderData['gender_name'])) {
+                $genderNamesToCheck[] = $genderData['gender_name'];
             }
-            if (isset($genderData['genderStatus']) && !isset($genderData['gender_status'])) {
-                $genderData['gender_status'] = $genderData['genderStatus'];
-            }
+        }
 
-            $validator = \Validator::make($genderData, [
-                'gender_name' => 'required|string|max:255',
-                // 'gender_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-            ]);
+        $existingGenderNames = Gender::whereIn('gender_name', $genderNamesToCheck)
+            ->pluck('gender_name')
+            ->toArray();
+
+        foreach ($genders as $index => $genderData) {
+            $genderData = $this->normalizeGenderData($genderData);
+
+            $validator = \Validator::make($genderData, self::GENDER_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Gender " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -180,9 +255,7 @@ class GenderController extends Controller
             }
 
             // 检查性别名称是否已存在
-            $existingGender = Gender::where('gender_name', $genderData['gender_name'])->first();
-
-            if ($existingGender) {
+            if (in_array($genderData['gender_name'], $existingGenderNames)) {
                 $errors[] = "Gender " . ($index + 1) . ": Gender name '{$genderData['gender_name']}' already exists";
                 continue;
             }
@@ -195,8 +268,15 @@ class GenderController extends Controller
 
                 $gender = Gender::create($genderRecord);
                 $createdGenders[] = $gender;
+
+                $this->logOperation('created (batch)', [
+                    'gender_id' => $gender->id,
+                    'gender_name' => $genderData['gender_name']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Gender " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Gender " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -250,10 +330,10 @@ class GenderController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'gender_name' => 'required|string|max:255',
-                'gender_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = self::GENDER_RULES;
+            $rules['gender_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查性别名称是否已存在（排除当前记录）
             $existingGender = Gender::where('gender_name', $validatedData['gender_name'])
@@ -282,7 +362,7 @@ class GenderController extends Controller
                 'gender_status' => $validatedData['gender_status'],
             ]);
 
-            Log::info('Gender updated successfully', [
+            $this->logOperation('updated', [
                 'gender_id' => $id,
                 'gender_name' => $validatedData['gender_name'],
                 'gender_status' => $validatedData['gender_status']
@@ -326,22 +406,7 @@ class GenderController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Gender update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update gender: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update gender: ' . $e->getMessage(), $e);
         }
     }
 
@@ -354,7 +419,7 @@ class GenderController extends Controller
             $gender = Gender::findOrFail($id);
             $gender->update(['gender_status' => 'Available']);
 
-            Log::info('Gender set to available', ['gender_id' => $id]);
+            $this->logOperation('set to available', ['gender_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -369,17 +434,7 @@ class GenderController extends Controller
                 ->with('success', 'Gender has been set to available status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set gender available: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set gender available: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set gender available: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set gender available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -392,7 +447,7 @@ class GenderController extends Controller
             $gender = Gender::findOrFail($id);
             $gender->update(['gender_status' => 'Unavailable']);
 
-            Log::info('Gender set to unavailable', ['gender_id' => $id]);
+            $this->logOperation('set to unavailable', ['gender_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -407,17 +462,7 @@ class GenderController extends Controller
                 ->with('success', 'Gender has been set to unavailable status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set gender unavailable: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set gender unavailable: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set gender unavailable: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set gender unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -430,7 +475,7 @@ class GenderController extends Controller
             $gender = Gender::findOrFail($id);
             $gender->delete();
 
-            Log::info('Gender deleted successfully', ['gender_id' => $id]);
+            $this->logOperation('deleted', ['gender_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -448,17 +493,7 @@ class GenderController extends Controller
                 ->with('success', 'Gender deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Gender deletion failed: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete gender: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete gender: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete gender: ' . $e->getMessage(), $e);
         }
     }
 }

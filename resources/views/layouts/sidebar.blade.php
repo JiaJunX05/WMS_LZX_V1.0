@@ -39,6 +39,15 @@
                     </a>
                 </li>
 
+                <!-- Products -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}"
+                    href="{{ route('product.index') }}">
+                        <i class="bi bi-cart-fill menu-icon me-2"></i>
+                        <span>Product Management</span>
+                    </a>
+                </li>
+
                 <!-- Stock History -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('stock_history') ? 'active' : '' }}"
@@ -48,15 +57,6 @@
                     </a>
                 </li>
             @endif
-
-            <!-- Products -->
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}"
-                href="{{ route('product.index') }}">
-                    <i class="bi bi-cart-fill menu-icon me-2"></i>
-                    <span>Product Management</span>
-                </a>
-            </li>
 
             @if(Auth::user()->getAccountRole() === 'Admin')
                 <!-- Storage Location -->
@@ -187,14 +187,14 @@
             @endif
 
             @if (Auth::user()->getAccountRole() === 'Staff')
-                {{-- <!-- Stock Management -->
+                <!-- Products -->
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('staff.stock_management') ? 'active' : '' }}"
-                       href="{{ route('staff.stock_management') }}">
-                        <i class="bi bi-box-seam-fill menu-icon me-2"></i>
-                        <span>Stock Management</span>
+                    <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}"
+                    href="{{ route('product.index') }}">
+                        <i class="bi bi-cart-fill menu-icon me-2"></i>
+                        <span>Product Management</span>
                     </a>
-                </li> --}}
+                </li>
 
                 <!-- Stock Movement -->
                 <li class="nav-item">

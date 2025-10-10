@@ -393,9 +393,9 @@ function loadMappings() {
     .catch(error => {
         console.error('Error loading mappings:', error);
         if (typeof window.showAlert === 'function') {
-            window.showAlert('Error loading mappings: ' + error.message, 'error');
+            window.showAlert('Failed to load mappings', 'error');
         } else {
-            alert('Error loading mappings: ' + error.message);
+            alert('Failed to load mappings');
         }
     });
 }
@@ -869,7 +869,7 @@ function removeMapping(index) {
         updateUI();
         window.showAlert('Mapping removed successfully', 'success');
     } else {
-        window.showAlert('Error: Invalid mapping index', 'error');
+        window.showAlert('Failed to remove mapping', 'error');
     }
 }
 
@@ -1068,7 +1068,7 @@ function handleFormSubmit(e) {
     }
 
     if (duplicates.length > 0) {
-        window.showAlert(`Duplicate combinations found: ${duplicates.join(', ')}. Please remove duplicates before submitting.`, 'error');
+        window.showAlert('Duplicate combinations found. Please remove duplicates before submitting.', 'error');
         return;
     }
 
@@ -1087,7 +1087,7 @@ function handleFormSubmit(e) {
             }, 2000);
         },
         function(error) {
-            window.showAlert(error || 'An error occurred while creating mappings', 'error');
+            window.showAlert(error || 'Some mappings failed to create', 'error');
         }
     );
 }
@@ -1277,9 +1277,9 @@ function deleteMappingFromView(mappingId) {
             checkAndRedirectIfEmpty();
         } else {
             if (typeof window.showAlert === 'function') {
-                window.showAlert(data.message || 'Failed to delete mapping', 'error');
+                window.showAlert('Failed to delete mapping', 'error');
             } else {
-                alert(data.message || 'Failed to delete mapping');
+                alert('Failed to delete mapping');
             }
         }
     })
@@ -1399,9 +1399,9 @@ function updateMappingStatus(id, status) {
     .catch(error => {
         console.error(`Error setting mapping to ${status.toLowerCase()}:`, error);
         if (typeof window.showAlert === 'function') {
-            window.showAlert(`Error updating mapping status: ${error.message}`, 'error');
+            window.showAlert('Failed to update mapping status', 'error');
         } else {
-            alert(`Error updating mapping status: ${error.message}`);
+            alert('Failed to update mapping status');
         }
     });
 }

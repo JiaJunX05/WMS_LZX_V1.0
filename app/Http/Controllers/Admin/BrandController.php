@@ -20,6 +20,90 @@ use App\Models\ManagementTool\Brand;
  */
 class BrandController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_BRANDS = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const BRAND_RULES = [
+        'brand_name' => 'required|string|max:255',
+    ];
+
+    private const BRAND_IMAGE_RULES = [
+        'brand_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ];
+
+    /**
+     * Normalize brand data from frontend
+     */
+    private function normalizeBrandData(array $brandData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($brandData['brandName']) && !isset($brandData['brand_name'])) {
+            $brandData['brand_name'] = $brandData['brandName'];
+        }
+        if (isset($brandData['brandStatus']) && !isset($brandData['brand_status'])) {
+            $brandData['brand_status'] = $brandData['brandStatus'];
+        }
+
+        return $brandData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'brands_brand_name_unique') !== false) {
+            return 'Brand name already exists. Please choose a different name.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Brand {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示品牌列表页面
      */
@@ -93,11 +177,10 @@ class BrandController extends Controller
     private function storeSingleBrand(Request $request)
     {
         // 校验
-        $request->validate([
-            'brand_name' => 'required|string|max:255|unique:brands,brand_name',
-            'brand_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            // brand_status 不再需要验证，默认为 Available
-        ]);
+        $rules = array_merge(self::BRAND_RULES, self::BRAND_IMAGE_RULES);
+        $rules['brand_name'] .= '|unique:brands,brand_name';
+
+        $request->validate($rules);
 
         try {
             $brandData = [
@@ -120,7 +203,7 @@ class BrandController extends Controller
 
             $brand = Brand::create($brandData);
 
-            Log::info('Brand created successfully (single)', [
+            $this->logOperation('created (single)', [
                 'brand_id' => $brand->id,
                 'brand_name' => $brandData['brand_name']
             ]);
@@ -139,19 +222,7 @@ class BrandController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Brand creation failed (single): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create brand: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create brand: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create brand: ' . $e->getMessage(), $e);
         }
     }
 
@@ -162,24 +233,32 @@ class BrandController extends Controller
     {
         // 仅处理批量数组
         $brands = $request->input('brands', []);
+
+        // 限制批量创建数量
+        if (count($brands) > self::MAX_BULK_BRANDS) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_BRANDS . ' brands at once');
+        }
+
         $createdBrands = [];
         $errors = [];
 
+        // 预处理：收集所有品牌名称进行批量检查
+        $brandNamesToCheck = [];
         foreach ($brands as $index => $brandData) {
-
-            // 兼容前端字段命名（camelCase -> snake_case）
-            // 前端：brandName / brandStatus
-            // 后端期望：brand_name / brand_status
-            if (isset($brandData['brandName']) && !isset($brandData['brand_name'])) {
-                $brandData['brand_name'] = $brandData['brandName'];
+            $brandData = $this->normalizeBrandData($brandData);
+            if (isset($brandData['brand_name'])) {
+                $brandNamesToCheck[] = $brandData['brand_name'];
             }
-            if (isset($brandData['brandStatus']) && !isset($brandData['brand_status'])) {
-                $brandData['brand_status'] = $brandData['brandStatus'];
-            }
+        }
 
-            $validator = \Validator::make($brandData, [
-                'brand_name' => 'required|string|max:255',
-            ]);
+        $existingBrandNames = Brand::whereIn('brand_name', $brandNamesToCheck)
+            ->pluck('brand_name')
+            ->toArray();
+
+        foreach ($brands as $index => $brandData) {
+            $brandData = $this->normalizeBrandData($brandData);
+
+            $validator = \Validator::make($brandData, self::BRAND_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Brand " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -187,9 +266,7 @@ class BrandController extends Controller
             }
 
             // 检查品牌名称是否已存在
-            $existingBrand = Brand::where('brand_name', $brandData['brand_name'])->first();
-
-            if ($existingBrand) {
+            if (in_array($brandData['brand_name'], $existingBrandNames)) {
                 $errors[] = "Brand " . ($index + 1) . ": Brand name '{$brandData['brand_name']}' already exists";
                 continue;
             }
@@ -215,8 +292,15 @@ class BrandController extends Controller
 
                 $brand = Brand::create($brandRecord);
                 $createdBrands[] = $brand;
+
+                $this->logOperation('created (batch)', [
+                    'brand_id' => $brand->id,
+                    'brand_name' => $brandData['brand_name']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Brand " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Brand " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -270,11 +354,10 @@ class BrandController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'brand_name' => 'required|string|max:255',
-                'brand_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'brand_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::BRAND_RULES, self::BRAND_IMAGE_RULES);
+            $rules['brand_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查品牌名称是否已存在（排除当前记录）
             $existingBrand = Brand::where('brand_name', $validatedData['brand_name'])
@@ -323,7 +406,7 @@ class BrandController extends Controller
 
             $brand->update($brandData);
 
-            Log::info('Brand updated successfully', [
+            $this->logOperation('updated', [
                 'brand_id' => $id,
                 'brand_name' => $validatedData['brand_name'],
                 'brand_status' => $validatedData['brand_status']
@@ -367,22 +450,7 @@ class BrandController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Brand update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update brand: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update brand: ' . $e->getMessage(), $e);
         }
     }
 
@@ -395,7 +463,7 @@ class BrandController extends Controller
             $brand = Brand::findOrFail($id);
             $brand->update(['brand_status' => 'Available']);
 
-            Log::info('Brand set to available', ['brand_id' => $id]);
+            $this->logOperation('set to available', ['brand_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -410,17 +478,7 @@ class BrandController extends Controller
                 ->with('success', 'Brand has been set to available status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set brand available: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set brand available: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set brand available: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set brand available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -433,7 +491,7 @@ class BrandController extends Controller
             $brand = Brand::findOrFail($id);
             $brand->update(['brand_status' => 'Unavailable']);
 
-            Log::info('Brand set to unavailable', ['brand_id' => $id]);
+            $this->logOperation('set to unavailable', ['brand_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -448,17 +506,7 @@ class BrandController extends Controller
                 ->with('success', 'Brand has been set to unavailable status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set brand unavailable: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set brand unavailable: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set brand unavailable: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set brand unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -477,7 +525,7 @@ class BrandController extends Controller
 
             $brand->delete();
 
-            Log::info('Brand deleted successfully', ['brand_id' => $id]);
+            $this->logOperation('deleted', ['brand_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -495,8 +543,7 @@ class BrandController extends Controller
                 ->with('success', 'Brand deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Brand deletion failed: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to delete brand: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete brand: ' . $e->getMessage(), $e);
         }
     }
 }

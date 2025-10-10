@@ -20,6 +20,90 @@ use App\Models\CategoryMapping\Category;
  */
 class CategoryController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_CATEGORIES = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const CATEGORY_RULES = [
+        'category_name' => 'required|string|max:255',
+    ];
+
+    private const CATEGORY_IMAGE_RULES = [
+        'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ];
+
+    /**
+     * Normalize category data from frontend
+     */
+    private function normalizeCategoryData(array $categoryData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($categoryData['categoryName']) && !isset($categoryData['category_name'])) {
+            $categoryData['category_name'] = $categoryData['categoryName'];
+        }
+        if (isset($categoryData['categoryStatus']) && !isset($categoryData['category_status'])) {
+            $categoryData['category_status'] = $categoryData['categoryStatus'];
+        }
+
+        return $categoryData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'categories_category_name_unique') !== false) {
+            return 'Category name already exists. Please choose a different name.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Category {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示分类列表页面
      */
@@ -93,11 +177,10 @@ class CategoryController extends Controller
     private function storeSingleCategory(Request $request)
     {
         // 校验
-        $request->validate([
-            'category_name' => 'required|string|max:255|unique:categories,category_name',
-            'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            // category_status 不再需要验证，默认为 Available
-        ]);
+        $rules = array_merge(self::CATEGORY_RULES, self::CATEGORY_IMAGE_RULES);
+        $rules['category_name'] .= '|unique:categories,category_name';
+
+        $request->validate($rules);
 
         try {
             $categoryData = [
@@ -120,7 +203,7 @@ class CategoryController extends Controller
 
             $category = Category::create($categoryData);
 
-            Log::info('Category created successfully (single)', [
+            $this->logOperation('created (single)', [
                 'category_id' => $category->id,
                 'category_name' => $categoryData['category_name']
             ]);
@@ -139,19 +222,7 @@ class CategoryController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Category creation failed (single): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create category: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create category: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create category: ' . $e->getMessage(), $e);
         }
     }
 
@@ -162,25 +233,30 @@ class CategoryController extends Controller
     {
         // 仅处理批量数组
         $categories = $request->input('categories', []);
+
+        // 限制批量创建数量
+        if (count($categories) > self::MAX_BULK_CATEGORIES) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_CATEGORIES . ' categories at once');
+        }
+
         $createdCategories = [];
         $errors = [];
 
+        // 预处理：收集所有分类名称进行批量检查
+        $categoryNamesToCheck = [];
         foreach ($categories as $index => $categoryData) {
-
-            // 兼容前端字段命名（camelCase -> snake_case）
-            // 前端：categoryName / categoryStatus
-            // 后端期望：category_name / category_status
-            if (isset($categoryData['categoryName']) && !isset($categoryData['category_name'])) {
-                $categoryData['category_name'] = $categoryData['categoryName'];
+            $categoryData = $this->normalizeCategoryData($categoryData);
+            if (isset($categoryData['category_name'])) {
+                $categoryNamesToCheck[] = $categoryData['category_name'];
             }
-            if (isset($categoryData['categoryStatus']) && !isset($categoryData['category_status'])) {
-                $categoryData['category_status'] = $categoryData['categoryStatus'];
-            }
+        }
 
-            $validator = \Validator::make($categoryData, [
-                'category_name' => 'required|string|max:255',
-                // category_status 不再需要验证，默认为 Available
-            ]);
+        $existingCategoryNames = Category::whereIn('category_name', $categoryNamesToCheck)->pluck('category_name')->toArray();
+
+        foreach ($categories as $index => $categoryData) {
+            $categoryData = $this->normalizeCategoryData($categoryData);
+
+            $validator = \Validator::make($categoryData, self::CATEGORY_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Category " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -188,9 +264,7 @@ class CategoryController extends Controller
             }
 
             // 检查分类名称是否已存在
-            $existingCategory = Category::where('category_name', $categoryData['category_name'])->first();
-
-            if ($existingCategory) {
+            if (in_array($categoryData['category_name'], $existingCategoryNames)) {
                 $errors[] = "Category " . ($index + 1) . ": Category name '{$categoryData['category_name']}' already exists";
                 continue;
             }
@@ -216,8 +290,15 @@ class CategoryController extends Controller
 
                 $category = Category::create($categoryRecord);
                 $createdCategories[] = $category;
+
+                $this->logOperation('created (batch)', [
+                    'category_id' => $category->id,
+                    'category_name' => $categoryData['category_name']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Category " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Category " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -272,11 +353,10 @@ class CategoryController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'category_name' => 'required|string|max:255',
-                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'category_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::CATEGORY_RULES, self::CATEGORY_IMAGE_RULES);
+            $rules['category_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查分类名称是否已存在（排除当前记录）
             $existingCategory = Category::where('category_name', $validatedData['category_name'])
@@ -325,7 +405,7 @@ class CategoryController extends Controller
 
             $category->update($categoryData);
 
-            Log::info('Category updated successfully', [
+            $this->logOperation('updated', [
                 'category_id' => $id,
                 'category_name' => $validatedData['category_name'],
                 'category_status' => $validatedData['category_status']
@@ -369,22 +449,7 @@ class CategoryController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Category update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update category: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update category: ' . $e->getMessage(), $e);
         }
     }
 
@@ -397,7 +462,7 @@ class CategoryController extends Controller
             $category = Category::findOrFail($id);
             $category->update(['category_status' => 'Available']);
 
-            Log::info('Category set to available', ['category_id' => $id]);
+            $this->logOperation('set to available', ['category_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -412,17 +477,7 @@ class CategoryController extends Controller
                 ->with('success', 'Category has been set to available status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set category available: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set category available: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set category available: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set category available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -435,7 +490,7 @@ class CategoryController extends Controller
             $category = Category::findOrFail($id);
             $category->update(['category_status' => 'Unavailable']);
 
-            Log::info('Category set to unavailable', ['category_id' => $id]);
+            $this->logOperation('set to unavailable', ['category_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -450,17 +505,7 @@ class CategoryController extends Controller
                 ->with('success', 'Category has been set to unavailable status');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set category unavailable: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to set category unavailable: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to set category unavailable: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to set category unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -479,7 +524,7 @@ class CategoryController extends Controller
 
             $category->delete();
 
-            Log::info('Category deleted successfully', ['category_id' => $id]);
+            $this->logOperation('deleted', ['category_id' => $id]);
 
             // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
@@ -497,17 +542,7 @@ class CategoryController extends Controller
                 ->with('success', 'Category deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Category deletion failed: ' . $e->getMessage());
-
-            // 返回 JSON 错误响应
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete category: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete category: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete category: ' . $e->getMessage(), $e);
         }
     }
 }

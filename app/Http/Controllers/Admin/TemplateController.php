@@ -26,6 +26,94 @@ use App\Models\ManagementTool\Gender;
  */
 class TemplateController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_TEMPLATES = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const TEMPLATE_RULES = [
+        'category_id' => 'required|exists:categories,id',
+        'gender_id' => 'required|exists:genders,id',
+        'size_library_id' => 'required|exists:size_libraries,id',
+    ];
+
+    /**
+     * Normalize template data from frontend
+     */
+    private function normalizeTemplateData(array $templateData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($templateData['categoryId']) && !isset($templateData['category_id'])) {
+            $templateData['category_id'] = $templateData['categoryId'];
+        }
+        if (isset($templateData['genderId']) && !isset($templateData['gender_id'])) {
+            $templateData['gender_id'] = $templateData['genderId'];
+        }
+        if (isset($templateData['sizeLibraryId']) && !isset($templateData['size_library_id'])) {
+            $templateData['size_library_id'] = $templateData['sizeLibraryId'];
+        }
+        if (isset($templateData['templateStatus']) && !isset($templateData['template_status'])) {
+            $templateData['template_status'] = $templateData['templateStatus'];
+        }
+
+        return $templateData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'size_templates_category_id_gender_id_size_library_id_unique') !== false) {
+            return 'Template combination already exists. Please choose a different combination.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Template {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示尺码模板列表页面
      * Display size template list page
@@ -147,12 +235,10 @@ class TemplateController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'category_id' => 'required|exists:categories,id',
-                'gender_id' => 'required|exists:genders,id',
-                'size_library_id' => 'required|exists:size_libraries,id',
-                'template_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = self::TEMPLATE_RULES;
+            $rules['template_status'] = 'required|in:' . implode(',', self::STATUSES);
+
+            $validatedData = $request->validate($rules);
 
             // 检查模板组合是否已存在（排除当前记录）
             $existingTemplate = SizeTemplate::where('category_id', $validatedData['category_id'])
@@ -185,7 +271,7 @@ class TemplateController extends Controller
                 'template_status' => $validatedData['template_status'],
             ]);
 
-            Log::info('SizeTemplate updated successfully', [
+            $this->logOperation('updated', [
                 'size_template_id' => $id,
                 'category_id' => $validatedData['category_id'],
                 'gender_id' => $validatedData['gender_id'],
@@ -205,17 +291,7 @@ class TemplateController extends Controller
                 ->with('success', 'SizeTemplate updated successfully!');
 
         } catch (\Exception $e) {
-            Log::error('SizeTemplate update failed: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update template: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to update size template: ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to update template: ' . $e->getMessage(), $e);
         }
     }
 
@@ -229,7 +305,7 @@ class TemplateController extends Controller
             $sizeTemplate = SizeTemplate::findOrFail($id);
             $sizeTemplate->delete();
 
-            Log::info('SizeTemplate deleted successfully', ['size_template_id' => $id]);
+            $this->logOperation('deleted', ['size_template_id' => $id]);
 
             // 检查是否是 AJAX 请求
             if (request()->ajax() || request()->wantsJson()) {
@@ -243,17 +319,7 @@ class TemplateController extends Controller
                 ->with('success', 'SizeTemplate deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('SizeTemplate deletion failed: ' . $e->getMessage());
-
-            // 检查是否是 AJAX 请求
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete size template: ' . $e->getMessage()
-                ], 500)->header('Content-Type', 'application/json');
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete size template: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete size template: ' . $e->getMessage(), $e);
         }
     }
 
@@ -322,7 +388,7 @@ class TemplateController extends Controller
             $template->template_status = 'Available';
             $template->save();
 
-            Log::info('Template set to available', ['template_id' => $id]);
+            $this->logOperation('set to available', ['template_id' => $id]);
 
             if ($request->ajax()) {
                 return response()->json([
@@ -334,16 +400,7 @@ class TemplateController extends Controller
             return redirect()->back()->with('success', 'Template status updated to available successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set template available: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update template status'
-                ], 500);
-            }
-
-            return redirect()->back()->with('error', 'Failed to update template status');
+            return $this->handleError($request, 'Failed to update template status: ' . $e->getMessage(), $e);
         }
     }
 
@@ -358,7 +415,7 @@ class TemplateController extends Controller
             $template->template_status = 'Unavailable';
             $template->save();
 
-            Log::info('Template set to unavailable', ['template_id' => $id]);
+            $this->logOperation('set to unavailable', ['template_id' => $id]);
 
             if ($request->ajax()) {
                 return response()->json([
@@ -370,16 +427,7 @@ class TemplateController extends Controller
             return redirect()->back()->with('success', 'Template status updated to unavailable successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Failed to set template unavailable: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update template status'
-                ], 500);
-            }
-
-            return redirect()->back()->with('error', 'Failed to update template status');
+            return $this->handleError($request, 'Failed to update template status: ' . $e->getMessage(), $e);
         }
     }
 
@@ -443,16 +491,44 @@ class TemplateController extends Controller
     private function storeMultipleTemplates(Request $request)
     {
         $templates = $request->templates;
+
+        // 限制批量创建数量
+        if (count($templates) > self::MAX_BULK_TEMPLATES) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_TEMPLATES . ' templates at once');
+        }
+
         $createdTemplates = [];
         $errors = [];
 
+        // 预处理：收集所有模板组合进行批量检查
+        $combinationsToCheck = [];
         foreach ($templates as $index => $templateData) {
-            $validator = \Validator::make($templateData, [
-                'category_id' => 'required|exists:categories,id',
-                'gender_id' => 'required|exists:genders,id',
-                'size_library_id' => 'required|exists:size_libraries,id',
-                // 'template_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-            ]);
+            $templateData = $this->normalizeTemplateData($templateData);
+            if (isset($templateData['category_id']) && isset($templateData['gender_id']) && isset($templateData['size_library_id'])) {
+                $combinationsToCheck[] = [
+                    'category_id' => $templateData['category_id'],
+                    'gender_id' => $templateData['gender_id'],
+                    'size_library_id' => $templateData['size_library_id']
+                ];
+            }
+        }
+
+        $existingCombinations = SizeTemplate::where(function($query) use ($combinationsToCheck) {
+            foreach ($combinationsToCheck as $combination) {
+                $query->orWhere(function($q) use ($combination) {
+                    $q->where('category_id', $combination['category_id'])
+                      ->where('gender_id', $combination['gender_id'])
+                      ->where('size_library_id', $combination['size_library_id']);
+                });
+            }
+        })->get(['category_id', 'gender_id', 'size_library_id'])->map(function($item) {
+            return $item->category_id . '_' . $item->gender_id . '_' . $item->size_library_id;
+        })->toArray();
+
+        foreach ($templates as $index => $templateData) {
+            $templateData = $this->normalizeTemplateData($templateData);
+
+            $validator = \Validator::make($templateData, self::TEMPLATE_RULES);
 
             if ($validator->fails()) {
                 $errors[] = "Template " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
@@ -460,12 +536,8 @@ class TemplateController extends Controller
             }
 
             // 检查模板组合是否已存在
-            $existingTemplate = SizeTemplate::where('category_id', $templateData['category_id'])
-                ->where('gender_id', $templateData['gender_id'])
-                ->where('size_library_id', $templateData['size_library_id'])
-                ->first();
-
-            if ($existingTemplate) {
+            $combinationKey = $templateData['category_id'] . '_' . $templateData['gender_id'] . '_' . $templateData['size_library_id'];
+            if (in_array($combinationKey, $existingCombinations)) {
                 $errors[] = "Template " . ($index + 1) . ": This template combination already exists";
                 continue;
             }
@@ -478,8 +550,17 @@ class TemplateController extends Controller
                     'template_status' => 'Available', // 默認為 Available
                 ]);
                 $createdTemplates[] = $template;
+
+                $this->logOperation('created (batch)', [
+                    'template_id' => $template->id,
+                    'category_id' => $templateData['category_id'],
+                    'gender_id' => $templateData['gender_id'],
+                    'size_library_id' => $templateData['size_library_id']
+                ]);
             } catch (\Exception $e) {
-                $errors[] = "Template " . ($index + 1) . ": " . $e->getMessage();
+                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
+                $errorMessage = $simplifiedError ?: $e->getMessage();
+                $errors[] = "Template " . ($index + 1) . ": " . $errorMessage;
             }
         }
 
@@ -515,12 +596,7 @@ class TemplateController extends Controller
      */
     private function storeSingleTemplate(Request $request)
     {
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'gender_id' => 'required|exists:genders,id',
-            'size_library_id' => 'required|exists:size_libraries,id',
-            // 'template_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-        ]);
+        $request->validate(self::TEMPLATE_RULES);
 
         // 检查模板组合是否已存在
         $existingTemplate = SizeTemplate::where('category_id', $request->category_id)
@@ -547,7 +623,7 @@ class TemplateController extends Controller
                 'template_status' => 'Available', // 默認為 Available
             ]);
 
-            Log::info('SizeTemplate created successfully', [
+            $this->logOperation('created (single)', [
                 'template_id' => $template->id,
                 'category_id' => $request->category_id,
                 'gender_id' => $request->gender_id,
@@ -565,17 +641,7 @@ class TemplateController extends Controller
             return redirect()->route('admin.size_library.template.index')
                 ->with('success', 'Size template created successfully');
         } catch (\Exception $e) {
-            Log::error('Failed to create size template: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create size template: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create size template'])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create size template: ' . $e->getMessage(), $e);
         }
     }
 

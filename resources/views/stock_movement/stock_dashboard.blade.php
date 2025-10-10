@@ -76,7 +76,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-3">
                     <h5 class="mb-0 fw-semibold">Products List</h5>
-                    <span class="badge bg-light text-dark" id="results-count">0 products</span>
+                    <span class="badge bg-light text-dark" id="dashboard-results-count">0 products</span>
                 </div>
             </div>
         </div>
@@ -113,9 +113,9 @@
     <!-- Pagination and Results Statistics -->
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="pagination-info text-muted">
-            Showing <span class="fw-medium" id="showing-start">0</span>
-            to <span class="fw-medium" id="showing-end">0</span>
-            of <span class="fw-medium" id="total-count">0</span> entries
+            Showing <span class="fw-medium" id="dashboard-showing-start">0</span>
+            to <span class="fw-medium" id="dashboard-showing-end">0</span>
+            of <span class="fw-medium" id="dashboard-total-count">0</span> entries
         </div>
         <nav aria-label="Page navigation">
             <ul id="pagination" class="pagination pagination-sm mb-0">
@@ -138,100 +138,6 @@
 </div>
 
 
-<!-- Stock History Modal -->
-<div class="modal fade" id="stockHistoryModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-clock-history text-info me-2"></i>
-                    My Stock Movement History
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="alert alert-info">
-                        <div class="fw-medium" id="history-product-name"></div>
-                        <div class="text-muted small">Current Stock: <span id="history-current-stock"></span></div>
-                        <div class="text-muted small mt-1">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Showing only your stock movement records
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 筛选器 -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Movement Type</label>
-                        <select class="form-select" id="history-movement-type">
-                            <option value="">All Types</option>
-                            <option value="stock_in">Stock In</option>
-                            <option value="stock_out">Stock Out</option>
-                            <option value="stock_return">Stock Return</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Start Date</label>
-                        <input type="date" class="form-control" id="history-start-date">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">End Date</label>
-                        <input type="date" class="form-control" id="history-end-date">
-                    </div>
-                </div>
-
-                <!-- 历史记录表格 -->
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Quantity</th>
-                                <th>Before</th>
-                                <th>After</th>
-                                <th>User</th>
-                                <th>Reference</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body">
-                            <!-- 动态加载 -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination and Results Statistics -->
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <div class="pagination-info text-muted">
-                        Showing <span class="fw-medium" id="showing-start">0</span>
-                        to <span class="fw-medium" id="showing-end">0</span>
-                        of <span class="fw-medium" id="total-count">0</span> entries
-                    </div>
-                    <nav aria-label="Page navigation">
-                        <ul id="pagination" class="pagination pagination-sm mb-0">
-                            <li class="page-item disabled" id="prev-page">
-                                <a class="page-link" href="#" aria-label="Previous">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            </li>
-                            <li class="page-item active" id="current-page">
-                                <span class="page-link" id="page-number">1</span>
-                            </li>
-                            <li class="page-item disabled" id="next-page">
-                                <a class="page-link" href="#" aria-label="Next">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            </li>
-                    </ul>
-                </nav>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 @endsection
 
 @section("scripts")
@@ -244,5 +150,5 @@
     window.productImagePath = "{{ asset('assets/images/products') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
 </script>
-<script src="{{ asset('assets/js/stock-movement/stock-dashboard.js') }}"></script>
+<script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

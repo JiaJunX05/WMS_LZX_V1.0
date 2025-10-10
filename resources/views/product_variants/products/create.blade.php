@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/product/product-create.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-product.css') }}">
 
 {{-- =============================================================================
      主要容器 (Main Container)

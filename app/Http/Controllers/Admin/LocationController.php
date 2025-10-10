@@ -22,6 +22,94 @@ use App\Models\StorageLocation\Rack;
  */
 class LocationController extends Controller
 {
+    // Constants for better maintainability
+    private const MAX_BULK_LOCATIONS = 10;
+    private const STATUSES = ['Available', 'Unavailable'];
+
+    // Validation rules
+    private const LOCATION_RULES = [
+        'zone_id' => 'required|exists:zones,id',
+        'rack_id' => 'required|exists:racks,id',
+    ];
+
+    private const LOCATION_STATUS_RULES = [
+        'location_status' => 'required|in:Available,Unavailable',
+    ];
+
+    /**
+     * Normalize location data from frontend
+     */
+    private function normalizeLocationData(array $locationData): array
+    {
+        // Convert camelCase to snake_case
+        if (isset($locationData['zoneId']) && !isset($locationData['zone_id'])) {
+            $locationData['zone_id'] = $locationData['zoneId'];
+        }
+        if (isset($locationData['rackId']) && !isset($locationData['rack_id'])) {
+            $locationData['rack_id'] = $locationData['rackId'];
+        }
+        if (isset($locationData['locationStatus']) && !isset($locationData['location_status'])) {
+            $locationData['location_status'] = $locationData['locationStatus'];
+        }
+
+        return $locationData;
+    }
+
+    /**
+     * Handle errors consistently
+     */
+    private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($e) {
+            // 简化错误信息
+            $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
+
+            Log::error($message . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // 使用简化的错误信息
+            $message = $simplifiedMessage ?: $message;
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return back()->withErrors(['error' => $message])->withInput();
+    }
+
+    /**
+     * Simplify database error messages
+     */
+    private function simplifyErrorMessage(string $errorMessage): ?string
+    {
+        // 处理重复键错误
+        if (strpos($errorMessage, 'Duplicate entry') !== false && strpos($errorMessage, 'locations_zone_id_rack_id_unique') !== false) {
+            return 'Location combination already exists. Please choose a different combination.';
+        }
+
+        // 处理其他数据库约束错误
+        if (strpos($errorMessage, 'Integrity constraint violation') !== false) {
+            return 'Data validation failed. Please check your input.';
+        }
+
+        return null; // 返回 null 表示不简化，使用原始消息
+    }
+
+    /**
+     * Log operation for audit trail
+     */
+    private function logOperation(string $action, array $data = []): void
+    {
+        Log::info("Location {$action}", array_merge([
+            'timestamp' => now()->toISOString(),
+            'ip' => request()->ip(),
+        ], $data));
+    }
     /**
      * 显示位置管理页面
      *
@@ -90,6 +178,13 @@ class LocationController extends Controller
             // 检查是否为批量创建模式
             if ($request->has('locations') && is_array($request->locations)) {
                 // 批量创建模式
+                $locations = $request->input('locations', []);
+
+                // 限制批量创建数量
+                if (count($locations) > self::MAX_BULK_LOCATIONS) {
+                    return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_LOCATIONS . ' locations at once');
+                }
+
                 $validatedData = $request->validate([
                     'locations' => 'required|array|min:1',
                     'locations.*.zone_id' => 'required|exists:zones,id',
@@ -99,16 +194,26 @@ class LocationController extends Controller
 
                 $locations = $validatedData['locations'];
 
-                // 检查位置组合是否已存在
-                $existingLocations = [];
+                // 预处理：收集所有位置组合进行批量检查
+                $locationCombinationsToCheck = [];
                 foreach ($locations as $locationData) {
-                    $existing = Location::where('zone_id', $locationData['zone_id'])
-                        ->where('rack_id', $locationData['rack_id'])
+                    $locationData = $this->normalizeLocationData($locationData);
+                    $locationCombinationsToCheck[] = [
+                        'zone_id' => $locationData['zone_id'],
+                        'rack_id' => $locationData['rack_id']
+                    ];
+                }
+
+                // 批量检查位置组合是否已存在
+                $existingLocations = [];
+                foreach ($locationCombinationsToCheck as $combination) {
+                    $existing = Location::where('zone_id', $combination['zone_id'])
+                        ->where('rack_id', $combination['rack_id'])
                         ->first();
 
                     if ($existing) {
-                        $zone = Zone::find($locationData['zone_id']);
-                        $rack = Rack::find($locationData['rack_id']);
+                        $zone = Zone::find($combination['zone_id']);
+                        $rack = Rack::find($combination['rack_id']);
                         $existingLocations[] = $zone->zone_name . ' - ' . $rack->rack_number;
                     }
                 }
@@ -117,7 +222,7 @@ class LocationController extends Controller
                     if ($request->ajax()) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Some location combinations already exist',
+                            'message' => 'Some locations failed to create',
                             'errors' => [
                                 'locations' => ['These location combinations already exist: ' . implode(', ', $existingLocations)]
                             ]
@@ -131,17 +236,20 @@ class LocationController extends Controller
                 // 批量创建位置记录
                 $createdLocations = [];
                 foreach ($locations as $locationData) {
+                    $locationData = $this->normalizeLocationData($locationData);
                     $location = Location::create([
                         'zone_id' => $locationData['zone_id'],
                         'rack_id' => $locationData['rack_id'],
                         'location_status' => 'Available', // 默認為 Available
                     ]);
                     $createdLocations[] = $location;
-                }
 
-                Log::info('Multiple locations created successfully', [
-                    'count' => count($createdLocations)
-                ]);
+                    $this->logOperation('created (batch)', [
+                        'location_id' => $location->id,
+                        'zone_id' => $locationData['zone_id'],
+                        'rack_id' => $locationData['rack_id']
+                    ]);
+                }
 
                 $count = count($createdLocations);
                 $message = "Successfully created {$count} location(s)!";
@@ -159,11 +267,8 @@ class LocationController extends Controller
 
             } else {
                 // 单个创建模式
-                $request->validate([
-                    'zone_id' => 'required|exists:zones,id',
-                    'rack_id' => 'required|exists:racks,id',
-                    'location_status' => 'required|in:Available,Unavailable',
-                ]);
+                $rules = array_merge(self::LOCATION_RULES, self::LOCATION_STATUS_RULES);
+                $request->validate($rules);
 
                 // 检查位置组合是否已存在
                 $existing = Location::where('zone_id', $request->zone_id)
@@ -186,13 +291,14 @@ class LocationController extends Controller
                     return back()->withErrors(['location' => $errorMessage])->withInput();
                 }
 
-                Location::create([
+                $location = Location::create([
                     'zone_id' => $request->zone_id,
                     'rack_id' => $request->rack_id,
                     'location_status' => 'Available', // 默認為 Available
                 ]);
 
-                Log::info('Location created successfully', [
+                $this->logOperation('created (single)', [
+                    'location_id' => $location->id,
                     'zone_id' => $request->zone_id,
                     'rack_id' => $request->rack_id,
                     'location_status' => $request->location_status
@@ -225,17 +331,7 @@ class LocationController extends Controller
             return back()->withErrors($e->errors())->withInput();
 
         } catch (\Exception $e) {
-            Log::error('Location creation failed: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create location(s): ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to create location(s): ' . $e->getMessage()])
-                ->withInput();
+            return $this->handleError($request, 'Failed to create location(s): ' . $e->getMessage(), $e);
         }
     }
 
@@ -327,11 +423,8 @@ class LocationController extends Controller
             ]);
 
             // 验证请求数据
-            $validatedData = $request->validate([
-                'zone_id' => 'required|exists:zones,id',
-                'rack_id' => 'required|exists:racks,id',
-                'location_status' => 'required|in:Available,Unavailable',
-            ]);
+            $rules = array_merge(self::LOCATION_RULES, self::LOCATION_STATUS_RULES);
+            $validatedData = $request->validate($rules);
 
             // 检查位置组合是否已存在（排除当前记录）
             $existingLocation = Location::where('zone_id', $validatedData['zone_id'])
@@ -364,7 +457,7 @@ class LocationController extends Controller
                 'location_status' => $validatedData['location_status'],
             ]);
 
-            Log::info('Location updated successfully', [
+            $this->logOperation('updated', [
                 'location_id' => $id,
                 'zone_id' => $validatedData['zone_id'],
                 'rack_id' => $validatedData['rack_id'],
@@ -409,22 +502,7 @@ class LocationController extends Controller
             throw $e;
 
         } catch (\Exception $e) {
-            Log::error('Location update failed: ' . $e->getMessage(), [
-                'id' => $id,
-                'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to update location: ' . $e->getMessage();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message])->withInput();
+            return $this->handleError($request, 'Failed to update location: ' . $e->getMessage(), $e);
         }
     }
 
@@ -442,7 +520,7 @@ class LocationController extends Controller
             $location = Location::findOrFail($id);
             $location->update(['location_status' => 'Available']);
 
-            Log::info('Location set to available', ['location_id' => $id]);
+            $this->logOperation('set to available', ['location_id' => $id]);
 
             $message = 'Location has been set to available status';
 
@@ -458,21 +536,7 @@ class LocationController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Failed to set location available: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to set location available: ' . $e->getMessage();
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message]);
+            return $this->handleError(request(), 'Failed to set location available: ' . $e->getMessage(), $e);
         }
     }
 
@@ -490,7 +554,7 @@ class LocationController extends Controller
             $location = Location::findOrFail($id);
             $location->update(['location_status' => 'Unavailable']);
 
-            Log::info('Location set to unavailable', ['location_id' => $id]);
+            $this->logOperation('set to unavailable', ['location_id' => $id]);
 
             $message = 'Location has been set to unavailable status';
 
@@ -506,21 +570,7 @@ class LocationController extends Controller
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Failed to set location unavailable: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            $message = 'Failed to set location unavailable: ' . $e->getMessage();
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => $message]);
+            return $this->handleError(request(), 'Failed to set location unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -536,7 +586,7 @@ class LocationController extends Controller
             $location = Location::findOrFail($id);
             $location->delete();
 
-            Log::info('Location deleted successfully', ['location_id' => $id]);
+            $this->logOperation('deleted', ['location_id' => $id]);
 
             if (request()->ajax()) {
                 return response()->json([
@@ -549,16 +599,7 @@ class LocationController extends Controller
                 ->with('success', 'Location deleted successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Location deletion failed: ' . $e->getMessage());
-
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to delete location: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to delete location: ' . $e->getMessage()]);
+            return $this->handleError(request(), 'Failed to delete location: ' . $e->getMessage(), $e);
         }
     }
 }

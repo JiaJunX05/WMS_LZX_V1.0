@@ -510,4 +510,6 @@ class AuthDashboard {
 let authDashboard;
 $(document).ready(function() {
     authDashboard = new AuthDashboard();
+    // 設置全局變量以便其他腳本可以訪問
+    window.authDashboard = authDashboard;
 });

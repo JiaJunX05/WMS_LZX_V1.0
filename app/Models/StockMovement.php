@@ -23,8 +23,6 @@ class StockMovement extends Model
         'previous_stock',
         'current_stock',
         'reference_number',
-        'notes',
-        'movement_reason',
         'user_id',
         'movement_date',
     ];

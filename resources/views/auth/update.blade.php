@@ -374,6 +374,9 @@
     </div>
 </div>
 
+@endsection
+
+@section("scripts")
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
 <script src="{{ asset('assets/js/auth/auth-update.js') }}"></script>

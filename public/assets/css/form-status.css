@@ -22,9 +22,9 @@
 /* Available 状态卡片选中效果 */
 .status-card.selected[data-status="Available"] {
     border-color: var(--success-color) !important;
-    background-color: var(--success-light);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    background-color: var(--success-light) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
 }
 
 .status-card.selected[data-status="Available"] .card-title {
@@ -38,9 +38,9 @@
 /* Unavailable 状态卡片选中效果 */
 .status-card.selected[data-status="Unavailable"] {
     border-color: var(--danger-color) !important;
-    background-color: var(--danger-light);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    background-color: var(--danger-light) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
 }
 
 .status-card.selected[data-status="Unavailable"] .card-title {

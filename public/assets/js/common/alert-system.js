@@ -159,3 +159,10 @@ function showWarning(message, options = {}) {
 function showInfo(message, options = {}) {
     showAlert(message, 'info', options);
 }
+
+// 將函數暴露到全局 window 對象
+window.showAlert = showAlert;
+window.showSuccess = showSuccess;
+window.showError = showError;
+window.showWarning = showWarning;
+window.showInfo = showInfo;

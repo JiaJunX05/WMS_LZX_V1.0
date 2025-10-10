@@ -151,7 +151,7 @@
                                 </div>
                             </div>
                         </div>
-                        @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin')
+                        @if(Auth::user()->getAccountRole() === 'Admin')
                         <div class="col-auto">
                             <a href="{{ route('product.create') }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle-fill me-2"></i>

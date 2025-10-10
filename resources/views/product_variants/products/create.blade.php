@@ -1,325 +1,301 @@
-@extends("layouts.app")
+@extends('layouts.app')
 
-@section("title", "Create Product")
-@section("content")
+@section('title', 'Create Product')
 
+@section('content')
+{{-- =============================================================================
+     CSS 文件引入 (CSS Files)
+     ============================================================================= --}}
+<link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/product/product-create.css') }}">
+
+{{-- =============================================================================
+     主要容器 (Main Container)
+     ============================================================================= --}}
 <div class="container-fluid py-4">
-    <!-- 提示信息 -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            @foreach ($errors->all() as $error)
-                <div>{{ $error }}</div>
-            @endforeach
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    <!-- 页面标题卡片 -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-plus-circle-fill text-primary fs-4"></i>
+    {{-- =============================================================================
+         頁面標題和操作區域 (Page Header & Actions)
+         ============================================================================= --}}
+    <div class="dashboard-header mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon-wrapper me-4">
+                                <i class="bi bi-plus-circle-fill"></i>
+                            </div>
+                            <div>
+                                <h2 class="dashboard-title mb-1">Create Product</h2>
+                                <p class="dashboard-subtitle mb-0">Add a new product to your inventory system</p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="mb-0 fw-bold">Create Product</h4>
-                        <p class="text-muted mb-0">Add a new product to your inventory</p>
+                    <div class="col-lg-4 text-lg-end">
+                        <a href="{{ route('product.index') }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Back to List
+                        </a>
                     </div>
                 </div>
-                <a href="{{ route('product.index') }}" class="btn btn-primary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to List
-                </a>
             </div>
         </div>
     </div>
 
-    <!-- 主要内容卡片 -->
-    <div class="card shadow-sm border-0">
-        <div class="row g-0">
-            <!-- 左侧预览区域 -->
-            <div class="col-md-5">
-                <div class="preview-section d-flex flex-column h-100 p-4">
-                    <!-- 主图预览 -->
-                    <div class="main-preview hover-lift" style="min-height: 400px;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6>
-                                <i class="bi bi-image"></i>Cover Image
-                            </h6>
-                            <span class="badge">800 x 600</span>
-                        </div>
-                        <div class="preview-container d-flex align-items-center justify-content-center" style="height: 350px;">
-                            <i class="bi bi-image" id="preview-icon" style="font-size: 8rem;"></i>
-                            <img src="" alt="Preview" id="preview-image" class="img-fluid d-none"
-                                style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                        </div>
-                        <div class="text-center mt-3">
-                            <label for="cover_image" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-upload me-2"></i>Upload Cover Image
-                            </label>
-                            <input type="file" class="d-none" id="cover_image" name="cover_image" form="product-form">
-                        </div>
+    {{-- =============================================================================
+         提示信息容器 (Alert Container)
+         ============================================================================= --}}
+    <div id="alertContainer" class="mb-4"></div>
+
+    {{-- =============================================================================
+         主要表單 (Main Form)
+         ============================================================================= --}}
+    <form action="{{ route('product.store') }}" method="post" enctype="multipart/form-data" id="product-form">
+        @csrf
+
+        <div class="row">
+            {{-- =============================================================================
+                 左側主要內容區域 (Left Content Area)
+                 ============================================================================= --}}
+            <div class="col-lg-6">
+                {{-- 產品基本信息卡片 (Product Basic Information Card) --}}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Information</h5>
                     </div>
-
-                    <!-- 缩略图区域 -->
-                    <div class="thumbnails-section hover-lift">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0 fw-bold text-primary">
-                                <i class="bi bi-images me-2"></i>Detail Images
-                            </h6>
-                            <label for="detail_image" class="btn btn-primary btn-sm px-3 py-2">
-                                <i class="bi bi-plus-lg me-2"></i>Add Images
-                            </label>
-                            <input type="file" class="d-none" id="detail_image" name="detail_image[]" multiple accept="image/*" form="product-form">
+                    <div class="card-body">
+                        {{-- 產品名稱 (Product Name) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" class="form-control" name="name" placeholder="Enter product name" required>
                         </div>
 
-                        <!-- 新上传图片预览 -->
-                        <div id="image-preview-container" class="row g-3" style="display: none;">
-                            <div class="col-12">
-                                <h6 class="text-muted mb-2 small fw-semibold">
-                                    <i class="bi bi-plus-circle me-1"></i>New Images
-                                </h6>
+                        {{-- 價格和數量 (Price & Quantity) --}}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Price (RM)</label>
+                                <input type="number" class="form-control" name="price" placeholder="0.00" step="0.01" min="0" required>
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Quantity (Unit)</label>
+                                <input type="number" class="form-control" name="quantity" placeholder="0" min="1" required>
+                            </div>
+                        </div>
+
+                        {{-- 產品描述 (Product Description) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" name="description" rows="4" placeholder="Enter product description"></textarea>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 右侧表单区域 -->
-            <div class="col-md-7">
-                <div class="card-body p-4">
-                    <!-- 表单标题 -->
-                    <h2 class="text-primary text-center mb-3">Create Product</h2>
-                    <p class="text-muted text-center">Add a new product to the inventory system</p>
-                    <hr>
-
-                    <!-- 表单内容 -->
-                    <form action="{{ route('product.store') }}" method="post" enctype="multipart/form-data" id="product-form">
-                        @csrf
-
-                        <div class="form-section">
-                            <label for="name" class="form-label">Product Name</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-primary"></i></span>
-                                <input type="text" class="form-control" id="name" name="name" placeholder="Enter product name" required>
-                            </div>
-                        </div>
-
-                        <div class="form-section">
-                            <label for="description" class="form-label">Product Description</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-pencil text-primary"></i></span>
-                                <textarea class="form-control" id="description" name="description" placeholder="Enter Product Description" rows="3"></textarea>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 form-section">
-                                <label for="price" class="form-label">Product Price</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-currency-dollar text-primary"></i></span>
-                                    <input type="text" class="form-control" id="price" name="price" placeholder="Enter Product Price" required>
+                {{-- 產品圖片卡片 (Product Images Card) --}}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Images</h5>
+                    </div>
+                    <div class="card-body">
+                        {{-- 封面圖片 (Cover Image) --}}
+                        <div class="mb-4">
+                            <label class="form-label">Cover Image</label>
+                            <div class="image-upload-area" id="cover-image-area">
+                                <div class="upload-placeholder" id="cover-upload-placeholder">
+                                    <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                    <h5 class="mt-3">Click to upload image</h5>
+                                    <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                 </div>
-                            </div>
-
-                            <div class="col-md-6 form-section">
-                                <label for="quantity" class="form-label">Product Quantity</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-box text-primary"></i></span>
-                                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" placeholder="Enter Product Quantity" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 form-section">
-                                <label for="category_id" class="form-label">Select Category</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-list text-primary"></i></span>
-                                    <select class="form-select" id="category_id" name="category_id" required>
-                                        <option selected disabled value="">Select a Category</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}">{{ strtoupper($category->category_name) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 form-section">
-                                <label for="subcategory_id" class="form-label">Select SubCategory</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-list text-primary"></i></span>
-                                    <select class="form-select" id="subcategory_id" name="subcategory_id" required disabled>
-                                        <option selected disabled value="">Select a SubCategory</option>
-                                        @foreach($subcategories as $subcategory)
-                                            <option value="{{ $subcategory->id }}">{{ strtoupper($subcategory->subcategory_name) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 form-section">
-                                <label for="brand_id" class="form-label">Select Brand</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-primary"></i></span>
-                                    <select class="form-select" id="brand_id" name="brand_id" required>
-                                        <option selected disabled value="">Select a Brand</option>
-                                        @foreach($brands as $brand)
-                                            <option value="{{ $brand->id }}">{{ strtoupper($brand->brand_name) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 form-section">
-                                <label for="color_id" class="form-label">Select Color</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-paint-bucket text-primary"></i></span>
-                                    <select class="form-select" id="color_id" name="color_id" required>
-                                        <option selected disabled value="">Select a Color</option>
-                                        @foreach($colors as $color)
-                                            <option value="{{ $color->id }}">{{ strtoupper($color->color_name) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12 form-section">
-                                <label for="size_id" class="form-label">Select Size <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-rulers text-primary"></i></span>
-                                    <select class="form-select" id="size_id" name="size_id" required disabled>
-                                        <option selected disabled value="">Select Category First</option>
-                                    </select>
-                                </div>
-                                <div class="form-text">
-                                    <small class="text-muted">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Available sizes will appear based on selected category
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 form-section">
-                                <label for="zone_id" class="form-label">Select Zone</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-diagram-3 text-primary"></i></span>
-                                    <select class="form-select" id="zone_id" name="zone_id" required>
-                                        <option selected disabled value="">Select a zone</option>
-                                        @foreach($zones as $zone)
-                                            <option value="{{ $zone->id }}">{{ strtoupper($zone->zone_name) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 form-section">
-                                <label for="rack_id" class="form-label">Select Rack</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-primary"></i></span>
-                                    <select class="form-select" id="rack_id" name="rack_id" disabled>
-                                        <option selected disabled value="">Select a rack</option>
-                                        @foreach($racks as $rack)
-                                            @php
-                                                $capacity = $rackCapacities[$rack->id] ?? ['capacity' => 0, 'used' => 0, 'available' => 0];
-                                            @endphp
-                                            <option value="{{ $rack->id }}"
-                                                    data-capacity="{{ $capacity['capacity'] }}"
-                                                    data-used="{{ $capacity['used'] }}"
-                                                    data-available="{{ $capacity['available'] }}">
-                                                {{ strtoupper($rack->rack_number) }}
-                                                ({{ $capacity['available'] }}/{{ $capacity['capacity'] }} product slots available)
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="form-text">
-                                    <small class="text-muted">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Rack capacity will be checked when you select a rack
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SKU和Barcode生成区域 -->
-                        <div class="form-section">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label for="sku_code" class="form-label">Product SKU</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-code-slash text-primary"></i></span>
-                                        <input type="text" class="form-control" id="sku_code" name="sku_code"
-                                               placeholder="Leave empty for auto-generation"
-                                               value="{{ $suggestedSKU }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="barcode_number" class="form-label">Barcode Number <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-upc-scan text-primary"></i></span>
-                                        <input type="text" class="form-control" id="barcode_number" name="barcode_number"
-                                               placeholder="Auto-generated if empty"
-                                               value="{{ $suggestedBarcode }}" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-center mt-3">
-                                <button type="button" class="btn btn-outline-primary w-100" id="generate-codes-btn">
-                                    <i class="bi bi-arrow-clockwise me-2"></i>Generate SKU & Barcode
+                                <img id="cover-preview" class="preview-image d-none" alt="Cover Preview">
+                                <button type="button" class="remove-image-btn d-none" id="remove-cover-image">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
-                            <div class="form-text">
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    SKU can be auto-generated, but Barcode Number is required. Click Generate for new codes.
-                                </small>
+                            <input type="file" class="d-none" id="cover_image" name="cover_image">
+                        </div>
+
+                        {{-- 詳細圖片 (Detail Images) --}}
+                        <div>
+                            <label class="form-label">Detail Images</label>
+                            <div class="detail-images-container">
+                                <div class="detail-images-grid" id="detail-images-grid">
+                                    {{-- 動態添加的圖片將在這裡顯示 --}}
+                                </div>
+                                <div class="add-detail-image-btn" id="add-detail-image">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <span>Add Detail Image</span>
+                                </div>
+                            </div>
+                            <input type="file" class="d-none" id="detail_images" name="detail_images[]" multiple accept="image/*">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 產品代碼生成卡片 (Product Codes Card) --}}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Codes</h5>
+                    </div>
+                    <div class="card-body">
+                        {{-- SKU 和 Barcode 輸入框 (SKU & Barcode Inputs) --}}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SKU Code</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="sku_code" id="sku_code" placeholder="SKU">
+                                    <button type="button" class="btn btn-outline-secondary" id="regenerate-sku">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Barcode</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="barcode_number" id="barcode_number" placeholder="Barcode">
+                                    <button type="button" class="btn btn-outline-secondary" id="regenerate-barcode">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Product Status Selection -->
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Product Status</label>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="card h-100 border status-card selected" data-status="Available">
-                                        <label class="card-body d-flex align-items-center" style="cursor: pointer;">
+                        {{-- 生成按鈕 (Generate Button) --}}
+                        <div class="text-center">
+                            <button type="button" class="btn btn-primary w-100" id="generate-codes-btn">
+                                <i class="bi bi-magic me-2"></i>Generate Both Codes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- =============================================================================
+                 右側操作面板 (Right Sidebar)
+                 ============================================================================= --}}
+            <div class="col-lg-6">
+                {{-- 產品屬性卡片 (Product Attributes Card) --}}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Attributes</h5>
+                    </div>
+                    <div class="card-body">
+                        {{-- 分類選擇 (Category Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Select Category</label>
+                            <select class="form-select" name="category_id" required>
+                                <option value="">Select Category</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->category_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- 子分類選擇 (Subcategory Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Subcategory</label>
+                            <select class="form-select" name="subcategory_id" required disabled>
+                                <option value="">Select Subcategory</option>
+                            </select>
+                        </div>
+
+                        {{-- 品牌選擇 (Brand Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Brand</label>
+                            <select class="form-select" name="brand_id" required>
+                                <option value="">Select Brand</option>
+                                @foreach($brands as $brand)
+                                    <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- 顏色選擇 (Color Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Color</label>
+                            <select class="form-select" name="color_id" required>
+                                <option value="">Select Color</option>
+                                @foreach($colors as $color)
+                                    <option value="{{ $color->id }}">{{ $color->color_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- 尺寸選擇 (Size Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Size</label>
+                            <select class="form-select" name="size_id" required>
+                                <option value="">Select Size</option>
+                                @foreach($sizes as $size)
+                                    <option value="{{ $size->id }}">{{ $size->size_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 庫存位置卡片 (Storage Location Card) --}}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Storage Location</h5>
+                    </div>
+                    <div class="card-body">
+                        {{-- 區域選擇 (Zone Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Zone</label>
+                            <select class="form-select" name="zone_id" required>
+                                <option value="">Select Zone</option>
+                                @foreach($zones as $zone)
+                                    <option value="{{ $zone->id }}">{{ $zone->zone_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- 貨架選擇 (Rack Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Rack</label>
+                            <select class="form-select" name="rack_id" required disabled>
+                                <option value="">Select Rack</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 產品狀態和提交卡片 (Product Status & Submit Card) --}}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Status & Submit</h5>
+                    </div>
+                    <div class="card-body">
+                        {{-- 產品狀態選擇 (Product Status Selection) --}}
+                        <div class="mb-3">
+                            <label class="form-label">Product Status</label>
+                            <div class="row g-2">
+                                {{-- 可用狀態 (Available Status) --}}
+                                <div class="col-6">
+                                    <div class="card h-100 status-card selected" data-status="Available">
+                                        <label class="card-body d-flex align-items-center">
                                             <input type="radio" name="product_status" value="Available" class="form-check-input me-3" checked>
                                             <div>
-                                                <h6 class="card-title mb-1">
-                                                    <i class="bi bi-check-circle me-2 text-success"></i>Available
-                                                </h6>
-                                                <p class="card-text text-muted small mb-0">Product is active and can be sold</p>
+                                                <div class="fw-semibold text-success">
+                                                    <i class="bi bi-check-circle-fill me-2"></i>Available
+                                                </div>
+                                                <small class="text-muted">Product is active and can be sold</small>
                                             </div>
                                         </label>
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <div class="card h-100 border status-card" data-status="Unavailable">
-                                        <label class="card-body d-flex align-items-center" style="cursor: pointer;">
+                                {{-- 不可用狀態 (Unavailable Status) --}}
+                                <div class="col-6">
+                                    <div class="card h-100 status-card" data-status="Unavailable">
+                                        <label class="card-body d-flex align-items-center">
                                             <input type="radio" name="product_status" value="Unavailable" class="form-check-input me-3">
                                             <div>
-                                                <h6 class="card-title mb-1">
-                                                    <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
-                                                </h6>
-                                                <p class="card-text text-muted small mb-0">Product is inactive and cannot be sold</p>
+                                                <div class="fw-semibold text-danger">
+                                                    <i class="bi bi-slash-circle-fill me-2"></i>Unavailable
+                                                </div>
+                                                <small class="text-muted">Product is inactive and cannot be sold</small>
                                             </div>
                                         </label>
                                     </div>
@@ -327,77 +303,36 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 shadow-sm mt-4">
-                            <i class="bi bi-check-circle me-2"></i>Create Product
-                        </button>
-                    </form>
+                        {{-- 提交按鈕 (Submit Button) --}}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 w-100">
+                                <i class="bi bi-check-circle me-2"></i>Create Product
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 </div>
 @endsection
 
+{{-- =============================================================================
+     JavaScript 文件引入 (JavaScript Files)
+     ============================================================================= --}}
 @section('scripts')
-    <script>
-        // 将 locationsData 定义在全局作用域
-        window.locationsData = @json($locations);
-        window.mappingsData = @json($mappings);
-        window.allSizes = @json($sizes);
+{{-- 通用 JavaScript 文件 (Common JavaScript Files) --}}
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-handler.js') }}"></script>
 
-        // Category 选择变化时更新 Size 选项
-        document.addEventListener('DOMContentLoaded', function() {
-            const categorySelect = document.getElementById('category_id');
-            const sizeSelect = document.getElementById('size_id');
+{{-- 數據傳遞給 JavaScript (Data for JavaScript) --}}
+<script>
+    // 傳遞關聯數據給 JavaScript
+    window.mappingsData = @json($mappings);
+    window.locationsData = @json($locations);
+    window.sizesData = @json($sizes);
+</script>
 
-            // 更新尺寸选项的函数
-            function updateSizeOptions() {
-                const selectedCategoryId = categorySelect.value;
-
-                // 清空尺寸选项
-                sizeSelect.innerHTML = '<option selected disabled value="">Select a Size</option>';
-
-                if (!selectedCategoryId) {
-                    // 如果没有选择分类，禁用尺寸选择
-                    sizeSelect.disabled = true;
-                    sizeSelect.innerHTML = '<option selected disabled value="">Select Category First</option>';
-                    return;
-                }
-
-                // 启用尺寸选择
-                sizeSelect.disabled = false;
-
-                // 根据选择的分类过滤尺寸
-                const filteredSizes = window.allSizes.filter(size => {
-                    // 检查尺寸是否属于选择的分类
-                    return size.category && size.category.id == selectedCategoryId;
-                });
-
-                // 添加过滤后的尺寸选项
-                filteredSizes.forEach(size => {
-                    const option = document.createElement('option');
-                    option.value = size.id;
-                    option.textContent = size.size_value.toUpperCase();
-                    option.dataset.sizeValue = size.size_value;
-                    sizeSelect.appendChild(option);
-                });
-
-                // 如果没有找到匹配的尺寸，显示提示
-                if (filteredSizes.length === 0) {
-                    const noSizeOption = document.createElement('option');
-                    noSizeOption.disabled = true;
-                    noSizeOption.textContent = 'No sizes available for selected category';
-                    sizeSelect.appendChild(noSizeOption);
-                    sizeSelect.disabled = true;
-                }
-            }
-
-            // 添加事件监听器
-            if (categorySelect) {
-                categorySelect.addEventListener('change', updateSizeOptions);
-            }
-        });
-    </script>
-
-    <script src="{{ asset('assets/js/product/product-create.js') }}"></script>
+{{-- 產品創建頁面專用 JavaScript (Product Create Page JavaScript) --}}
+<script src="{{ asset('assets/js/product/product-create.js') }}"></script>
 @endsection

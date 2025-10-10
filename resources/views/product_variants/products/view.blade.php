@@ -1,8 +1,11 @@
-@extends("layouts.app")
+@extends('layouts.app')
 
-@section("title", "View Product")
-@section("content")
+@section('title', 'View Product')
 
+@section('content')
+{{-- =============================================================================
+     PHP Variables Processing
+     ============================================================================= --}}
 @php
     $variant = $product->variants->first();
     $attributeVariant = $variant ? $variant->attributeVariant : null;
@@ -19,81 +22,89 @@
     }
 @endphp
 
+{{-- =============================================================================
+     CSS Files
+     ============================================================================= --}}
+<link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/product/product-view.css') }}">
+
+{{-- =============================================================================
+     Main Container
+     ============================================================================= --}}
 <div class="container-fluid py-4">
-    <!-- 提示信息 -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if(session('error') || $errors->any())
-        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            {{ session('error') ?? $errors->first() }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    <!-- 页面标题卡片 -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-eye-fill text-primary fs-4"></i>
+    {{-- =============================================================================
+         Page Header & Actions
+         ============================================================================= --}}
+    <div class="dashboard-header mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon-wrapper me-4">
+                                <i class="bi bi-eye-fill"></i>
+                            </div>
+                            <div>
+                                <h2 class="dashboard-title mb-1">View Product</h2>
+                                <p class="dashboard-subtitle mb-0">View detailed product information in your inventory system</p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="mb-0 fw-bold">Product Details</h4>
-                        <p class="text-muted mb-0">View detailed product information</p>
+                    <div class="col-lg-4 text-lg-end">
+                        <a href="{{ route('product.index') }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Back to List
+                        </a>
                     </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('product.index') }}" class="btn btn-primary">
-                        <i class="bi bi-arrow-left me-2"></i>Back to List
-                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 产品详情卡片 -->
+    {{-- =============================================================================
+         Alert Container
+         ============================================================================= --}}
+    <div id="alertContainer" class="mb-4"></div>
+
+    {{-- =============================================================================
+         Product Details Display Area
+         ============================================================================= --}}
     <div class="row g-4">
-        <!-- 左侧图片区域 -->
+        {{-- =============================================================================
+             Left Image Area
+             ============================================================================= --}}
         <div class="col-lg-5">
             <div class="product-image-gallery">
-                <!-- 主图片展示区 -->
+                {{-- Main Image Display Area --}}
                 <div class="main-image-container">
                     @if($product->cover_image && file_exists(public_path('assets/images/products/' . $product->cover_image)))
                         <div class="main-image-wrapper">
                             <img src="{{ asset('assets/images/products/' . $product->cover_image) }}"
                                  alt="Product Image" class="main-image" id="mainImage">
 
-                            <!-- 图片操作按钮组 -->
+                            {{-- Image Control Buttons --}}
                             <div class="image-controls">
-                                <!-- 放大查看按钮 -->
-                                <button class="control-btn zoom-btn" onclick="openImageModal(document.getElementById('mainImage').src)" title="放大查看">
+                                {{-- Zoom Button --}}
+                                <button class="control-btn zoom-btn" onclick="openImageModal(document.getElementById('mainImage').src)" title="Zoom In">
                                     <i class="bi bi-zoom-in"></i>
                                 </button>
 
-                                <!-- 全屏查看按钮 -->
-                                <button class="control-btn fullscreen-btn" onclick="toggleFullscreen()" title="全屏查看">
+                                {{-- Fullscreen Button --}}
+                                <button class="control-btn fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen">
                                     <i class="bi bi-arrows-fullscreen"></i>
                                 </button>
                             </div>
 
-                            <!-- 导航按钮 -->
-                            <div class="nav-button nav-button-left" onclick="previousImage()" title="上一张">
+                            {{-- Navigation Buttons --}}
+                            <div class="nav-button nav-button-left" onclick="previousImage()" title="Previous">
                                 <i class="bi bi-chevron-left"></i>
                             </div>
-                            <div class="nav-button nav-button-right" onclick="nextImage()" title="下一张">
+                            <div class="nav-button nav-button-right" onclick="nextImage()" title="Next">
                                 <i class="bi bi-chevron-right"></i>
                             </div>
 
-                            <!-- 图片计数器 -->
+                            {{-- Image Counter --}}
                             <div class="image-counter">
                                 <span id="currentImageIndex">1</span> / <span id="totalImages">{{ $product->images ? $product->images->count() + 1 : 1 }}</span>
                             </div>
@@ -102,19 +113,19 @@
                         <div class="no-image-placeholder">
                             <div class="placeholder-content">
                                 <i class="bi bi-image"></i>
-                                <h6>暂无产品图片</h6>
-                                <p>该产品尚未上传图片</p>
+                                <h6>No Product Images</h6>
+                                <p>This product has no images uploaded</p>
                             </div>
                         </div>
                     @endif
                 </div>
 
-                <!-- 缩略图导航 -->
+                {{-- Thumbnail Navigation --}}
                 <div class="thumbnail-nav">
                     <div class="thumbnail-header">
                         <h6 class="thumbnail-title">
                             <i class="bi bi-images"></i>
-                            产品图片 ({{ $product->images ? $product->images->count() + 1 : 1 }})
+                            Product Images ({{ $product->images ? $product->images->count() + 1 : 1 }})
                         </h6>
                     </div>
 
@@ -124,7 +135,7 @@
                                 <div class="thumbnail-image">
                                     <img src="{{ asset('assets/images/products/' . $product->cover_image) }}" alt="Cover">
                                 </div>
-                                <div class="thumbnail-label">封面</div>
+                                <div class="thumbnail-label">Cover</div>
                                 <div class="thumbnail-overlay">
                                     <i class="bi bi-eye"></i>
                                 </div>
@@ -137,7 +148,7 @@
                                     <div class="thumbnail-image">
                                         <img src="{{ asset('assets/images/products/' . $image->detail_image) }}" alt="Detail {{ $index + 1 }}">
                                     </div>
-                                    <div class="thumbnail-label">详情 {{ $index + 1 }}</div>
+                                    <div class="thumbnail-label">Detail {{ $index + 1 }}</div>
                                     <div class="thumbnail-overlay">
                                         <i class="bi bi-eye"></i>
                                     </div>
@@ -147,15 +158,15 @@
                     </div>
                 </div>
 
-                <!-- 条形码区域 -->
+                {{-- Barcode Section --}}
                 @if($variant && $variant->barcode_number)
                     <div class="barcode-section">
                         <div class="barcode-header">
                             <div class="barcode-title">
                                 <i class="bi bi-upc-scan"></i>
-                                <span>产品条码</span>
+                                <span>Product Barcode</span>
                             </div>
-                            <button class="barcode-copy-btn" onclick="copyBarcode('{{ $variant->barcode_number }}')" title="复制条码">
+                            <button class="barcode-copy-btn" onclick="copyBarcode('{{ $variant->barcode_number }}')" title="Copy Barcode">
                                 <i class="bi bi-copy"></i>
                             </button>
                         </div>
@@ -172,7 +183,9 @@
             </div>
         </div>
 
-        <!-- 右侧产品信息 -->
+        {{-- =============================================================================
+             Right Product Information
+             ============================================================================= --}}
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white border-0 p-4 pb-0">
@@ -180,56 +193,56 @@
                         <h5 class="fw-bold text-primary mb-0">
                             <i class="bi bi-info-circle me-2"></i>Product Information
                         </h5>
-                            <!-- 操作按钮区域 -->
-                            @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin' || Auth::user()->getAccountRole() === 'Staff')
-                            <div class="action-buttons">
-                                @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin')
-                                <button class="btn-action" title="Edit" onclick="if(typeof productView !== 'undefined' && productView.editProduct) { productView.editProduct({{ $product->id }}); } else { editProduct({{ $product->id }}); }">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                @endif
+                        {{-- Action Buttons Area --}}
+                        @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin' || Auth::user()->getAccountRole() === 'Staff')
+                        <div class="action-buttons">
+                            @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin')
+                            <button class="btn-action" title="Edit" onclick="editProduct({{ $product->id }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            @endif
 
-                                @if(Auth::user()->getAccountRole() === 'SuperAdmin')
-                                <div class="btn-group dropstart d-inline">
-                                    <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li>
-                                            @if($product->product_status === 'Available')
-                                                <a class="dropdown-item" href="javascript:void(0)" onclick="if(typeof productView !== 'undefined' && productView.setUnavailable) { productView.setUnavailable({{ $product->id }}); } else { deactivateProduct({{ $product->id }}); }">
-                                                    <i class="bi bi-slash-circle me-2"></i> Deactivate Product
-                                                </a>
-                                            @else
-                                                <a class="dropdown-item" href="javascript:void(0)" onclick="if(typeof productView !== 'undefined' && productView.setAvailable) { productView.setAvailable({{ $product->id }}); } else { activateProduct({{ $product->id }}); }">
-                                                    <i class="bi bi-check-circle me-2"></i> Activate Product
-                                                </a>
-                                            @endif
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="if(typeof productView !== 'undefined' && productView.deleteProduct) { productView.deleteProduct({{ $product->id }}); } else { deleteProduct({{ $product->id }}); }">
-                                                <i class="bi bi-trash me-2"></i> Delete Product
+                            @if(Auth::user()->getAccountRole() === 'SuperAdmin')
+                            <div class="btn-group dropstart d-inline">
+                                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        @if($product->product_status === 'Available')
+                                            <a class="dropdown-item" href="javascript:void(0)" onclick="setUnavailable({{ $product->id }})">
+                                                <i class="bi bi-slash-circle me-2"></i> Deactivate Product
                                             </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                @elseif(Auth::user()->getAccountRole() === 'Admin')
-                                    @if($product->product_status === 'Available')
-                                        <button class="btn-action unavailable" title="Deactivate Product" onclick="if(typeof productView !== 'undefined' && productView.setUnavailable) { productView.setUnavailable({{ $product->id }}); } else { deactivateProduct({{ $product->id }}); }">
-                                            <i class="bi bi-slash-circle"></i>
-                                        </button>
-                                    @else
-                                        <button class="btn-action available" title="Activate Product" onclick="if(typeof productView !== 'undefined' && productView.setAvailable) { productView.setAvailable({{ $product->id }}); } else { activateProduct({{ $product->id }}); }">
-                                            <i class="bi bi-check-circle"></i>
-                                        </button>
-                                    @endif
-                                @endif
+                                        @else
+                                            <a class="dropdown-item" href="javascript:void(0)" onclick="setAvailable({{ $product->id }})">
+                                                <i class="bi bi-check-circle me-2"></i> Activate Product
+                                            </a>
+                                        @endif
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteProduct({{ $product->id }})">
+                                            <i class="bi bi-trash me-2"></i> Delete Product
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
+                            @elseif(Auth::user()->getAccountRole() === 'Admin')
+                                @if($product->product_status === 'Available')
+                                    <button class="btn-action unavailable" title="Deactivate Product" onclick="setUnavailable({{ $product->id }})">
+                                        <i class="bi bi-slash-circle"></i>
+                                    </button>
+                                @else
+                                    <button class="btn-action available" title="Activate Product" onclick="setAvailable({{ $product->id }})">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                @endif
+                            @endif
+                        </div>
                         @endif
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <!-- 产品名称区域 -->
+                    {{-- Product Name Section --}}
                     <div class="product-name-section">
                         <h4 class="product-name">{{ $product->name }}</h4>
                         <div class="price-status-container">
@@ -242,9 +255,9 @@
                         </div>
                     </div>
 
-                    <!-- 产品信息网格 -->
+                    {{-- Product Information Grid --}}
                     <div class="product-info-grid">
-                        <!-- 左侧信息列 -->
+                        {{-- Left Information Column --}}
                         <div class="info-column">
                             <div class="info-item">
                                 <div class="info-icon">
@@ -297,7 +310,7 @@
                             </div>
                         </div>
 
-                        <!-- 右侧信息列 -->
+                        {{-- Right Information Column --}}
                         <div class="info-column">
                             <div class="info-item">
                                 <div class="info-icon">
@@ -351,7 +364,7 @@
                         </div>
                     </div>
 
-                    <!-- 产品描述 -->
+                    {{-- Product Description --}}
                     @if($product->description)
                         <div class="product-description">
                             <h6 class="description-title">Description</h6>
@@ -364,12 +377,14 @@
     </div>
 </div>
 
-<!-- 图片放大模态框 -->
+{{-- =============================================================================
+     Image Zoom Modal
+     ============================================================================= --}}
 <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">产品图片</h5>
+                <h5 class="modal-title" id="imageModalLabel">Product Image</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center">
@@ -380,49 +395,26 @@
 </div>
 @endsection
 
-@section("scripts")
+{{-- =============================================================================
+     JavaScript Files
+     ============================================================================= --}}
+@section('scripts')
+{{-- Barcode Generation Library --}}
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+{{-- Common JavaScript Files --}}
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+
+{{-- Data for JavaScript --}}
 <script>
-    // 传递路由到 JavaScript
+    // Pass routes to JavaScript
     window.editProductUrl = '{{ route("product.edit", ":id") }}';
     window.deleteProductUrl = '{{ route("product.destroy", ":id") }}';
     window.availableProductUrl = '{{ route("product.available", ":id") }}';
     window.unavailableProductUrl = '{{ route("product.unavailable", ":id") }}';
-
-    // 生成条形码
-    document.addEventListener('DOMContentLoaded', function() {
-        @if($variant && $variant->barcode_number)
-            const barcodeCanvas = document.getElementById('barcodeCanvas');
-            if (barcodeCanvas) {
-                JsBarcode(barcodeCanvas, "{{ $variant->barcode_number }}", {
-                    format: "CODE128",
-                    width: 2,
-                    height: 60,
-                    displayValue: false,
-                    background: "#ffffff",
-                    lineColor: "#000000",
-                });
-            }
-        @endif
-    });
-
-    // 复制条形码功能
-    function copyBarcode(barcodeNumber) {
-        navigator.clipboard.writeText(barcodeNumber).then(function() {
-            // 显示成功提示
-            const btn = event.target.closest('.barcode-copy-btn');
-            const originalIcon = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check"></i>';
-            btn.classList.add('copied');
-
-            setTimeout(() => {
-                btn.innerHTML = originalIcon;
-                btn.classList.remove('copied');
-            }, 2000);
-        }).catch(function(err) {
-            console.error('复制失败: ', err);
-        });
-    }
+    window.productIndexUrl = '{{ route("product.index") }}';
 </script>
+
+{{-- Product View Page JavaScript --}}
 <script src="{{ asset('assets/js/product/product-view.js') }}"></script>
 @endsection

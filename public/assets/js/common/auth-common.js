@@ -16,37 +16,23 @@
  * 通用角色卡片選擇函數
  */
 function selectRoleCard(card) {
-    // 移除所有卡片的選中狀態
+    console.log('selectRoleCard called', card);
+
+    // 移除所有角色卡片的選中狀態
     document.querySelectorAll('.role-card').forEach(c => {
         c.classList.remove('selected');
+        console.log('Removed selected from role card:', c);
     });
 
     // 添加選中狀態到當前卡片
     card.classList.add('selected');
+    console.log('Added selected to role card:', card);
 
     // 更新對應的radio按鈕
     const radio = card.querySelector('input[type="radio"]');
     if (radio) {
         radio.checked = true;
-    }
-}
-
-/**
- * 通用狀態卡片選擇函數
- */
-function selectStatusCard(card) {
-    // 移除所有卡片的選中狀態
-    document.querySelectorAll('.status-card').forEach(c => {
-        c.classList.remove('selected');
-    });
-
-    // 添加選中狀態到當前卡片
-    card.classList.add('selected');
-
-    // 更新對應的radio按鈕
-    const radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-        radio.checked = true;
+        console.log('Role radio checked:', radio.value);
     }
 }
 
@@ -69,6 +55,10 @@ function handleAuthRequest(url, method, data = {}, options = {}) {
     };
 
     const config = { ...defaultOptions, ...options };
+
+    console.log('Making request to:', url);
+    console.log('Method:', method);
+    console.log('Data:', data);
 
     return fetch(url, {
         method: method,
@@ -181,9 +171,10 @@ function deleteUser(userId, options = {}) {
         errorMessage: 'Failed to delete user',
         confirmMessage: 'Are you sure you want to delete this user?',
         onSuccess: (data) => {
-            // 重新加載頁面或更新UI
-            if (window.location.reload) {
-                window.location.reload();
+            // 重新加載統計和用戶列表
+            if (window.authDashboard) {
+                window.authDashboard.loadStats();
+                window.authDashboard.fetchUsers(window.authDashboard.currentPage);
             }
         }
     };
@@ -216,8 +207,10 @@ function setUserAvailable(userId, options = {}) {
         confirmMessage: 'Are you sure you want to activate this user?',
         onSuccess: (data) => {
             // 重新加載統計和用戶列表
-            if (window.loadStats) window.loadStats();
-            if (window.fetchUsers) window.fetchUsers();
+            if (window.authDashboard) {
+                window.authDashboard.loadStats();
+                window.authDashboard.fetchUsers(window.authDashboard.currentPage);
+            }
         }
     };
 
@@ -249,8 +242,10 @@ function setUserUnavailable(userId, options = {}) {
         confirmMessage: 'Are you sure you want to deactivate this user?',
         onSuccess: (data) => {
             // 重新加載統計和用戶列表
-            if (window.loadStats) window.loadStats();
-            if (window.fetchUsers) window.fetchUsers();
+            if (window.authDashboard) {
+                window.authDashboard.loadStats();
+                window.authDashboard.fetchUsers(window.authDashboard.currentPage);
+            }
         }
     };
 
@@ -290,8 +285,10 @@ function changeUserRole(userId, newRole, options = {}) {
             }
 
             // 重新加載統計和用戶列表
-            if (window.loadStats) window.loadStats();
-            if (window.fetchUsers) window.fetchUsers();
+            if (window.authDashboard) {
+                window.authDashboard.loadStats();
+                window.authDashboard.fetchUsers(window.authDashboard.currentPage);
+            }
         }
     };
 
@@ -369,22 +366,38 @@ function bindAuthEvents(config = {}) {
     const eventConfig = { ...defaultConfig, ...config };
 
     // 角色卡片選擇
-    document.querySelectorAll(eventConfig.roleCardSelector).forEach(card => {
-        card.addEventListener('click', () => selectRoleCard(card));
+    const roleCards = document.querySelectorAll(eventConfig.roleCardSelector);
+    console.log('Binding events to role cards:', roleCards.length);
+    roleCards.forEach(card => {
+        card.addEventListener('click', () => {
+            console.log('Role card clicked');
+            selectRoleCard(card);
+        });
 
         const radio = card.querySelector('input[type="radio"]');
         if (radio) {
-            radio.addEventListener('change', () => selectRoleCard(card));
+            radio.addEventListener('change', () => {
+                console.log('Role radio changed');
+                selectRoleCard(card);
+            });
         }
     });
 
     // 狀態卡片選擇
-    document.querySelectorAll(eventConfig.statusCardSelector).forEach(card => {
-        card.addEventListener('click', () => selectStatusCard(card));
+    const statusCards = document.querySelectorAll(eventConfig.statusCardSelector);
+    console.log('Binding events to status cards:', statusCards.length);
+    statusCards.forEach(card => {
+        card.addEventListener('click', () => {
+            console.log('Status card clicked');
+            selectStatusCard(card);
+        });
 
         const radio = card.querySelector('input[type="radio"]');
         if (radio) {
-            radio.addEventListener('change', () => selectStatusCard(card));
+            radio.addEventListener('change', () => {
+                console.log('Status radio changed');
+                selectStatusCard(card);
+            });
         }
     });
 

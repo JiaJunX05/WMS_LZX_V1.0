@@ -1,0 +1,226 @@
+@extends("layouts.app")
+
+@section("title", "Update Size Library")
+@section("content")
+
+<link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
+
+<div class="container-fluid py-4">
+
+    {{-- ========================================== --}}
+    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
+    {{-- ========================================== --}}
+    <div class="dashboard-header mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    {{-- 标题区域 --}}
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon-wrapper me-4">
+                                <i class="bi bi-pencil-fill"></i>
+                            </div>
+                            <div>
+                                <h2 class="dashboard-title mb-1">Update Size Library</h2>
+                                <p class="dashboard-subtitle mb-0 text-muted">Modify existing size library information</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 操作按钮区域 --}}
+                    <div class="col-lg-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ route('admin.size_library.library.index') }}" class="btn btn-primary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to List
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 提示信息容器 --}}
+    <div id="alertContainer" class="mb-4"></div>
+
+    <!-- 统一的尺码库管理界面 -->
+    <div class="card shadow-sm border-0">
+        <div class="row g-0">
+            <!-- 左侧配置区域 -->
+            <div class="col-md-4">
+                <div class="config-section d-flex flex-column h-100 bg-light p-4">
+                    <!-- 配置标题 -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-gear-fill me-2"></i>Configuration
+                        </h6>
+                        <span class="badge bg-white text-dark border px-3 py-2">Update</span>
+                    </div>
+
+                    <!-- 信息显示 -->
+                    <div class="alert alert-info border-0 mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Current Size Library</strong>
+                        </div>
+                        <div class="small">
+                            <div class="mb-1">
+                                <i class="bi bi-tag me-2 text-muted"></i>
+                                <span>Category: <strong>{{ $sizeLibrary->category->category_name ?? 'N/A' }}</strong></span>
+                            </div>
+                            <div class="mb-1">
+                                <i class="bi bi-rulers me-2 text-muted"></i>
+                                <span>Size: <strong>{{ $sizeLibrary->size_value }}</strong></span>
+                            </div>
+                            <div>
+                                <i class="bi bi-toggle-on me-2 text-muted"></i>
+                                <span>Status: <strong>{{ $sizeLibrary->size_status }}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 统计信息 -->
+                    <div class="mt-auto">
+                        <div class="row text-center">
+                            <div class="col-12">
+                                <div class="h4 text-primary mb-0">1</div>
+                                <small class="text-muted">Size Library Entry</small>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 右侧编辑表单区域 -->
+            <div class="col-md-8">
+                <div class="size-values-section p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h6 class="mb-0 fw-bold">
+                                <i class="bi bi-pencil-square me-2"></i>Update Size Library
+                            </h6>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Modify size library configuration below.
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- 编辑表单 -->
+                    <form action="{{ route('admin.size_library.library.update', $sizeLibrary->id) }}" method="POST" id="updateSizeLibraryForm">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="card border-0 bg-white shadow-sm">
+                            <div class="card-body p-4">
+                                <!-- Category Field -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-dark mb-2">
+                                        <i class="bi bi-tag me-2 text-primary"></i>Category
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="bi bi-tag text-muted"></i>
+                                        </span>
+                                        <select class="form-select border-start-0" name="category_id" id="category_id" required>
+                                            <option value="">Select category</option>
+                                            @foreach($categories as $category)
+                                                <option value="{{ $category->id }}"
+                                                    {{ $sizeLibrary->category_id == $category->id ? 'selected' : '' }}>
+                                                    {{ $category->category_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Choose the category for this size library
+                                    </div>
+                                </div>
+
+                                <!-- Size Value Field -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-dark mb-2">
+                                        <i class="bi bi-rulers me-2 text-primary"></i>Size Value
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="bi bi-rulers text-muted"></i>
+                                        </span>
+                                        <input type="text" class="form-control border-start-0" name="size_value" id="size_value"
+                                               value="{{ $sizeLibrary->size_value }}" required>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Enter the size value for this library entry
+                                    </div>
+                                </div>
+
+                                <!-- Size Status Field -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-dark mb-3">Size Status</label>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="card h-100 status-card {{ $sizeLibrary->size_status === 'Available' ? 'selected' : '' }}" data-status="Available">
+                                                <label class="card-body d-flex align-items-center" style="cursor: pointer;">
+                                                    <input type="radio" name="size_status" value="Available" class="form-check-input me-3" {{ $sizeLibrary->size_status === 'Available' ? 'checked' : '' }}>
+                                                    <div>
+                                                        <div class="fw-semibold text-success">
+                                                            <i class="bi bi-check-circle-fill me-2"></i>Available
+                                                        </div>
+                                                        <small class="text-muted">Size is active and can be used</small>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card h-100 status-card {{ $sizeLibrary->size_status === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
+                                                <label class="card-body d-flex align-items-center" style="cursor: pointer;">
+                                                    <input type="radio" name="size_status" value="Unavailable" class="form-check-input me-3" {{ $sizeLibrary->size_status === 'Unavailable' ? 'checked' : '' }}>
+                                                    <div>
+                                                        <div class="fw-semibold text-secondary">
+                                                            <i class="bi bi-slash-circle-fill me-2"></i>Unavailable
+                                                        </div>
+                                                        <small class="text-muted">Size is inactive and cannot be used</small>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Button -->
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-check-lg me-2"></i>Update Size Library
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section("scripts")
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/status-system.js') }}"></script>
+<script src="{{ asset('assets/js/library-management.js') }}"></script>
+
+{{-- JavaScript支持 --}}
+<script>
+    // 设置路由
+    window.updateSizeLibraryUrl = "{{ route('admin.size_library.library.update', $sizeLibrary->id) }}";
+    window.sizeLibraryManagementRoute = "{{ route('admin.size_library.library.index') }}";
+    window.availableSizeLibraryUrl = "{{ route('admin.size_library.library.available', ['id' => ':id']) }}";
+    window.unavailableSizeLibraryUrl = "{{ route('admin.size_library.library.unavailable', ['id' => ':id']) }}";
+    window.deleteSizeLibraryUrl = "{{ route('admin.size_library.library.destroy', ['id' => ':id']) }}";
+</script>
+@endsection

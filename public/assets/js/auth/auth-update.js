@@ -68,81 +68,91 @@ class AuthUpdate {
 }
 
 
-// 初始化角色和狀態卡片選擇狀態
-function initializeCardSelection() {
-    // 初始化角色卡片選中狀態
-    const checkedRoleRadio = document.querySelector('input[name="account_role"]:checked');
-    if (checkedRoleRadio) {
-        const card = checkedRoleRadio.closest('.role-card');
-        if (card) {
-            card.classList.add('selected');
-        }
-    }
-
-    // 初始化狀態卡片選中狀態
-    const checkedStatusRadio = document.querySelector('input[name="account_status"]:checked');
-    if (checkedStatusRadio) {
-        const card = checkedStatusRadio.closest('.status-card');
-        if (card) {
-            card.classList.add('selected');
-        }
-    }
-}
+// Zone 方式：移除初始化函數，依賴硬編碼的 selected 類
 
 // 初始化
 let authUpdate;
 $(document).ready(function() {
     authUpdate = new AuthUpdate();
 
-    // 使用通用函數初始化Auth頁面
-    initializeAuthPage({
-        events: {
-            formSubmitHandler: (e) => {
-                e.preventDefault();
+    // 延遲初始化，確保 DOM 完全加載
+    setTimeout(() => {
+        console.log('Initializing auth update page...');
 
-                const formData = new FormData(e.target);
-                const userId = window.location.pathname.split('/').pop();
+        // 檢查元素是否存在
+        const roleCards = document.querySelectorAll('.role-card');
+        const statusCards = document.querySelectorAll('.status-card');
+        console.log('Found role cards:', roleCards.length);
+        console.log('Found status cards:', statusCards.length);
 
-                // 轉換為普通對象並添加驗證
-                const userData = Object.fromEntries(formData);
+        // Zone 方式：只綁定點擊事件，依賴硬編碼的 selected 類
+        console.log('About to call bindAuthEvents...');
+        bindAuthEvents({
+            roleCardSelector: '.role-card',
+            statusCardSelector: '.status-card',
+            formSelector: '#updateUserForm'
+        });
+        console.log('bindAuthEvents called successfully');
 
-                // 使用通用驗證函數
-                const validation = validateAuthForm(userData, {
-                    password: { minLength: 6, required: false },
-                    password_confirmation: { match: 'password', required: false }
-                });
+        // 測試點擊事件是否被綁定
+        setTimeout(() => {
+            console.log('Testing click events...');
+            const roleCards = document.querySelectorAll('.role-card');
+            const statusCards = document.querySelectorAll('.status-card');
+            console.log('Role cards found:', roleCards.length);
+            console.log('Status cards found:', statusCards.length);
 
-                if (!validation.isValid) {
-                    showAlert(validation.errors.join(', '), 'warning');
-                    return;
-                }
+            // 手動測試點擊
+            roleCards.forEach((card, index) => {
+                console.log(`Role card ${index}:`, card);
+            });
+            statusCards.forEach((card, index) => {
+                console.log(`Status card ${index}:`, card);
+            });
+        }, 500);
 
-                // 顯示提交狀態
-                const submitBtn = $(e.target).find('button[type="submit"]');
-                submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-2"></i>Updating User...');
+        // 綁定表單提交事件
+        $('#updateUserForm').on('submit', function(e) {
+            e.preventDefault();
 
-                updateUser(userId, userData, {
-                    successMessage: 'User updated successfully!',
-                    errorMessage: 'Failed to update user',
-                    redirect: window.updateUserRedirect || '/users',
-                    onSuccess: () => {
-                        submitBtn.prop('disabled', false).html('<i class="bi bi-pencil-square me-2"></i>Update User Information');
-                    },
-                    onError: () => {
-                        submitBtn.prop('disabled', false).html('<i class="bi bi-pencil-square me-2"></i>Update User Information');
-                    }
-                });
-            }
-        },
-        onInit: () => {
-            // 初始化角色和狀態卡片選擇
-            bindAuthEvents({
-                roleCardSelector: '.role-card',
-                statusCardSelector: '.status-card'
+            const formData = new FormData(e.target);
+            const pathParts = window.location.pathname.split('/');
+            const userId = pathParts[pathParts.length - 2]; // 獲取倒數第二個部分（用戶ID）
+
+            // 轉換為普通對象並添加驗證
+            const userData = Object.fromEntries(formData);
+
+            // 使用通用驗證函數
+            const validation = validateAuthForm(userData, {
+                password: { minLength: 6, required: false },
+                password_confirmation: { match: 'password', required: false }
             });
 
-            // 初始化選中狀態
-            initializeCardSelection();
-        }
-    });
+            if (!validation.isValid) {
+                showAlert(validation.errors.join(', '), 'warning');
+                return;
+            }
+
+            // 顯示提交狀態
+            const submitBtn = $(e.target).find('button[type="submit"]');
+            submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-2"></i>Updating User...');
+
+            // 調試信息
+            console.log('Form data:', userData);
+            console.log('User ID:', userId);
+            console.log('Update URL:', window.updateUserUrl);
+
+            updateUser(userId, userData, {
+                successMessage: 'User updated successfully!',
+                errorMessage: 'Failed to update user',
+                redirect: window.updateUserRedirect || '/users',
+                onSuccess: () => {
+                    submitBtn.prop('disabled', false).html('<i class="bi bi-pencil-square me-2"></i>Update User Information');
+                },
+                onError: () => {
+                    submitBtn.prop('disabled', false).html('<i class="bi bi-pencil-square me-2"></i>Update User Information');
+                }
+            });
+        });
+    }, 100);
 });

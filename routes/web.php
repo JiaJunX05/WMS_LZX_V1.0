@@ -8,17 +8,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\ManagementTool\BrandController;
-use App\Http\Controllers\Admin\ManagementTool\ColorController;
-use App\Http\Controllers\Admin\ManagementTool\GenderController;
-use App\Http\Controllers\Admin\SizeLibrary\LibraryController;
-use App\Http\Controllers\Admin\SizeLibrary\TemplateController;
-use App\Http\Controllers\Admin\CategoryMapping\CategoryController;
-use App\Http\Controllers\Admin\CategoryMapping\SubcategoryController;
-use App\Http\Controllers\Admin\CategoryMapping\MappingController;
-use App\Http\Controllers\Admin\StorageLocation\ZoneController;
-use App\Http\Controllers\Admin\StorageLocation\RackController;
-use App\Http\Controllers\Admin\StorageLocation\LocationController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\ColorController;
+use App\Http\Controllers\Admin\GenderController;
+use App\Http\Controllers\Admin\LibraryController;
+use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\SubcategoryController;
+use App\Http\Controllers\Admin\MappingController;
+use App\Http\Controllers\Admin\ZoneController;
+use App\Http\Controllers\Admin\RackController;
+use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\StockController;
 
 /*
@@ -103,8 +103,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/stock-management', [StockController::class, 'stockManagement'])->name('stock_management');
         Route::get('/stock-in-page', [StockController::class, 'stockInPage'])->name('stock_in_page');
         Route::get('/stock-out-page', [StockController::class, 'stockOutPage'])->name('stock_out_page');
+        Route::get('/stock-return-page', [StockController::class, 'stockReturnPage'])->name('stock_return_page');
         Route::post('/stock-in', [StockController::class, 'stockIn'])->name('stock_in');
         Route::post('/stock-out', [StockController::class, 'stockOut'])->name('stock_out');
+        Route::post('/stock-return', [StockController::class, 'stockReturn'])->name('stock_return');
         Route::get('/stock-history/{id}', [StockController::class, 'getUserStockHistory'])->name('staff.stock_history');
     });
 

@@ -173,17 +173,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.status-card.selected {
-    border-color: #ffc107 !important;
-    background-color: rgba(255, 193, 7, 0.05);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
-}
-
-.status-card.selected .card-title {
-    color: #ffc107;
-}
-
 /* 📋 狀態卡片內容 - 使用原版設計 */
 .status-card-content {
     display: flex;
@@ -322,8 +311,7 @@
     }
 }
 
-.role-card.selected,
-.status-card.selected {
+.role-card.selected {
     animation: selectedPulse 2s ease-in-out infinite;
 }
 
@@ -345,8 +333,7 @@
         border-width: 3px;
     }
 
-    .role-card.selected,
-    .status-card.selected {
+    .role-card.selected {
         border-width: 4px;
     }
 }
@@ -377,8 +364,7 @@
         break-inside: avoid;
     }
 
-    .role-card.selected,
-    .status-card.selected {
+    .role-card.selected {
         background: #f8f9fa;
     }
 }

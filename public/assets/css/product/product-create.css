@@ -1,874 +1,307 @@
-/*
-|--------------------------------------------------------------------------
-| 产品创建页面样式表 (Product Create Page Styles)
-|--------------------------------------------------------------------------
-|
-| 样式模块：
-| 1. 基础组件样式 - 通用组件样式
-| 2. 按钮样式 - 各种按钮的样式定义
-| 3. 表单控件样式 - 输入框、选择器等表单元素
-| 4. 编辑页面样式 - 编辑表单相关样式
-| 5. 表单样式 - Create/Update 页面
-| 6. 图片样式 - 产品图片相关样式
-| 7. 状态更改模态框样式 - 状态选择模态框
-| 8. 文本样式 - 文本颜色和字重
-| 9. 产品状态选择样式 - 状态选择卡片
-| 10. 产品创建页面图片预览美化样式 - 图片预览区域
-| 11. 响应式设计 - 移动端适配
-| 12. 图片卡片样式 - 新设计
-|
-| @author WMS Team
-| @version 1.0.0
-*/
-
-/* =============================================================================
-   1. 基础组件样式 (Base Components)
-   ============================================================================= */
-
-/* 卡片基础样式 */
+﻿/* Materio 風格的產品創建頁面樣式 */
 .card {
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    border: 1px solid #e7eaf3;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 
-/* 警告框样式 */
-.alert {
-    border: none;
-    border-radius: 10px;
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e7eaf3;
+    padding: 1rem 1.25rem;
 }
 
-/* =============================================================================
-   2. 按钮样式 (Button Styles)
-   ============================================================================= */
-
-/* 主按钮 */
-.btn-primary {
-    background: linear-gradient(to right, #4f46e5, #6366f1);
-    border: none;
-    border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-    transition: all 0.3s ease;
+.card-body {
+    padding: 1.25rem;
 }
 
-/* 主按钮悬停效果 */
-.btn-primary:hover {
-    background: linear-gradient(to right, #4338ca, #4f46e5);
-    transform: translateY(-1px);
-}
-
-/* =============================================================================
-   3. 表单控件样式 (Form Controls)
-   ============================================================================= */
-
-/* 输入框基础样式 */
-.input-group-text,
-.form-control {
-    border-color: #e5e7eb;
-}
-
-/* 输入框聚焦效果 */
-.form-control:focus {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.1);
-}
-
-/* 搜索框 */
-.search-box {
-    position: relative;
-    width: 100%;
-}
-
-/* 搜索图标 */
-.search-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-    font-size: 1.1rem;
-    z-index: 2;
-}
-
-/* 搜索输入框 */
-.search-input {
-    height: 48px;
-    padding-left: 48px;
-    font-size: 0.95rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    background-color: #f9fafb;
-    transition: all 0.3s ease;
-}
-
-/* 搜索输入框聚焦效果 */
-.search-input:focus {
-    background-color: #fff;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-}
-
-/* =============================================================================
-   4. 编辑页面样式 (Edit Page Styles)
-   ============================================================================= */
-
-/* 预览区域样式 */
-.preview-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 1rem;
-}
-
-/* =============================================================================
-   5. 表单样式 (Form Styles)
-   ============================================================================= */
-
-/* 表单标签 */
+/* 表單樣式 */
 .form-label {
-    font-weight: bold;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
 }
 
-/* 表单区域 */
-.form-section {
-    margin-bottom: 1.5rem;
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
 }
 
-/* =============================================================================
-   6. 图片样式 (Image Styles)
-   ============================================================================= */
+.form-control:focus, .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
 
-/* 产品封面图片预览 */
-.preview-image {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    border: 3px solid #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+/* 圖片上傳區域 */
+.image-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    cursor: pointer;
     transition: all 0.3s ease;
-    object-fit: cover;
-}
-
-/* 预览图片悬停效果 */
-.preview-image:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-/* 无图片占位符 */
-.no-image {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    border: 3px solid #ffffff;
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    min-height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #64748b;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-/* 无图片占位符悬停效果 */
-.no-image:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-}
-
-/* 详情图片预览 */
-.detail-image-preview img {
-    border-radius: 8px;
-    border: 2px solid #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-/* 详情图片预览悬停效果 */
-.detail-image-preview img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* 主图片样式 */
-.product-main-image {
-    max-height: 400px;
-    object-fit: contain;
-}
-
-/* 缩略图样式 */
-.product-thumbnail {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    cursor: pointer;
-}
-
-/* 徽章样式 */
-.badge {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
-}
-
-/* =============================================================================
-   7. 状态更改模态框样式 (Status Change Modal Styles)
-   ============================================================================= */
-
-/* 只读状态显示区域文字颜色 */
-.card .card-title {
-    color: #000 !important;
-}
-
-.card .card-text {
-    color: #6c757d !important;
-}
-
-/* =============================================================================
-   8. 文本样式 (Text Styles)
-   ============================================================================= */
-
-/* 次要文本 */
-.text-muted {
-    color: #64748b !important;
-}
-
-/* 中等字重 */
-.fw-medium {
-    font-weight: 500 !important;
-    color: #1e293b;
-}
-
-/* =============================================================================
-   9. 产品状态选择样式 (Product Status Selection Styles)
-   ============================================================================= */
-
-/* 状态卡片选中效果 - 完全复制Zone管理 */
-.status-card {
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-/* 状态卡片悬停效果 */
-.status-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* 状态卡片选中状态 */
-.status-card.selected {
-    border-color: #ffc107 !important;
-    background-color: rgba(255, 193, 7, 0.05);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
-}
-
-/* 选中状态卡片标题 */
-.status-card.selected .card-title {
-    color: #ffc107;
-}
-
-/* 未选中的状态卡片文字颜色 */
-.status-card .card-title {
-    color: #000 !important;
-}
-
-.status-card .card-text {
-    color: #6c757d !important;
-}
-
-/* 选中状态保持原有样式 */
-.status-card.selected .card-title {
-    color: #ffc107 !important;
-}
-
-/* 状态图标样式 */
-.status-card .bi-check-circle {
-    color: #28a745;
-}
-
-.status-card .bi-x-circle {
-    color: #dc3545;
-}
-
-/* 状态卡片标题样式 */
-.status-card .card-title {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.status-card .card-text {
-    font-size: 0.875rem;
-    line-height: 1.3;
-}
-
-/* =============================================================================
-   10. 产品创建页面图片预览美化样式 (Product Create Image Preview Styles)
-   ============================================================================= */
-
-/* 预览区域整体样式 */
-.preview-section {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     position: relative;
-    overflow: hidden;
 }
 
-/* 预览区域背景图案 */
-.preview-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="%23e2e8f0" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-    opacity: 0.5;
-    pointer-events: none;
+.image-upload-area:hover {
+    border-color: #3b82f6;
+    background-color: #f0f8ff;
 }
 
-/* 主图预览卡片 */
-.main-preview {
-    background: white;
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-/* 主图预览卡片顶部装饰 */
-.main-preview::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* 主图预览卡片悬停效果 */
-.main-preview:hover {
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-/* 预览标题区域 */
-.main-preview .d-flex.justify-content-between {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-/* 预览标题 */
-.main-preview h6 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #2d3748;
+.upload-placeholder {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    margin: 0;
+    justify-content: center;
 }
 
-/* 预览标题图标 */
-.main-preview h6 i {
-    color: #667eea;
-    font-size: 1.5rem;
+.upload-placeholder i {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
 }
 
-/* 尺寸标签 */
-.main-preview .badge {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 12px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
-    border: none;
+.upload-placeholder h5 {
+    color: #495057;
+    margin-bottom: 0.5rem;
 }
 
-/* 预览容器 */
-.preview-container {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border: 2px dashed #cbd5e1;
-    border-radius: 12px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
+.upload-placeholder p {
+    color: #6c757d;
+    margin-bottom: 0;
 }
 
-/* 预览容器悬停效果 */
-.preview-container:hover {
-    border-color: #667eea;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e6f0ff 100%);
-    transform: scale(1.02);
-}
-
-/* 预览图标 */
-#preview-icon {
-    color: #a0aec0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-/* 预览容器悬停时图标效果 */
-.preview-container:hover #preview-icon {
-    color: #667eea;
-    transform: scale(1.1);
-}
-
-/* 预览图片 */
-#preview-image {
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 预览图片悬停效果 */
-#preview-image:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-}
-
-/* 上传按钮 */
-.main-preview .btn-outline-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 12px;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
-    position: relative;
-    overflow: hidden;
-}
-
-/* 上传按钮悬停效果 */
-.main-preview .btn-outline-primary::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-/* 上传按钮悬停动画 */
-.main-preview .btn-outline-primary:hover::before {
-    left: 100%;
-}
-
-/* 上传按钮悬停状态 */
-.main-preview .btn-outline-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-    color: white;
-}
-
-/* 缩略图区域 */
-.thumbnails-section {
-    background: white;
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 缩略图区域悬停效果 */
-.thumbnails-section:hover {
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-}
-
-/* 缩略图标题区域 */
-.thumbnails-section .d-flex.justify-content-between {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-/* 缩略图标题 */
-.thumbnails-section h6 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #2d3748;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-}
-
-/* 缩略图标题图标 */
-.thumbnails-section h6 i {
-    color: #667eea;
-    font-size: 1.25rem;
-}
-
-/* 添加图片按钮 */
-.thumbnails-section .btn-outline-primary {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    border: none;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 12px;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(79, 172, 254, 0.2);
-}
-
-/* 添加图片按钮悬停效果 */
-.thumbnails-section .btn-outline-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);
-    color: white;
-}
-
-/* 图片预览网格 */
-#image-preview-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-/* 图片预览项 */
-.image-preview-item {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    border: 2px solid transparent;
-}
-
-/* 图片预览项悬停效果 */
-.image-preview-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-    border-color: #667eea;
-}
-
-/* 图片预览项图片 */
-.image-preview-item img {
-    width: 100%;
-    height: 120px;
+.preview-image {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 0.375rem;
     object-fit: cover;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 图片预览项图片悬停效果 */
-.image-preview-item:hover img {
-    transform: scale(1.05);
-}
-
-/* 删除按钮 */
-.remove-button {
+.remove-image-btn {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    background: #dc3545;
+    color: white;
     border: none;
-    color: white;
-    width: 24px;
-    height: 24px;
     border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0;
-    box-shadow: 0 2px 4px rgba(250, 112, 154, 0.3);
+    font-size: 0.875rem;
 }
 
-/* 图片预览项悬停时显示删除按钮 */
-.image-preview-item:hover .remove-button {
-    opacity: 1;
+.remove-image-btn:hover {
+    background: #c82333;
 }
 
-/* 删除按钮悬停效果 */
-.remove-button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(250, 112, 154, 0.4);
+/* 詳情圖片網格 */
+.detail-images-container {
+    margin-top: 1rem;
 }
 
-/* 图片序号 */
-.image-number {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+.detail-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
-/* =============================================================================
-   11. 响应式设计 (Responsive Design)
-   ============================================================================= */
-
-/* 移动端适配 */
-@media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.875rem;
-    }
-
-    .btn-action {
-        width: 28px;
-        height: 28px;
-    }
-
-    .preview-image,
-    .no-image {
-        width: 40px;
-        height: 40px;
-    }
-
-    .product-card .image-container {
-        height: 150px;
-    }
-
-    .filter-item {
-        padding: 0.6rem 0.8rem;
-    }
-
-    .filter-image {
-        width: 24px;
-        height: 24px;
-    }
-}
-
-/* =============================================================================
-   12. 图片卡片样式 - 新设计 (Image Card Styles - New Design)
-   ============================================================================= */
-
-/* 图片卡片基础样式 */
-.image-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.detail-image-item {
+    position: relative;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid #e5e7eb;
+    aspect-ratio: 1;
+}
+
+.detail-image-item img {
     width: 100%;
     height: 100%;
-    flex-shrink: 0;
+    object-fit: cover;
 }
 
-/* 图片卡片悬停效果 */
-.image-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    border-color: #4f46e5;
-}
-
-/* 图片预览区域 */
-.image-preview {
-    position: relative;
-    height: 80px;
-    background: #f8fafc;
+.detail-image-item .remove-btn {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: rgba(220, 53, 69, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.add-detail-image-btn {
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    position: relative;
     overflow: hidden;
 }
 
-/* 图片预览区域图片 */
-.image-preview img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-
-/* 图片卡片悬停时图片效果 */
-.image-card:hover .image-preview img {
-    transform: scale(1.05);
-}
-
-/* 图片覆盖层 */
-.image-overlay {
+.add-detail-image-btn::before {
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
-    pointer-events: none;
 }
 
-/* 图片卡片悬停时覆盖层效果 */
-.image-card:hover .image-overlay {
+.add-detail-image-btn:hover {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+}
+
+.add-detail-image-btn:hover::before {
     opacity: 1;
 }
 
-/* 图片序号 */
-.image-card .image-number {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: rgba(79, 70, 229, 0.9);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    z-index: 10;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+.add-detail-image-btn i {
+    font-size: 2.5rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
-/* 图片操作区域 */
-.image-actions {
-    padding: 8px;
-    background: #f8fafc;
-    border-top: 1px solid #e5e7eb;
+.add-detail-image-btn:hover i {
+    color: #3b82f6;
+    transform: scale(1.1);
 }
 
-/* 图片操作区域按钮 */
-.image-actions .btn {
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+.add-detail-image-btn span {
+    color: #475569;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
-/* 图片操作区域按钮悬停效果 */
-.image-actions .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.add-detail-image-btn:hover span {
+    color: #1e40af;
 }
 
-/* 现有图片卡片特殊样式 */
-.existing-image-card {
-    border-left: 4px solid #10b981;
-}
-
-/* 现有图片卡片序号 */
-.existing-image-card .image-number {
-    background: rgba(16, 185, 129, 0.9);
-}
-
-/* 新增图片卡片特殊样式 */
-.new-image-card {
-    border-left: 4px solid #3b82f6;
-}
-
-/* 新增图片卡片序号 */
-.new-image-card .image-number {
-    background: rgba(59, 130, 246, 0.9);
-}
-
-/* 确保图片容器使用Bootstrap网格系统 */
-#image-preview-container {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 1rem;
-}
-
-/* 图片预览容器列 */
-#image-preview-container .col-3 {
-    flex: 0 0 25% !important;
-    max-width: 25% !important;
-    padding: 0.5rem;
-}
-
-/* 移动端响应式设计 */
+/* 響應式設計 */
 @media (max-width: 768px) {
-    #image-preview-container .col-3 {
-        flex: 0 0 50% !important;
-        max-width: 50% !important;
+    .add-detail-image-btn {
+        min-height: 120px;
+        padding: 1.5rem 1rem;
     }
 
-    .image-card {
-        max-width: 100px;
+    .add-detail-image-btn i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
     }
 
-    .image-preview {
-        height: 70px;
-    }
-
-    .image-actions .btn {
-        font-size: 10px;
-        padding: 4px 6px;
-    }
-
-    .image-card .image-number {
-        font-size: 9px;
-        padding: 2px 5px;
+    .add-detail-image-btn span {
+        font-size: 0.9rem;
     }
 }
 
-/* =============================================================================
-   动画效果 (Animation Effects)
-   ============================================================================= */
-
-/* 淡入上升动画 */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* 狀態卡片 */
+.status-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
 }
 
-/* 脉冲动画 */
-@keyframes pulse {
-    0% {
-        transform: scale(1);
+.status-card:hover {
+    border-color: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.status-card.selected {
+    border-color: #3b82f6;
+    background-color: #f0f8ff;
+}
+
+.status-card label {
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+/* 按鈕樣式 */
+.btn {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #ced4da;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
     }
-    50% {
-        transform: scale(1.05);
+
+    .card-body {
+        padding: 1rem;
     }
-    100% {
-        transform: scale(1);
+
+    .image-upload-area {
+        min-height: 150px;
+        padding: 1.5rem;
     }
-}
 
-/* 淡入上升动画类 */
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-/* 脉冲动画类 */
-.pulse {
-    animation: pulse 2s infinite;
-}
-
-/* 悬停提升效果 */
-.hover-lift {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 悬停提升效果实现 */
-.hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+    .detail-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
+    }
 }

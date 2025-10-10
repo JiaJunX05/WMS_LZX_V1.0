@@ -364,6 +364,25 @@ class ProductController extends Controller
             // 生成条形码图片（可选）
             $this->generateBarcodeImage($barcodeNumber, $skuCode, $productVariant->id);
 
+            // 調試 AJAX 檢測
+            \Log::info('AJAX Detection Debug:');
+            \Log::info('request->ajax(): ' . ($request->ajax() ? 'true' : 'false'));
+            \Log::info('request->wantsJson(): ' . ($request->wantsJson() ? 'true' : 'false'));
+            \Log::info('X-Requested-With header: ' . ($request->header('X-Requested-With') ?? 'not set'));
+            \Log::info('Accept header: ' . ($request->header('Accept') ?? 'not set'));
+
+            // 如果是 AJAX 请求，返回 JSON 响应
+            if ($request->ajax() || $request->wantsJson()) {
+                \Log::info('Returning JSON response');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product created successfully',
+                    'redirect' => route('product.index')
+                ]);
+            }
+
+            \Log::info('Returning redirect response');
+
             return redirect()->route('product.index')
                             ->with('success', 'Product created successfully');
         } catch (\Exception $e) {
@@ -371,6 +390,15 @@ class ProductController extends Controller
             if (isset($imageName) && file_exists($directory . '/' . $imageName)) {
                 unlink($directory . '/' . $imageName);
             }
+
+            // 如果是 AJAX 请求，返回 JSON 错误响应
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product creation failed: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->back()
                             ->withInput()
                             ->withErrors(['error' => 'Product creation failed: ' . $e->getMessage()]);
@@ -611,10 +639,28 @@ class ProductController extends Controller
                 }
             }
 
+            // 檢查是否為 AJAX 請求
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product updated successfully',
+                    'redirect' => route('product.index')
+                ]);
+            }
+
             return redirect()->route('product.index')
                             ->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
             Log::error('Product update error: ' . $e->getMessage());
+
+            // 檢查是否為 AJAX 請求
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product update failed: ' . $e->getMessage()
+                ], 422);
+            }
+
             return redirect()->back()
                             ->withInput()
                             ->withErrors(['error' => 'Product update failed: ' . $e->getMessage()]);
@@ -715,6 +761,14 @@ class ProductController extends Controller
                 'product_name' => $product->name
             ]);
 
+            // 檢查是否為 AJAX 請求
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product has been set to available status'
+                ]);
+            }
+
             return redirect()->back()
                             ->with('success', 'Product has been set to available status');
         } catch (\Exception $e) {
@@ -722,6 +776,14 @@ class ProductController extends Controller
                 'product_id' => $id,
                 'error_message' => $e->getMessage()
             ]);
+
+            // 檢查是否為 AJAX 請求
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while setting product status. Please try again.'
+                ], 422);
+            }
 
             return redirect()->back()
                             ->withErrors(['error' => 'An error occurred while setting product status. Please try again.']);
@@ -746,6 +808,14 @@ class ProductController extends Controller
                 'product_name' => $product->name
             ]);
 
+            // 檢查是否為 AJAX 請求
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product has been set to unavailable status'
+                ]);
+            }
+
             return redirect()->back()
                             ->with('success', 'Product has been set to unavailable status');
         } catch (\Exception $e) {
@@ -753,6 +823,14 @@ class ProductController extends Controller
                 'product_id' => $id,
                 'error_message' => $e->getMessage()
             ]);
+
+            // 檢查是否為 AJAX 請求
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while setting product status. Please try again.'
+                ], 422);
+            }
 
             return redirect()->back()
                             ->withErrors(['error' => 'An error occurred while setting product status. Please try again.']);

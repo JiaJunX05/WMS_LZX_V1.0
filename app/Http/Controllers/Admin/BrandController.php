@@ -386,9 +386,9 @@ class BrandController extends Controller
                 'brand_status' => $validatedData['brand_status'],
             ];
 
-            // 处理图片更新
+            // 处理图片：上传新图片或移除现有图片
             if ($request->hasFile('brand_image')) {
-                // 删除旧图片
+                // 上传新图片：删除旧图片
                 if ($brand->brand_image && file_exists(public_path('assets/images/' . $brand->brand_image))) {
                     unlink(public_path('assets/images/' . $brand->brand_image));
                 }
@@ -402,6 +402,12 @@ class BrandController extends Controller
                 }
                 $image->move($directory, $imageName);
                 $brandData['brand_image'] = 'brands/' . $imageName;
+            } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
+                // 移除图片：删除文件并清空数据库字段
+                if ($brand->brand_image && file_exists(public_path('assets/images/' . $brand->brand_image))) {
+                    unlink(public_path('assets/images/' . $brand->brand_image));
+                }
+                $brandData['brand_image'] = null;
             }
 
             $brand->update($brandData);

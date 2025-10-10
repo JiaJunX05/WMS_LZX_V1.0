@@ -1179,6 +1179,12 @@ function handleUpdateImagePreview(event) {
                         removeUpdateImage();
                     });
                 }
+
+                // 顯示移除圖片按鈕
+                const removeImageBtn = document.getElementById('removeImage');
+                if (removeImageBtn) {
+                    removeImageBtn.style.display = 'block';
+                }
             }
         };
         reader.readAsDataURL(file);
@@ -1196,10 +1202,22 @@ function removeUpdateImage() {
 
     const imageInput = document.getElementById('input_image');
     const previewContainer = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('removeImage');
+    const form = document.querySelector('form[action*="update"]');
 
-    if (imageInput && previewContainer) {
+    if (imageInput && previewContainer && form) {
         // 重置文件輸入
         imageInput.value = '';
+
+        // 添加隱藏的 remove_image 參數到表單
+        let removeImageInput = form.querySelector('input[name="remove_image"]');
+        if (!removeImageInput) {
+            removeImageInput = document.createElement('input');
+            removeImageInput.type = 'hidden';
+            removeImageInput.name = 'remove_image';
+            form.appendChild(removeImageInput);
+        }
+        removeImageInput.value = '1';
 
         // 恢復原始內容
         const originalContent = previewContainer.getAttribute('data-original-content');
@@ -1214,6 +1232,60 @@ function removeUpdateImage() {
                     <small>Upload an image to see preview</small>
                 </div>
             `;
+        }
+
+        // 隱藏移除圖片按鈕
+        if (removeImageBtn) {
+            removeImageBtn.style.display = 'none';
+        }
+
+        showAlert('Image removed successfully', 'success');
+    }
+}
+
+/**
+ * Update 頁面移除圖片按鈕處理
+ */
+function handleRemoveImageButton() {
+    // 確認是否要移除圖片
+    if (!confirm('Are you sure you want to remove this image?')) {
+        return;
+    }
+
+    const imageInput = document.getElementById('input_image');
+    const previewContainer = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('removeImage');
+    const form = document.querySelector('form[action*="update"]');
+
+    if (imageInput && previewContainer && form) {
+        // 重置文件輸入
+        imageInput.value = '';
+
+        // 添加隱藏的 remove_image 參數到表單
+        let removeImageInput = form.querySelector('input[name="remove_image"]');
+        if (!removeImageInput) {
+            removeImageInput = document.createElement('input');
+            removeImageInput.type = 'hidden';
+            removeImageInput.name = 'remove_image';
+            form.appendChild(removeImageInput);
+        }
+        removeImageInput.value = '1';
+
+        // 顯示默認狀態
+        previewContainer.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-image fs-1 mb-3 d-block"></i>
+                <p class="mb-0">No image uploaded</p>
+                <small>Upload an image to see preview</small>
+            </div>
+        `;
+
+        // 更新 data-original-content 屬性
+        previewContainer.setAttribute('data-original-content', previewContainer.innerHTML);
+
+        // 隱藏移除圖片按鈕
+        if (removeImageBtn) {
+            removeImageBtn.style.display = 'none';
         }
 
         showAlert('Image removed successfully', 'success');
@@ -1536,6 +1608,21 @@ document.addEventListener('DOMContentLoaded', function() {
         updateImageInput.addEventListener('change', handleUpdateImagePreview);
     }
 
+    // Update 頁面移除圖片按鈕
+    const removeImageBtn = document.getElementById('removeImage');
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', handleRemoveImageButton);
+
+        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
+        const previewContainer = document.getElementById('image-preview');
+        if (previewContainer) {
+            const hasImage = previewContainer.querySelector('img');
+            if (!hasImage) {
+                removeImageBtn.style.display = 'none';
+            }
+        }
+    }
+
     // Update 頁面狀態卡片初始化
     initializeUpdateStatusCards();
 });
@@ -1553,3 +1640,5 @@ window.setRackAvailable = setRackAvailable;
 window.setRackUnavailable = setRackUnavailable;
 window.updateRackStatus = updateRackStatus;
 window.viewRackDetails = viewRackDetails;
+window.handleRemoveImageButton = handleRemoveImageButton;
+window.removeUpdateImage = removeUpdateImage;

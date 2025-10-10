@@ -385,9 +385,9 @@ class CategoryController extends Controller
                 'category_status' => $validatedData['category_status'],
             ];
 
-            // 处理图片更新
+            // 处理图片：上传新图片或移除现有图片
             if ($request->hasFile('category_image')) {
-                // 删除旧图片
+                // 上传新图片：删除旧图片
                 if ($category->category_image && file_exists(public_path('assets/images/' . $category->category_image))) {
                     unlink(public_path('assets/images/' . $category->category_image));
                 }
@@ -401,6 +401,12 @@ class CategoryController extends Controller
                 }
                 $image->move($directory, $imageName);
                 $categoryData['category_image'] = 'categories/' . $imageName;
+            } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
+                // 移除图片：删除文件并清空数据库字段
+                if ($category->category_image && file_exists(public_path('assets/images/' . $category->category_image))) {
+                    unlink(public_path('assets/images/' . $category->category_image));
+                }
+                $categoryData['category_image'] = null;
             }
 
             $category->update($categoryData);

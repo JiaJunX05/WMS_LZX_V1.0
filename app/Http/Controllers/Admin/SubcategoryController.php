@@ -359,7 +359,9 @@ class SubcategoryController extends Controller
                 'subcategory_status' => $validatedData['subcategory_status'],
             ];
 
+            // 处理图片：上传新图片或移除现有图片
             if ($request->hasFile('subcategory_image')) {
+                // 上传新图片：删除旧图片
                 if ($subcategory->subcategory_image && file_exists(public_path('assets/images/' . $subcategory->subcategory_image))) {
                     unlink(public_path('assets/images/' . $subcategory->subcategory_image));
                 }
@@ -368,6 +370,12 @@ class SubcategoryController extends Controller
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('assets/images/subcategories'), $imageName);
                 $subcategoryData['subcategory_image'] = 'subcategories/' . $imageName;
+            } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
+                // 移除图片：删除文件并清空数据库字段
+                if ($subcategory->subcategory_image && file_exists(public_path('assets/images/' . $subcategory->subcategory_image))) {
+                    unlink(public_path('assets/images/' . $subcategory->subcategory_image));
+                }
+                $subcategoryData['subcategory_image'] = null;
             }
 
             $subcategory->update($subcategoryData);

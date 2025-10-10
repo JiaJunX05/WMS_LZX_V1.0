@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\ProductVariant;
 use App\Models\ManagementTool\Brand;
 use App\Models\ManagementTool\Color;
+use App\Models\ManagementTool\Gender;
 use App\Models\SizeLibrary\SizeLibrary;
 
 class AttributeVariant extends Model
@@ -21,6 +22,7 @@ class AttributeVariant extends Model
         'brand_id',
         'color_id',
         'size_id',
+        'gender_id',
     ];
 
     public function variant(): BelongsTo {
@@ -37,5 +39,9 @@ class AttributeVariant extends Model
 
     public function size(): BelongsTo {
         return $this->belongsTo(SizeLibrary::class, 'size_id', 'id');
+    }
+
+    public function gender(): BelongsTo {
+        return $this->belongsTo(Gender::class, 'gender_id', 'id');
     }
 }

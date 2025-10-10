@@ -220,5 +220,11 @@
 @endsection
 
 @section("scripts")
-<script src="{{ asset('assets/js/product/product-dashboard.js') }}"></script>
+{{-- 通用 JavaScript 文件 (Common JavaScript Files) --}}
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/status-system.js') }}"></script>
+
+{{-- 统一产品管理 JavaScript (Unified Product Management JavaScript) --}}
+<script src="{{ asset('assets/js/product-management.js') }}"></script>
 @endsection

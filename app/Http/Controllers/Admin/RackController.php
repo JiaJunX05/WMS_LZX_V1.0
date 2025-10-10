@@ -363,7 +363,9 @@ class RackController extends Controller
                 'rack_status' => $validatedData['rack_status'],
             ];
 
+            // 处理图片：上传新图片或移除现有图片
             if ($request->hasFile('rack_image')) {
+                // 上传新图片：删除旧图片
                 if ($rack->rack_image && file_exists(public_path('assets/images/' . $rack->rack_image))) {
                     unlink(public_path('assets/images/' . $rack->rack_image));
                 }
@@ -372,6 +374,12 @@ class RackController extends Controller
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('assets/images/racks'), $imageName);
                 $rackData['rack_image'] = 'racks/' . $imageName;
+            } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
+                // 移除图片：删除文件并清空数据库字段
+                if ($rack->rack_image && file_exists(public_path('assets/images/' . $rack->rack_image))) {
+                    unlink(public_path('assets/images/' . $rack->rack_image));
+                }
+                $rackData['rack_image'] = null;
             }
 
             $rack->update($rackData);

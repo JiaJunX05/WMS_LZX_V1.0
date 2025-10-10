@@ -141,6 +141,26 @@ const IMAGE_CONFIGS = {
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
+    },
+
+    // 产品管理 (Product Management)
+    product: {
+        // 封面图片配置
+        coverImageInputId: 'cover_image',
+        coverImageUploadAreaId: 'cover-image-area',
+        coverPreviewImageId: 'cover-preview',
+        coverUploadPlaceholderId: 'cover-upload-placeholder',
+        removeCoverBtnId: 'remove-cover-image',
+
+        // 详细图片配置
+        detailImagesInputId: 'detail_images',
+        detailImagesGridId: 'detail-images-grid',
+        addDetailImageBtnId: 'add-detail-image',
+
+        // 更新页面配置
+        updateCoverImageInputId: 'cover_image',
+        updateDetailImagesInputId: 'detail_images',
+        updateDetailImagesGridId: 'detail-images-grid'
     }
 };
 
@@ -627,7 +647,299 @@ window.ImageSystem = {
 window.ImageHandler = window.ImageSystem;
 window.ImageConfigs = window.ImageSystem;
 
+// =============================================================================
+// 产品图片特殊处理功能 (Product Image Special Functions)
+// =============================================================================
+
+/**
+ * 处理产品封面图片预览
+ * @param {File} file 图片文件
+ */
+function handleProductCoverImagePreview(file) {
+    if (!file.type.startsWith('image/')) {
+        if (typeof showAlert === 'function') {
+            showAlert('Please select an image file', 'warning');
+        } else {
+            alert('Please select an image file');
+        }
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const coverUploadPlaceholder = document.getElementById('cover-upload-placeholder');
+        const coverPreview = document.getElementById('cover-preview');
+        const removeCoverBtn = document.getElementById('remove-cover-image');
+
+        // 隐藏上传提示
+        if (coverUploadPlaceholder) {
+            coverUploadPlaceholder.classList.add('d-none');
+        }
+
+        // 显示图片预览
+        if (coverPreview) {
+            coverPreview.src = e.target.result;
+            coverPreview.classList.remove('d-none');
+        }
+
+        // 显示移除按钮
+        if (removeCoverBtn) {
+            removeCoverBtn.classList.remove('d-none');
+        }
+
+        // 显示成功提示
+        if (typeof showAlert === 'function') {
+            showAlert('Cover image added successfully', 'success');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 移除产品封面图片
+ */
+function removeProductCoverImage() {
+    if (!confirm('Are you sure you want to remove this cover image?')) {
+        return;
+    }
+
+    const coverImageInput = document.getElementById('cover_image');
+    const coverPreview = document.getElementById('cover-preview');
+    const removeCoverBtn = document.getElementById('remove-cover-image');
+    const coverUploadPlaceholder = document.getElementById('cover-upload-placeholder');
+
+    // 重置封面图片
+    if (coverImageInput) coverImageInput.value = '';
+    if (coverPreview) {
+        coverPreview.src = '';
+        coverPreview.classList.add('d-none');
+    }
+    if (removeCoverBtn) removeCoverBtn.classList.add('d-none');
+    if (coverUploadPlaceholder) coverUploadPlaceholder.classList.remove('d-none');
+
+    if (typeof showAlert === 'function') {
+        showAlert('Cover image removed successfully', 'success');
+    }
+}
+
+/**
+ * 处理产品详细图片预览
+ * @param {File} file 图片文件
+ */
+function handleProductDetailImagePreview(file) {
+    if (!file.type.startsWith('image/')) {
+        if (typeof showAlert === 'function') {
+            showAlert('Please select an image file', 'warning');
+        } else {
+            alert('Please select an image file');
+        }
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // 创建图片项目
+        const imageItem = document.createElement('div');
+        imageItem.className = 'detail-image-item';
+
+        // 创建图片元素
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.alt = 'Detail Image';
+
+        // 创建移除按钮
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+
+        // 添加点击事件
+        removeBtn.addEventListener('click', function() {
+            removeProductDetailImage(this);
+        });
+
+        // 组装元素
+        imageItem.appendChild(img);
+        imageItem.appendChild(removeBtn);
+
+        // 添加到网格中
+        const detailImagesGrid = document.getElementById('detail-images-grid');
+        if (detailImagesGrid) {
+            detailImagesGrid.appendChild(imageItem);
+            updateProductAddButtonPosition();
+
+            // 显示成功提示
+            if (typeof showAlert === 'function') {
+                showAlert('Detail image added successfully', 'success');
+            }
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 移除产品详细图片
+ * @param {HTMLElement} button 移除按钮元素
+ */
+function removeProductDetailImage(button) {
+    if (!confirm('Are you sure you want to remove this detail image?')) {
+        return;
+    }
+
+    const imageItem = button.closest('.detail-image-item');
+    if (imageItem) {
+        imageItem.remove();
+        updateProductAddButtonPosition();
+
+        if (typeof showAlert === 'function') {
+            showAlert('Detail image removed successfully', 'success');
+        }
+    }
+}
+
+/**
+ * 更新产品添加按钮位置
+ */
+function updateProductAddButtonPosition() {
+    const detailImagesGrid = document.getElementById('detail-images-grid');
+    const addDetailImageBtn = document.getElementById('add-detail-image');
+
+    if (detailImagesGrid && addDetailImageBtn) {
+        const imageItems = detailImagesGrid.querySelectorAll('.detail-image-item');
+        const container = detailImagesGrid.parentNode;
+
+        if (imageItems.length === 0) {
+            resetProductAddButtonToOriginalState();
+        } else {
+            if (detailImagesGrid.contains(addDetailImageBtn)) {
+                detailImagesGrid.removeChild(addDetailImageBtn);
+            }
+            if (container && !container.contains(addDetailImageBtn)) {
+                container.appendChild(addDetailImageBtn);
+            }
+        }
+    }
+}
+
+/**
+ * 重置产品添加按钮到原始状态
+ */
+function resetProductAddButtonToOriginalState() {
+    const addDetailImageBtn = document.getElementById('add-detail-image');
+
+    if (addDetailImageBtn) {
+        addDetailImageBtn.style.display = '';
+        addDetailImageBtn.style.position = '';
+        addDetailImageBtn.style.top = '';
+        addDetailImageBtn.style.left = '';
+        addDetailImageBtn.style.transform = '';
+        addDetailImageBtn.style.margin = '';
+
+        const container = document.querySelector('.detail-images-container');
+        if (container && !container.contains(addDetailImageBtn)) {
+            container.appendChild(addDetailImageBtn);
+        }
+    }
+}
+
+/**
+ * 绑定产品图片事件
+ */
+function bindProductImageEvents() {
+    // 封面图片事件
+    const coverImageArea = document.getElementById('cover-image-area');
+    const coverImageInput = document.getElementById('cover_image');
+    const removeCoverBtn = document.getElementById('remove-cover-image');
+
+    if (coverImageArea && coverImageInput) {
+        coverImageArea.addEventListener('click', function() {
+            coverImageInput.click();
+        });
+
+        coverImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleProductCoverImagePreview(file);
+            }
+        });
+
+        if (removeCoverBtn) {
+            removeCoverBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeProductCoverImage();
+            });
+        }
+
+        // 拖拽上传
+        setupProductDragAndDrop();
+    }
+
+    // 详细图片事件
+    const addDetailImageBtn = document.getElementById('add-detail-image');
+    const detailImagesInput = document.getElementById('detail_images');
+
+    if (addDetailImageBtn && detailImagesInput) {
+        addDetailImageBtn.addEventListener('click', function() {
+            detailImagesInput.click();
+        });
+
+        detailImagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                handleProductDetailImagePreview(file);
+            });
+            e.target.value = '';
+        });
+    }
+}
+
+/**
+ * 设置产品拖拽上传
+ */
+function setupProductDragAndDrop() {
+    const coverImageArea = document.getElementById('cover-image-area');
+
+    if (!coverImageArea) return;
+
+    coverImageArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#696cff';
+        this.style.backgroundColor = '#f0f0ff';
+    });
+
+    coverImageArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#d9dee3';
+        this.style.backgroundColor = '#f8f9fa';
+    });
+
+    coverImageArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#d9dee3';
+        this.style.backgroundColor = '#f8f9fa';
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const coverImageInput = document.getElementById('cover_image');
+            if (coverImageInput) {
+                coverImageInput.files = files;
+                handleProductCoverImagePreview(files[0]);
+            }
+        }
+    });
+}
+
 // 向後兼容的函數別名
 window.previewImage = showImagePreview;
 window.handleImagePreview = handleCreateImagePreview;
 window.previewUploadedImage = handleUpdateImagePreview;
+
+// 产品图片处理函数
+window.handleProductCoverImagePreview = handleProductCoverImagePreview;
+window.removeProductCoverImage = removeProductCoverImage;
+window.handleProductDetailImagePreview = handleProductDetailImagePreview;
+window.removeProductDetailImage = removeProductDetailImage;
+window.updateProductAddButtonPosition = updateProductAddButtonPosition;
+window.resetProductAddButtonToOriginalState = resetProductAddButtonToOriginalState;
+window.bindProductImageEvents = bindProductImageEvents;
+window.setupProductDragAndDrop = setupProductDragAndDrop;

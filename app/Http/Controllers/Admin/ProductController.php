@@ -55,7 +55,7 @@ class ProductController extends Controller
         'gender_id' => 'required|exists:genders,id',
         'zone_id' => 'required|exists:zones,id',
         'rack_id' => 'nullable|exists:racks,id',
-        'product_status' => 'required|in:Available,Unavailable',
+        'product_status' => 'nullable|in:Available,Unavailable',
     ];
 
     private const PRODUCT_IMAGE_RULES = [
@@ -188,7 +188,8 @@ class ProductController extends Controller
                     'variants.attributeVariant.brand',
                     'variants.attributeVariant.color',
                     'variants.attributeVariant.size',
-                    'variants.attributeVariant.size.category'
+                    'variants.attributeVariant.size.category',
+                    'variants.attributeVariant.gender'
                 ]);
 
                 // 搜索条件：产品名称、SKU代码或条形码
@@ -312,7 +313,7 @@ class ProductController extends Controller
             return $color;
         });
 
-        return view('product_variants.products.dashboard', compact('categories', 'subcategories', 'brands', 'colors'));
+        return view('products.product_dashboard', compact('categories', 'subcategories', 'brands', 'colors'));
     }
 
     /**
@@ -348,7 +349,7 @@ class ProductController extends Controller
         $suggestedSKU = $this->generateSuggestedSKU();
         $suggestedBarcode = $this->generateBarcodeNumber($suggestedSKU);
 
-        return view('product_variants.products.create', compact(
+        return view('products.product_create', compact(
             'categories', 'subcategories', 'brands', 'colors', 'genders', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
         ));
     }
@@ -530,10 +531,11 @@ class ProductController extends Controller
                 'images',
                 'variants.attributeVariant.brand',
                 'variants.attributeVariant.color',
-                'variants.attributeVariant.size'
+                'variants.attributeVariant.size',
+                'variants.attributeVariant.gender'
             ])->findOrFail($id);
 
-            return view('product_variants.products.view', compact('product'));
+            return view('products.product_view', compact('product'));
         } catch (\Exception $e) {
             return $this->handleError(request(), 'Product not found or failed to load: ' . $e->getMessage(), $e);
         }
@@ -579,7 +581,7 @@ class ProductController extends Controller
             ];
         }
 
-        return view('product_variants.products.update', compact(
+        return view('products.product_update', compact(
             'product', 'categories', 'subcategories', 'brands', 'colors', 'genders', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
         ));
     }

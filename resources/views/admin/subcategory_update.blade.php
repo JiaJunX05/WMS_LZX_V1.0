@@ -67,6 +67,10 @@
                             </div>
                         @endif
                     </div>
+
+                    <button type="button" class="btn btn-outline-secondary w-100" id="removeImage">
+                        <i class="bi bi-x-circle me-2"></i>Remove Image
+                    </button>
                 </div>
             </div>
 

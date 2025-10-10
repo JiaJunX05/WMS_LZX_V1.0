@@ -68,6 +68,10 @@
                             </div>
                         @endif
                     </div>
+
+                    <button type="button" class="btn btn-outline-secondary w-100" id="removeImage">
+                        <i class="bi bi-x-circle me-2"></i>Remove Image
+                    </button>
                 </div>
             </div>
 
@@ -158,6 +162,18 @@
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-check-circle-fill me-2"></i>Update Zone
                         </button>
+                        {{-- <div class="row">
+                            <div class="col-md-8">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-check-circle-fill me-2"></i>Update Zone
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-secondary w-100" id="removeImage">
+                                    <i class="bi bi-x-circle me-2"></i>Remove Image
+                                </button>
+                            </div>
+                        </div> --}}
                     </form>
                 </div>
             </div>

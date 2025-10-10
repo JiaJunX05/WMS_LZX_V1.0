@@ -12,14 +12,8 @@
     $brand = $attributeVariant && $attributeVariant->brand ? $attributeVariant->brand : null;
     $color = $attributeVariant && $attributeVariant->color ? $attributeVariant->color : null;
     $size = $attributeVariant && $attributeVariant->size ? $attributeVariant->size : null;
-    $gender = null;
-    if ($size) {
-        if ($size->clothingSize && $size->clothingSize->gender) {
-            $gender = $size->clothingSize->gender;
-        } elseif ($size->shoeSize && $size->shoeSize->gender) {
-            $gender = $size->shoeSize->gender;
-        }
-    }
+    $gender = $attributeVariant && $attributeVariant->gender ? $attributeVariant->gender : null;
+
 @endphp
 
 {{-- =============================================================================
@@ -404,6 +398,8 @@
 
 {{-- Common JavaScript Files --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 
 {{-- Data for JavaScript --}}
 <script>
@@ -415,6 +411,6 @@
     window.productIndexUrl = '{{ route("product.index") }}';
 </script>
 
-{{-- Product View Page JavaScript --}}
-<script src="{{ asset('assets/js/product/product-view.js') }}"></script>
+{{-- 统一产品管理 JavaScript (Unified Product Management JavaScript) --}}
+<script src="{{ asset('assets/js/product-management.js') }}"></script>
 @endsection

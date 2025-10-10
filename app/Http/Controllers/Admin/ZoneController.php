@@ -364,7 +364,9 @@ class ZoneController extends Controller
                 'zone_status' => $validatedData['zone_status'],
             ];
 
+            // 处理图片：上传新图片或移除现有图片
             if ($request->hasFile('zone_image')) {
+                // 上传新图片：删除旧图片
                 if ($zone->zone_image && file_exists(public_path('assets/images/' . $zone->zone_image))) {
                     unlink(public_path('assets/images/' . $zone->zone_image));
                 }
@@ -373,6 +375,12 @@ class ZoneController extends Controller
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('assets/images/zones'), $imageName);
                 $zoneData['zone_image'] = 'zones/' . $imageName;
+            } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
+                // 移除图片：删除文件并清空数据库字段
+                if ($zone->zone_image && file_exists(public_path('assets/images/' . $zone->zone_image))) {
+                    unlink(public_path('assets/images/' . $zone->zone_image));
+                }
+                $zoneData['zone_image'] = null;
             }
 
             $zone->update($zoneData);

@@ -299,6 +299,49 @@
 }
 
 /* =============================================================================
+   6. 角色徽章样式 (Role Badge Styles)
+   ============================================================================= */
+
+/* 🏷️ 统一角色徽章样式 */
+.role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 🔴 SuperAdmin 角色徽章 */
+.role-badge.super-admin {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+/* 🟡 Admin 角色徽章 */
+.role-badge.admin {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+/* 🟢 Staff 角色徽章 */
+.role-badge.staff {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+/* ⚪ 默认角色徽章 */
+.role-badge.default {
+    background-color: var(--gray-100);
+    color: var(--gray-500);
+    border: 1px solid var(--border-color);
+}
+
+/* =============================================================================
    5. 响应式设计 (Responsive Design)
    ============================================================================= */
 

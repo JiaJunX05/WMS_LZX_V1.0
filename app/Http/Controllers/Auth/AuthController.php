@@ -712,7 +712,8 @@ class AuthController extends Controller
 
                 // 管理员统计
                 if ($currentRole === 'SuperAdmin') {
-                    $stats['admin_users'] = $baseQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
+                    $adminQuery = clone $query;
+                    $stats['admin_users'] = $adminQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
                         ->whereIn('account_role', ['Admin', 'SuperAdmin'])
                         ->count();
                 } else {
@@ -733,7 +734,7 @@ class AuthController extends Controller
      */
     public function showUpdateForm($id) {
         $user = User::with('account')->findOrFail($id);
-        $currentRole = $this->getCurrentUserRole();
+        $userRole = $this->getCurrentUserRole();
         $isUpdatingSelf = Auth::id() == $id;
 
         // 权限检查
@@ -741,7 +742,7 @@ class AuthController extends Controller
             abort(403, 'You do not have permission to edit this user');
         }
 
-        return view('auth.auth_update', compact('user', 'currentRole', 'isUpdatingSelf'));
+        return view('auth.auth_update', compact('user', 'userRole', 'isUpdatingSelf'));
     }
 
     /**

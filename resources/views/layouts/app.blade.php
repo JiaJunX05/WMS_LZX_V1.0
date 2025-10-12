@@ -21,6 +21,7 @@
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/css/layouts/variables.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/layouts/sidebar.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/layouts/header.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/layouts/footer.css') }}">
@@ -62,9 +63,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
-
-    <!-- App Core JS -->
-    <script src="{{ asset('js/app.js') }}" defer></script>
 
     <!-- Custom Page Scripts -->
     @yield("scripts")

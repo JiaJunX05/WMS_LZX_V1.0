@@ -1004,6 +1004,15 @@ class StockController extends Controller
      */
     public function getStockStatistics(Request $request)
     {
+        // 权限控制：仅管理员和超级管理员可以访问统计数据
+        $userRole = auth()->user()->getAccountRole();
+        if (!in_array($userRole, ['Admin', 'SuperAdmin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access denied. Only administrators can view statistics.'
+            ], 403);
+        }
+
         try {
             $startDate = $request->filled('start_date') ? $request->start_date . ' 00:00:00' : now()->subDays(30);
             $endDate = $request->filled('end_date') ? $request->end_date . ' 23:59:59' : now();

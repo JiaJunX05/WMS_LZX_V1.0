@@ -3,12 +3,17 @@
     <div class="container-fluid">
         <!-- Logo部分 -->
         <a class="navbar-brand" href="{{ Auth::check() ? route(Auth::user()->dashboardRoute()) : route('login') }}">
-            <i class="bi bi-house-door-fill me-2"></i>
-            <span class="brand-text">Warehouse Management System</span>
+            <div class="brand-icon-wrapper">
+                <i class="bi bi-house-door-fill"></i>
+            </div>
+            <div class="brand-content">
+                <span class="brand-text">WMS Dashboard</span>
+                <span class="brand-subtitle">Warehouse Management System</span>
+            </div>
         </a>
 
-        <!-- 移动端触发器 -->
-        <button class="navbar-toggler navbar-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
+        <!-- 移动端侧边栏触发器 -->
+        <button class="navbar-toggler navbar-dark d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>

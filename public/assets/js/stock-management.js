@@ -395,6 +395,7 @@ class StockHistory {
     init() {
         this.bindEvents();
         this.loadStockHistory();
+        this.loadStockStatistics();
     }
 
     // =============================================================================
@@ -476,6 +477,7 @@ class StockHistory {
 
         this.currentPage = 1;
         this.loadStockHistory();
+        this.loadStockStatistics(); // 重新加載統計數據
     }
 
     /**
@@ -494,6 +496,7 @@ class StockHistory {
         this.currentPage = 1;
 
         this.loadStockHistory();
+        this.loadStockStatistics(); // 重新加載統計數據
     }
 
     // =============================================================================
@@ -558,6 +561,78 @@ class StockHistory {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    /**
+     * 加載庫存統計數據
+     */
+    async loadStockStatistics() {
+        // 檢查統計卡片是否存在（僅管理員和超級管理員可見）
+        const statisticsCards = document.querySelector('.statistics-section');
+        if (!statisticsCards) {
+            console.log('Statistics cards not found, skipping statistics load');
+            return; // 如果統計卡片不存在，則不執行
+        }
+
+        console.log('Loading stock statistics...');
+        const params = new URLSearchParams({
+            start_date: this.startDate,
+            end_date: this.endDate
+        });
+
+        try {
+            console.log('Fetching statistics from:', `/api/stock-statistics?${params}`);
+            const response = await fetch(`/api/stock-statistics?${params}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            console.log('Statistics response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Statistics response data:', data);
+
+            if (data.success) {
+                this.updateStatisticsCards(data.statistics);
+                console.log('Statistics updated successfully');
+            } else {
+                console.error('Failed to load statistics:', data.message);
+            }
+        } catch (error) {
+            console.error('Error loading stock statistics:', error);
+        }
+    }
+
+    /**
+     * 更新統計卡片數據
+     * @param {Object} statistics 統計數據
+     */
+    updateStatisticsCards(statistics) {
+        console.log('Updating statistics cards with data:', statistics);
+        const elements = {
+            'totalStockIn': statistics.total_stock_in,
+            'totalStockOut': statistics.total_stock_out,
+            'netChange': statistics.net_change,
+            'totalMovements': statistics.total_movements,
+            'currentTotalStock': statistics.current_total_stock,
+            'lowStockCount': statistics.low_stock_count
+        };
+
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            console.log(`Updating element ${id}:`, element, 'with value:', value);
+            if (element) {
+                element.textContent = value || 0;
+                console.log(`Updated ${id} to:`, element.textContent);
+            } else {
+                console.error(`Element with id ${id} not found`);
+            }
+        });
     }
 
     // =============================================================================

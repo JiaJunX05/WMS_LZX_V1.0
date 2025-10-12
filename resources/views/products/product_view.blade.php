@@ -21,7 +21,7 @@
      ============================================================================= --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/product/product-view.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/product-view.css') }}">
 
 {{-- =============================================================================
      Main Container
@@ -253,6 +253,7 @@
                     <div class="product-info-grid">
                         {{-- Left Information Column --}}
                         <div class="info-column">
+                            {{-- 产品分类信息 --}}
                             <div class="info-item">
                                 <div class="info-icon">
                                     <i class="bi bi-tags"></i>
@@ -260,16 +261,6 @@
                                 <div class="info-content">
                                     <span class="info-label">Category</span>
                                     <span class="info-value">{{ $product->category->category_name ?? 'N/A' }}</span>
-                                </div>
-                            </div>
-
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-award"></i>
-                                </div>
-                                <div class="info-content">
-                                    <span class="info-label">Brand</span>
-                                    <span class="info-value">{{ $brand ? $brand->brand_name : 'N/A' }}</span>
                                 </div>
                             </div>
 
@@ -283,6 +274,17 @@
                                 </div>
                             </div>
 
+                            <div class="info-item">
+                                <div class="info-icon">
+                                    <i class="bi bi-award"></i>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Brand</span>
+                                    <span class="info-value">{{ $brand ? $brand->brand_name : 'N/A' }}</span>
+                                </div>
+                            </div>
+
+                            {{-- 产品属性信息 --}}
                             <div class="info-item">
                                 <div class="info-icon">
                                     <i class="bi bi-palette"></i>
@@ -306,6 +308,7 @@
 
                         {{-- Right Information Column --}}
                         <div class="info-column">
+                            {{-- 库存管理信息 --}}
                             <div class="info-item">
                                 <div class="info-icon">
                                     <i class="bi bi-upc-scan"></i>
@@ -326,6 +329,7 @@
                                 </div>
                             </div>
 
+                            {{-- 存储位置信息 --}}
                             <div class="info-item">
                                 <div class="info-icon">
                                     <i class="bi bi-geo-alt"></i>
@@ -346,6 +350,7 @@
                                 </div>
                             </div>
 
+                            {{-- 目标客户信息 --}}
                             <div class="info-item">
                                 <div class="info-icon">
                                     <i class="bi bi-person"></i>

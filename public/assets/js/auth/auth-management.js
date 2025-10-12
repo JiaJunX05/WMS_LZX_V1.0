@@ -291,7 +291,7 @@ class AuthDashboard {
                     </div>
                 </td>
                 <td><span class="text-muted">${user.email}</span></td>
-                <td><span class="role-badge ${this.getRoleClass(user.role)}">${user.role.toUpperCase()}</span></td>
+                <td><span class="role-badge ${this.getRoleClass(user.role)}" data-role="${user.role}">${user.role.toUpperCase()}</span></td>
                 <td><span class="status-badge ${this.getStatusClass(user.status)}">${user.status}</span></td>
                 <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
             </tr>
@@ -520,13 +520,50 @@ class AuthDashboard {
         }
 
         // 使用通用函數
-        changeUserRole(userId, selectedRole, {
+        this.changeUserRole(userId, selectedRole, {
             onSuccess: () => {
                 // 關閉模態框
                 $('#roleChangeModal').modal('hide');
                 // 重新加載數據
                 this.loadStats();
                 this.fetchUsers(this.currentPage);
+            }
+        });
+    }
+
+    // 更改用户角色
+    changeUserRole(userId, newRole, callbacks = {}) {
+        if (!window.changeRoleUrl) {
+            this.showAlert('You do not have permission to change user roles', 'warning');
+            return;
+        }
+
+        const url = window.changeRoleUrl.replace(':id', userId);
+
+        $.ajax({
+            url: url,
+            type: 'PATCH',
+            data: {
+                account_role: newRole,
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                _method: 'PATCH'
+            },
+            success: (response) => {
+                if (response.success) {
+                    this.showAlert(response.message || 'User role changed successfully', 'success');
+                    if (callbacks.onSuccess) {
+                        callbacks.onSuccess(response);
+                    }
+                } else {
+                    this.showAlert(response.message || 'Failed to change user role', 'error');
+                }
+            },
+            error: (xhr) => {
+                let errorMessage = 'An error occurred while changing user role';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                this.showAlert(errorMessage, 'error');
             }
         });
     }

@@ -1,54 +1,148 @@
 <!-- Footer -->
 <footer class="custom-footer">
-    <!-- 波浪效果 -->
-    <div class="footer-wave">
-        <svg viewBox="0 0 1440 100" preserveAspectRatio="none">
-            <path d="M0,0 C150,40 350,0 500,20 C650,40 800,80 1000,60 C1200,40 1400,0 1440,0 L1440,100 L0,100 Z"></path>
-        </svg>
-    </div>
+    <!-- Background Pattern -->
+    <div class="footer-pattern"></div>
 
     <div class="footer-content">
-        <!-- 主要内容区 -->
-        <div class="container-fluid py-4">
-            <div class="row g-4 align-items-center">
-                <!-- Logo部分 -->
-                <div class="col-lg-4 text-center text-lg-start">
-                    <div class="footer-brand">
-                        <i class="bi bi-box-seam-fill me-2"></i><span class="brand-text">Warehouse Management System</span>
+        <!-- Main Content -->
+        <div class="container-fluid py-5">
+            <div class="row g-4">
+                <!-- Brand Section -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-brand-section">
+                        <div class="footer-brand">
+                            <div class="brand-icon-wrapper">
+                                <i class="bi bi-box-seam-fill"></i>
+                            </div>
+                            <div class="brand-content">
+                                <span class="brand-text">WMS Dashboard</span>
+                                <span class="brand-subtitle">Warehouse Management System</span>
+                            </div>
+                        </div>
+                        <p class="footer-desc">Streamline your warehouse operations with our comprehensive inventory management solution designed for modern businesses.</p>
+
+                        <!-- Contact Info -->
+                        <div class="contact-info">
+                            <div class="contact-item">
+                                <i class="bi bi-envelope"></i>
+                                <span>support@wms-dashboard.com</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="bi bi-telephone"></i>
+                                <a href="tel:+60129778647" class="contact-link">+60 12 977 8647</a>
+                            </div>
+                        </div>
+
+                        <!-- Development Team -->
+                        <div class="development-team">
+                            <h6 class="team-title">Development Team</h6>
+                            <div class="team-members">
+                                <span class="team-member team-leader">OH JIA JUN <span class="team-role-badge">LEADER</span></span>
+                                <span class="team-member">JAMES POH <span class="team-role-badge">MEMBER</span></span>
+                                <span class="team-member">OON JIE LIN <span class="team-role-badge">MEMBER</span></span>
+                            </div>
+                        </div>
                     </div>
-                    <p class="footer-desc mt-2">Efficient inventory management solution for modern businesses</p>
                 </div>
 
-                <!-- 快速链接 -->
-                <div class="col-lg-6 text-center">
-                    <div class="footer-links">
-                        <a href="#" class="footer-link"><i class="bi bi-shield-check me-1"></i>Privacy Policy</a>
-                        <span class="separator"></span>
-                        <a href="#" class="footer-link"><i class="bi bi-file-text me-1"></i>Terms of Service</a>
-                        <span class="separator"></span>
-                        <a href="#" class="footer-link"><i class="bi bi-question-circle me-1"></i>Help Center</a>
+                <!-- Quick Links -->
+                <div class="col-lg-2 col-md-6">
+                    <div class="footer-section">
+                        <h6 class="section-title">Quick Links</h6>
+                        <ul class="footer-menu">
+                            <li><a href="#" class="footer-menu-link">Dashboard</a></li>
+                            <li><a href="#" class="footer-menu-link">Products</a></li>
+                            <li><a href="#" class="footer-menu-link">Inventory</a></li>
+                            <li><a href="#" class="footer-menu-link">Reports</a></li>
+                            <li><a href="#" class="footer-menu-link">Analytics</a></li>
+                        </ul>
                     </div>
                 </div>
 
-                <!-- 社交媒体 -->
-                <div class="col-lg-2 text-center text-lg-end">
-                    <div class="social-links">
-                        <a href="#" class="social-link" data-tooltip="GitHub"><i class="bi bi-github"></i></a>
-                        <a href="#" class="social-link" data-tooltip="Instagram"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="social-link" data-tooltip="Facebook"><i class="bi bi-facebook"></i></a>
+                <!-- Support -->
+                <div class="col-lg-2 col-md-6">
+                    <div class="footer-section">
+                        <h6 class="section-title">Support</h6>
+                        <ul class="footer-menu">
+                            <li><a href="#" class="footer-menu-link">Help Center</a></li>
+                            <li><a href="#" class="footer-menu-link">Documentation</a></li>
+                            <li><a href="#" class="footer-menu-link">API Reference</a></li>
+                            <li><a href="#" class="footer-menu-link">Tutorials</a></li>
+                            <li><a href="#" class="footer-menu-link">Contact Us</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Legal -->
+                <div class="col-lg-2 col-md-6">
+                    <div class="footer-section">
+                        <h6 class="section-title">Legal</h6>
+                        <ul class="footer-menu">
+                            <li><a href="#" class="footer-menu-link">Privacy Policy</a></li>
+                            <li><a href="#" class="footer-menu-link">Terms of Service</a></li>
+                            <li><a href="#" class="footer-menu-link">Cookie Policy</a></li>
+                            <li><a href="#" class="footer-menu-link">GDPR</a></li>
+                            <li><a href="#" class="footer-menu-link">Security</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Newsletter & Social -->
+                <div class="col-lg-2 col-md-6">
+                    <div class="footer-section">
+                        <h6 class="section-title">Stay Updated</h6>
+                        <div class="newsletter-form">
+                            <p class="newsletter-desc">Get the latest updates and features</p>
+                            <div class="input-group">
+                                <input type="email" class="form-control" placeholder="Enter email">
+                                <button class="btn btn-primary" type="button">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="social-links">
+                            <a href="#" class="social-link" data-tooltip="GitHub">
+                                <i class="bi bi-github"></i>
+                            </a>
+                            <a href="#" class="social-link" data-tooltip="LinkedIn">
+                                <i class="bi bi-linkedin"></i>
+                            </a>
+                            <a href="#" class="social-link" data-tooltip="Twitter">
+                                <i class="bi bi-twitter"></i>
+                            </a>
+                            <a href="#" class="social-link" data-tooltip="Discord">
+                                <i class="bi bi-discord"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 版权信息 -->
+        <!-- Bottom Bar -->
         <div class="footer-bottom">
             <div class="container-fluid">
-                <p class="copyright">
-                    &copy; <span id="year">2024</span> Warehouse Management System. All rights reserved.
-                    <span class="status-dot"></span>
-                    <span class="status-text">System Online</span>
-                </p>
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="copyright">
+                            <span>&copy; <span id="year">2024</span> Warehouse Management System. All rights reserved.</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="footer-bottom-right">
+                            <div class="status-indicator">
+                                <span class="status-dot"></span>
+                                <span class="status-text">System Online</span>
+                            </div>
+                            <div class="footer-links-minimal">
+                                <a href="#" class="footer-link-minimal">Privacy</a>
+                                <a href="#" class="footer-link-minimal">Terms</a>
+                                <a href="#" class="footer-link-minimal">Support</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

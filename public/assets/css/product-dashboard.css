@@ -1,0 +1,585 @@
+/*
+||--------------------------------------------------------------------------
+|| 产品仪表板样式表 (Product Dashboard Styles)
+||--------------------------------------------------------------------------
+||
+|| 🎯 此CSS文件专门用于产品仪表板页面的样式
+||
+|| ✅ 包含的样式：
+|| - 产品卡片样式 (Product Cards)
+|| - 筛选侧边栏样式 (Filter Sidebar)
+|| - 响应式设计 (Responsive Design)
+||
+|| 📁 其他相关样式文件：
+|| - dashboard-header.css → 通用组件样式
+|| - variables.css → CSS变量定义
+||
+|| @author WMS Team
+|| @version 1.0.0
+*/
+
+/* =============================================================================
+   1. 产品卡片样式 (Product Cards)
+   ============================================================================= */
+
+/* 🎴 产品卡片容器 */
+.product-card {
+    position: relative;
+    z-index: 1;
+    margin-bottom: var(--spacing-lg);
+    background: var(--card-bg);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--border-radius-lg);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ✨ 产品卡片悬停效果 */
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 🖼️ 图片容器 */
+.product-card .image-container {
+    position: relative;
+    height: 180px;
+    background: var(--gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* 🖼️ 产品图片 */
+.product-card .image-container img {
+    max-height: 85%;
+    max-width: 85%;
+    object-fit: contain;
+}
+
+/* 🚫 无图片占位符 */
+.product-card .image-container .no-image {
+    color: var(--gray-400);
+    font-size: var(--font-sm);
+}
+
+/* 📝 卡片内容区域 */
+.product-card .card-body {
+    padding: var(--spacing-md);
+    text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* 🏷️ SKU代码 */
+.product-card .sku-code {
+    font-size: var(--font-xs);
+    color: var(--gray-500);
+    letter-spacing: 0.025em;
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-medium);
+}
+
+/* 📦 产品名称 */
+.product-card .product-name {
+    font-size: var(--font-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    line-height: 1.4;
+    margin: 0;
+    margin-bottom: var(--spacing-md);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 2.5rem;
+}
+
+/* 🏷️ 标签样式 */
+.product-card .badge {
+    font-size: var(--font-xs);
+    font-weight: var(--font-medium);
+    padding: 0.35em 0.65em;
+    border-radius: var(--border-radius-sm);
+    letter-spacing: 0.025em;
+    background: var(--primary-light);
+    color: var(--primary-color);
+    transition: all var(--transition-fast);
+}
+
+/* ✨ 标签悬停效果 */
+.product-card .badge:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* 📄 卡片底部区域 */
+.product-card .card-footer {
+    padding: var(--spacing-md);
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color-light);
+    flex-shrink: 0;
+}
+
+/* 🔘 卡片主要按钮 */
+.product-card .btn-primary {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-md);
+    font-size: var(--font-sm);
+    font-weight: var(--font-medium);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: var(--border-radius-sm);
+    transition: all var(--transition-normal);
+}
+
+/* ✨ 卡片按钮悬停效果 */
+.product-card .btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 🔘 卡片按钮图标 */
+.product-card .btn-primary i {
+    font-size: var(--font-base);
+}
+
+/* =============================================================================
+   2. 筛选侧边栏样式 (Filter Sidebar)
+   ============================================================================= */
+
+/* 🎛️ 筛选侧边栏容器 */
+.filter-sidebar {
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--gray-50) 100%);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    position: sticky;
+    top: var(--spacing-lg);
+}
+
+/* 📋 筛选标题区域 */
+.filter-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 🎨 筛选标题背景图案 */
+.filter-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+    pointer-events: none;
+}
+
+/* 🔍 筛选图标 */
+.filter-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--spacing-md);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+/* 🔍 筛选图标内容 */
+.filter-icon i {
+    font-size: var(--font-lg);
+}
+
+/* 📝 筛选标题文字 */
+.filter-header h5 {
+    font-weight: var(--font-bold);
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* 🗑️ 清除筛选按钮 */
+#clear-filters {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-sm);
+    font-weight: var(--font-medium);
+    transition: all var(--transition-normal);
+    position: relative;
+    z-index: 1;
+}
+
+/* ✨ 清除筛选按钮悬停效果 */
+#clear-filters:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* 📂 筛选组 */
+.filter-group {
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 📂 最后一个筛选组 */
+.filter-group:last-child {
+    border-bottom: none;
+}
+
+/* 📋 筛选组标题 */
+.filter-group-header {
+    padding: var(--spacing-lg) var(--spacing-lg);
+    background: var(--gray-50);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all var(--transition-normal);
+    position: relative;
+}
+
+/* ✨ 筛选组标题悬停效果 */
+.filter-group-header:hover {
+    background: var(--gray-100);
+}
+
+/* 📝 筛选组标题内容 */
+.filter-group-header .d-flex {
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+    font-size: var(--font-sm);
+}
+
+/* 🔍 筛选组标题图标 */
+.filter-group-header i:first-child {
+    color: var(--primary-color);
+    font-size: var(--font-lg);
+}
+
+/* ⬇️ 筛选箭头 */
+.filter-arrow {
+    color: var(--gray-500);
+    transition: transform var(--transition-normal);
+    font-size: var(--font-sm);
+}
+
+/* ⬆️ 展开状态箭头 */
+.filter-group-header[aria-expanded="true"] .filter-arrow {
+    transform: rotate(180deg);
+}
+
+/* 📄 筛选组内容 */
+.filter-group-content {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--card-bg);
+}
+
+/* 🎯 分类选项 */
+.filter-option {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ✨ 分类选项悬停效果 */
+.filter-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+    transition: left var(--transition-normal);
+}
+
+/* ✨ 分类选项悬停动画 */
+.filter-option:hover::before {
+    left: 100%;
+}
+
+/* ✨ 分类选项悬停状态 */
+.filter-option:hover {
+    background: var(--primary-light);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ✅ 分类选项激活状态 */
+.filter-option.active {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+}
+
+/* 🚫 激活状态隐藏悬停效果 */
+.filter-option.active::before {
+    display: none;
+}
+
+/* 🔍 筛选选项图标 */
+.filter-option-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--primary-light);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--spacing-md);
+    transition: all var(--transition-normal);
+}
+
+/* ✅ 激活状态图标 */
+.filter-option.active .filter-option-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 🔍 筛选选项图标内容 */
+.filter-option-icon i {
+    color: var(--primary-color);
+    font-size: var(--font-base);
+}
+
+/* ✅ 激活状态图标内容 */
+.filter-option.active .filter-option-icon i {
+    color: white;
+}
+
+/* 🖼️ 筛选选项图片 */
+.filter-option-image {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* 📝 筛选选项文字 */
+.filter-option span {
+    flex: 1;
+    font-weight: var(--font-medium);
+    font-size: var(--font-sm);
+}
+
+/* ✅ 激活状态文字 */
+.filter-option.active span {
+    font-weight: var(--font-semibold);
+}
+
+/* 🔢 筛选选项计数 */
+.filter-option-count {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--font-semibold);
+    min-width: 24px;
+    text-align: center;
+}
+
+/* ✅ 激活状态计数 */
+.filter-option.active .filter-option-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* ☑️ 复选框样式 */
+.filter-checkbox {
+    margin-bottom: var(--spacing-md);
+    position: relative;
+}
+
+/* ☑️ 复选框输入框 */
+.filter-checkbox-input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* ☑️ 复选框标签 */
+.filter-checkbox-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-md);
+    background: var(--gray-50);
+    border: 2px solid transparent;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ✨ 复选框标签悬停效果 */
+.filter-checkbox-label::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+    transition: left var(--transition-normal);
+}
+
+/* ✨ 复选框标签悬停动画 */
+.filter-checkbox-label:hover::before {
+    left: 100%;
+}
+
+/* ✨ 复选框标签悬停状态 */
+.filter-checkbox-label:hover {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+    transform: translateX(2px);
+}
+
+/* ✅ 复选框选中状态 */
+.filter-checkbox-input:checked + .filter-checkbox-label {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+}
+
+/* 🚫 选中状态隐藏悬停效果 */
+.filter-checkbox-input:checked + .filter-checkbox-label::before {
+    display: none;
+}
+
+/* 📝 复选框文字 */
+.filter-checkbox-text {
+    font-weight: var(--font-medium);
+    font-size: var(--font-sm);
+    flex: 1;
+}
+
+/* 🔢 复选框计数 */
+.filter-checkbox-count {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--font-semibold);
+    min-width: 24px;
+    text-align: center;
+}
+
+/* ✅ 选中状态计数 */
+.filter-checkbox-input:checked + .filter-checkbox-label .filter-checkbox-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* =============================================================================
+   3. 响应式设计 (Responsive Design)
+   ============================================================================= */
+
+/* 🖥️ 大屏幕优化 (4列布局) */
+@media (min-width: 1200px) {
+    .product-card .image-container {
+        height: 200px;
+    }
+
+    .product-card .product-name {
+        font-size: var(--font-base);
+    }
+}
+
+/* 💻 中等屏幕 (3列布局) */
+@media (max-width: 1199px) and (min-width: 992px) {
+    .product-card .image-container {
+        height: 180px;
+    }
+}
+
+/* 📱 平板端适配 (2列布局) */
+@media (max-width: 991px) and (min-width: 768px) {
+    .filter-sidebar {
+        display: none;
+    }
+
+    .col-2 {
+        display: none;
+    }
+
+    .col-10 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .product-card .image-container {
+        height: 160px;
+    }
+
+    .product-card .product-name {
+        font-size: var(--font-sm);
+        min-height: 2.2rem;
+    }
+}
+
+/* 📱 手机端适配 (1列布局) */
+@media (max-width: 767px) {
+    .filter-sidebar {
+        display: none;
+    }
+
+    .col-2 {
+        display: none;
+    }
+
+    .col-10 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .product-card .image-container {
+        height: 200px;
+    }
+
+    .product-card .product-name {
+        font-size: var(--font-base);
+        min-height: unset;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+}

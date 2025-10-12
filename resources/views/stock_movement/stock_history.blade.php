@@ -51,6 +51,104 @@
     {{-- 提示信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
+    <!-- 统计数据卡片 - 仅管理员和超级管理员可见 -->
+    @if(in_array(Auth::user()->getAccountRole(), ['Admin', 'SuperAdmin']))
+    <div class="statistics-section mb-4">
+        <div class="row g-4">
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="stats-card">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="totalStockIn">0</div>
+                                <div class="stats-label">Total Stock In</div>
+                            </div>
+                            <div class="stats-icon bg-success">
+                                <i class="bi bi-arrow-up-circle-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="stats-card">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="totalStockOut">0</div>
+                                <div class="stats-label">Total Stock Out</div>
+                            </div>
+                            <div class="stats-icon bg-danger">
+                                <i class="bi bi-arrow-down-circle-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="stats-card">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="netChange">0</div>
+                                <div class="stats-label">Net Change</div>
+                            </div>
+                            <div class="stats-icon bg-primary">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="stats-card">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="totalMovements">0</div>
+                                <div class="stats-label">Total Movements</div>
+                            </div>
+                            <div class="stats-icon bg-info">
+                                <i class="bi bi-activity"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="stats-card">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="currentTotalStock">0</div>
+                                <div class="stats-label">Current Stock</div>
+                            </div>
+                            <div class="stats-icon bg-secondary">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="stats-card">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="lowStockCount">0</div>
+                                <div class="stats-label">Low Stock Items</div>
+                            </div>
+                            <div class="stats-icon bg-warning">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- 筛选器 -->
     <form id="filter-form" method="GET" action="{{ route('stock_history') }}">
         <div class="search-filter-section mb-4">

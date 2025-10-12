@@ -1,0 +1,168 @@
+/**
+ * Layout CSS Variables
+ * 布局 CSS 变量
+ *
+ * 专门用于布局组件的 CSS 变量定义
+ * 包括导航栏、侧边栏、页脚等布局元素
+ * 与 common/variables.css 配合使用
+ */
+
+/* =============================================================================
+   CSS 变量定义 (CSS Variables)
+   ============================================================================= */
+:root {
+    /* 布局尺寸 (Layout Dimensions) */
+    --layout-sidebar-width: 320px;
+    --layout-header-height: 60px;
+    --layout-footer-height: auto;
+    --layout-main-padding: 1.5rem;
+    --layout-content-min-height: 100vh;
+
+    /* 导航栏样式 (Navigation Bar Styles) */
+    --navbar-bg: linear-gradient(to right, #1a1f25, #1e242c);
+    --navbar-padding: 0.8rem 2rem;
+    --navbar-border: rgba(99, 255, 251, 0.1);
+    --navbar-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    --navbar-z-index: 1000;
+
+    /* 侧边栏样式 (Sidebar Styles) */
+    --sidebar-bg: #1b2434;
+    --sidebar-width: var(--layout-sidebar-width);
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-active: rgba(255, 255, 255, 0.15);
+    --sidebar-text: rgba(255, 255, 255, 0.7);
+    --sidebar-active-text: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.1);
+    --sidebar-z-index: 1040;
+
+    /* Logo 和品牌样式 (Logo & Brand Styles) */
+    --brand-primary-color: #63fffb;
+    --brand-secondary-color: #9f63ff;
+    --brand-gradient: linear-gradient(45deg, var(--brand-primary-color), var(--brand-secondary-color));
+    --brand-text-size: 1.4rem;
+    --brand-text-weight: 800;
+    --brand-icon-size: 1.8rem;
+    --brand-glow: drop-shadow(0 0 8px rgba(99, 255, 251, 0.5));
+    --brand-text-glow: drop-shadow(0 0 10px rgba(99, 255, 251, 0.2));
+
+    /* 导航链接样式 (Navigation Link Styles) */
+    --nav-link-padding: 0.75rem 1.5rem;
+    --nav-link-font-size: 1rem;
+    --nav-link-icon-size: 1.1rem;
+    --nav-link-icon-width: 1.5rem;
+    --nav-link-transition: all 0.3s ease;
+
+    /* 子菜单样式 (Submenu Styles) */
+    --submenu-bg: rgba(0, 0, 0, 0.15);
+    --submenu-padding: 0.5rem 0;
+    --submenu-link-padding: 0.75rem 1.5rem;
+    --submenu-link-font-size: 1rem;
+    --submenu-icon-size: 0.85rem;
+
+    /* 按钮样式 (Button Styles) */
+    --btn-toggle-size: 2rem;
+    --btn-toggle-border-radius: 50%;
+
+    /* 页脚样式 (Footer Styles) */
+    --footer-bg: linear-gradient(135deg, #1a1f25 0%, #1e242c 100%);
+    --footer-padding: 0.8rem 2rem;
+    --footer-color: #e2e8f0;
+    --footer-margin-top: 3rem;
+    --footer-wave-height: 50px;
+    --footer-wave-fill: #1a1f25;
+
+    /* 页脚链接样式 (Footer Link Styles) */
+    --footer-link-padding: 0.5rem 1rem;
+    --footer-link-font-size: 0.95rem;
+    --footer-link-border-radius: 8px;
+    --footer-link-hover-bg: rgba(99, 255, 251, 0.1);
+    --footer-link-hover-border: rgba(99, 255, 251, 0.2);
+    --footer-link-hover-color: var(--brand-primary-color);
+
+    /* 社交媒体链接样式 (Social Media Link Styles) */
+    --social-link-bg: rgba(255, 255, 255, 0.05);
+    --social-link-size: 1.2rem;
+    --social-link-padding: 0.75rem;
+    --social-link-border-radius: 10px;
+    --social-link-hover-bg: rgba(99, 255, 251, 0.1);
+    --social-link-hover-color: var(--brand-primary-color);
+
+    /* 工具提示样式 (Tooltip Styles) */
+    --tooltip-bg: rgba(0, 0, 0, 0.8);
+    --tooltip-font-size: 0.8rem;
+    --tooltip-padding: 0.5rem 0.75rem;
+    --tooltip-border-radius: 4px;
+
+    /* 版权信息样式 (Copyright Styles) */
+    --copyright-bg: rgba(0, 0, 0, 0.2);
+    --copyright-border: rgba(99, 255, 251, 0.1);
+    --copyright-padding: 1.5rem 0;
+    --copyright-font-size: 0.9rem;
+    --copyright-color: #94a3b8;
+
+    /* 状态指示器样式 (Status Indicator Styles) */
+    --status-dot-size: 6px;
+    --status-dot-color: var(--brand-primary-color);
+    --status-text-font-size: 0.8rem;
+    --status-text-color: var(--brand-primary-color);
+
+    /* 滚动条样式 (Scrollbar Styles) */
+    --scrollbar-width: 4px;
+    --scrollbar-track-bg: rgba(255, 255, 255, 0.05);
+    --scrollbar-thumb-bg: rgba(255, 255, 255, 0.15);
+    --scrollbar-thumb-hover-bg: rgba(255, 255, 255, 0.25);
+    --scrollbar-border-radius: 2px;
+
+    /* 动画效果 (Animation Effects) */
+    --animation-pulse-duration: 2s;
+    --animation-hover-transform: translateY(-2px);
+    --animation-hover-transform-social: translateY(-3px);
+    --animation-rotation-hover: rotate(-10deg);
+    --animation-rotation-toggle: rotate(90deg);
+
+    /* 分隔符样式 (Separator Styles) */
+    --separator-size: 4px;
+    --separator-color: #4b5563;
+    --separator-border-radius: 50%;
+
+    /* 响应式断点 (Responsive Breakpoints) */
+    --breakpoint-mobile: 991.98px;
+}
+
+/* =============================================================================
+   响应式布局变量 (Responsive Layout Variables)
+   ============================================================================= */
+@media (max-width: 991.98px) {
+    :root {
+        /* 移动端导航栏 */
+        --navbar-padding: 0.8rem 1rem;
+        --brand-text-size: 1.2rem;
+
+        /* 移动端侧边栏 */
+        --sidebar-transform-hide: translateX(-100%);
+        --sidebar-transform-show: translateX(0);
+        --layout-main-margin-left: 0;
+
+        /* 移动端页脚 */
+        --footer-margin-top: 2rem;
+        --footer-wave-display: none;
+        --footer-links-direction: column;
+        --footer-links-gap: 1rem;
+        --footer-links-margin: 2rem 0;
+        --separator-display: none;
+        --social-links-justify: center;
+        --social-links-margin-top: 1rem;
+        --copyright-direction: column;
+        --copyright-gap: 0.5rem;
+    }
+}
+
+/* =============================================================================
+   深色模式支持 (Dark Mode Support) - 预留
+   ============================================================================= */
+/* 深色模式变量可以在这里定义，目前保持默认模式 */
+
+/* =============================================================================
+   主题变体 (Theme Variants) - 预留
+   ============================================================================= */
+/* 不同主题的变量变体可以在这里定义 */

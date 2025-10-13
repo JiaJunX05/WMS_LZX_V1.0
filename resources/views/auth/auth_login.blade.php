@@ -8,7 +8,7 @@
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{{ asset('assets/css/auth/login.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/login-page.css') }}">
 </head>
 <body>
     <div class="main-container">
@@ -111,7 +111,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Auth Management JS -->
-    <script src="{{ asset('assets/js/auth/auth-management.js') }}"></script>
+    <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 
     <script>
         // 初始化登錄頁面

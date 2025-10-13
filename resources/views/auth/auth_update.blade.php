@@ -406,7 +406,7 @@
 @section("scripts")
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
-<script src="{{ asset('assets/js/auth/auth-management.js') }}"></script>
+<script src="{{ asset('assets/js/auth-management.js') }}"></script>
 <script>
     // JavaScript URL definitions
     window.updateUserUrl = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', ':id') : route('admin.users.update', ':id') }}";

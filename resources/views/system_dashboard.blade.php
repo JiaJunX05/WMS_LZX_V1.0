@@ -4,7 +4,7 @@
 @section("content")
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-system.css') }}">
 
 
 <div class="container-fluid py-4">

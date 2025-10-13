@@ -31,7 +31,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.size_library.library.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.library.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -45,7 +45,7 @@
     <div id="alertContainer" class="mb-4"></div>
 
     <!-- 主要内容卡片 - 左右布局 -->
-    <form action="{{ route('admin.size_library.library.store') }}" method="post" id="sizeLibraryForm">
+    <form action="{{ route('admin.library.store') }}" method="post" id="sizeLibraryForm">
         @csrf
         <div class="card shadow-sm border-0">
             <div class="row g-0">
@@ -200,8 +200,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.createSizeLibraryUrl = "{{ route('admin.size_library.library.store') }}";
-    window.sizeLibraryManagementRoute = "{{ route('admin.size_library.library.index') }}";
+    window.createSizeLibraryUrl = "{{ route('admin.library.store') }}";
+    window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/library-management.js') }}"></script>

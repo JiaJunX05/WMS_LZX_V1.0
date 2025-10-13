@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Models\CategoryMapping\Category;
-use App\Models\CategoryMapping\Subcategory;
-use App\Models\StorageLocation\Zone;
-use App\Models\StorageLocation\Rack;
+use App\Models\Category;
+use App\Models\Subcategory;
+use App\Models\Zone;
+use App\Models\Rack;
 use App\Models\Image;
 use App\Models\ProductVariant;
 use App\Models\AttributeVariant;
@@ -63,5 +63,9 @@ class Product extends Model
 
     public function variants(): HasMany {
         return $this->hasMany(ProductVariant::class, 'product_id', 'id');
+    }
+
+    public function barcode(): HasOne {
+        return $this->hasOne(ProductVariant::class, 'product_id', 'id');
     }
 }

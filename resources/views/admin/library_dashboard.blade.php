@@ -29,7 +29,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.size_library.library.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.library.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Size Library
                         </a>
@@ -129,7 +129,7 @@
             </div>
             <h4 class="empty-state-title mb-3">No Size Library Data</h4>
             <p class="empty-state-description mb-4">No size libraries have been created in the system yet</p>
-            <a href="{{ route('admin.size_library.library.create') }}" class="btn btn-primary btn-lg">
+            <a href="{{ route('admin.library.create') }}" class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle-fill me-2"></i>
                 Create First Size Library
             </a>
@@ -177,13 +177,13 @@
 @section("scripts")
 <script>
     // 设置尺码库管理相关路由
-    window.sizeLibraryManagementRoute = "{{ route('admin.size_library.library.index') }}";
-    window.createSizeLibraryUrl = "{{ route('admin.size_library.library.create') }}";
-    window.editSizeLibraryUrl = "{{ route('admin.size_library.library.edit', ['id' => ':id']) }}";
-    window.viewSizeLibraryUrl = "{{ route('admin.size_library.library.view', ['id' => ':id']) }}";
-    window.deleteSizeLibraryUrl = "{{ route('admin.size_library.library.destroy', ['id' => ':id']) }}";
-    window.availableSizeLibraryUrl = "{{ route('admin.size_library.library.available', ['id' => ':id']) }}";
-    window.unavailableSizeLibraryUrl = "{{ route('admin.size_library.library.unavailable', ['id' => ':id']) }}";
+    window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
+    window.createSizeLibraryUrl = "{{ route('admin.library.create') }}";
+    window.editSizeLibraryUrl = "{{ route('admin.library.edit', ['id' => ':id']) }}";
+    window.viewSizeLibraryUrl = "{{ route('admin.library.view', ['id' => ':id']) }}";
+    window.deleteSizeLibraryUrl = "{{ route('admin.library.destroy', ['id' => ':id']) }}";
+    window.availableSizeLibraryUrl = "{{ route('admin.library.available', ['id' => ':id']) }}";
+    window.unavailableSizeLibraryUrl = "{{ route('admin.library.unavailable', ['id' => ':id']) }}";
 </script>
 
 {{-- 引入尺碼庫管理JavaScript文件 --}}

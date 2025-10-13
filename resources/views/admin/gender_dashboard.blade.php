@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.gender.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.gender.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Gender
                         </a>
@@ -205,11 +205,11 @@
 @section("scripts")
 <script>
     // Set gender management related URLs
-    window.genderManagementRoute = "{{ route('admin.management_tool.gender.index') }}";
-    window.editGenderUrl = "{{ route('admin.management_tool.gender.edit', ['id' => ':id']) }}";
-    window.deleteGenderUrl = "{{ route('admin.management_tool.gender.destroy', ['id' => ':id']) }}";
-    window.availableGenderUrl = "{{ route('admin.management_tool.gender.available', ['id' => ':id']) }}";
-    window.unavailableGenderUrl = "{{ route('admin.management_tool.gender.unavailable', ['id' => ':id']) }}";
+    window.genderManagementRoute = "{{ route('admin.gender.index') }}";
+    window.editGenderUrl = "{{ route('admin.gender.edit', ['id' => ':id']) }}";
+    window.deleteGenderUrl = "{{ route('admin.gender.destroy', ['id' => ':id']) }}";
+    window.availableGenderUrl = "{{ route('admin.gender.available', ['id' => ':id']) }}";
+    window.unavailableGenderUrl = "{{ route('admin.gender.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

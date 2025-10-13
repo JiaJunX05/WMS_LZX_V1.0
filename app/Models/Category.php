@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Models\CategoryMapping;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use App\Models\CategoryMapping\Subcategory;
-use App\Models\CategoryMapping\Mapping;
+use App\Models\Subcategory;
+use App\Models\Mapping;
 use App\Models\ProductVariant;
-use App\Models\SizeLibrary\SizeTemplate;
+use App\Models\SizeTemplate;
 
 class Category extends Model
 {

@@ -42,7 +42,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.category_mapping.mapping.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.mapping.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -119,7 +119,7 @@
                     </div>
 
                     <!-- 编辑表单 -->
-                    <form action="{{ route('admin.category_mapping.mapping.update', $mapping->id) }}" method="POST" id="updateMappingForm">
+                    <form action="{{ route('admin.mapping.update', $mapping->id) }}" method="POST" id="updateMappingForm">
                         @csrf
                         @method('PUT')
 
@@ -226,11 +226,11 @@
 {{-- JavaScript支持 --}}
 <script>
     // 设置路由
-    window.updateMappingUrl = "{{ route('admin.category_mapping.mapping.update', $mapping->id) }}";
-    window.mappingManagementRoute = "{{ route('admin.category_mapping.mapping.index') }}";
-    window.availableMappingUrl = "{{ route('admin.category_mapping.mapping.available', ['id' => ':id']) }}";
-    window.unavailableMappingUrl = "{{ route('admin.category_mapping.mapping.unavailable', ['id' => ':id']) }}";
-    window.deleteMappingUrl = "{{ route('admin.category_mapping.mapping.destroy', ['id' => ':id']) }}";
+    window.updateMappingUrl = "{{ route('admin.mapping.update', $mapping->id) }}";
+    window.mappingManagementRoute = "{{ route('admin.mapping.index') }}";
+    window.availableMappingUrl = "{{ route('admin.mapping.available', ['id' => ':id']) }}";
+    window.unavailableMappingUrl = "{{ route('admin.mapping.unavailable', ['id' => ':id']) }}";
+    window.deleteMappingUrl = "{{ route('admin.mapping.destroy', ['id' => ':id']) }}";
 </script>
 
 @endsection

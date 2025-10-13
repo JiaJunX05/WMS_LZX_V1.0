@@ -26,7 +26,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.color.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.color.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Color
                         </a>
@@ -208,11 +208,11 @@
 @section("scripts")
 <script>
     // Set color management related URLs
-    window.colorManagementRoute = "{{ route('admin.management_tool.color.index') }}";
-    window.editColorUrl = "{{ route('admin.management_tool.color.edit', ['id' => ':id']) }}";
-    window.deleteColorUrl = "{{ route('admin.management_tool.color.destroy', ['id' => ':id']) }}";
-    window.availableColorUrl = "{{ route('admin.management_tool.color.available', ['id' => ':id']) }}";
-    window.unavailableColorUrl = "{{ route('admin.management_tool.color.unavailable', ['id' => ':id']) }}";
+    window.colorManagementRoute = "{{ route('admin.color.index') }}";
+    window.editColorUrl = "{{ route('admin.color.edit', ['id' => ':id']) }}";
+    window.deleteColorUrl = "{{ route('admin.color.destroy', ['id' => ':id']) }}";
+    window.availableColorUrl = "{{ route('admin.color.available', ['id' => ':id']) }}";
+    window.unavailableColorUrl = "{{ route('admin.color.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

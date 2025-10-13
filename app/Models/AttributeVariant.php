@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\ProductVariant;
-use App\Models\ManagementTool\Brand;
-use App\Models\ManagementTool\Color;
-use App\Models\ManagementTool\Gender;
-use App\Models\SizeLibrary\SizeLibrary;
+use App\Models\Brand;
+use App\Models\Color;
+use App\Models\Gender;
+use App\Models\SizeLibrary;
 
 class AttributeVariant extends Model
 {

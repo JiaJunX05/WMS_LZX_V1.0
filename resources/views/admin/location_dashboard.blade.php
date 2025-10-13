@@ -30,7 +30,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.location.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.location.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Location
                         </a>
@@ -133,7 +133,7 @@
             </div>
             <h4 class="empty-state-title mb-3">No Location Data</h4>
             <p class="empty-state-description mb-4">No storage locations have been created in the system yet</p>
-            <a href="{{ route('admin.storage_locations.location.create') }}" class="btn btn-primary btn-lg">
+            <a href="{{ route('admin.location.create') }}" class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle-fill me-2"></i>
                 Create First Location
             </a>
@@ -181,12 +181,12 @@
 @section("scripts")
 <script>
     // 设置位置管理相关路由
-    window.locationManagementRoute = "{{ route('admin.storage_locations.location.index') }}";
-    window.viewLocationUrl = "{{ route('admin.storage_locations.location.view', ['id' => ':id']) }}";
-    window.editLocationUrl = "{{ route('admin.storage_locations.location.edit', ['id' => ':id']) }}";
-    window.deleteLocationUrl = "{{ route('admin.storage_locations.location.destroy', ['id' => ':id']) }}";
-    window.availableLocationUrl = "{{ route('admin.storage_locations.location.available', ['id' => ':id']) }}";
-    window.unavailableLocationUrl = "{{ route('admin.storage_locations.location.unavailable', ['id' => ':id']) }}";
+    window.locationManagementRoute = "{{ route('admin.location.index') }}";
+    window.viewLocationUrl = "{{ route('admin.location.view', ['id' => ':id']) }}";
+    window.editLocationUrl = "{{ route('admin.location.edit', ['id' => ':id']) }}";
+    window.deleteLocationUrl = "{{ route('admin.location.destroy', ['id' => ':id']) }}";
+    window.availableLocationUrl = "{{ route('admin.location.available', ['id' => ':id']) }}";
+    window.unavailableLocationUrl = "{{ route('admin.location.unavailable', ['id' => ':id']) }}";
 </script>
 
 {{-- 引入Alert系统和位置管理JavaScript文件 --}}

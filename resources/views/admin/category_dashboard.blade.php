@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.category_mapping.category.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.category.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Category
                         </a>
@@ -219,11 +219,11 @@
 @section("scripts")
 <script>
     // Set category management related URLs
-    window.categoryManagementRoute = "{{ route('admin.category_mapping.category.index') }}";
-    window.editCategoryUrl = "{{ route('admin.category_mapping.category.edit', ['id' => ':id']) }}";
-    window.deleteCategoryUrl = "{{ route('admin.category_mapping.category.destroy', ['id' => ':id']) }}";
-    window.availableCategoryUrl = "{{ route('admin.category_mapping.category.available', ['id' => ':id']) }}";
-    window.unavailableCategoryUrl = "{{ route('admin.category_mapping.category.unavailable', ['id' => ':id']) }}";
+    window.categoryManagementRoute = "{{ route('admin.category.index') }}";
+    window.editCategoryUrl = "{{ route('admin.category.edit', ['id' => ':id']) }}";
+    window.deleteCategoryUrl = "{{ route('admin.category.destroy', ['id' => ':id']) }}";
+    window.availableCategoryUrl = "{{ route('admin.category.available', ['id' => ':id']) }}";
+    window.unavailableCategoryUrl = "{{ route('admin.category.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

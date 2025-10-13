@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Models\SizeLibrary;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\SizeLibrary\SizeLibrary;
-use App\Models\CategoryMapping\Category;
-use App\Models\ManagementTool\Gender;
+use App\Models\SizeLibrary;
+use App\Models\Category;
+use App\Models\Gender;
 
 class SizeTemplate extends Model
 {

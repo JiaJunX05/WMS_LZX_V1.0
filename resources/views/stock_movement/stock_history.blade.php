@@ -36,7 +36,7 @@
                                 <i class="bi bi-arrow-left me-2"></i>
                                 Back to List
                             </a>
-                        @elseif(in_array(Auth::user()->getAccountRole(), ['Admin', 'SuperAdmin']))
+                        @elseif(in_array(Auth::user()->getAccountRole(), ['SuperAdmin']))
                             <button type="button" class="btn btn-primary" onclick="exportStockHistory()">
                                 <i class="bi bi-download me-2"></i>
                                 Export Data
@@ -198,12 +198,6 @@
                 <div class="d-flex align-items-center gap-3">
                     <h5 class="mb-0 fw-semibold">Stock Movement History</h5>
                     <span class="badge bg-light text-dark" id="history-results-count">0 records</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary btn-sm" onclick="exportStockHistory()">
-                        <i class="bi bi-download me-1"></i>
-                        Export
-                    </button>
                 </div>
             </div>
         </div>

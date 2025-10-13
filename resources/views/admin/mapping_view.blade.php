@@ -43,7 +43,7 @@
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('admin.category_mapping.mapping.index') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.mapping.index') }}" class="btn btn-primary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to List
                             </a>
                         </div>
@@ -200,7 +200,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('admin.category_mapping.mapping.edit', $mappingItem->id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <a href="{{ route('admin.mapping.edit', $mappingItem->id) }}" class="btn btn-outline-primary btn-sm">
                                                         <i class="bi bi-pencil me-2"></i>Update
                                                     </a>
                                                     <button class="btn btn-outline-danger btn-sm" data-mapping-id="{{ $mappingItem->id }}">
@@ -231,11 +231,11 @@
 @section("scripts")
 <script>
     // 设置全局变量
-    window.viewMappingUrl = "{{ route('admin.category_mapping.mapping.view', ['id' => ':id']) }}";
-    window.mappingManagementRoute = "{{ route('admin.category_mapping.mapping.index') }}";
-    window.availableMappingUrl = "{{ route('admin.category_mapping.mapping.available', ['id' => ':id']) }}";
-    window.unavailableMappingUrl = "{{ route('admin.category_mapping.mapping.unavailable', ['id' => ':id']) }}";
-    window.deleteMappingUrl = "{{ route('admin.category_mapping.mapping.destroy', ['id' => ':id']) }}";
+    window.viewMappingUrl = "{{ route('admin.mapping.view', ['id' => ':id']) }}";
+    window.mappingManagementRoute = "{{ route('admin.mapping.index') }}";
+    window.availableMappingUrl = "{{ route('admin.mapping.available', ['id' => ':id']) }}";
+    window.unavailableMappingUrl = "{{ route('admin.mapping.unavailable', ['id' => ':id']) }}";
+    window.deleteMappingUrl = "{{ route('admin.mapping.destroy', ['id' => ':id']) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/mapping-management.js') }}"></script>

@@ -31,7 +31,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.category_mapping.mapping.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.mapping.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -45,7 +45,7 @@
     <div id="alertContainer" class="mb-4"></div>
 
     <!-- 主要内容卡片 - 左右布局 -->
-    <form action="{{ route('admin.category_mapping.mapping.store') }}" method="post" id="mappingForm">
+    <form action="{{ route('admin.mapping.store') }}" method="post" id="mappingForm">
         @csrf
         <div class="card shadow-sm border-0">
             <div class="row g-0">
@@ -202,8 +202,8 @@
 @section("scripts")
 <script>
     // 设置分类映射管理相关路由
-    window.mappingManagementRoute = "{{ route('admin.category_mapping.mapping.index') }}";
-    window.createMappingUrl = "{{ route('admin.category_mapping.mapping.store') }}";
+    window.mappingManagementRoute = "{{ route('admin.mapping.index') }}";
+    window.createMappingUrl = "{{ route('admin.mapping.store') }}";
 </script>
 
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>

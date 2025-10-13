@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\SizeLibrary\SizeLibrary;
-use App\Models\CategoryMapping\Category;
+use App\Models\SizeLibrary;
+use App\Models\Category;
 use Illuminate\Validation\ValidationException;
 
 /**

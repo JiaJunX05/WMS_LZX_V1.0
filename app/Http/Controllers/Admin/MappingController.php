@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\CategoryMapping\Mapping;
-use App\Models\CategoryMapping\Category;
-use App\Models\CategoryMapping\Subcategory;
+use App\Models\Mapping;
+use App\Models\Category;
+use App\Models\Subcategory;
 
 /**
  * 分类映射管理控制器 (Category Mapping Management Controller)

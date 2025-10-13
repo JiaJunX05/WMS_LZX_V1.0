@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.category_mapping.subcategory.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.subcategory.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Subcategory
                         </a>
@@ -217,11 +217,11 @@
 
 <script>
     // 定义全局变量供JavaScript使用
-    window.subcategoryManagementRoute = "{{ route('admin.category_mapping.subcategory.index') }}";
-    window.editSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.edit', ['id' => ':id']) }}";
-    window.deleteSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.destroy', ['id' => ':id']) }}";
-    window.availableSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.available', ['id' => ':id']) }}";
-    window.unavailableSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.unavailable', ['id' => ':id']) }}";
+    window.subcategoryManagementRoute = "{{ route('admin.subcategory.index') }}";
+    window.editSubcategoryUrl = "{{ route('admin.subcategory.edit', ['id' => ':id']) }}";
+    window.deleteSubcategoryUrl = "{{ route('admin.subcategory.destroy', ['id' => ':id']) }}";
+    window.availableSubcategoryUrl = "{{ route('admin.subcategory.available', ['id' => ':id']) }}";
+    window.unavailableSubcategoryUrl = "{{ route('admin.subcategory.unavailable', ['id' => ':id']) }}";
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 
 </script>
@@ -230,11 +230,11 @@
 @section("scripts")
 <script>
     // Set subcategory management related URLs
-    window.subcategoryManagementRoute = "{{ route('admin.category_mapping.subcategory.index') }}";
-    window.editSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.edit', ['id' => ':id']) }}";
-    window.deleteSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.destroy', ['id' => ':id']) }}";
-    window.availableSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.available', ['id' => ':id']) }}";
-    window.unavailableSubcategoryUrl = "{{ route('admin.category_mapping.subcategory.unavailable', ['id' => ':id']) }}";
+    window.subcategoryManagementRoute = "{{ route('admin.subcategory.index') }}";
+    window.editSubcategoryUrl = "{{ route('admin.subcategory.edit', ['id' => ':id']) }}";
+    window.deleteSubcategoryUrl = "{{ route('admin.subcategory.destroy', ['id' => ':id']) }}";
+    window.availableSubcategoryUrl = "{{ route('admin.subcategory.available', ['id' => ':id']) }}";
+    window.unavailableSubcategoryUrl = "{{ route('admin.subcategory.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

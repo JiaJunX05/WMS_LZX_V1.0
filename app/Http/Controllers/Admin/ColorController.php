@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\ManagementTool\Color;
+use App\Models\Color;
 
 /**
  * 颜色管理控制器

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models\CategoryMapping;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use App\Models\CategoryMapping\Category;
-use App\Models\CategoryMapping\Mapping;
+use App\Models\Category;
+use App\Models\Mapping;
 use App\Models\ProductVariant;
 
 class Subcategory extends Model

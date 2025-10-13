@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models\SizeLibrary;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\CategoryMapping\Category ;
-use App\Models\SizeLibrary\SizeTemplate;
+use App\Models\Category;
+use App\Models\SizeTemplate;
 
 class SizeLibrary extends Model
 {

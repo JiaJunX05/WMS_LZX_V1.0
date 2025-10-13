@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models\CategoryMapping;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\CategoryMapping\Category;
-use App\Models\CategoryMapping\Subcategory;
+use App\Models\Category;
+use App\Models\Subcategory;
 
 class Mapping extends Model
 {

@@ -1723,6 +1723,179 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // =============================================================================
+// Login 頁面功能 (Login Page Functions)
+// =============================================================================
+
+/**
+ * 密碼顯示切換
+ */
+function togglePassword() {
+    const password = document.getElementById('password');
+    const toggle = document.getElementById('togglePassword');
+
+    if (password.type === 'password') {
+        password.type = 'text';
+        toggle.classList.replace('bi-eye-slash', 'bi-eye');
+    } else {
+        password.type = 'password';
+        toggle.classList.replace('bi-eye', 'bi-eye-slash');
+    }
+}
+
+/**
+ * 初始化登錄頁面
+ */
+function initializeLoginPage() {
+    // 檢查 Bootstrap Icons 是否加載
+    if (document.fonts) {
+        document.fonts.ready.then(function() {
+            console.log('Fonts loaded');
+            // 檢查 Bootstrap Icons 字體
+            if (document.fonts.check('1em "bootstrap-icons"')) {
+                console.log('Bootstrap Icons font is available');
+            } else {
+                console.log('Bootstrap Icons font is NOT available');
+            }
+        });
+    }
+
+    // 延遲檢查圖標是否顯示
+    setTimeout(function() {
+        const icon = document.querySelector('.bi-box');
+        if (icon) {
+            const computedStyle = window.getComputedStyle(icon);
+            if (computedStyle.fontFamily.indexOf('bootstrap-icons') === -1) {
+                console.log('Bootstrap Icons not loaded');
+            }
+        }
+    }, 2000);
+
+    // 表單驗證
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            var validation = Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+
+    // 輸入框動畫效果
+    document.querySelectorAll('.form-control').forEach(input => {
+        // 焦點效果
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+
+        // 實時驗證
+        input.addEventListener('input', function() {
+            if (this.checkValidity()) {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+            } else if (this.value) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            }
+        });
+    });
+
+    // 登錄按鈕波紋效果
+    const loginBtn = document.querySelector('.btn-login');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            `;
+
+            this.appendChild(ripple);
+
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    }
+
+    // 添加波紋動畫CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 自動關閉警告
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+
+    // 頁面加載動畫
+    window.addEventListener('load', function() {
+        const container = document.querySelector('.main-container');
+        if (container) {
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(30px)';
+
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        }
+    });
+
+    // 鍵盤快捷鍵
+    document.addEventListener('keydown', function(e) {
+        // Enter鍵提交表單
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const form = document.querySelector('form');
+            if (form) {
+                form.requestSubmit();
+            }
+        }
+    });
+
+    // 輸入框自動聚焦
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+        emailInput.focus();
+    }
+}
+
+// =============================================================================
 // 全局函數導出 (Global Function Exports)
 // =============================================================================
 
@@ -1736,6 +1909,10 @@ window.toggleSortOrder = toggleSortOrder;
 window.handleUpdateFormSubmit = handleUpdateFormSubmit;
 window.initializeUpdateStatusCards = initializeUpdateStatusCards;
 window.selectUpdateStatusCard = selectUpdateStatusCard;
+
+// Login 頁面函數
+window.togglePassword = togglePassword;
+window.initializeLoginPage = initializeLoginPage;
 
 // Dashboard 相關函數
 window.deleteUser = (userId) => authDashboard.deleteUser(userId);

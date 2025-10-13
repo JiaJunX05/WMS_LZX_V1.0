@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\StorageLocation\Rack;
+use App\Models\Rack;
 
 class RackController extends Controller
 {

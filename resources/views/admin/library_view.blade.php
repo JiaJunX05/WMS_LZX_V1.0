@@ -44,7 +44,7 @@
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('admin.size_library.library.index') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.library.index') }}" class="btn btn-primary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to List
                             </a>
                         </div>
@@ -201,7 +201,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('admin.size_library.library.edit', $size->id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <a href="{{ route('admin.library.edit', $size->id) }}" class="btn btn-outline-primary btn-sm">
                                                         <i class="bi bi-pencil me-2"></i>Update
                                                     </a>
                                                     <button class="btn btn-outline-danger btn-sm" data-library-id="{{ $size->id }}">
@@ -232,11 +232,11 @@
 
 <script>
     // 设置全局变量
-    window.viewSizeLibraryUrl = "{{ route('admin.size_library.library.view', ['id' => ':id']) }}";
-    window.sizeLibraryManagementRoute = "{{ route('admin.size_library.library.index') }}";
-    window.availableSizeLibraryUrl = "{{ route('admin.size_library.library.available', ['id' => ':id']) }}";
-    window.unavailableSizeLibraryUrl = "{{ route('admin.size_library.library.unavailable', ['id' => ':id']) }}";
-    window.deleteSizeLibraryUrl = "{{ route('admin.size_library.library.destroy', ['id' => ':id']) }}";
+    window.viewSizeLibraryUrl = "{{ route('admin.library.view', ['id' => ':id']) }}";
+    window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
+    window.availableSizeLibraryUrl = "{{ route('admin.library.available', ['id' => ':id']) }}";
+    window.unavailableSizeLibraryUrl = "{{ route('admin.library.unavailable', ['id' => ':id']) }}";
+    window.deleteSizeLibraryUrl = "{{ route('admin.library.destroy', ['id' => ':id']) }}";
 </script>
 
 @endsection

@@ -44,7 +44,7 @@
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('admin.size_library.template.index') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.template.index') }}" class="btn btn-primary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to List
                             </a>
                         </div>
@@ -205,7 +205,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('admin.size_library.template.edit', $template->id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <a href="{{ route('admin.template.edit', $template->id) }}" class="btn btn-outline-primary btn-sm">
                                                         <i class="bi bi-pencil me-2"></i>Update
                                                     </a>
                                                     <button class="btn btn-outline-danger btn-sm" data-template-id="{{ $template->id }}">
@@ -238,11 +238,11 @@
 @section("scripts")
 <script>
     // 设置全局变量
-    window.viewTemplateUrl = "{{ route('admin.size_library.template.view', ['id' => ':id']) }}";
-    window.templateManagementRoute = "{{ route('admin.size_library.template.index') }}";
-    window.availableTemplateUrl = "{{ route('admin.size_library.template.available', ['id' => ':id']) }}";
-    window.unavailableTemplateUrl = "{{ route('admin.size_library.template.unavailable', ['id' => ':id']) }}";
-    window.deleteTemplateUrl = "{{ route('admin.size_library.template.destroy', ['id' => ':id']) }}";
+    window.viewTemplateUrl = "{{ route('admin.template.view', ['id' => ':id']) }}";
+    window.templateManagementRoute = "{{ route('admin.template.index') }}";
+    window.availableTemplateUrl = "{{ route('admin.template.available', ['id' => ':id']) }}";
+    window.unavailableTemplateUrl = "{{ route('admin.template.unavailable', ['id' => ':id']) }}";
+    window.deleteTemplateUrl = "{{ route('admin.template.destroy', ['id' => ':id']) }}";
 </script>
 
 {{-- 引入模板管理JavaScript文件 --}}

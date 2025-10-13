@@ -43,7 +43,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.location.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.location.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -120,7 +120,7 @@
                     </div>
 
                     <!-- 编辑表单 -->
-                    <form action="{{ route('admin.storage_locations.location.update', $location->id) }}" method="POST" id="updateLocationForm">
+                    <form action="{{ route('admin.location.update', $location->id) }}" method="POST" id="updateLocationForm">
                         @csrf
                         @method('PUT')
 
@@ -229,11 +229,11 @@
 @section("scripts")
 <script>
     // 设置全局变量
-    window.updateLocationUrl = "{{ route('admin.storage_locations.location.update', $location->id) }}";
-    window.locationManagementRoute = "{{ route('admin.storage_locations.location.index') }}";
-    window.availableLocationUrl = "{{ route('admin.storage_locations.location.available', ['id' => ':id']) }}";
-    window.unavailableLocationUrl = "{{ route('admin.storage_locations.location.unavailable', ['id' => ':id']) }}";
-    window.deleteLocationUrl = "{{ route('admin.storage_locations.location.destroy', ['id' => ':id']) }}";
+    window.updateLocationUrl = "{{ route('admin.location.update', $location->id) }}";
+    window.locationManagementRoute = "{{ route('admin.location.index') }}";
+    window.availableLocationUrl = "{{ route('admin.location.available', ['id' => ':id']) }}";
+    window.unavailableLocationUrl = "{{ route('admin.location.unavailable', ['id' => ':id']) }}";
+    window.deleteLocationUrl = "{{ route('admin.location.destroy', ['id' => ':id']) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>

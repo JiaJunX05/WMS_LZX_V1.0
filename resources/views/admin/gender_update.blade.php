@@ -30,7 +30,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.gender.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.gender.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -72,7 +72,7 @@
                     <hr>
 
                     <!-- 表单内容 -->
-                    <form action="{{ route('admin.management_tool.gender.update', $gender->id) }}" method="post">
+                    <form action="{{ route('admin.gender.update', $gender->id) }}" method="post">
                         @csrf
                         @method('PUT')
 
@@ -134,8 +134,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.updateGenderUrl = "{{ route('admin.management_tool.gender.update', ['id' => ':id']) }}";
-    window.genderManagementRoute = "{{ route('admin.management_tool.gender.index') }}";
+    window.updateGenderUrl = "{{ route('admin.gender.update', ['id' => ':id']) }}";
+    window.genderManagementRoute = "{{ route('admin.gender.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>

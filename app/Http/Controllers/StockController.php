@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Log;
 use App\Models\StockMovement;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\StockHistoryExport;
+use Carbon\Carbon;
 
 class StockController extends Controller
 {
@@ -1053,6 +1056,42 @@ class StockController extends Controller
 
         } catch (\Exception $e) {
             return $this->handleError($request, 'Failed to get stock statistics: ' . $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * 导出库存历史数据到Excel
+     */
+    public function exportStockHistory(Request $request)
+    {
+        try {
+            // 获取筛选条件
+            $filters = [
+                'movement_type' => $request->get('movement_type'),
+                'product_search' => $request->get('product_search'),
+                'start_date' => $request->get('start_date'),
+                'end_date' => $request->get('end_date'),
+            ];
+
+            // 生成文件名
+            $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
+            $filename = "stock_history_export_{$timestamp}.xlsx";
+
+            // 使用Laravel Excel导出
+            return Excel::download(new StockHistoryExport($filters), $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Stock history export failed: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Export failed: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Export failed. Please try again.');
         }
     }
 }

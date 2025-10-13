@@ -30,7 +30,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.size_library.template.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.template.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Size Template
                         </a>
@@ -130,7 +130,7 @@
             </div>
             <h4 class="empty-state-title mb-3">No Size Template Data</h4>
             <p class="empty-state-description mb-4">No size templates have been created in the system yet</p>
-            <a href="{{ route('admin.size_library.template.create') }}" class="btn btn-primary btn-lg">
+            <a href="{{ route('admin.template.create') }}" class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle-fill me-2"></i>
                 Create First Size Template
             </a>
@@ -176,13 +176,13 @@
 @section("scripts")
 <script>
     // 设置模板管理相关路由
-    window.templateManagementRoute = "{{ route('admin.size_library.template.index') }}";
-    window.createTemplateUrl = "{{ route('admin.size_library.template.create') }}";
-    window.editTemplateUrl = "{{ route('admin.size_library.template.edit', ['id' => ':id']) }}";
-    window.viewTemplateUrl = "{{ route('admin.size_library.template.view', ['id' => ':id']) }}";
-    window.deleteTemplateUrl = "{{ route('admin.size_library.template.destroy', ['id' => ':id']) }}";
-    window.availableTemplateUrl = "{{ route('admin.size_library.template.available', ['id' => ':id']) }}";
-    window.unavailableTemplateUrl = "{{ route('admin.size_library.template.unavailable', ['id' => ':id']) }}";
+    window.templateManagementRoute = "{{ route('admin.template.index') }}";
+    window.createTemplateUrl = "{{ route('admin.template.create') }}";
+    window.editTemplateUrl = "{{ route('admin.template.edit', ['id' => ':id']) }}";
+    window.viewTemplateUrl = "{{ route('admin.template.view', ['id' => ':id']) }}";
+    window.deleteTemplateUrl = "{{ route('admin.template.destroy', ['id' => ':id']) }}";
+    window.availableTemplateUrl = "{{ route('admin.template.available', ['id' => ':id']) }}";
+    window.unavailableTemplateUrl = "{{ route('admin.template.unavailable', ['id' => ':id']) }}";
 </script>
 
 {{-- 引入模板管理JavaScript文件 --}}

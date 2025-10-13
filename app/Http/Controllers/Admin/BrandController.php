@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\ManagementTool\Brand;
+use App\Models\Brand;
 
 /**
  * 品牌管理控制器

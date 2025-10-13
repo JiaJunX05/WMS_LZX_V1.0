@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models\StorageLocation;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\StorageLocation\Zone;
-use App\Models\StorageLocation\Rack;
+use App\Models\Zone;
+use App\Models\Rack;
 
 class Location extends Model
 {

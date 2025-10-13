@@ -26,7 +26,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.brand.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.brand.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Brand
                         </a>
@@ -220,11 +220,11 @@
 @section("scripts")
 <script>
     // Set brand management related URLs
-    window.brandManagementRoute = "{{ route('admin.management_tool.brand.index') }}";
-    window.editBrandUrl = "{{ route('admin.management_tool.brand.edit', ['id' => ':id']) }}";
-    window.deleteBrandUrl = "{{ route('admin.management_tool.brand.destroy', ['id' => ':id']) }}";
-    window.availableBrandUrl = "{{ route('admin.management_tool.brand.available', ['id' => ':id']) }}";
-    window.unavailableBrandUrl = "{{ route('admin.management_tool.brand.unavailable', ['id' => ':id']) }}";
+    window.brandManagementRoute = "{{ route('admin.brand.index') }}";
+    window.editBrandUrl = "{{ route('admin.brand.edit', ['id' => ':id']) }}";
+    window.deleteBrandUrl = "{{ route('admin.brand.destroy', ['id' => ':id']) }}";
+    window.availableBrandUrl = "{{ route('admin.brand.available', ['id' => ':id']) }}";
+    window.unavailableBrandUrl = "{{ route('admin.brand.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

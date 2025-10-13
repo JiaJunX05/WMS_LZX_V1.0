@@ -32,7 +32,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.rack.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.rack.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -46,7 +46,7 @@
     <div id="alertContainer" class="mb-4"></div>
 
     <!-- 主要内容卡片 - 左右布局 -->
-    <form action="{{ route('admin.storage_locations.rack.store') }}" method="post" id="rackForm" enctype="multipart/form-data">
+    <form action="{{ route('admin.rack.store') }}" method="post" id="rackForm" enctype="multipart/form-data">
         @csrf
         <div class="card shadow-sm border-0">
             <div class="row g-0">
@@ -206,8 +206,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.createRackUrl = "{{ route('admin.storage_locations.rack.store') }}";
-    window.rackManagementRoute = "{{ route('admin.storage_locations.rack.index') }}";
+    window.createRackUrl = "{{ route('admin.rack.store') }}";
+    window.rackManagementRoute = "{{ route('admin.rack.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

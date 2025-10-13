@@ -390,6 +390,12 @@ body {
 /* ======================
    6. 响应式布局
 ====================== */
+
+/* 🚫 隐藏 Bootstrap Offcanvas 遮罩层 */
+.offcanvas-backdrop {
+    display: none !important;
+}
+
 @media (max-width: var(--breakpoint-mobile)) {
     .sidebar {
         transform: var(--sidebar-transform-hide);

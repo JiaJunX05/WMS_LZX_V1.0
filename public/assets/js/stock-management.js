@@ -2583,7 +2583,7 @@ class StockDetail {
 // =============================================================================
 
 /**
- * 導出庫存歷史數據
+ * 導出庫存歷史數據到Excel
  */
 function exportStockHistory() {
     // 獲取當前篩選條件
@@ -2597,11 +2597,27 @@ function exportStockHistory() {
         product_search: productSearch,
         start_date: startDate,
         end_date: endDate,
-        export: 'csv'
     });
 
-    const exportUrl = `${window.stockHistoryApiRoute}?${params}`;
-    window.open(exportUrl, '_blank');
+    // 使用新的Excel导出路由
+    const exportUrl = `/stock-history/export?${params}`;
+
+    // 显示加载提示
+    showAlert('Generating Excel file, please wait...', 'info');
+
+    // 创建隐藏的链接来触发下载
+    const link = document.createElement('a');
+    link.href = exportUrl;
+    link.download = '';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // 延迟隐藏提示
+    setTimeout(() => {
+        hideAlert();
+    }, 2000);
 }
 
 // =============================================================================
@@ -2718,23 +2734,4 @@ window.removeProductFromScanned = function(productId) {
     } else if (window.stockReturn) {
         window.stockReturn.removeProductFromScanned(productId);
     }
-};
-
-window.exportStockHistory = function() {
-    // 獲取當前篩選條件
-    const movementType = document.getElementById('movement-type-filter')?.value || '';
-    const productSearch = document.getElementById('product-search')?.value || '';
-    const startDate = document.getElementById('start-date-filter')?.value || '';
-    const endDate = document.getElementById('end-date-filter')?.value || '';
-
-    const params = new URLSearchParams({
-        movement_type: movementType,
-        product_search: productSearch,
-        start_date: startDate,
-        end_date: endDate,
-        export: 'csv'
-    });
-
-    const exportUrl = `${window.stockHistoryApiRoute}?${params}`;
-    window.open(exportUrl, '_blank');
 };

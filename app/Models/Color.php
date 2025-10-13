@@ -1,25 +1,26 @@
 <?php
 
-namespace App\Models\ManagementTool;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\AttributeVariant;
 
-class Brand extends Model
+class Color extends Model
 {
     use HasFactory;
 
-    protected $table = 'brands';
+    protected $table = 'colors';
 
     protected $fillable = [
-        'brand_image',
-        'brand_name',
-        'brand_status',
+        'color_name',
+        'color_hex',
+        'color_rgb',
+        'color_status',
     ];
 
     public function attributeVariants(): HasMany {
-        return $this->hasMany(AttributeVariant::class, 'brand_id', 'id');
+        return $this->hasMany(AttributeVariant::class, 'color_id');
     }
 }

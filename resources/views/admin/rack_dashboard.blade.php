@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.rack.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.rack.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Rack
                         </a>
@@ -220,11 +220,11 @@
 @section("scripts")
 <script>
     // Set rack management related URLs
-    window.rackManagementRoute = "{{ route('admin.storage_locations.rack.index') }}";
-    window.editRackUrl = "{{ route('admin.storage_locations.rack.edit', ['id' => ':id']) }}";
-    window.deleteRackUrl = "{{ route('admin.storage_locations.rack.destroy', ['id' => ':id']) }}";
-    window.availableRackUrl = "{{ route('admin.storage_locations.rack.available', ['id' => ':id']) }}";
-    window.unavailableRackUrl = "{{ route('admin.storage_locations.rack.unavailable', ['id' => ':id']) }}";
+    window.rackManagementRoute = "{{ route('admin.rack.index') }}";
+    window.editRackUrl = "{{ route('admin.rack.edit', ['id' => ':id']) }}";
+    window.deleteRackUrl = "{{ route('admin.rack.destroy', ['id' => ':id']) }}";
+    window.availableRackUrl = "{{ route('admin.rack.available', ['id' => ':id']) }}";
+    window.unavailableRackUrl = "{{ route('admin.rack.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

@@ -532,19 +532,24 @@
     }
 }
 
-/* 📱 平板端适配 (2列布局) */
-@media (max-width: 991px) and (min-width: 768px) {
+/* 📱 平板端和手机端适配 - 隐藏筛选侧边栏 */
+@media (max-width: 991px) {
     .filter-sidebar {
-        display: none;
+        display: none !important;
     }
 
-    .col-2 {
-        display: none;
+    .col-3 {
+        display: none !important;
+        width: 0 !important;
+        flex: 0 0 0 !important;
+        max-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
-    .col-10 {
-        flex: 0 0 100%;
-        max-width: 100%;
+    .col-9 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
     }
 
     .product-card .image-container {
@@ -557,21 +562,8 @@
     }
 }
 
-/* 📱 手机端适配 (1列布局) */
+/* 📱 手机端额外优化 */
 @media (max-width: 767px) {
-    .filter-sidebar {
-        display: none;
-    }
-
-    .col-2 {
-        display: none;
-    }
-
-    .col-10 {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
-
     .product-card .image-container {
         height: 200px;
     }

@@ -44,7 +44,7 @@
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('admin.storage_locations.location.index') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.location.index') }}" class="btn btn-primary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to List
                             </a>
                         </div>
@@ -201,7 +201,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('admin.storage_locations.location.edit', $locationItem->id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <a href="{{ route('admin.location.edit', $locationItem->id) }}" class="btn btn-outline-primary btn-sm">
                                                         <i class="bi bi-pencil me-2"></i>Update
                                                     </a>
                                                     <button class="btn btn-outline-danger btn-sm" data-location-id="{{ $locationItem->id }}">
@@ -232,11 +232,11 @@
 @section("scripts")
 <script>
     // 设置全局变量
-    window.viewLocationUrl = "{{ route('admin.storage_locations.location.view', ['id' => ':id']) }}";
-    window.locationManagementRoute = "{{ route('admin.storage_locations.location.index') }}";
-    window.availableLocationUrl = "{{ route('admin.storage_locations.location.available', ['id' => ':id']) }}";
-    window.unavailableLocationUrl = "{{ route('admin.storage_locations.location.unavailable', ['id' => ':id']) }}";
-    window.deleteLocationUrl = "{{ route('admin.storage_locations.location.destroy', ['id' => ':id']) }}";
+    window.viewLocationUrl = "{{ route('admin.location.view', ['id' => ':id']) }}";
+    window.locationManagementRoute = "{{ route('admin.location.index') }}";
+    window.availableLocationUrl = "{{ route('admin.location.available', ['id' => ':id']) }}";
+    window.unavailableLocationUrl = "{{ route('admin.location.unavailable', ['id' => ':id']) }}";
+    window.deleteLocationUrl = "{{ route('admin.location.destroy', ['id' => ':id']) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/location-management.js') }}"></script>

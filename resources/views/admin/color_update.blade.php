@@ -30,7 +30,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.color.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.color.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -72,7 +72,7 @@
                     <hr>
 
                     <!-- 表单内容 -->
-                    <form action="{{ route('admin.management_tool.color.update', $color->id) }}" method="post">
+                    <form action="{{ route('admin.color.update', $color->id) }}" method="post">
                         @csrf
                         @method('PUT')
 
@@ -161,8 +161,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.updateColorUrl = "{{ route('admin.management_tool.color.update', ['id' => ':id']) }}";
-    window.colorManagementRoute = "{{ route('admin.management_tool.color.index') }}";
+    window.updateColorUrl = "{{ route('admin.color.update', ['id' => ':id']) }}";
+    window.colorManagementRoute = "{{ route('admin.color.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

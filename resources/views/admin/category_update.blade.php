@@ -26,7 +26,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.category_mapping.category.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.category.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -83,7 +83,7 @@
                     <hr>
 
                     <!-- 表单内容 -->
-                    <form action="{{ route('admin.category_mapping.category.update', $category->id) }}" method="post" enctype="multipart/form-data">
+                    <form action="{{ route('admin.category.update', $category->id) }}" method="post" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -163,8 +163,8 @@
 @section("scripts")
     <script>
         // JavaScript URL definitions
-        window.updateCategoryUrl = "{{ route('admin.category_mapping.category.update', ['id' => ':id']) }}";
-        window.categoryManagementRoute = "{{ route('admin.category_mapping.category.index') }}";
+        window.updateCategoryUrl = "{{ route('admin.category.update', ['id' => ':id']) }}";
+        window.categoryManagementRoute = "{{ route('admin.category.index') }}";
     </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

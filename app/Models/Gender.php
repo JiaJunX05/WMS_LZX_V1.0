@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Models\ManagementTool;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\SizeLibrary\SizeTemplate;
+use App\Models\SizeTemplate;
 
 class Gender extends Model
 {

@@ -30,7 +30,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.brand.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.brand.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -87,7 +87,7 @@
                     <hr>
 
                     <!-- 表单内容 -->
-                    <form action="{{ route('admin.management_tool.brand.update', $brand->id) }}" method="post" enctype="multipart/form-data">
+                    <form action="{{ route('admin.brand.update', $brand->id) }}" method="post" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -161,8 +161,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.updateBrandUrl = "{{ route('admin.management_tool.brand.update', ['id' => ':id']) }}";
-    window.brandManagementRoute = "{{ route('admin.management_tool.brand.index') }}";
+    window.updateBrandUrl = "{{ route('admin.brand.update', ['id' => ':id']) }}";
+    window.brandManagementRoute = "{{ route('admin.brand.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

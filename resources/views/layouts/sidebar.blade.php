@@ -64,32 +64,43 @@
                 </li>
             @endif
 
+            @if(Auth::user()->getAccountRole() === 'SuperAdmin')
+                <!-- Print -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('superadmin.print.*') ? 'active' : '' }}"
+                       href="{{ route('superadmin.print.index') }}">
+                        <i class="bi bi-printer-fill menu-icon me-2"></i>
+                        <span>Print Management</span>
+                    </a>
+                </li>
+            @endif
+
             @if(Auth::user()->getAccountRole() === 'Admin')
                 <!-- Storage Location -->
                 <li class="nav-item">
-                    <button class="nav-link {{ request()->routeIs(['admin.storage_locations.zone.*', 'admin.storage_locations.rack.*', 'admin.storage_locations.location.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                    <button class="nav-link {{ request()->routeIs(['admin.zone.*', 'admin.rack.*', 'admin.location.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                             type="button" data-bs-toggle="collapse" data-bs-target="#storageCollapse">
                         <i class="bi bi-hdd menu-icon me-2"></i>
                         <span>Storage Location</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.storage_locations.zone.*', 'admin.storage_locations.rack.*', 'admin.storage_locations.location.*']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.zone.*', 'admin.rack.*', 'admin.location.*']) ? 'show' : '' }}"
                         id="storageCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
-                                <a href="{{ route('admin.storage_locations.zone.index')}}" class="nav-link {{ request()->routeIs('admin.storage_locations.zone.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.zone.index')}}" class="nav-link {{ request()->routeIs('admin.zone.*') ? 'active' : '' }}">
                                     <i class="bi bi-map me-2"></i>
                                     <span>Zone Management</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.storage_locations.rack.index') }}" class="nav-link {{ request()->routeIs('admin.storage_locations.rack.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.rack.index') }}" class="nav-link {{ request()->routeIs('admin.rack.*') ? 'active' : '' }}">
                                     <i class="bi bi-bar-chart-steps me-2"></i>
                                     <span>Rack Management</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.storage_locations.location.index') }}" class="nav-link {{ request()->routeIs('admin.storage_locations.location.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.location.index') }}" class="nav-link {{ request()->routeIs('admin.location.*') ? 'active' : '' }}">
                                     <i class="bi bi-bezier2 me-2"></i>
                                     <span>Location Management</span>
                                 </a>
@@ -100,29 +111,29 @@
 
                 <!-- Categories -->
                 <li class="nav-item">
-                    <button class="nav-link {{ request()->routeIs(['admin.category_mapping.category.*', 'admin.category_mapping.subcategory.*', 'admin.category_mapping.mapping.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                    <button class="nav-link {{ request()->routeIs(['admin.category.*', 'admin.subcategory.*', 'admin.mapping.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                             type="button" data-bs-toggle="collapse" data-bs-target="#categoryCollapse">
                         <i class="bi bi-diagram-3 menu-icon me-2"></i>
                         <span>Category Mapping</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.category_mapping.category.*', 'admin.category_mapping.subcategory.*', 'admin.category_mapping.mapping.*']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.category.*', 'admin.subcategory.*', 'admin.mapping.*']) ? 'show' : '' }}"
                         id="categoryCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
-                                <a href="{{ route('admin.category_mapping.category.index') }}" class="nav-link {{ request()->routeIs('admin.category_mapping.category.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.category.index') }}" class="nav-link {{ request()->routeIs('admin.category.*') ? 'active' : '' }}">
                                     <i class="bi bi-folder-plus me-2"></i>
                                     <span>Category Management</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.category_mapping.subcategory.index') }}" class="nav-link {{ request()->routeIs('admin.category_mapping.subcategory.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.subcategory.index') }}" class="nav-link {{ request()->routeIs('admin.subcategory.*') ? 'active' : '' }}">
                                     <i class="bi bi-folder-symlink me-2"></i>
                                     <span>Subcategory Management</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.category_mapping.mapping.index') }}" class="nav-link {{ request()->routeIs('admin.category_mapping.mapping.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.mapping.index') }}" class="nav-link {{ request()->routeIs('admin.mapping.*') ? 'active' : '' }}">
                                     <i class="bi bi-folder-fill me-2"></i>
                                     <span>Mapping Management</span>
                                 </a>
@@ -133,29 +144,29 @@
 
                 <!-- Management Tools -->
                 <li class="nav-item">
-                    <button class="nav-link {{ request()->routeIs(['admin.management_tool.brand.*', 'admin.management_tool.color.*', 'admin.management_tool.gender.*', 'admin.size_library.type.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                    <button class="nav-link {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                             type="button" data-bs-toggle="collapse" data-bs-target="#attributeCollapse">
                         <i class="bi bi-tools menu-icon me-2"></i>
                         <span>Management Tools</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.management_tool.brand.*', 'admin.management_tool.color.*', 'admin.management_tool.gender.*', 'admin.size_library.type.*']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'show' : '' }}"
                         id="attributeCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
-                                <a href="{{ route('admin.management_tool.brand.index') }}" class="nav-link {{ request()->routeIs('admin.management_tool.brand.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.brand.index') }}" class="nav-link {{ request()->routeIs('admin.brand.*') ? 'active' : '' }}">
                                     <i class="bi bi-award-fill me-2"></i>
                                     <span>Brand Management</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.management_tool.color.index') }}" class="nav-link {{ request()->routeIs('admin.management_tool.color.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.color.index') }}" class="nav-link {{ request()->routeIs('admin.color.*') ? 'active' : '' }}">
                                     <i class="bi bi-droplet-fill me-2"></i>
                                     <span>Color Management</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.management_tool.gender.index') }}" class="nav-link {{ request()->routeIs('admin.management_tool.gender.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.gender.index') }}" class="nav-link {{ request()->routeIs('admin.gender.*') ? 'active' : '' }}">
                                     <i class="bi bi-person-fill me-2"></i>
                                     <span>Gender Management</span>
                                 </a>
@@ -166,23 +177,23 @@
 
                 <!-- Size Library Management -->
                 <li class="nav-item">
-                    <button class="nav-link {{ request()->routeIs(['admin.size_library.type.*', 'admin.size_library.library.*', 'admin.size_library.template.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                    <button class="nav-link {{ request()->routeIs(['admin.library.*', 'admin.template.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                             type="button" data-bs-toggle="collapse" data-bs-target="#sizeLibraryCollapse">
                         <i class="bi bi-rulers menu-icon me-2"></i>
                         <span>Size Management</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.size_library.type.*', 'admin.size_library.library.*', 'admin.size_library.template.*']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.library.*', 'admin.template.*']) ? 'show' : '' }}"
                         id="sizeLibraryCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
-                                <a href="{{ route('admin.size_library.library.index') }}" class="nav-link {{ request()->routeIs('admin.size_library.library.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.library.index') }}" class="nav-link {{ request()->routeIs('admin.library.*') ? 'active' : '' }}">
                                     <i class="bi bi-collection me-2"></i>
                                     <span>Size Libraries</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('admin.size_library.template.index') }}" class="nav-link {{ request()->routeIs('admin.size_library.template.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.template.index') }}" class="nav-link {{ request()->routeIs('admin.template.*') ? 'active' : '' }}">
                                     <i class="bi bi-layout-text-window-reverse me-2"></i>
                                     <span>Size Templates</span>
                                 </a>
@@ -322,34 +333,45 @@
                             <span>Stock History</span>
                         </a>
                     </li>
-                @endif
+            @endif
 
-                @if(Auth::user()->getAccountRole() === 'Admin')
+            @if(Auth::user()->getAccountRole() === 'SuperAdmin')
+                <!-- Print -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('superadmin.print.*') ? 'active' : '' }}"
+                       href="{{ route('superadmin.print.index') }}">
+                        <i class="bi bi-printer-fill menu-icon me-2"></i>
+                        <span>Print Management</span>
+                    </a>
+                </li>
+            @endif
+
+            @if(Auth::user()->getAccountRole() === 'Admin')
                     <!-- Storage Location -->
                     <li class="nav-item">
-                        <button class="nav-link {{ request()->routeIs(['admin.storage_locations.zone.*', 'admin.storage_locations.rack.*', 'admin.storage_locations.location.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                        <button class="nav-link {{ request()->routeIs(['admin.zone.*', 'admin.rack.*', 'admin.location.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#mobileStorageCollapse">
                             <i class="bi bi-hdd menu-icon me-2"></i>
                             <span>Storage Location</span>
                             <i class="bi bi-chevron-down ms-auto"></i>
                         </button>
-                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.storage_locations.zone.*', 'admin.storage_locations.rack.*', 'admin.storage_locations.location.*']) ? 'show' : '' }}"
+                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.zone.*', 'admin.rack.*', 'admin.location.*']) ? 'show' : '' }}"
                             id="mobileStorageCollapse">
                             <ul class="nav-list sub-nav">
                                 <li>
-                                    <a href="{{ route('admin.storage_locations.zone.index')}}" class="nav-link {{ request()->routeIs('admin.storage_locations.zone.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.zone.index')}}" class="nav-link {{ request()->routeIs('admin.zone.*') ? 'active' : '' }}">
                                         <i class="bi bi-map me-2"></i>
                                         <span>Zone Management</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.storage_locations.rack.index') }}" class="nav-link {{ request()->routeIs('admin.storage_locations.rack.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.rack.index') }}" class="nav-link {{ request()->routeIs('admin.rack.*') ? 'active' : '' }}">
                                         <i class="bi bi-bar-chart-steps me-2"></i>
                                         <span>Rack Management</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.storage_locations.location.index') }}" class="nav-link {{ request()->routeIs('admin.storage_locations.location.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.location.index') }}" class="nav-link {{ request()->routeIs('admin.location.*') ? 'active' : '' }}">
                                         <i class="bi bi-bezier2 me-2"></i>
                                         <span>Location Management</span>
                                     </a>
@@ -360,29 +382,29 @@
 
                     <!-- Categories -->
                     <li class="nav-item">
-                        <button class="nav-link {{ request()->routeIs(['admin.category_mapping.category.*', 'admin.category_mapping.subcategory.*', 'admin.category_mapping.mapping.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                        <button class="nav-link {{ request()->routeIs(['admin.category.*', 'admin.subcategory.*', 'admin.mapping.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#mobileCategoryCollapse">
                             <i class="bi bi-diagram-3 menu-icon me-2"></i>
                             <span>Category Mapping</span>
                             <i class="bi bi-chevron-down ms-auto"></i>
                         </button>
-                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.category_mapping.category.*', 'admin.category_mapping.subcategory.*', 'admin.category_mapping.mapping.*']) ? 'show' : '' }}"
+                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.category.*', 'admin.subcategory.*', 'admin.mapping.*']) ? 'show' : '' }}"
                             id="mobileCategoryCollapse">
                             <ul class="nav-list sub-nav">
                                 <li>
-                                    <a href="{{ route('admin.category_mapping.category.index') }}" class="nav-link {{ request()->routeIs('admin.category_mapping.category.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.category.index') }}" class="nav-link {{ request()->routeIs('admin.category.*') ? 'active' : '' }}">
                                         <i class="bi bi-folder-plus me-2"></i>
                                         <span>Category Management</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.category_mapping.subcategory.index') }}" class="nav-link {{ request()->routeIs('admin.category_mapping.subcategory.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.subcategory.index') }}" class="nav-link {{ request()->routeIs('admin.subcategory.*') ? 'active' : '' }}">
                                         <i class="bi bi-folder-symlink me-2"></i>
                                         <span>Subcategory Management</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.category_mapping.mapping.index') }}" class="nav-link {{ request()->routeIs('admin.category_mapping.mapping.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.mapping.index') }}" class="nav-link {{ request()->routeIs('admin.mapping.*') ? 'active' : '' }}">
                                         <i class="bi bi-folder-fill me-2"></i>
                                         <span>Mapping Management</span>
                                     </a>
@@ -393,29 +415,29 @@
 
                     <!-- Management Tools -->
                     <li class="nav-item">
-                        <button class="nav-link {{ request()->routeIs(['admin.management_tool.brand.*', 'admin.management_tool.color.*', 'admin.management_tool.gender.*', 'admin.size_library.type.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                        <button class="nav-link {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#mobileAttributeCollapse">
                             <i class="bi bi-tools menu-icon me-2"></i>
                             <span>Management Tools</span>
                             <i class="bi bi-chevron-down ms-auto"></i>
                         </button>
-                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.management_tool.brand.*', 'admin.management_tool.color.*', 'admin.management_tool.gender.*', 'admin.size_library.type.*']) ? 'show' : '' }}"
+                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'show' : '' }}"
                             id="mobileAttributeCollapse">
                             <ul class="nav-list sub-nav">
                                 <li>
-                                    <a href="{{ route('admin.management_tool.brand.index') }}" class="nav-link {{ request()->routeIs('admin.management_tool.brand.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.brand.index') }}" class="nav-link {{ request()->routeIs('admin.brand.*') ? 'active' : '' }}">
                                         <i class="bi bi-award-fill me-2"></i>
                                         <span>Brand Management</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.management_tool.color.index') }}" class="nav-link {{ request()->routeIs('admin.management_tool.color.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.color.index') }}" class="nav-link {{ request()->routeIs('admin.color.*') ? 'active' : '' }}">
                                         <i class="bi bi-droplet-fill me-2"></i>
                                         <span>Color Management</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.management_tool.gender.index') }}" class="nav-link {{ request()->routeIs('admin.management_tool.gender.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.gender.index') }}" class="nav-link {{ request()->routeIs('admin.gender.*') ? 'active' : '' }}">
                                         <i class="bi bi-person-fill me-2"></i>
                                         <span>Gender Management</span>
                                     </a>
@@ -426,23 +448,23 @@
 
                     <!-- Size Library Management -->
                     <li class="nav-item">
-                        <button class="nav-link {{ request()->routeIs(['admin.size_library.type.*', 'admin.size_library.library.*', 'admin.size_library.template.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                        <button class="nav-link {{ request()->routeIs(['admin.library.*', 'admin.template.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#mobileSizeLibraryCollapse">
                             <i class="bi bi-rulers menu-icon me-2"></i>
                             <span>Size Management</span>
                             <i class="bi bi-chevron-down ms-auto"></i>
                         </button>
-                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.size_library.type.*', 'admin.size_library.library.*', 'admin.size_library.template.*']) ? 'show' : '' }}"
+                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.library.*', 'admin.template.*']) ? 'show' : '' }}"
                             id="mobileSizeLibraryCollapse">
                             <ul class="nav-list sub-nav">
                                 <li>
-                                    <a href="{{ route('admin.size_library.library.index') }}" class="nav-link {{ request()->routeIs('admin.size_library.library.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.library.index') }}" class="nav-link {{ request()->routeIs('admin.library.*') ? 'active' : '' }}">
                                         <i class="bi bi-collection me-2"></i>
                                         <span>Size Libraries</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('admin.size_library.template.index') }}" class="nav-link {{ request()->routeIs('admin.size_library.template.*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.template.index') }}" class="nav-link {{ request()->routeIs('admin.template.*') ? 'active' : '' }}">
                                         <i class="bi bi-layout-text-window-reverse me-2"></i>
                                         <span>Size Templates</span>
                                     </a>

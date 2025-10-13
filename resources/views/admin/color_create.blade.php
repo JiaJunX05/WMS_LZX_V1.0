@@ -32,7 +32,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.management_tool.color.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.color.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -46,7 +46,7 @@
     <div id="alertContainer" class="mb-4"></div>
 
     <!-- 主要内容卡片 - 左右布局 -->
-    <form action="{{ route('admin.management_tool.color.store') }}" method="post" id="colorForm" enctype="multipart/form-data">
+    <form action="{{ route('admin.color.store') }}" method="post" id="colorForm" enctype="multipart/form-data">
         @csrf
         <div class="card shadow-sm border-0">
             <div class="row g-0">
@@ -191,8 +191,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.createColorUrl = "{{ route('admin.management_tool.color.store') }}";
-    window.colorManagementRoute = "{{ route('admin.management_tool.color.index') }}";
+    window.createColorUrl = "{{ route('admin.color.store') }}";
+    window.colorManagementRoute = "{{ route('admin.color.index') }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

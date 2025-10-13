@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.zone.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.zone.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Zone
                         </a>
@@ -220,11 +220,11 @@
 @section("scripts")
 <script>
     // Set zone management related URLs
-    window.zoneManagementRoute = "{{ route('admin.storage_locations.zone.index') }}";
-    window.editZoneUrl = "{{ route('admin.storage_locations.zone.edit', ['id' => ':id']) }}";
-    window.deleteZoneUrl = "{{ route('admin.storage_locations.zone.destroy', ['id' => ':id']) }}";
-    window.availableZoneUrl = "{{ route('admin.storage_locations.zone.available', ['id' => ':id']) }}";
-    window.unavailableZoneUrl = "{{ route('admin.storage_locations.zone.unavailable', ['id' => ':id']) }}";
+    window.zoneManagementRoute = "{{ route('admin.zone.index') }}";
+    window.editZoneUrl = "{{ route('admin.zone.edit', ['id' => ':id']) }}";
+    window.deleteZoneUrl = "{{ route('admin.zone.destroy', ['id' => ':id']) }}";
+    window.availableZoneUrl = "{{ route('admin.zone.available', ['id' => ':id']) }}";
+    window.unavailableZoneUrl = "{{ route('admin.zone.unavailable', ['id' => ':id']) }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\StorageLocation\Zone;
+use App\Models\Zone;
 
 class ZoneController extends Controller
 {

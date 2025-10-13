@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\StorageLocation\Location;
-use App\Models\StorageLocation\Zone;
-use App\Models\StorageLocation\Rack;
+use App\Models\Location;
+use App\Models\Zone;
+use App\Models\Rack;
 
 /**
  * 位置管理控制器 (Location Management Controller)

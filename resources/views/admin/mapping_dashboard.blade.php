@@ -29,7 +29,7 @@
                     </div>
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.category_mapping.mapping.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.mapping.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill me-2"></i>
                             Add Mapping
                         </a>
@@ -132,7 +132,7 @@
             </div>
             <h4 class="empty-state-title mb-3">No Category Mapping Data</h4>
             <p class="empty-state-description mb-4">No category mappings have been created in the system yet</p>
-            <a href="{{ route('admin.category_mapping.mapping.create') }}" class="btn btn-primary">
+            <a href="{{ route('admin.mapping.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-2"></i>Create First Mapping
             </a>
         </div>
@@ -183,13 +183,13 @@
 @section("scripts")
 <script>
     // 设置分类映射管理相关路由
-    window.categoryMappingManagementRoute = "{{ route('admin.category_mapping.mapping.index') }}";
-    window.viewCategoryMappingUrl = "{{ route('admin.category_mapping.mapping.view', ['id' => ':id']) }}";
-    window.editCategoryMappingUrl = "{{ route('admin.category_mapping.mapping.edit', ['id' => ':id']) }}";
-    window.editMappingUrl = "{{ route('admin.category_mapping.mapping.edit', ['id' => ':id']) }}";
-    window.deleteMappingUrl = "{{ route('admin.category_mapping.mapping.destroy', ['id' => ':id']) }}";
-    window.availableMappingUrl = "{{ route('admin.category_mapping.mapping.available', ['id' => ':id']) }}";
-    window.unavailableMappingUrl = "{{ route('admin.category_mapping.mapping.unavailable', ['id' => ':id']) }}";
+    window.categoryMappingManagementRoute = "{{ route('admin.mapping.index') }}";
+    window.viewCategoryMappingUrl = "{{ route('admin.mapping.view', ['id' => ':id']) }}";
+    window.editCategoryMappingUrl = "{{ route('admin.mapping.edit', ['id' => ':id']) }}";
+    window.editMappingUrl = "{{ route('admin.mapping.edit', ['id' => ':id']) }}";
+    window.deleteMappingUrl = "{{ route('admin.mapping.destroy', ['id' => ':id']) }}";
+    window.availableMappingUrl = "{{ route('admin.mapping.available', ['id' => ':id']) }}";
+    window.unavailableMappingUrl = "{{ route('admin.mapping.unavailable', ['id' => ':id']) }}";
 </script>
 
 {{-- 引入映射管理JavaScript文件 --}}

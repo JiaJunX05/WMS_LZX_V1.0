@@ -26,7 +26,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.rack.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.rack.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -82,7 +82,7 @@
                     <hr>
 
                     <!-- Form Content -->
-                    <form action="{{ route('admin.storage_locations.rack.update', $rack->id) }}" method="post" enctype="multipart/form-data">
+                    <form action="{{ route('admin.rack.update', $rack->id) }}" method="post" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -173,8 +173,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.rackManagementRoute = "{{ route('admin.storage_locations.rack.index') }}";
-    window.updateRackUrl = "{{ route('admin.storage_locations.rack.update', $rack->id) }}";
+    window.rackManagementRoute = "{{ route('admin.rack.index') }}";
+    window.updateRackUrl = "{{ route('admin.rack.update', $rack->id) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

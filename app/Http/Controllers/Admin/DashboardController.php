@@ -5,6 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Product;
+use App\Models\StockMovement;
+use App\Models\User;
+use App\Models\Account;
+use App\Models\Category;
+use App\Models\Subcategory;
+use App\Models\Mapping;
+use App\Models\SizeLibrary;
+use App\Models\SizeTemplate;
+use App\Models\Zone;
+use App\Models\Rack;
+use App\Models\Location;
+use App\Models\Brand;
+use App\Models\Color;
+use App\Models\Gender;
 
 class DashboardController extends Controller
 {
@@ -22,7 +37,7 @@ class DashboardController extends Controller
         // 根据角色决定显示的数据
         $dashboardData = $this->getRoleBasedData($userRole, $stats);
 
-        return view('dashboard', compact('stats', 'dashboardData', 'userRole'));
+        return view('system_dashboard', compact('stats', 'dashboardData', 'userRole'));
     }
 
     /**
@@ -30,69 +45,82 @@ class DashboardController extends Controller
      */
     private function getDashboardStats()
     {
-        try {
-            // 产品统计
-            $productStats = [
-                'total' => DB::table('products')->count(),
-                'active' => DB::table('products')->where('status', 'Active')->count(),
-                'inactive' => DB::table('products')->where('status', 'Inactive')->count(),
-            ];
+        // 产品统计
+        $productStats = [
+            'total' => Product::count(),
+            'active' => Product::where('product_status', 'Available')->count(),
+            'inactive' => Product::where('product_status', 'Unavailable')->count(),
+        ];
 
-            // 库存统计
-            $stockStats = [
-                'total_items' => DB::table('stock_movements')->count(),
-                'in_stock' => DB::table('stock_movements')->where('movement_type', 'in')->sum('quantity'),
-                'out_stock' => DB::table('stock_movements')->where('movement_type', 'out')->sum('quantity'),
-            ];
+        // 库存统计 - 使用Eloquent模型
+        $stockStats = [
+            'total_items' => StockMovement::count(),
+            'in_stock' => StockMovement::where('movement_type', 'stock_in')->sum('quantity') ?? 0,
+            'out_stock' => StockMovement::where('movement_type', 'stock_out')->sum('quantity') ?? 0,
+            'return_stock' => StockMovement::where('movement_type', 'stock_return')->sum('quantity') ?? 0,
+        ];
 
-            // 员工统计
-            $staffStats = [
-                'total' => DB::table('users')->count(),
-                'admin' => DB::table('users')->where('role', 'admin')->count(),
-                'staff' => DB::table('users')->where('role', 'staff')->count(),
-            ];
+        // 员工统计 - 使用Eloquent模型
+        $staffStats = [
+            'total' => User::count(),
+            'admin' => Account::whereIn('account_role', ['Admin', 'SuperAdmin'])->count(),
+            'staff' => Account::where('account_role', 'Staff')->count(),
+        ];
 
-            // 分类统计
-            $categoryStats = [
-                'categories' => DB::table('categories')->count(),
-                'subcategories' => DB::table('subcategories')->count(),
-            ];
+        // 分类统计
+        $categoryStats = [
+            'categories' => Category::count(),
+            'subcategories' => Subcategory::count(),
+            'mappings' => Mapping::distinct('category_id')->count(),
+        ];
 
-            // 尺码统计
-            $sizeStats = [
-                'clothing_sizes' => DB::table('size_clothings')->count(),
-                'shoe_sizes' => DB::table('size_shoes')->count(),
-                'size_types' => DB::table('size_types')->count(),
-            ];
+        // 尺码统计 - 使用Eloquent模型，按类别分组
+        $sizeStats = [
+            'size_libraries' => SizeLibrary::selectRaw('category_id, count(*) as count')->groupBy('category_id')->get()->count(),
+            'size_templates' => SizeTemplate::selectRaw('category_id, count(*) as count')->groupBy('category_id')->get()->count(),
+        ];
 
-            // 存储位置统计
-            $locationStats = [
-                'zones' => DB::table('zones')->count(),
-                'racks' => DB::table('racks')->count(),
-                'locations' => DB::table('storage_locations')->count(),
-            ];
+        // 存储位置统计 - 使用Eloquent模型
+        $locationStats = [
+            'zones' => Zone::count(),
+            'racks' => Rack::count(),
+            'locations' => Location::distinct('zone_id')->count(),
+        ];
 
-            return [
-                'products' => $productStats,
-                'stock' => $stockStats,
-                'staff' => $staffStats,
-                'categories' => $categoryStats,
-                'sizes' => $sizeStats,
-                'locations' => $locationStats,
-            ];
+        // 品牌统计
+        $brandStats = [
+            'total' => Brand::count(),
+            'active' => Brand::where('brand_status', 'Available')->count(),
+            'inactive' => Brand::where('brand_status', 'Unavailable')->count(),
+        ];
 
-        } catch (\Exception $e) {
-            // 如果数据库查询失败，返回默认值
-            return [
-                'products' => ['total' => 0, 'active' => 0, 'inactive' => 0],
-                'stock' => ['total_items' => 0, 'in_stock' => 0, 'out_stock' => 0],
-                'staff' => ['total' => 0, 'admin' => 0, 'staff' => 0],
-                'categories' => ['categories' => 0, 'subcategories' => 0],
-                'sizes' => ['clothing_sizes' => 0, 'shoe_sizes' => 0, 'size_types' => 0],
-                'locations' => ['zones' => 0, 'racks' => 0, 'locations' => 0],
-            ];
-        }
+        // 颜色统计
+        $colorStats = [
+            'total' => Color::count(),
+            'active' => Color::where('color_status', 'Available')->count(),
+            'inactive' => Color::where('color_status', 'Unavailable')->count(),
+        ];
+
+        // 性别统计
+        $genderStats = [
+            'total' => Gender::count(),
+            'active' => Gender::where('gender_status', 'Available')->count(),
+            'inactive' => Gender::where('gender_status', 'Unavailable')->count(),
+        ];
+
+        return [
+            'products' => $productStats,
+            'stock' => $stockStats,
+            'staff' => $staffStats,
+            'categories' => $categoryStats,
+            'sizes' => $sizeStats,
+            'locations' => $locationStats,
+            'brands' => $brandStats,
+            'colors' => $colorStats,
+            'gender' => $genderStats,
+        ];
     }
+
 
     /**
      * Get role-based dashboard data.
@@ -105,6 +133,9 @@ class DashboardController extends Controller
             'sizes' => $stats['sizes'],
             'locations' => $stats['locations'],
             'stock' => $stats['stock'],
+            'brands' => $stats['brands'],
+            'colors' => $stats['colors'],
+            'gender' => $stats['gender'],
         ];
 
         // SuperAdmin 可以看到所有数据包括员工管理

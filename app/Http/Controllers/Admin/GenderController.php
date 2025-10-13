@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\ManagementTool\Gender;
+use App\Models\Gender;
 
 /**
  * 性别管理控制器

@@ -27,7 +27,7 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.storage_locations.zone.index') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.zone.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Back to List
                         </a>
@@ -84,7 +84,7 @@
                     <hr>
 
                     <!-- 表单内容 -->
-                    <form action="{{ route('admin.storage_locations.zone.update', $zone->id) }}" method="post" enctype="multipart/form-data">
+                    <form action="{{ route('admin.zone.update', $zone->id) }}" method="post" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -185,8 +185,8 @@
 @section("scripts")
 <script>
     // JavaScript URL definitions
-    window.zoneManagementRoute = "{{ route('admin.storage_locations.zone.index') }}";
-    window.updateZoneUrl = "{{ route('admin.storage_locations.zone.update', $zone->id) }}";
+    window.zoneManagementRoute = "{{ route('admin.zone.index') }}";
+    window.updateZoneUrl = "{{ route('admin.zone.update', $zone->id) }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

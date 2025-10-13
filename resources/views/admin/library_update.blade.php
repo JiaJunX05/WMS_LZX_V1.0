@@ -33,7 +33,7 @@
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('admin.size_library.library.index') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.library.index') }}" class="btn btn-primary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to List
                             </a>
                         </div>
@@ -111,7 +111,7 @@
                     </div>
 
                     <!-- 编辑表单 -->
-                    <form action="{{ route('admin.size_library.library.update', $sizeLibrary->id) }}" method="POST" id="updateSizeLibraryForm">
+                    <form action="{{ route('admin.library.update', $sizeLibrary->id) }}" method="POST" id="updateSizeLibraryForm">
                         @csrf
                         @method('PUT')
 
@@ -217,10 +217,10 @@
 {{-- JavaScript支持 --}}
 <script>
     // 设置路由
-    window.updateSizeLibraryUrl = "{{ route('admin.size_library.library.update', $sizeLibrary->id) }}";
-    window.sizeLibraryManagementRoute = "{{ route('admin.size_library.library.index') }}";
-    window.availableSizeLibraryUrl = "{{ route('admin.size_library.library.available', ['id' => ':id']) }}";
-    window.unavailableSizeLibraryUrl = "{{ route('admin.size_library.library.unavailable', ['id' => ':id']) }}";
-    window.deleteSizeLibraryUrl = "{{ route('admin.size_library.library.destroy', ['id' => ':id']) }}";
+    window.updateSizeLibraryUrl = "{{ route('admin.library.update', $sizeLibrary->id) }}";
+    window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
+    window.availableSizeLibraryUrl = "{{ route('admin.library.available', ['id' => ':id']) }}";
+    window.unavailableSizeLibraryUrl = "{{ route('admin.library.unavailable', ['id' => ':id']) }}";
+    window.deleteSizeLibraryUrl = "{{ route('admin.library.destroy', ['id' => ':id']) }}";
 </script>
 @endsection

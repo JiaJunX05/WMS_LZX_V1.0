@@ -3,7 +3,7 @@
 @section("title", "Edit User Information")
 @section("content")
 
-{{-- CSS 样式文件 --}}
+<!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
@@ -404,12 +404,13 @@
 @endsection
 
 @section("scripts")
-<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
-<script src="{{ asset('assets/js/auth-management.js') }}"></script>
+<!-- JavaScript -->
 <script>
     // JavaScript URL definitions
     window.updateUserUrl = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', ':id') : route('admin.users.update', ':id') }}";
     window.updateUserRedirect = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.management') : route('admin.users.management') }}";
 </script>
+<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
+<script src="{{ asset('assets/js/auth-management.js') }}"></script>
 @endsection

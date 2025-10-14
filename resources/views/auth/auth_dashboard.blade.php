@@ -3,6 +3,7 @@
 @section("title", "User Management")
 @section("content")
 
+<!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-table.css')}}">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse Management System - Login</title>
+    <title>Warehouse Management System - Reset Password</title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -16,10 +16,10 @@
         <div class="illustration-section">
             <div class="illustration-content">
                 <div class="illustration-icon">
-                    <i class="bi bi-box"></i>
+                    <i class="bi bi-key"></i>
                 </div>
-                <h1 class="illustration-title">Welcome to WMS</h1>
-                <p class="illustration-subtitle">Streamline your warehouse operations with our comprehensive management system</p>
+                <h1 class="illustration-title">Reset Password</h1>
+                <p class="illustration-subtitle">Enter your new password to complete the reset process</p>
             </div>
         </div>
 
@@ -45,16 +45,19 @@
 
             <!-- 表单标题 -->
             <div class="form-header">
-                <h1 class="form-title">Sign In</h1>
-                <p class="form-subtitle">Enter your credentials to access your account</p>
+                <h1 class="form-title">Reset Password</h1>
+                <p class="form-subtitle">Enter your new password below</p>
             </div>
 
-            <form action="{{route('login.submit')}}" method="post" class="needs-validation" novalidate>
+            <form action="{{ route('password.update') }}" method="post" class="needs-validation" novalidate>
                 @csrf
+
+                <!-- Hidden Token -->
+                <input type="hidden" name="token" value="{{ request()->route('token') }}">
 
                 <!-- Email Input -->
                 <div class="form-floating mb-4">
-                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address" required>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address" value="{{ $email ?? '' }}" required autofocus>
                     <label for="email">
                         <i class="bi bi-envelope me-2"></i>Email Address
                     </label>
@@ -63,38 +66,51 @@
                     </div>
                 </div>
 
-                <!-- Password Input -->
+                <!-- New Password Input -->
                 <div class="mb-4">
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-lock"></i>
                         </span>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter new password" required>
                         <span class="input-group-text password-toggle" role="button" onclick="togglePassword()">
                             <i class="bi bi-eye-slash" id="togglePassword"></i>
                         </span>
                     </div>
                     <div class="invalid-feedback">
-                        Please enter password
+                        Please enter a new password
                     </div>
                 </div>
 
-                <!-- Remember Me and Forgot Password -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="remember" name="remember">
-                        <label class="form-check-label remember-me" for="remember">
-                            Remember Me
-                        </label>
+                <!-- Confirm Password Input -->
+                <div class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock-fill"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" placeholder="Confirm new password" required>
+                        <span class="input-group-text password-toggle" role="button" onclick="togglePasswordConfirmation()">
+                            <i class="bi bi-eye-slash" id="togglePasswordConfirmation"></i>
+                        </span>
                     </div>
-                    <a href="{{ route('password.request') }}" class="forgot-password">Forgot Password?</a>
+                    <div class="invalid-feedback">
+                        Please confirm your password
+                    </div>
                 </div>
 
-                <!-- Login Button -->
+                <!-- Submit Button -->
                 <button type="submit" class="btn-login" name="submit">
-                    Login
+                    Reset Password
                     <i class="bi bi-arrow-right"></i>
                 </button>
+
+                <!-- Back to Login -->
+                <div class="text-center mt-4">
+                    <a href="{{ route('login') }}" class="text-decoration-none">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Login
+                    </a>
+                </div>
 
                 <!-- System Information -->
                 <div class="text-center mt-4">
@@ -107,12 +123,14 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Auth Management JS -->
     <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 
     <script>
-        // 页面初始化
+        // 页面初始化由 auth-management.js 处理
         document.addEventListener('DOMContentLoaded', function() {
             initializeLoginPage();
         });

@@ -1743,6 +1743,24 @@ function togglePassword() {
 }
 
 /**
+ * 確認密碼顯示切換
+ */
+function togglePasswordConfirmation() {
+    const passwordField = document.getElementById('password_confirmation');
+    const toggleIcon = document.getElementById('togglePasswordConfirmation');
+
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    }
+}
+
+/**
  * 初始化登錄頁面
  */
 function initializeLoginPage() {
@@ -1912,6 +1930,7 @@ window.selectUpdateStatusCard = selectUpdateStatusCard;
 
 // Login 頁面函數
 window.togglePassword = togglePassword;
+window.togglePasswordConfirmation = togglePasswordConfirmation;
 window.initializeLoginPage = initializeLoginPage;
 
 // Dashboard 相關函數

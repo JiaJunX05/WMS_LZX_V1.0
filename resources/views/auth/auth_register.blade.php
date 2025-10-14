@@ -3,6 +3,7 @@
 @section("title", "Create User Account")
 @section("content")
 
+<!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-table-list.css') }}">
@@ -272,6 +273,7 @@
 @endsection
 
 @section("scripts")
+<!-- JavaScript -->
 <script>
     // JavaScript URL definitions
     window.createUserUrl = "{{ route('register.submit') }}";

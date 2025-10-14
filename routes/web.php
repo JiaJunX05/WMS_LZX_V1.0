@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 // 控制器引用 (Controller Imports)
 // =============================================================================
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\BrandController;
@@ -28,34 +29,40 @@ use App\Http\Controllers\PrintController;
 |--------------------------------------------------------------------------
 |
 | 这里定义了应用程序的Web路由。路由被组织成不同的功能模块：
-| - 认证路由：登录、注册、登出
+| - 认证路由：登录、注册、登出、密码重置
 | - 智能重定向：根据用户角色自动跳转
 | - 角色特定路由：SuperAdmin、Admin、Staff的专属功能
+| - 公共功能：产品管理、库存管理等
 |
 */
 
 // =============================================================================
-// 认证路由 (Authentication Routes)
+// 公共路由 (Public Routes)
 // =============================================================================
+
+// 认证路由
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-    // =============================================================================
-    // URL重定向规则 (URL Redirect Rules)
-    // 处理大小写不一致的URL
-    // =============================================================================
-    Route::get('/Admin/dashboard', function () {
-        return redirect('/admin/dashboard', 301);
-    });
+// 密码重置路由
+Route::get('/password/reset', [ResetPasswordController::class, 'ShowRequestForm'])->name('password.request');
+Route::post('/password/email', [ResetPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/password/reset/{token}', [ResetPasswordController::class, 'ShowResetForm'])->name('password.reset');
+Route::post('/password/reset', [ResetPasswordController::class, 'resetPassword'])->name('password.update');
 
-    Route::get('/SuperAdmin/dashboard', function () {
-        return redirect('/superadmin/dashboard', 301);
-    });
+// URL重定向规则 - 处理大小写不一致的URL
+Route::get('/Admin/dashboard', function () {
+    return redirect('/admin/dashboard', 301);
+});
 
-    // =============================================================================
-    // 需要认证的路由 (Authenticated Routes)
-    // =============================================================================
+Route::get('/SuperAdmin/dashboard', function () {
+    return redirect('/superadmin/dashboard', 301);
+});
+
+// =============================================================================
+// 需要认证的路由 (Authenticated Routes)
+// =============================================================================
 Route::middleware(['auth'])->group(function () {
 
     // =============================================================================
@@ -110,7 +117,7 @@ Route::middleware(['auth'])->group(function () {
     // 库存管理路由 (Stock Management Routes)
     // 所有认证用户都可以访问库存管理功能
     // =============================================================================
-    Route::prefix('staff')->middleware(['auth'])->name('staff.')->group(function () {
+    Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/stock-management', [StockController::class, 'stockManagement'])->name('stock_management');
         Route::get('/stock-detail', [StockController::class, 'stockDetail'])->name('stock_detail');
         Route::get('/stock-in-page', [StockController::class, 'stockInPage'])->name('stock_in_page');
@@ -134,9 +141,11 @@ Route::middleware(['auth'])->group(function () {
     // 超级管理员：拥有所有权限，可以管理所有用户
     // =============================================================================
     Route::prefix('superadmin')->middleware(['role:SuperAdmin'])->name('superadmin.')->group(function () {
+        // 仪表板
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/data', [DashboardController::class, 'getData'])->name('dashboard.data');
 
+        // 用户管理
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
             Route::get('/stats', [AuthController::class, 'getUserStats'])->name('stats');
@@ -150,24 +159,24 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/change-role', [AuthController::class, 'changeAccountRole'])->name('change_role');
         });
 
-        // =============================================================================
-        // Print Management Routes (Print Management Routes)
-        // =============================================================================
+        // 打印管理
         Route::prefix('print')->name('print.')->group(function () {
             Route::get('/', [PrintController::class, 'index'])->name('index');
             Route::post('/get-products', [PrintController::class, 'getProducts'])->name('get-products');
         });
-});
+    });
 
 
-// =============================================================================
-// Admin 路由 (Admin Routes)
+    // =============================================================================
+    // Admin 路由 (Admin Routes)
     // 管理员：可以管理员工，但不能更改角色或删除用户
     // =============================================================================
     Route::prefix('admin')->middleware(['role:Admin'])->name('admin.')->group(function () {
+        // 仪表板
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/data', [DashboardController::class, 'getData'])->name('dashboard.data');
 
+        // 用户管理
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
             Route::get('/stats', [AuthController::class, 'getUserStats'])->name('stats');
@@ -179,7 +188,11 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [AuthController::class, 'setAvailable'])->name('available');
         });
 
-        // 区域管理 (Zone Management)
+        // =============================================================================
+        // 仓库管理功能 (Warehouse Management Functions)
+        // =============================================================================
+
+        // 区域管理
         Route::prefix('zone')->name('zone.')->group(function () {
             Route::get('/index', [ZoneController::class, 'index'])->name('index');
             Route::get('/create', [ZoneController::class, 'create'])->name('create');
@@ -191,7 +204,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [ZoneController::class, 'destroy'])->name('destroy');
         });
 
-        // 货架管理 (Rack Management)
+        // 货架管理
         Route::prefix('rack')->name('rack.')->group(function () {
             Route::get('/index', [RackController::class, 'index'])->name('index');
             Route::get('/create', [RackController::class, 'create'])->name('create');
@@ -203,7 +216,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [RackController::class, 'destroy'])->name('destroy');
         });
 
-        // 位置管理 (Location Management)
+        // 位置管理
         Route::prefix('location')->name('location.')->group(function () {
             Route::get('/index', [LocationController::class, 'index'])->name('index');
             Route::get('/create', [LocationController::class, 'create'])->name('create');
@@ -216,7 +229,11 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [LocationController::class, 'destroy'])->name('destroy');
         });
 
-        // 分类管理 (Category Management)
+        // =============================================================================
+        // 产品管理功能 (Product Management Functions)
+        // =============================================================================
+
+        // 分类管理
         Route::prefix('category')->name('category.')->group(function () {
             Route::get('/index', [CategoryController::class, 'index'])->name('index');
             Route::get('/create', [CategoryController::class, 'create'])->name('create');
@@ -228,7 +245,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [CategoryController::class, 'destroy'])->name('destroy');
         });
 
-        // 子分类管理 (Subcategory Management)
+        // 子分类管理
         Route::prefix('subcategory')->name('subcategory.')->group(function () {
             Route::get('/index', [SubcategoryController::class, 'index'])->name('index');
             Route::get('/create', [SubcategoryController::class, 'create'])->name('create');
@@ -240,7 +257,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [SubcategoryController::class, 'destroy'])->name('destroy');
         });
 
-        // 映射管理 (Mapping Management)
+        // 映射管理
         Route::prefix('mapping')->name('mapping.')->group(function () {
             Route::get('/index', [MappingController::class, 'index'])->name('index');
             Route::get('/create', [MappingController::class, 'create'])->name('create');
@@ -253,7 +270,11 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [MappingController::class, 'destroy'])->name('destroy');
         });
 
-        // 品牌管理 (Brand Management)
+        // =============================================================================
+        // 属性管理功能 (Attribute Management Functions)
+        // =============================================================================
+
+        // 品牌管理
         Route::prefix('brand')->name('brand.')->group(function () {
             Route::get('/index', [BrandController::class, 'index'])->name('index');
             Route::get('/create', [BrandController::class, 'create'])->name('create');
@@ -265,7 +286,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [BrandController::class, 'destroy'])->name('destroy');
         });
 
-        // 颜色管理 (Color Management)
+        // 颜色管理
         Route::prefix('color')->name('color.')->group(function () {
             Route::get('/index', [ColorController::class, 'index'])->name('index');
             Route::get('/create', [ColorController::class, 'create'])->name('create');
@@ -277,7 +298,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [ColorController::class, 'destroy'])->name('destroy');
         });
 
-        // 性别管理 (Gender Management)
+        // 性别管理
         Route::prefix('gender')->name('gender.')->group(function () {
             Route::get('/index', [GenderController::class, 'index'])->name('index');
             Route::get('/create', [GenderController::class, 'create'])->name('create');
@@ -289,7 +310,11 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [GenderController::class, 'destroy'])->name('destroy');
         });
 
-        // 尺码库管理 (Size Library Management)
+        // =============================================================================
+        // 尺码管理功能 (Size Management Functions)
+        // =============================================================================
+
+        // 尺码库管理
         Route::prefix('library')->name('library.')->group(function () {
             Route::get('/index', [LibraryController::class, 'index'])->name('index');
             Route::get('/create', [LibraryController::class, 'create'])->name('create');
@@ -302,7 +327,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}/delete', [LibraryController::class, 'destroy'])->name('destroy');
         });
 
-        // 尺码模板管理 (Size Template Management)
+        // 尺码模板管理
         Route::prefix('template')->name('template.')->group(function () {
             Route::get('/index', [TemplateController::class, 'index'])->name('index');
             Route::get('/create', [TemplateController::class, 'create'])->name('create');

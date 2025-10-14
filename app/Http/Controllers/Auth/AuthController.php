@@ -686,42 +686,35 @@ class AuthController extends Controller
         try {
             $currentRole = $this->getCurrentUserRole();
 
-            // 使用缓存键
-            $cacheKey = "user_stats_{$currentRole}_" . Auth::id();
+            // 构建查询
+            $query = $this->buildUserQuery();
 
-            // 尝试从缓存获取
-            $stats = cache()->remember($cacheKey, 300, function () use ($currentRole) {
-                $query = $this->buildUserQuery();
+            // 一次性获取所有统计数据，减少数据库查询
+            $baseQuery = clone $query;
 
-                // 一次性获取所有统计数据，减少数据库查询
-                $baseQuery = clone $query;
+            $stats = [
+                'total_users' => $baseQuery->count(),
+            ];
 
-                $stats = [
-                    'total_users' => $baseQuery->count(),
-                ];
+            // 批量获取状态统计
+            $statusStats = $baseQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
+                ->selectRaw('account_status, COUNT(*) as count')
+                ->groupBy('account_status')
+                ->pluck('count', 'account_status')
+                ->toArray();
 
-                // 批量获取状态统计
-                $statusStats = $baseQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
-                    ->selectRaw('account_status, COUNT(*) as count')
-                    ->groupBy('account_status')
-                    ->pluck('count', 'account_status')
-                    ->toArray();
+            $stats['available_users'] = $statusStats['Available'] ?? 0;
+            $stats['unavailable_users'] = $statusStats['Unavailable'] ?? 0;
 
-                $stats['available_users'] = $statusStats['Available'] ?? 0;
-                $stats['unavailable_users'] = $statusStats['Unavailable'] ?? 0;
-
-                // 管理员统计
-                if ($currentRole === 'SuperAdmin') {
-                    $adminQuery = clone $query;
-                    $stats['admin_users'] = $adminQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
-                        ->whereIn('account_role', ['Admin', 'SuperAdmin'])
-                        ->count();
-                } else {
-                    $stats['admin_users'] = 0;
-                }
-
-                return $stats;
-            });
+            // 管理员统计
+            if ($currentRole === 'SuperAdmin') {
+                $adminQuery = clone $query;
+                $stats['admin_users'] = $adminQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
+                    ->whereIn('account_role', ['Admin', 'SuperAdmin'])
+                    ->count();
+            } else {
+                $stats['admin_users'] = 0;
+            }
 
             return $this->jsonResponse(true, 'User statistics fetched successfully', $stats);
         } catch (\Exception $e) {

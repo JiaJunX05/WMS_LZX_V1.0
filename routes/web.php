@@ -136,6 +136,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/stock-statistics', [StockController::class, 'getStockStatistics'])->name('api.stock_statistics');
     Route::get('/stock-history/export', [StockController::class, 'exportStockHistory'])->name('stock_history.export');
 
+    // 货架容量管理页面和API路由
+    Route::get('/rack-capacity', function() {
+        return view('rack_capacity');
+    })->name('rack_capacity');
+    Route::get('/api/rack-capacity', [StockController::class, 'getRackCapacityInfo'])->name('api.rack_capacity');
+    Route::get('/api/rack-capacity/{id}', [StockController::class, 'getRackCapacity'])->name('api.rack_capacity_detail');
+    Route::post('/api/check-rack-capacity', [StockController::class, 'checkRackCapacityForProduct'])->name('api.check_rack_capacity');
+
     // =============================================================================
     // SuperAdmin 路由 (SuperAdmin Routes)
     // 超级管理员：拥有所有权限，可以管理所有用户

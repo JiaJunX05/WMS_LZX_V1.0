@@ -54,13 +54,31 @@
                     </a>
                 </li>
 
-                <!-- Stock History -->
+                <!-- Stock Movement -->
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('stock_history') ? 'active' : '' }}"
-                       href="{{ route('stock_history') }}">
-                        <i class="bi bi-file-earmark-spreadsheet-fill menu-icon me-2"></i>
-                        <span>Stock History</span>
-                    </a>
+                    <button class="nav-link {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#stockMovementCollapse">
+                        <i class="bi bi-box-seam-fill menu-icon me-2"></i>
+                        <span>Stock Movement</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </button>
+                    <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'staff.stock_in_page', 'staff.stock_out_page', 'staff.stock_return_page', 'stock_history']) ? 'show' : '' }}"
+                        id="stockMovementCollapse">
+                        <ul class="nav-list sub-nav">
+                            <li>
+                                <a href="{{ route('staff.stock_management') }}" class="nav-link {{ request()->routeIs('staff.stock_management') ? 'active' : '' }}">
+                                    <i class="bi bi-box-seam me-2"></i>
+                                    <span>Stock Management</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('stock_history') }}" class="nav-link {{ request()->routeIs('stock_history') ? 'active' : '' }}">
+                                    <i class="bi bi-clock-history me-2"></i>
+                                    <span>Stock History</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
             @endif
 
@@ -325,13 +343,31 @@
                         </a>
                     </li>
 
-                    <!-- Stock History -->
+                    <!-- Stock Movement -->
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('stock_history') ? 'active' : '' }}"
-                           href="{{ route('stock_history') }}">
-                            <i class="bi bi-file-earmark-spreadsheet-fill menu-icon me-2"></i>
-                            <span>Stock History</span>
-                        </a>
+                        <button class="nav-link {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#mobileAdminStockMovementCollapse">
+                            <i class="bi bi-box-seam-fill menu-icon me-2"></i>
+                            <span>Stock Movement</span>
+                            <i class="bi bi-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'show' : '' }}"
+                            id="mobileAdminStockMovementCollapse">
+                            <ul class="nav-list sub-nav">
+                                <li>
+                                    <a href="{{ route('staff.stock_management') }}" class="nav-link {{ request()->routeIs('staff.stock_management') ? 'active' : '' }}">
+                                        <i class="bi bi-box-seam me-2"></i>
+                                        <span>Stock Management</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('stock_history') }}" class="nav-link {{ request()->routeIs('stock_history') ? 'active' : '' }}">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        <span>Stock History</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
             @endif
 

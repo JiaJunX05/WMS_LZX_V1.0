@@ -236,6 +236,11 @@
                                     </option>
                                 @endforeach
                             </select>
+                            {{-- 货架容量错误提示 --}}
+                            <div id="rack-capacity-error" class="invalid-feedback" style="display: none;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span id="rack-capacity-error-text"></span>
+                            </div>
                         </div>
                     </div>
                 </div>

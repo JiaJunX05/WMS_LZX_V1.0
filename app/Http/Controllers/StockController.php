@@ -525,12 +525,12 @@ class StockController extends Controller
      * 批量库存入库
      */
     private function batchStockIn(Request $request) {
-        $rules = self::BATCH_STOCK_RULES;
-        $rules['stock_in_items'] = $rules['stock_items'];
-        unset($rules['stock_items']);
-        $rules['stock_in_items.*.product_id'] = $rules['stock_in_items.*.product_id'];
-        $rules['stock_in_items.*.quantity'] = $rules['stock_in_items.*.quantity'];
-        $rules['stock_in_items.*.reference_number'] = $rules['stock_in_items.*.reference_number'];
+        $rules = [
+            'stock_in_items' => 'required|array|min:1|max:' . self::MAX_BULK_ITEMS,
+            'stock_in_items.*.product_id' => 'required|exists:products,id',
+            'stock_in_items.*.quantity' => 'required|integer|min:1',
+            'stock_in_items.*.reference_number' => 'nullable|string|max:255'
+        ];
 
         $request->validate($rules);
 
@@ -604,12 +604,12 @@ class StockController extends Controller
      * 批量库存出库
      */
     private function batchStockOut(Request $request) {
-        $rules = self::BATCH_STOCK_RULES;
-        $rules['stock_out_items'] = $rules['stock_items'];
-        unset($rules['stock_items']);
-        $rules['stock_out_items.*.product_id'] = $rules['stock_out_items.*.product_id'];
-        $rules['stock_out_items.*.quantity'] = $rules['stock_out_items.*.quantity'];
-        $rules['stock_out_items.*.reference_number'] = $rules['stock_out_items.*.reference_number'];
+        $rules = [
+            'stock_out_items' => 'required|array|min:1|max:' . self::MAX_BULK_ITEMS,
+            'stock_out_items.*.product_id' => 'required|exists:products,id',
+            'stock_out_items.*.quantity' => 'required|integer|min:1',
+            'stock_out_items.*.reference_number' => 'nullable|string|max:255'
+        ];
 
         $request->validate($rules);
 
@@ -701,12 +701,12 @@ class StockController extends Controller
      * 批量库存退货
      */
     private function batchStockReturn(Request $request) {
-        $rules = self::BATCH_STOCK_RULES;
-        $rules['stock_return_items'] = $rules['stock_items'];
-        unset($rules['stock_items']);
-        $rules['stock_return_items.*.product_id'] = $rules['stock_return_items.*.product_id'];
-        $rules['stock_return_items.*.quantity'] = $rules['stock_return_items.*.quantity'];
-        $rules['stock_return_items.*.reference_number'] = $rules['stock_return_items.*.reference_number'];
+        $rules = [
+            'stock_return_items' => 'required|array|min:1|max:' . self::MAX_BULK_ITEMS,
+            'stock_return_items.*.product_id' => 'required|exists:products,id',
+            'stock_return_items.*.quantity' => 'required|integer|min:1',
+            'stock_return_items.*.reference_number' => 'nullable|string|max:255'
+        ];
 
         $request->validate($rules);
 

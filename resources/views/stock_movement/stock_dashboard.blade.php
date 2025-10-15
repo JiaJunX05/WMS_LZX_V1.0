@@ -25,18 +25,20 @@
                         </div>
                     </div>
                     <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('staff.stock_in_page') }}" class="btn btn-success me-2">
-                            <i class="bi bi-plus-circle-fill me-2"></i>
-                            Stock In
-                        </a>
-                        <a href="{{ route('staff.stock_out_page') }}" class="btn btn-danger me-2">
-                            <i class="bi bi-dash-circle-fill me-2"></i>
-                            Stock Out
-                        </a>
-                        <a href="{{ route('staff.stock_return_page') }}" class="btn btn-warning">
-                            <i class="bi bi-arrow-return-left me-2"></i>
-                            Stock Return
-                        </a>
+                        @if(Auth::user()->getAccountRole() === 'Staff')
+                            <a href="{{ route('staff.stock_in_page') }}" class="btn btn-success me-2">
+                                <i class="bi bi-plus-circle-fill me-2"></i>
+                                Stock In
+                            </a>
+                            <a href="{{ route('staff.stock_out_page') }}" class="btn btn-danger me-2">
+                                <i class="bi bi-dash-circle-fill me-2"></i>
+                                Stock Out
+                            </a>
+                            <a href="{{ route('staff.stock_return_page') }}" class="btn btn-warning">
+                                <i class="bi bi-arrow-return-left me-2"></i>
+                                Stock Return
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -51,7 +53,7 @@
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row g-3 align-items-end">
-                    <div class="col-lg-8">
+                    <div class="col-lg-10">
                         <label class="form-label fw-medium">Search Products</label>
                         <div class="search-input-wrapper">
                             <i class="bi bi-search search-icon"></i>
@@ -59,7 +61,7 @@
                                    placeholder="Search by product name, SKU, or barcode...">
                         </div>
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-lg-2">
                         <button class="btn btn-outline-secondary w-100" id="clear-search">
                             <i class="bi bi-x-circle me-2"></i>
                             Clear Search

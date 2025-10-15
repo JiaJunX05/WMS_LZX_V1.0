@@ -1067,6 +1067,14 @@ function bindCascadingSelectEvents() {
         });
     }
 
+    // Rack 选择事件 - 检查容量
+    if (rackSelect) {
+        rackSelect.addEventListener('change', function() {
+            const rackId = this.value;
+            checkRackCapacity(rackId);
+        });
+    }
+
     // Size 选择事件
     if (categorySelect && sizeSelect) {
         categorySelect.addEventListener('change', function() {
@@ -1156,11 +1164,13 @@ function updateRackOptions(zoneId, rackSelect) {
     if (!zoneId) {
         rackSelect.disabled = true;
         rackSelect.innerHTML = '<option value="">Select Rack</option>';
+        hideRackCapacityError();
         return;
     }
 
     rackSelect.innerHTML = '<option value="">Select Rack</option>';
     rackSelect.disabled = true;
+    hideRackCapacityError();
 
     if (window.locationsData && window.locationsData.length > 0) {
         const filteredLocations = window.locationsData.filter(location =>
@@ -1173,7 +1183,19 @@ function updateRackOptions(zoneId, rackSelect) {
                 if (location.rack && location.rack.id) {
                     const option = document.createElement('option');
                     option.value = location.rack.id;
-                    option.textContent = location.rack.rack_number || 'Rack ' + location.rack.id;
+
+                    // 添加容量信息到选项文本
+                    const capacityInfo = getRackCapacityInfo(location.rack.id);
+                    const capacityText = capacityInfo ? ` (${capacityInfo.available}/${capacityInfo.capacity})` : '';
+                    option.textContent = (location.rack.rack_number || 'Rack ' + location.rack.id) + capacityText;
+
+                    // 添加数据属性
+                    if (capacityInfo) {
+                        option.dataset.capacity = capacityInfo.capacity;
+                        option.dataset.used = capacityInfo.used;
+                        option.dataset.available = capacityInfo.available;
+                    }
+
                     rackSelect.appendChild(option);
                 }
             });
@@ -1182,6 +1204,84 @@ function updateRackOptions(zoneId, rackSelect) {
         }
     } else {
         rackSelect.innerHTML = '<option value="">No location data available</option>';
+    }
+}
+
+/**
+ * 检查货架容量
+ */
+function checkRackCapacity(rackId) {
+    if (!rackId) {
+        hideRackCapacityError();
+        return;
+    }
+
+    const capacityInfo = getRackCapacityInfo(rackId);
+    if (!capacityInfo) {
+        hideRackCapacityError();
+        return;
+    }
+
+    // 检查是否有可用空间
+    if (capacityInfo.available <= 0) {
+        const errorMessage = `Rack capacity is full! Available space: ${capacityInfo.available} positions`;
+        showRackCapacityError(errorMessage);
+
+        // 显示alert提示
+        if (typeof showAlert === 'function') {
+            showAlert(errorMessage, 'error');
+        } else {
+            alert(errorMessage);
+        }
+    } else {
+        hideRackCapacityError();
+
+        // 显示成功提示（可选）
+        if (capacityInfo.available <= 5) {
+            const warningMessage = `Rack capacity is low! Available space: ${capacityInfo.available} positions`;
+            if (typeof showAlert === 'function') {
+                showAlert(warningMessage, 'warning');
+            }
+        }
+    }
+}
+
+/**
+ * 获取货架容量信息
+ */
+function getRackCapacityInfo(rackId) {
+    if (!window.rackCapacitiesData || !rackId) {
+        return null;
+    }
+
+    return window.rackCapacitiesData[rackId] || null;
+}
+
+/**
+ * 显示货架容量错误
+ */
+function showRackCapacityError(message) {
+    const errorDiv = document.getElementById('rack-capacity-error');
+    const errorText = document.getElementById('rack-capacity-error-text');
+    const rackSelect = document.querySelector('select[name="rack_id"]');
+
+    if (errorDiv && errorText && rackSelect) {
+        errorText.textContent = message;
+        errorDiv.style.display = 'block';
+        rackSelect.classList.add('is-invalid');
+    }
+}
+
+/**
+ * 隐藏货架容量错误
+ */
+function hideRackCapacityError() {
+    const errorDiv = document.getElementById('rack-capacity-error');
+    const rackSelect = document.querySelector('select[name="rack_id"]');
+
+    if (errorDiv && rackSelect) {
+        errorDiv.style.display = 'none';
+        rackSelect.classList.remove('is-invalid');
     }
 }
 

@@ -466,6 +466,18 @@ class ProductController extends Controller
 
             \Log::info('Attribute variant created for variant ID: ' . $productVariant->id);
 
+            // 更新Location的current_usage
+            if ($request->filled('zone_id') && $request->filled('rack_id')) {
+                $location = Location::where('zone_id', $request->zone_id)
+                    ->where('rack_id', $request->rack_id)
+                    ->first();
+
+                if ($location) {
+                    $location->increment('current_usage');
+                    \Log::info('Updated location current_usage for zone_id: ' . $request->zone_id . ', rack_id: ' . $request->rack_id);
+                }
+            }
+
             // 处理详情图片
             if ($request->hasFile('detail_image')) {
                 foreach ($request->file('detail_image') as $image) {
@@ -642,6 +654,12 @@ class ProductController extends Controller
                 $product->cover_image = 'covers/' . $imageName;
             }
 
+            // 记录原始位置信息（用于更新Location current_usage）
+            $originalZoneId = $product->zone_id;
+            $originalRackId = $product->rack_id;
+            $newZoneId = $request->zone_id;
+            $newRackId = $request->rack_id;
+
             // 更新产品信息
             $product->name = $request->name;
             $product->description = $request->description;
@@ -653,6 +671,33 @@ class ProductController extends Controller
             $product->rack_id = $request->rack_id;
             $product->product_status = $request->product_status ?? 'Available';
             $product->save();
+
+            // 更新Location的current_usage（如果位置发生变化）
+            if (($originalZoneId != $newZoneId) || ($originalRackId != $newRackId)) {
+                // 减少原位置的current_usage
+                if ($originalZoneId && $originalRackId) {
+                    $originalLocation = Location::where('zone_id', $originalZoneId)
+                        ->where('rack_id', $originalRackId)
+                        ->first();
+
+                    if ($originalLocation && $originalLocation->current_usage > 0) {
+                        $originalLocation->decrement('current_usage');
+                        \Log::info('Decremented original location current_usage for zone_id: ' . $originalZoneId . ', rack_id: ' . $originalRackId);
+                    }
+                }
+
+                // 增加新位置的current_usage
+                if ($newZoneId && $newRackId) {
+                    $newLocation = Location::where('zone_id', $newZoneId)
+                        ->where('rack_id', $newRackId)
+                        ->first();
+
+                    if ($newLocation) {
+                        $newLocation->increment('current_usage');
+                        \Log::info('Incremented new location current_usage for zone_id: ' . $newZoneId . ', rack_id: ' . $newRackId);
+                    }
+                }
+            }
 
             // 更新产品变体信息
             if ($variant) {
@@ -770,6 +815,18 @@ class ProductController extends Controller
 
             $product = Product::findOrFail($id);
             \Log::info('Product found: ' . json_encode($product->toArray()));
+
+            // 更新Location的current_usage（删除产品时减少使用量）
+            if ($product->zone_id && $product->rack_id) {
+                $location = Location::where('zone_id', $product->zone_id)
+                    ->where('rack_id', $product->rack_id)
+                    ->first();
+
+                if ($location && $location->current_usage > 0) {
+                    $location->decrement('current_usage');
+                    \Log::info('Decremented location current_usage for deleted product - zone_id: ' . $product->zone_id . ', rack_id: ' . $product->rack_id);
+                }
+            }
 
             // 删除封面图片
             if ($product->cover_image) {

@@ -17,6 +17,7 @@ class Location extends Model
     protected $fillable = [
         'zone_id',
         'rack_id',
+        'current_usage',
         'location_status',
     ];
 

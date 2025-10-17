@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('zone_id')->constrained('zones')->onDelete('cascade');
             $table->foreignId('rack_id')->constrained('racks')->onDelete('cascade');
-            $table->unsignedInteger('current_usage')->default(0);
+            $table->unsignedInteger('current_usage')->default(0); // 当前使用量
             $table->enum('location_status', ['Available', 'Unavailable'])->default('Available'); // 位置状态：Available, Unavailable
             $table->timestamps();
 

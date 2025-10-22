@@ -144,6 +144,10 @@
                     <h5 class="mb-0 fw-semibold">Gender List</h5>
                     <span class="badge bg-light text-dark" id="results-count">Loading...</span>
                 </div>
+                <button class="btn btn-outline-success" id="export-genders-btn" disabled>
+                    <i class="bi bi-download me-2"></i>
+                    Export Data
+                </button>
             </div>
         </div>
         <div class="card-body p-0">
@@ -151,8 +155,12 @@
                 <table class="table custom-table mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
-                            <th style="width: 60%"><div class="table-header">GENDER NAME</div></th>
+                            <th class="ps-4" style="width: 5%">
+                                <div class="table-header">
+                                    <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
+                                </div>
+                            </th>
+                            <th style="width: 65%"><div class="table-header">GENDER NAME</div></th>
                             <th style="width: 10%"><div class="table-header">SIZES COUNT</div></th>
                             <th style="width: 10%"><div class="table-header">STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
@@ -210,6 +218,7 @@
     window.deleteGenderUrl = "{{ route('admin.gender.destroy', ['id' => ':id']) }}";
     window.availableGenderUrl = "{{ route('admin.gender.available', ['id' => ':id']) }}";
     window.unavailableGenderUrl = "{{ route('admin.gender.unavailable', ['id' => ':id']) }}";
+    window.genderExportUrl = "{{ route('admin.gender.export') }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

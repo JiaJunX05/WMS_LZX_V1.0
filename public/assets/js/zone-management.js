@@ -90,6 +90,24 @@ class ZoneDashboard {
                 this.fetchZones(this.currentPage + 1);
             }
         });
+
+        // 全選/取消全選功能
+        $('#select-all').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.zone-checkbox').prop('checked', isChecked);
+            this.updateExportButton();
+        });
+
+        // 單個勾選框變化
+        $(document).on('change', '.zone-checkbox', () => {
+            this.updateSelectAllCheckbox();
+            this.updateExportButton();
+        });
+
+        // 導出按鈕
+        $('#export-zones-btn').on('click', () => {
+            this.exportSelectedZones();
+        });
     }
 
     // =============================================================================
@@ -204,6 +222,10 @@ class ZoneDashboard {
         const $tableBody = $('#table-body');
         const html = zones.map(zone => this.createZoneRow(zone)).join('');
         $tableBody.html(html);
+
+        // 重置勾選框狀態
+        this.updateSelectAllCheckbox();
+        this.updateExportButton();
     }
 
     createZoneRow(zone) {
@@ -238,24 +260,27 @@ class ZoneDashboard {
 
         return `
             <tr>
-                <td class="ps-4"><span class="text-muted">#${zone.id}</span></td>
+                <td class="ps-4">
+                    <div class="table-header">
+                        <input class="zone-checkbox" type="checkbox" value="${zone.id}" id="zone-${zone.id}" style="width: 20px; height: 20px;">
+                    </div>
+                </td>
                 <td>
                     ${zone.zone_image ? `
                         <img src="/assets/images/${zone.zone_image}" alt="Zone Image"
-                             class="preview-image"
-                             onclick="previewImage('/assets/images/${zone.zone_image}')">
+                             class="preview-image">
                     ` : `
                         <div class="no-image">No Image</div>
                     `}
                 </td>
                 <td>
-                    <div class="d-flex align-items-center">
-                        <h6 class="mb-0 fw-bold">${zone.zone_name}</h6>
-                    </div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <span class="text-muted">${zone.location || 'No location specified'}</span>
+                    <div class="d-flex flex-column">
+                        <div class="fw-bold text-dark mb-1">
+                            <i class="bi bi-geo-alt me-2 text-primary"></i>${zone.zone_name}
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-geo me-1"></i>${zone.location || 'No location specified'}
+                        </div>
                     </div>
                 </td>
                 <td><span class="status-badge ${this.getStatusClass(zone.zone_status)}">${zone.zone_status}</span></td>
@@ -272,7 +297,7 @@ class ZoneDashboard {
     showNoResults() {
         $('#table-body').html(`
             <tr>
-                <td colspan="6" class="text-center py-4">
+                <td colspan="5" class="text-center py-4">
                     <div class="text-muted">
                         <i class="bi bi-search fs-1 d-block mb-3"></i>
                         <h5>No zones found</h5>
@@ -472,6 +497,99 @@ class ZoneDashboard {
         });
     }
 
+    // =============================================================================
+    // 勾選框管理模塊 (Checkbox Management Module)
+    // =============================================================================
+
+    /**
+     * 更新全選勾選框狀態
+     */
+    updateSelectAllCheckbox() {
+        const totalCheckboxes = $('.zone-checkbox').length;
+        const checkedCheckboxes = $('.zone-checkbox:checked').length;
+        const selectAllCheckbox = $('#select-all');
+
+        if (totalCheckboxes === 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            selectAllCheckbox.prop('checked', true).prop('indeterminate', false);
+        } else if (checkedCheckboxes > 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', true);
+        } else {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        }
+    }
+
+    /**
+     * 更新導出按鈕狀態
+     */
+    updateExportButton() {
+        const checkedCount = $('.zone-checkbox:checked').length;
+        const exportBtn = $('#export-zones-btn');
+
+        if (checkedCount > 0) {
+            exportBtn.prop('disabled', false);
+            exportBtn.html(`<i class="bi bi-download me-2"></i>Export Data (${checkedCount})`);
+        } else {
+            exportBtn.prop('disabled', true);
+            exportBtn.html('<i class="bi bi-download me-2"></i>Export Data');
+        }
+    }
+
+    /**
+     * 導出選中的區域
+     */
+    exportSelectedZones() {
+        const selectedIds = $('.zone-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) {
+            this.showAlert('Please select at least one zone to export', 'warning');
+            return;
+        }
+
+        // 獲取當前篩選條件
+        const search = this.searchTerm || '';
+        const statusFilter = this.statusFilter || '';
+
+        const params = new URLSearchParams({
+            ids: selectedIds.join(','),
+            search: search,
+            status_filter: statusFilter,
+        });
+
+        // 使用新的Excel導出路由
+        const exportUrl = `${window.zoneExportUrl}?${params}`;
+
+        // 顯示加載提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 創建隱藏的鏈接來觸發下載
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延遲隱藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
+    }
+
+    /**
+     * 隱藏提示信息
+     */
+    hideAlert() {
+        const alertElement = document.querySelector('.alert');
+        if (alertElement) {
+            alertElement.remove();
+        }
+    }
+
     // 顯示提示信息
     showAlert(message, type) {
         // 使用統一的 alert 系統
@@ -544,7 +662,7 @@ function addZoneToArray(zoneName, location, zoneImageFile) {
     }
 
     // 清空圖片（不顯示消息）
-    resetImageWithoutMessage();
+    resetImageWithoutMessage('zone');
 
     // 調試信息：檢查添加後的狀態選擇
     const currentStatus = document.querySelector('input[name="zone_status"]:checked');
@@ -564,11 +682,18 @@ function isZoneExists(zoneName) {
  * 添加區域
  */
 function addZone() {
+    console.log('addZone function called');
+
     const zoneNameInput = document.getElementById('zone_name');
     const locationInput = document.getElementById('location');
 
-    const zoneName = zoneNameInput.value.trim();
-    const location = locationInput.value.trim();
+    console.log('zoneNameInput element:', zoneNameInput);
+    console.log('locationInput element:', locationInput);
+
+    const zoneName = zoneNameInput ? zoneNameInput.value.trim() : '';
+    const location = locationInput ? locationInput.value.trim() : '';
+
+    console.log('Zone name:', zoneName, 'Location:', location);
 
     // 驗證輸入
     if (!zoneName) {
@@ -633,136 +758,6 @@ function removeZone(index) {
 }
 
 /**
- * 更新區域列表
- */
-function updateZoneList() {
-    const container = document.getElementById('zoneValuesList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    zoneList.forEach((item, index) => {
-        const zoneItem = document.createElement('div');
-
-        // 檢查是否為重複項
-        const isDuplicate = isZoneExists(item.zoneName) &&
-            zoneList.filter(i => i.zoneName.toLowerCase() === item.zoneName.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
-
-        zoneItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        zoneItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-2">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                ${item.zoneImageFile ?
-                    `<img src="${URL.createObjectURL(item.zoneImageFile)}" alt="${item.zoneName}" class="item-image me-2" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;">` :
-                    '<div class="item-image-placeholder me-2" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-geo-alt text-muted"></i></div>'
-                }
-                <div class="d-flex flex-column">
-                    <span class="item-value-text fw-medium">${item.zoneName}</span>
-                    <small class="text-muted">${item.location}</small>
-                </div>
-                ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
-        `;
-        container.appendChild(zoneItem);
-    });
-}
-
-/**
- * 高亮顯示列表中已存在的區域名稱
- * @param {string} zoneName 區域名稱
- */
-function highlightExistingZone(zoneName) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.item-value-text').textContent.trim();
-        if (value.toLowerCase() === zoneName.toLowerCase()) {
-            // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 顯示區域值區域
- */
-function showZoneValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.style.display = 'none';
-    }
-
-    // 隱藏輸入提示
-    const zoneInputPrompt = document.getElementById('zoneInputPrompt');
-    if (zoneInputPrompt) {
-        zoneInputPrompt.style.display = 'none';
-    }
-
-    // 顯示區域值區域
-    const zoneValuesArea = document.getElementById('zoneValuesArea');
-    if (zoneValuesArea) {
-        zoneValuesArea.style.display = 'block';
-    }
-
-    // 更新區域名稱顯示
-    updateZoneNameDisplay();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.style.display = 'block';
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏區域值區域
-    const zoneValuesArea = document.getElementById('zoneValuesArea');
-    if (zoneValuesArea) {
-        zoneValuesArea.style.display = 'none';
-    }
-
-    // 隱藏輸入提示
-    const zoneInputPrompt = document.getElementById('zoneInputPrompt');
-    if (zoneInputPrompt) {
-        zoneInputPrompt.style.display = 'none';
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.style.display = 'none';
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.style.display = 'block';
-    }
-}
-
-/**
  * 清除表單
  */
 function clearForm() {
@@ -782,12 +777,8 @@ function clearForm() {
 
     // 清空輸入框
     const zoneNameInput = document.getElementById('zone_name');
-    const locationInput = document.getElementById('location');
     if (zoneNameInput) {
         zoneNameInput.value = '';
-    }
-    if (locationInput) {
-        locationInput.value = '';
     }
 
     // 更新UI
@@ -801,6 +792,151 @@ function clearForm() {
     hideAllAreas();
 }
 
+/**
+ * 更新區域列表
+ */
+function updateZoneList() {
+    const container = document.getElementById('zoneValuesList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    zoneList.forEach((item, index) => {
+        const zoneRow = document.createElement('tr');
+
+        // 檢查是否為重複項
+        const isDuplicate = isZoneExists(item.zoneName) &&
+            zoneList.filter(i => i.zoneName.toLowerCase() === item.zoneName.toLowerCase()).length > 1;
+
+        // 根據是否為重複項設置不同的樣式
+        const baseClasses = 'value-item';
+        const duplicateClasses = isDuplicate ? 'table-warning border-warning' : '';
+
+        zoneRow.className = `${baseClasses} ${duplicateClasses}`;
+
+        zoneRow.innerHTML = `
+            <td class="text-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+                    ${isDuplicate ? '⚠️' : (index + 1)}
+                </span>
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-3 flex-shrink-0">
+                        ${item.zoneImageFile ?
+                            `<img src="${URL.createObjectURL(item.zoneImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Zone Image">` :
+                            `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                                <i class="bi bi-geo-alt text-muted fs-5"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="fw-bold text-dark mb-1 text-truncate">
+                            <i class="bi bi-geo-alt me-2 text-primary"></i>${item.zoneName}
+                        </div>
+                        <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
+                            <i class="bi bi-geo me-1"></i>${item.location || 'N/A'}
+                        </div>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                    </div>
+                </div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </td>
+        `;
+        container.appendChild(zoneRow);
+    });
+}
+
+/**
+ * 高亮顯示列表中已存在的區域名稱
+ * @param {string} zoneName 區域名稱
+ */
+function highlightExistingZone(zoneName) {
+    const existingValues = document.querySelectorAll('.value-item');
+    for (let item of existingValues) {
+        const value = item.querySelector('.fw-bold').textContent.trim();
+        if (value.toLowerCase() === zoneName.toLowerCase()) {
+            // 添加 Bootstrap 高亮樣式
+            item.classList.add('table-warning', 'border-warning');
+
+            // 滾動到該元素
+            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 3秒後移除高亮
+            setTimeout(() => {
+                item.classList.remove('table-warning', 'border-warning');
+            }, 3000);
+            break;
+        }
+    }
+}
+
+/**
+ * 顯示區域值區域
+ */
+function showZoneValuesArea() {
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    // 隱藏輸入提示
+    const zoneInputPrompt = document.getElementById('zoneInputPrompt');
+    if (zoneInputPrompt) {
+        zoneInputPrompt.classList.add('d-none');
+    }
+
+    // 顯示區域值區域
+    const zoneValuesArea = document.getElementById('zoneValuesArea');
+    if (zoneValuesArea) {
+        zoneValuesArea.classList.remove('d-none');
+    }
+
+    // 更新區域名稱顯示
+    updateZoneNameDisplay();
+
+    // 顯示提交按鈕
+    const submitSection = document.getElementById('submitSection');
+    if (submitSection) {
+        submitSection.classList.remove('d-none');
+    }
+}
+
+/**
+ * 隱藏所有區域
+ */
+function hideAllAreas() {
+    // 隱藏區域值區域
+    const zoneValuesArea = document.getElementById('zoneValuesArea');
+    if (zoneValuesArea) {
+        zoneValuesArea.classList.add('d-none');
+    }
+
+    // 隱藏輸入提示
+    const zoneInputPrompt = document.getElementById('zoneInputPrompt');
+    if (zoneInputPrompt) {
+        zoneInputPrompt.classList.add('d-none');
+    }
+
+    // 隱藏提交按鈕
+    const submitSection = document.getElementById('submitSection');
+    if (submitSection) {
+        submitSection.classList.add('d-none');
+    }
+
+    // 顯示初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
+    }
+}
+
+
 // =============================================================================
 // UI 更新功能 (UI Update Functions)
 // =============================================================================
@@ -812,14 +948,9 @@ function updateUI() {
     // 更新區域值計數
     updateZoneValuesCount();
 
-    // 更新區域範圍顯示
-    updateZoneRangeDisplay();
 
     // 更新區域名稱顯示
     updateZoneNameDisplay();
-
-    // 更新配置摘要
-    updateConfigSummary();
 
     // 如果沒有區域，隱藏所有區域並顯示初始狀態
     if (zoneList.length === 0) {
@@ -840,17 +971,6 @@ function updateZoneValuesCount() {
     }
 }
 
-function updateConfigSummary() {
-    // 更新區域範圍顯示
-    updateZoneRangeDisplay();
-
-    // 顯示配置摘要
-    const configSummary = document.getElementById('configSummary');
-    if (configSummary) {
-        configSummary.style.display = 'block';
-    }
-}
-
 function updateZoneNameDisplay() {
     const zoneNameSpan = document.getElementById('zoneName');
     if (zoneNameSpan) {
@@ -863,24 +983,6 @@ function updateZoneNameDisplay() {
     }
 }
 
-function updateZoneRangeDisplay() {
-    const zoneNames = zoneList.map(item => item.zoneName);
-
-    const selectedZoneSpan = document.getElementById('selectedZone');
-    if (selectedZoneSpan) {
-        if (zoneNames.length === 0) {
-            selectedZoneSpan.textContent = 'None';
-        } else if (zoneNames.length === 1) {
-            selectedZoneSpan.textContent = zoneNames[0];
-        } else {
-            // 按字母順序排序
-            const sortedNames = zoneNames.sort();
-            const minZone = sortedNames[0];
-            const maxZone = sortedNames[sortedNames.length - 1];
-            selectedZoneSpan.textContent = `${minZone} - ${maxZone}`;
-        }
-    }
-}
 
 // =============================================================================
 // 排序功能 (Sorting Functions)
@@ -937,120 +1039,6 @@ function sortZoneValuesList() {
     });
 }
 
-// =============================================================================
-// 批量添加功能 (Batch Add Functions)
-// =============================================================================
-
-/**
- * 添加常用區域
- */
-function addCommonZones() {
-    // Common zones
-    const commonZones = [
-        'A Zone',
-        'B Zone',
-        'C Zone',
-        'D Zone',
-        'E Zone',
-        'F Zone',
-        'G Zone',
-        'H Zone',
-        'I Zone',
-        'J Zone'
-    ];
-
-    addMultipleZones(commonZones);
-}
-
-/**
- * 添加倉庫區域
- */
-function addWarehouseZones() {
-    // Warehouse zones
-    const warehouseZones = [
-        'Receiving Zone',
-        'Storage Zone A',
-        'Storage Zone B',
-        'Storage Zone C',
-        'Picking Zone',
-        'Packing Zone',
-        'Shipping Zone',
-        'Returns Zone',
-        'Quality Control Zone',
-        'Cold Storage Zone',
-        'Hazardous Materials Zone',
-        'Overflow Zone'
-    ];
-
-    addMultipleZones(warehouseZones);
-}
-
-/**
- * 添加多個區域
- * @param {Array} zones 區域數組
- */
-function addMultipleZones(zones) {
-    let addedCount = 0;
-    let skippedCount = 0;
-    const locationInput = document.getElementById('location');
-    const defaultLocation = locationInput.value.trim() || 'Warehouse';
-
-    zones.forEach(zone => {
-        if (!isZoneExists(zone)) {
-            addZoneToList(zone, defaultLocation, 'Available'); // 默認為 Available
-            addedCount++;
-        } else {
-            skippedCount++;
-        }
-    });
-
-    // 顯示結果
-    if (addedCount > 0 && skippedCount === 0) {
-        showAlert(`Successfully added ${addedCount} zones`, 'success');
-    } else if (addedCount > 0 && skippedCount > 0) {
-        showAlert(`Added ${addedCount} zones, ${skippedCount} already existed`, 'info');
-    } else if (skippedCount > 0) {
-        showAlert('All zones already exist in the list', 'warning');
-    }
-
-    // 更新UI
-    updateUI();
-
-    // 如果有添加區域，顯示右邊的表格
-    if (addedCount > 0) {
-        showZoneValuesArea();
-    }
-}
-
-/**
- * 添加區域到列表
- * @param {string} zoneName 區域名稱
- * @param {string} location 位置
- * @param {string} zoneStatus 狀態（默認為 Available）
- * @param {File} zoneImageFile 圖片文件
- */
-function addZoneToList(zoneName, location, zoneStatus = 'Available', zoneImageFile = null) {
-    // 檢查是否為重複項
-    if (isZoneExists(zoneName)) {
-        console.log('Duplicate detected in batch add, skipping:', zoneName);
-        return; // 跳過重複項，不添加到列表
-    }
-
-    // 添加到 zoneList 數組
-    zoneList.push({
-        zoneName: zoneName,
-        location: location,
-        zoneStatus: zoneStatus,
-        zoneImageFile: zoneImageFile
-    });
-
-    // 重新渲染整個列表
-    updateZoneList();
-    updateUI();
-
-    // 顯示區域值區域
-    showZoneValuesArea();
-}
 
 // =============================================================================
 // Update 頁面功能 (Update Page Functions)
@@ -1156,158 +1144,7 @@ function validateUpdateForm() {
     return true;
 }
 
-/**
- * Update 頁面圖片預覽處理
- * @param {Event} event 文件選擇事件
- */
-function handleUpdateImagePreview(event) {
-    const file = event.target.files[0];
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-
-    if (file) {
-        // 驗證文件類型
-        if (!file.type.startsWith('image/')) {
-            showAlert('Please select a valid image file', 'warning');
-            return;
-        }
-
-        // 驗證文件大小 (5MB限制)
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert('Image size must be less than 5MB', 'warning');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if (previewContainer) {
-                previewContainer.innerHTML = `
-                    <img src="${e.target.result}" alt="Preview" id="preview-image"
-                         class="img-fluid rounded-3" style="max-width: 100%; max-height: 280px; object-fit: contain;">
-                    <div class="image-remove-btn" title="Remove image">
-                        <i class="bi bi-x"></i>
-                    </div>
-                `;
-
-                // 添加刪除按鈕事件
-                const removeBtn = previewContainer.querySelector('.image-remove-btn');
-                if (removeBtn) {
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        removeUpdateImage();
-                    });
-                }
-
-                // 顯示移除圖片按鈕
-                if (removeImageBtn) {
-                    removeImageBtn.style.display = 'block';
-                }
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-/**
- * Update 頁面圖片移除
- */
-function removeUpdateImage() {
-    // 確認是否要移除圖片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件輸入
-        imageInput.value = '';
-
-        // 添加隱藏的 remove_image 參數到表單
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 恢復原始內容
-        const originalContent = previewContainer.getAttribute('data-original-content');
-        if (originalContent) {
-            previewContainer.innerHTML = originalContent;
-        } else {
-            // 如果沒有原始內容，顯示默認狀態
-            previewContainer.innerHTML = `
-                <div class="text-center text-muted">
-                    <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                    <p class="mb-0">No image uploaded</p>
-                    <small>Upload an image to see preview</small>
-                </div>
-            `;
-        }
-
-        // 隱藏移除圖片按鈕
-        if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
-
-/**
- * Update 頁面移除圖片按鈕處理
- */
-function handleRemoveImageButton() {
-    // 確認是否要移除圖片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件輸入
-        imageInput.value = '';
-
-        // 添加隱藏的 remove_image 參數到表單
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 顯示默認狀態
-        previewContainer.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                <p class="mb-0">No image uploaded</p>
-                <small>Upload an image to see preview</small>
-            </div>
-        `;
-
-        // 更新 data-original-content 屬性
-        previewContainer.setAttribute('data-original-content', previewContainer.innerHTML);
-
-        // 隱藏移除圖片按鈕
-        if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
+// 图片处理函数已移至 image-system.js
 
 /**
  * Update 頁面狀態卡片初始化
@@ -1341,37 +1178,7 @@ function selectUpdateStatusCard(card) {
     }
 }
 
-// =============================================================================
-// 圖片預覽功能 (Image Preview Functions)
-// =============================================================================
-
-/**
- * 圖片預覽函數 - 用於模態框顯示
- * @param {string} src 圖片源
- */
-function previewImage(src) {
-    document.getElementById('previewImage').src = src;
-    new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
-}
-
-/**
- * Create 頁面重置圖片（不顯示消息）
- */
-function resetImageWithoutMessage() {
-    console.log('resetImageWithoutMessage called');
-    if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
-        console.log('Calling window.ImageSystem.resetImage');
-        window.ImageSystem.resetImage('imageUploadArea', {
-            showMessage: false,
-            imageInputId: 'zone_image',
-            previewImageId: 'preview-image',
-            previewIconId: 'preview-icon',
-            imageUploadContentId: 'imageUploadContent'
-        });
-    } else {
-        console.log('window.ImageSystem.resetImage not available');
-    }
-}
+// resetImageWithoutMessage 函数已移至 image-system.js
 
 // =============================================================================
 // 表單驗證和提交 (Form Validation & Submission)
@@ -1419,9 +1226,9 @@ function submitZoneForm() {
         console.log(`Zone ${index + 1}:`, { zoneName: item.zoneName, zoneStatus: item.zoneStatus });
 
         // 添加區域文本數據
-        formData.append(`zones[${index}][zoneName]`, item.zoneName);
+        formData.append(`zones[${index}][zone_name]`, item.zoneName);
         formData.append(`zones[${index}][location]`, item.location);
-        formData.append(`zones[${index}][zoneStatus]`, item.zoneStatus);
+        formData.append(`zones[${index}][zone_status]`, item.zoneStatus);
 
         // 添加圖片文件（如果有）
         if (item.zoneImageFile) {
@@ -1525,24 +1332,18 @@ function bindZoneCreateEvents() {
         });
     }
 
-    // 添加區域按鈕
-    const addZoneBtn = document.getElementById('addZone');
-    if (addZoneBtn) {
-        addZoneBtn.addEventListener('click', addZone);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 事件委托：刪除區域按鈕
+    // 事件委托：刪除區域按鈕和 AddToList 按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
             removeZone(index);
+        }
+
+        // AddToList 按鈕事件 - 更新選擇器
+        if (e.target.closest('#addZone')) {
+            e.preventDefault();
+            addZone();
         }
     });
 
@@ -1552,16 +1353,12 @@ function bindZoneCreateEvents() {
         sortBtn.addEventListener('click', toggleSortOrder);
     }
 
-    // 快速添加按鈕
-    const addCommonZonesBtn = document.getElementById('addCommonZones');
-    if (addCommonZonesBtn) {
-        addCommonZonesBtn.addEventListener('click', addCommonZones);
+    // 清除表單按鈕
+    const clearFormBtn = document.getElementById('clearForm');
+    if (clearFormBtn) {
+        clearFormBtn.addEventListener('click', clearForm);
     }
 
-    const addWarehouseZonesBtn = document.getElementById('addWarehouseZones');
-    if (addWarehouseZonesBtn) {
-        addWarehouseZonesBtn.addEventListener('click', addWarehouseZones);
-    }
 }
 
 /**
@@ -1569,6 +1366,51 @@ function bindZoneCreateEvents() {
  */
 function initializeZoneUpdate() {
     bindZoneEvents();
+
+    // Update 頁面表單提交
+    const updateForm = document.querySelector('form[action*="update"]');
+    if (updateForm) {
+        updateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleUpdateFormSubmit(this);
+        });
+    }
+
+    // Update 頁面圖片預覽
+    const updateImageInput = document.getElementById('input_image');
+    if (updateImageInput) {
+        updateImageInput.addEventListener('change', handleUpdateImagePreview);
+    }
+
+    // Update 頁面圖片上傳區域點擊事件
+    const imagePreviewArea = document.getElementById('image-preview');
+    if (imagePreviewArea && updateImageInput) {
+        imagePreviewArea.addEventListener('click', function(e) {
+            // 只檢查是否點擊了移除按鈕
+            if (e.target.closest('.image-remove-btn')) {
+                return; // 不觸發文件選擇
+            }
+            updateImageInput.click();
+        });
+    }
+
+    // Update 頁面移除圖片按鈕
+    const removeImageBtn = document.getElementById('removeImage');
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', handleRemoveImageButton);
+
+        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
+        const previewContainer = document.getElementById('image-preview');
+        if (previewContainer) {
+            const hasImage = previewContainer.querySelector('img');
+            if (!hasImage) {
+                removeImageBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // Update 頁面狀態卡片初始化
+    initializeStatusCards();
 }
 
 /**

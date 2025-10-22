@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
             $superAdmin = User::updateOrCreate(
                 ['email' => 'superadmin@example.com'],
                 [
-                    'name' => 'SuperAdmin',
+                    'first_name' => 'SuperAdmin',
+                    'last_name' => 'Example',
                     'password' => Hash::make('123qwe'),
                 ]
             );
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
             Account::updateOrCreate(
                 ['user_id' => $superAdmin->id],
                 [
+                    'username' => 'SuperAdmin',
                     'account_role' => 'SuperAdmin',
                     'account_status' => 'Available',
                 ]
@@ -39,7 +41,8 @@ class DatabaseSeeder extends Seeder
             $admin = User::updateOrCreate(
                 ['email' => 'admin@example.com'],
                 [
-                    'name' => 'Admin',
+                    'first_name' => 'Admin',
+                    'last_name' => 'Example',
                     'password' => Hash::make('123qwe'),
                 ]
             );
@@ -47,6 +50,7 @@ class DatabaseSeeder extends Seeder
             Account::updateOrCreate(
                 ['user_id' => $admin->id],
                 [
+                    'username' => 'Admin',
                     'account_role' => 'Admin',
                     'account_status' => 'Available',
                 ]
@@ -56,7 +60,8 @@ class DatabaseSeeder extends Seeder
             $staff = User::updateOrCreate(
                 ['email' => 'staff@example.com'],
                 [
-                    'name' => 'Staff',
+                    'first_name' => 'Staff',
+                    'last_name' => 'Example',
                     'password' => Hash::make('123qwe'),
                 ]
             );
@@ -64,6 +69,7 @@ class DatabaseSeeder extends Seeder
             Account::updateOrCreate(
                 ['user_id' => $staff->id],
                 [
+                    'username' => 'Staff',
                     'account_role' => 'Staff',
                     'account_status' => 'Available',
                 ]

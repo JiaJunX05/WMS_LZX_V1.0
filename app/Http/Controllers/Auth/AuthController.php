@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Models\Account;
+use App\Exports\UserExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -82,7 +85,7 @@ class AuthController extends Controller
     private function buildUserQuery()
     {
         $query = User::query()->with(['account' => function ($query) {
-            $query->select('id', 'user_id', 'account_role', 'account_status');
+            $query->select('id', 'user_id', 'username', 'account_role', 'account_status', 'user_image');
         }]);
 
         $currentRole = $this->getCurrentUserRole();
@@ -106,7 +109,8 @@ class AuthController extends Controller
             $search = trim($request->input('search'));
             if (strlen($search) >= 2) { // 最小搜索长度
                 $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%$search%")
+                    $query->where('first_name', 'like', "%$search%")
+                          ->orWhere('last_name', 'like', "%$search%")
                           ->orWhere('email', 'like', "%$search%");
                 });
             }
@@ -142,11 +146,13 @@ class AuthController extends Controller
     {
         // 兼容前端字段命名（camelCase -> snake_case）
         $fieldMapping = [
-            'userName' => 'name',
+            'userName' => 'first_name',
             'userEmail' => 'email',
             'userPassword' => 'password',
             'accountRole' => 'account_role',
             'accountStatus' => 'account_status',
+            'firstName' => 'first_name',
+            'lastName' => 'last_name',
         ];
 
         foreach ($fieldMapping as $frontendField => $backendField) {
@@ -164,18 +170,41 @@ class AuthController extends Controller
     private function createUserRecord(array $userData): User
     {
         $user = User::create([
-            'name' => $userData['name'],
+            'first_name' => $userData['first_name'],
+            'last_name' => $userData['last_name'],
             'email' => $userData['email'],
             'password' => Hash::make($userData['password']),
         ]);
 
         Account::create([
             'user_id' => $user->id,
+            'username' => $userData['username'],
             'account_role' => $userData['account_role'],
             'account_status' => $userData['account_status'] ?? 'Available',
+            'user_image' => $userData['user_image'] ?? null,
         ]);
 
         return $user;
+    }
+
+    /**
+     * 處理用戶圖片上傳
+     */
+    private function handleUserImageUpload($file): string
+    {
+        // 確保目錄存在
+        $uploadPath = public_path('assets/images/auth');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        // 生成唯一文件名
+        $filename = 'user_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+        // 移動文件到指定目錄
+        $file->move($uploadPath, $filename);
+
+        return $filename;
     }
 
     /**
@@ -362,16 +391,24 @@ class AuthController extends Controller
             }
 
             $rules = [
-                'name' => 'required|string|max:255',
+                'username' => 'required|string|max:255',
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
                 'password' => 'required|string|min:6|confirmed',
                 'account_role' => 'required|string|in:' . implode(',', self::ROLES),
+                'user_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             ];
 
             $request->validate($rules);
 
-            $userData = $request->only(['name', 'email', 'password', 'account_role']);
+            $userData = $request->only(['username', 'first_name', 'last_name', 'email', 'password', 'account_role']);
             $userData['account_status'] = 'Available';
+
+            // 處理用戶圖片
+            if ($request->hasFile('user_image')) {
+                $userData['user_image'] = $this->handleUserImageUpload($request->file('user_image'));
+            }
 
             $user = $this->createUserRecord($userData);
 
@@ -428,7 +465,8 @@ class AuthController extends Controller
 
                 // 验证数据
                 $validator = \Validator::make($userData, [
-                    'name' => 'required|string|max:255',
+                    'first_name' => 'required|string|max:255',
+                    'last_name' => 'required|string|max:255',
                     'email' => 'required|string|email|max:255',
                     'password' => 'required|string|min:6',
                     'account_role' => 'required|string|in:' . implode(',', self::ROLES),
@@ -535,11 +573,12 @@ class AuthController extends Controller
 
             for ($i = 1; $i <= $userCount; $i++) {
                 try {
-                    $name = $request->input("user_{$i}_name");
+                    $firstName = $request->input("user_{$i}_first_name");
+                    $lastName = $request->input("user_{$i}_last_name");
                     $email = $request->input("user_{$i}_email");
 
-                    if (empty($name) || empty($email)) {
-                        $errors[] = "User {$i}: Name and email are required";
+                    if (empty($firstName) || empty($lastName) || empty($email)) {
+                        $errors[] = "User {$i}: First name, last name and email are required";
                         continue;
                     }
 
@@ -550,7 +589,8 @@ class AuthController extends Controller
                     }
 
                     $user = User::create([
-                        'name' => $name,
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
                         'email' => $email,
                         'password' => Hash::make($request->default_password),
                     ]);
@@ -650,8 +690,10 @@ class AuthController extends Controller
                 $userData = $users->map(function ($user) {
                     return [
                         'id' => $user->id,
-                        'name' => $user->name,
+                        'name' => trim($user->first_name . ' ' . $user->last_name),
+                        'username' => $user->account->username ?? 'N/A',
                         'email' => $user->email,
+                        'user_image' => $user->account->user_image ?? null,
                         'role' => $user->account->account_role ?? 'N/A',
                         'status' => $user->account->account_status ?? 'N/A',
                     ];
@@ -766,8 +808,10 @@ class AuthController extends Controller
 
             return $this->jsonResponse(true, 'User updated successfully', [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => trim($user->first_name . ' ' . $user->last_name),
+                'username' => $user->account->username ?? 'N/A',
                 'email' => $user->email,
+                'user_image' => $user->account->user_image ?? null,
                 'role' => $user->account->account_role ?? 'N/A',
                 'status' => $user->account->account_status ?? 'N/A',
             ]);
@@ -785,9 +829,12 @@ class AuthController extends Controller
     private function buildUpdateValidationRules(User $user, string $currentRole, bool $isUpdatingSelf): array
     {
         $rules = [
-            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:6|confirmed',
+            'user_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
         ];
 
         if (!$isUpdatingSelf) {
@@ -807,7 +854,8 @@ class AuthController extends Controller
     private function updateUserRecord(User $user, Request $request, string $currentRole, bool $isUpdatingSelf): void
     {
         // 更新用户基本信息
-        $user->name = $request->name;
+        $user->first_name = $request->first_name;
+        $user->last_name = $request->last_name;
         $user->email = $request->email;
 
         if ($request->filled('password')) {
@@ -816,24 +864,59 @@ class AuthController extends Controller
 
         $user->save();
 
-        // 更新账户信息（如果不是更新自己）
-        if (!$isUpdatingSelf) {
-            if ($user->account) {
+        // 更新账户信息
+        if ($user->account) {
+            // 更新username
+            $user->account->username = $request->username;
+
+            // 處理圖片上傳和移除
+            if ($request->hasFile('user_image')) {
+                // 刪除舊圖片
+                if ($user->account->user_image) {
+                    $oldImagePath = public_path('assets/images/auth/' . $user->account->user_image);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                }
+
+                // 上傳新圖片
+                $user->account->user_image = $this->handleUserImageUpload($request->file('user_image'));
+            } elseif ($request->has('remove_image') && $request->remove_image === '1') {
+                // 處理圖片移除
+                if ($user->account->user_image) {
+                    $oldImagePath = public_path('assets/images/auth/' . $user->account->user_image);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                    $user->account->user_image = null;
+                }
+            }
+
+            // 如果不是更新自己，可以更新角色和狀態
+            if (!$isUpdatingSelf) {
                 $user->account->account_status = $request->account_status;
 
                 if ($currentRole === 'SuperAdmin' && $request->filled('account_role')) {
                     $user->account->account_role = $request->account_role;
                 }
-
-                $user->account->save();
-            } else {
-                $accountRole = ($currentRole === 'Admin') ? 'Staff' : $request->account_role;
-                Account::create([
-                    'user_id' => $user->id,
-                    'account_role' => $accountRole,
-                    'account_status' => $request->account_status,
-                ]);
             }
+
+            $user->account->save();
+        } else {
+            // 創建新的account記錄
+            $accountData = [
+                'user_id' => $user->id,
+                'username' => $request->username,
+                'account_role' => ($currentRole === 'Admin') ? 'Staff' : $request->account_role,
+                'account_status' => $request->account_status,
+            ];
+
+            // 處理圖片上傳
+            if ($request->hasFile('user_image')) {
+                $accountData['user_image'] = $this->handleUserImageUpload($request->file('user_image'));
+            }
+
+            Account::create($accountData);
         }
     }
 
@@ -865,8 +948,10 @@ class AuthController extends Controller
 
             return $this->jsonResponse(true, 'Account has been set to unavailable status', [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => trim($user->first_name . ' ' . $user->last_name),
+                'username' => $user->account->username ?? 'N/A',
                 'email' => $user->email,
+                'user_image' => $user->account->user_image ?? null,
                 'role' => $user->account->account_role ?? 'N/A',
                 'status' => $user->account->account_status ?? 'N/A',
             ]);
@@ -899,8 +984,10 @@ class AuthController extends Controller
 
             return $this->jsonResponse(true, 'Account has been set to available status', [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => trim($user->first_name . ' ' . $user->last_name),
+                'username' => $user->account->username ?? 'N/A',
                 'email' => $user->email,
+                'user_image' => $user->account->user_image ?? null,
                 'role' => $user->account->account_role ?? 'N/A',
                 'status' => $user->account->account_status ?? 'N/A',
             ]);
@@ -947,8 +1034,10 @@ class AuthController extends Controller
 
             return $this->jsonResponse(true, 'Account role changed successfully', [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => trim($user->first_name . ' ' . $user->last_name),
+                'username' => $user->account->username ?? 'N/A',
                 'email' => $user->email,
+                'user_image' => $user->account->user_image ?? null,
                 'role' => $user->account->account_role ?? 'N/A',
                 'status' => $user->account->account_status ?? 'N/A',
             ]);
@@ -980,7 +1069,7 @@ class AuthController extends Controller
             $user = User::findOrFail($id);
             $userData = [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => trim($user->first_name . ' ' . $user->last_name),
                 'email' => $user->email,
             ];
 
@@ -992,6 +1081,42 @@ class AuthController extends Controller
 
         } catch (\Exception $e) {
             return $this->handleError($request, 'An error occurred while deleting the user. Please try again.', $e);
+        }
+    }
+
+    /**
+     * 導出用戶數據到Excel
+     */
+    public function exportUsers(Request $request)
+    {
+        try {
+            // 獲取篩選條件
+            $filters = [
+                'search' => $request->get('search'),
+                'role' => $request->get('role'),
+                'status' => $request->get('status'),
+                'ids' => $request->get('ids') ? explode(',', $request->get('ids')) : null,
+            ];
+
+            // 生成文件名
+            $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
+            $filename = "users_export_{$timestamp}.xlsx";
+
+            // 使用Laravel Excel導出
+            return Excel::download(new UserExport($filters), $filename);
+
+        } catch (\Exception $e) {
+            Log::error('User export failed: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Export failed: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Export failed. Please try again.');
         }
     }
 }

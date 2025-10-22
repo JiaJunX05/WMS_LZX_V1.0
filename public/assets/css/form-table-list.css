@@ -183,24 +183,7 @@
     padding: 2rem;
 }
 
-/* 项目项 */
-.value-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: white;
-    border: 1px solid var(--gray-200);
-    border-radius: var(--border-radius-sm);
-    transition: all 0.2s ease;
-    animation: slideIn 0.3s ease;
-}
 
-.value-item:hover {
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-1px);
-}
 
 /* 重复项样式 */
 .value-item.duplicate-item {

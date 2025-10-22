@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Gender;
+use App\Exports\GenderExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 /**
  * 性别管理控制器
@@ -494,6 +497,41 @@ class GenderController extends Controller
 
         } catch (\Exception $e) {
             return $this->handleError(request(), 'Failed to delete gender: ' . $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * 導出性別數據到Excel
+     */
+    public function exportGenders(Request $request)
+    {
+        try {
+            // 獲取篩選條件
+            $filters = [
+                'search' => $request->get('search'),
+                'status_filter' => $request->get('status_filter'),
+                'ids' => $request->get('ids') ? explode(',', $request->get('ids')) : null,
+            ];
+
+            // 生成文件名
+            $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
+            $filename = "genders_export_{$timestamp}.xlsx";
+
+            // 使用Laravel Excel導出
+            return Excel::download(new GenderExport($filters), $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Gender export failed: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Export failed: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Export failed. Please try again.');
         }
     }
 }

@@ -87,6 +87,24 @@ class CategoryDashboard {
                 this.fetchCategories(this.currentPage + 1);
             }
         });
+
+        // 全選/取消全選功能
+        $('#select-all').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.category-checkbox').prop('checked', isChecked);
+            this.updateExportButton();
+        });
+
+        // 單個勾選框變化
+        $(document).on('change', '.category-checkbox', () => {
+            this.updateSelectAllCheckbox();
+            this.updateExportButton();
+        });
+
+        // 導出按鈕
+        $('#export-categories-btn').on('click', () => {
+            this.exportSelectedCategories();
+        });
     }
 
     // =============================================================================
@@ -204,6 +222,10 @@ class CategoryDashboard {
         const $tableBody = $('#table-body');
         const html = categories.map(category => this.createCategoryRow(category)).join('');
         $tableBody.html(html);
+
+        // 重置勾選框狀態
+        this.updateSelectAllCheckbox();
+        this.updateExportButton();
     }
 
     createCategoryRow(category) {
@@ -238,18 +260,22 @@ class CategoryDashboard {
 
         return `
             <tr>
-                <td class="ps-4"><span class="text-muted">#${category.id}</span></td>
+                <td class="ps-4">
+                    <div class="table-header">
+                        <input class="category-checkbox" type="checkbox" value="${category.id}" id="category-${category.id}" style="width: 20px; height: 20px;">
+                    </div>
+                </td>
                 <td>
                     ${category.category_image ? `
                         <img src="/assets/images/${category.category_image}" alt="Category Image"
-                             class="preview-image"
-                             onclick="previewImage('/assets/images/${category.category_image}')">
+                             class="preview-image">
                     ` : `
                         <div class="no-image">No Image</div>
                     `}
                 </td>
                 <td>
                     <div class="d-flex align-items-center">
+                        <i class="bi bi-tags me-2 text-primary"></i>
                         <h6 class="mb-0 fw-bold">${category.category_name}</h6>
                     </div>
                 </td>
@@ -367,6 +393,99 @@ class CategoryDashboard {
         });
     }
 
+    // =============================================================================
+    // 勾選框管理模塊 (Checkbox Management Module)
+    // =============================================================================
+
+    /**
+     * 更新全選勾選框狀態
+     */
+    updateSelectAllCheckbox() {
+        const totalCheckboxes = $('.category-checkbox').length;
+        const checkedCheckboxes = $('.category-checkbox:checked').length;
+        const selectAllCheckbox = $('#select-all');
+
+        if (totalCheckboxes === 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            selectAllCheckbox.prop('checked', true).prop('indeterminate', false);
+        } else if (checkedCheckboxes > 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', true);
+        } else {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        }
+    }
+
+    /**
+     * 更新導出按鈕狀態
+     */
+    updateExportButton() {
+        const checkedCount = $('.category-checkbox:checked').length;
+        const exportBtn = $('#export-categories-btn');
+
+        if (checkedCount > 0) {
+            exportBtn.prop('disabled', false);
+            exportBtn.html(`<i class="bi bi-download me-2"></i>Export Data (${checkedCount})`);
+        } else {
+            exportBtn.prop('disabled', true);
+            exportBtn.html('<i class="bi bi-download me-2"></i>Export Data');
+        }
+    }
+
+    /**
+     * 導出選中的分類
+     */
+    exportSelectedCategories() {
+        const selectedIds = $('.category-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) {
+            this.showAlert('Please select at least one category to export', 'warning');
+            return;
+        }
+
+        // 獲取當前篩選條件
+        const search = this.searchTerm || '';
+        const statusFilter = this.statusFilter || '';
+
+        const params = new URLSearchParams({
+            ids: selectedIds.join(','),
+            search: search,
+            status_filter: statusFilter,
+        });
+
+        // 使用新的Excel導出路由
+        const exportUrl = `${window.categoryExportUrl}?${params}`;
+
+        // 顯示加載提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 創建隱藏的鏈接來觸發下載
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延遲隱藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
+    }
+
+    /**
+     * 隱藏提示信息
+     */
+    hideAlert() {
+        const alertElement = document.querySelector('.alert');
+        if (alertElement) {
+            alertElement.remove();
+        }
+    }
+
     /**
      * 顯示警告消息
      * @param {string} message 消息內容
@@ -414,11 +533,6 @@ function bindCategoryCreateEvents() {
         addCategoryBtn.addEventListener('click', addCategory);
     }
 
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
 
     // 排序按鈕
     const sortBtn = document.getElementById('sortCategories');
@@ -426,21 +540,16 @@ function bindCategoryCreateEvents() {
         sortBtn.addEventListener('click', toggleSortOrder);
     }
 
-    // 快速添加按鈕
-    const addCommonCategoriesBtn = document.getElementById('addCommonCategories');
-    if (addCommonCategoriesBtn) {
-        addCommonCategoriesBtn.addEventListener('click', addCommonCategories);
-    }
-
-    const addFashionCategoriesBtn = document.getElementById('addFashionCategories');
-    if (addFashionCategoriesBtn) {
-        addFashionCategoriesBtn.addEventListener('click', addFashionCategories);
+    // 清除表單按鈕
+    const clearFormBtn = document.getElementById('clearForm');
+    if (clearFormBtn) {
+        clearFormBtn.addEventListener('click', clearForm);
     }
 
     // 事件委托：刪除分類按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
             removeCategory(index);
         }
@@ -517,7 +626,7 @@ function addCategoryToArray(categoryName, categoryStatus, categoryImageFile) {
     }
 
     // 清空圖片（不顯示消息）
-    resetImageWithoutMessage();
+    resetImageWithoutMessage('category');
 
     // 調試信息：檢查添加後的狀態選擇
     console.log('After adding category, current status selection:', categoryStatus);
@@ -560,33 +669,47 @@ function updateCategoryList() {
     container.innerHTML = '';
 
     categoryList.forEach((item, index) => {
-        const categoryItem = document.createElement('div');
+        const categoryItem = document.createElement('tr');
 
         // 檢查是否為重複項
         const isDuplicate = isCategoryExists(categoryList, item.categoryName) &&
             categoryList.filter(i => i.categoryName.toLowerCase() === item.categoryName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
+        const baseClasses = 'value-item';
+        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle' : '';
 
         categoryItem.className = `${baseClasses} ${duplicateClasses}`;
 
         categoryItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-2">
+            <td class="text-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-                ${item.categoryImageFile ?
-                    `<img src="${URL.createObjectURL(item.categoryImageFile)}" alt="${item.categoryName}" class="item-image me-2" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;">` :
-                    '<div class="item-image-placeholder me-2" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>'
-                }
-                <span class="item-value-text fw-medium">${item.categoryName}</span>
-                ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-3 flex-shrink-0">
+                        ${item.categoryImageFile ?
+                            `<img src="${URL.createObjectURL(item.categoryImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Category Image">` :
+                            `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                                <i class="bi bi-tags text-muted fs-5"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="fw-bold text-dark mb-1 text-truncate">
+                            <i class="bi bi-tags me-2 text-primary"></i>${item.categoryName}
+                        </div>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                    </div>
+                </div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </td>
         `;
         container.appendChild(categoryItem);
     });
@@ -611,7 +734,7 @@ function showCategoryValuesArea() {
     // 顯示分類值區域
     const categoryValuesArea = document.getElementById('categoryValuesArea');
     if (categoryValuesArea) {
-        categoryValuesArea.style.display = 'block';
+        categoryValuesArea.classList.remove('d-none');
     }
 
     // 更新分類名稱顯示
@@ -620,7 +743,7 @@ function showCategoryValuesArea() {
     // 顯示提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'block';
+        submitSection.classList.remove('d-none');
     }
 }
 
@@ -631,19 +754,19 @@ function hideAllAreas() {
     // 隱藏分類值區域
     const categoryValuesArea = document.getElementById('categoryValuesArea');
     if (categoryValuesArea) {
-        categoryValuesArea.style.display = 'none';
+        categoryValuesArea.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const categoryInputPrompt = document.getElementById('categoryInputPrompt');
     if (categoryInputPrompt) {
-        categoryInputPrompt.style.display = 'none';
+        categoryInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'none';
+        submitSection.classList.add('d-none');
     }
 
     // 顯示初始消息
@@ -686,9 +809,6 @@ function clearForm() {
 
     // 隱藏所有區域
     hideAllAreas();
-
-    // 更新UI
-    updateUI();
 }
 
 /**
@@ -703,9 +823,6 @@ function updateUI() {
 
     // 更新分類名稱顯示
     updateCategoryNameDisplay();
-
-    // 更新配置摘要
-    updateConfigSummary();
 
     // 如果沒有分類，隱藏所有區域並顯示初始狀態
     if (categoryList.length === 0) {
@@ -763,19 +880,6 @@ function updateCategoryRangeDisplay() {
     }
 }
 
-/**
- * 更新配置摘要
- */
-function updateConfigSummary() {
-    // 更新分類範圍顯示
-    updateCategoryRangeDisplay();
-
-    // 顯示配置摘要
-    const configSummary = document.getElementById('configSummary');
-    if (configSummary) {
-        configSummary.style.display = 'block';
-    }
-}
 
 /**
  * 切換排序順序
@@ -828,84 +932,6 @@ function sortCategoryValuesList() {
     });
 }
 
-/**
- * 添加常用分類
- */
-function addCommonCategories() {
-    // Common categories
-    const commonCategories = [
-        'Electronics',
-        'Clothing & Accessories',
-        'Home & Garden',
-        'Beauty & Personal Care',
-        'Sports & Outdoors',
-        'Food & Beverages',
-        'Books & Stationery',
-        'Baby & Kids',
-        'Automotive',
-        'Pet Supplies'
-    ];
-
-    addMultipleCategories(commonCategories);
-}
-
-/**
- * 添加時尚分類
- */
-function addFashionCategories() {
-    // Fashion categories
-    const fashionCategories = [
-        'Men\'s Clothing',
-        'Women\'s Clothing',
-        'Kids\' Clothing',
-        'Shoes',
-        'Bags',
-        'Watches',
-        'Jewelry',
-        'Eyewear',
-        'Hats',
-        'Scarves',
-        'Underwear',
-        'Socks'
-    ];
-
-    addMultipleCategories(fashionCategories);
-}
-
-/**
- * 添加多個分類
- * @param {Array} categories 分類數組
- */
-function addMultipleCategories(categories) {
-    let addedCount = 0;
-    let skippedCount = 0;
-
-    categories.forEach(category => {
-        if (!isCategoryExists(categoryList, category)) {
-            addCategoryToList(category, 'Available');
-            addedCount++;
-        } else {
-            skippedCount++;
-        }
-    });
-
-    // 顯示結果
-    if (addedCount > 0 && skippedCount === 0) {
-        showAlert(`Successfully added ${addedCount} categories`, 'success');
-    } else if (addedCount > 0 && skippedCount > 0) {
-        showAlert(`Added ${addedCount} categories, ${skippedCount} already existed`, 'info');
-    } else if (skippedCount > 0) {
-        showAlert('All categories already exist in the list', 'warning');
-    }
-
-    // 更新UI
-    updateUI();
-
-    // 如果有添加分類，顯示右邊的表格
-    if (addedCount > 0) {
-        showCategoryValuesArea();
-    }
-}
 
 /**
  * 添加分類到列表
@@ -938,21 +964,7 @@ function addCategoryToList(categoryName, categoryStatus = 'Available', categoryI
 /**
  * 重置圖片（不顯示消息）
  */
-function resetImageWithoutMessage() {
-    console.log('resetImageWithoutMessage called');
-    if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
-        console.log('Calling window.ImageSystem.resetImage');
-        window.ImageSystem.resetImage('imageUploadArea', {
-            showMessage: false,
-            imageInputId: 'category_image',
-            previewImageId: 'preview-image',
-            previewIconId: 'preview-icon',
-            imageUploadContentId: 'imageUploadContent'
-        });
-    } else {
-        console.log('window.ImageSystem.resetImage not available');
-    }
-}
+// resetImageWithoutMessage 函数已移至 image-system.js
 
 /**
  * 提交分類表單
@@ -1099,164 +1111,58 @@ function validateUpdateForm() {
     return true;
 }
 
-/**
- * Update 頁面圖片預覽處理
- * @param {Event} event 文件選擇事件
- */
-function handleUpdateImagePreview(event) {
-    const file = event.target.files[0];
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-
-    if (file) {
-        // 驗證文件類型
-        if (!file.type.startsWith('image/')) {
-            showAlert('Please select a valid image file', 'warning');
-            return;
-        }
-
-        // 驗證文件大小 (5MB限制)
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert('Image size must be less than 5MB', 'warning');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if (previewContainer) {
-                previewContainer.innerHTML = `
-                    <img src="${e.target.result}" alt="Preview" id="preview-image"
-                         class="img-fluid rounded-3" style="max-width: 100%; max-height: 280px; object-fit: contain;">
-                    <div class="image-remove-btn" title="Remove image">
-                        <i class="bi bi-x"></i>
-                    </div>
-                `;
-
-                // 添加刪除按鈕事件
-                const removeBtn = previewContainer.querySelector('.image-remove-btn');
-                if (removeBtn) {
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        removeUpdateImage();
-                    });
-                }
-
-                // 顯示移除圖片按鈕
-                if (removeImageBtn) {
-                    removeImageBtn.style.display = 'block';
-                }
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-/**
- * Update 頁面圖片移除
- */
-function removeUpdateImage() {
-    // 確認是否要移除圖片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件輸入
-        imageInput.value = '';
-
-        // 添加隱藏的 remove_image 參數到表單
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 恢復原始內容
-        const originalContent = previewContainer.getAttribute('data-original-content');
-        if (originalContent) {
-            previewContainer.innerHTML = originalContent;
-        } else {
-            // 如果沒有原始內容，顯示默認狀態
-            previewContainer.innerHTML = `
-                <div class="text-center text-muted">
-                    <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                    <p class="mb-0">No image uploaded</p>
-                    <small>Upload an image to see preview</small>
-                </div>
-            `;
-        }
-
-        // 隱藏移除圖片按鈕
-        if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
-
-/**
- * Update 頁面移除圖片按鈕處理
- */
-function handleRemoveImageButton() {
-    // 確認是否要移除圖片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件輸入
-        imageInput.value = '';
-
-        // 添加隱藏的 remove_image 參數到表單
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 顯示默認狀態
-        previewContainer.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                <p class="mb-0">No image uploaded</p>
-                <small>Upload an image to see preview</small>
-            </div>
-        `;
-
-        // 更新 data-original-content 屬性
-        previewContainer.setAttribute('data-original-content', previewContainer.innerHTML);
-
-        // 隱藏移除圖片按鈕
-        if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
+// 图片处理函数已移至 image-system.js
 
 /**
  * 初始化分類更新頁面
  */
 function initializeCategoryUpdate() {
     bindCategoryEvents();
+
+    // Update 頁面表單提交
+    const updateForm = document.querySelector('form[action*="update"]');
+    if (updateForm) {
+        updateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleUpdateFormSubmit(this);
+        });
+    }
+
+    // Update 頁面圖片預覽
+    const updateImageInput = document.getElementById('input_image');
+    if (updateImageInput) {
+        updateImageInput.addEventListener('change', handleUpdateImagePreview);
+    }
+
+    // Update 頁面圖片上傳區域點擊事件
+    const imagePreviewArea = document.getElementById('image-preview');
+    if (imagePreviewArea && updateImageInput) {
+        imagePreviewArea.addEventListener('click', function(e) {
+            // 只檢查是否點擊了移除按鈕
+            if (e.target.closest('.image-remove-btn')) {
+                return; // 不觸發文件選擇
+            }
+            updateImageInput.click();
+        });
+    }
+
+    // Update 頁面移除圖片按鈕
+    const removeImageBtn = document.getElementById('removeImage');
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', handleRemoveImageButton);
+
+        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
+        const previewContainer = document.getElementById('image-preview');
+        if (previewContainer) {
+            const hasImage = previewContainer.querySelector('img');
+            if (!hasImage) {
+                removeImageBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // Update 頁面狀態卡片初始化
+    initializeStatusCards();
 }
 
 // =============================================================================
@@ -1649,11 +1555,6 @@ function selectStatusCard(cardElement) {
  * 預覽圖片
  * @param {string} imageSrc 圖片源
  */
-function previewImage(imageSrc) {
-    if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.showImagePreview) {
-        window.ImageSystem.showImagePreview(imageSrc);
-    }
-}
 
 // =============================================================================
 // 頁面初始化 (Page Initialization)

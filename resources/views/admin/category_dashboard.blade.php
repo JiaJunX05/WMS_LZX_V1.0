@@ -144,6 +144,10 @@
                     <h5 class="mb-0 fw-semibold">Category List</h5>
                     <span class="badge bg-light text-dark" id="results-count">Loading...</span>
                 </div>
+                <button class="btn btn-outline-success" id="export-categories-btn" disabled>
+                    <i class="bi bi-download me-2"></i>
+                    Export Data
+                </button>
             </div>
         </div>
         <div class="card-body p-0">
@@ -151,9 +155,13 @@
                 <table class="table custom-table mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
+                            <th class="ps-4" style="width: 5%">
+                                <div class="table-header">
+                                    <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
+                                </div>
+                            </th>
                             <th style="width: 10%"><div class="table-header">CATEGORY IMAGE</div></th>
-                            <th style="width: 60%"><div class="table-header">CATEGORY NAME</div></th>
+                            <th style="width: 65%"><div class="table-header">CATEGORY NAME</div></th>
                             <th style="width: 10%"><div class="table-header">CATEGORY STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
                         </tr>
@@ -201,19 +209,6 @@
     </div>
 </div>
 
-<!-- Image Preview Modal -->
-<div class="modal fade" id="imagePreviewModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center p-0">
-                <img id="previewImage" src="" alt="Preview" class="img-fluid">
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @section("scripts")
@@ -224,10 +219,10 @@
     window.deleteCategoryUrl = "{{ route('admin.category.destroy', ['id' => ':id']) }}";
     window.availableCategoryUrl = "{{ route('admin.category.available', ['id' => ':id']) }}";
     window.unavailableCategoryUrl = "{{ route('admin.category.unavailable', ['id' => ':id']) }}";
+    window.categoryExportUrl = "{{ route('admin.category.export') }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
-
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>

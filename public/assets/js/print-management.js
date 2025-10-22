@@ -297,15 +297,7 @@ class PrintDashboard {
      * 顯示無結果信息
      */
     showNoResults() {
-        $previewGrid.html(`
-            <div class="col-12 text-center py-5">
-                <div class="text-muted">
-                    <i class="bi bi-search display-4"></i>
-                    <h4 class="mt-3">No products found</h4>
-                    <p class="mb-0">Try adjusting your search or filter criteria</p>
-                </div>
-            </div>
-        `);
+        $previewGrid.hide();
         $("#no-results").show();
     }
 

@@ -144,6 +144,10 @@
                     <h5 class="mb-0 fw-semibold">Zone List</h5>
                     <span class="badge bg-light text-dark" id="results-count">Loading...</span>
                 </div>
+                <button class="btn btn-outline-success" id="export-zones-btn" disabled>
+                    <i class="bi bi-download me-2"></i>
+                    Export Data
+                </button>
             </div>
         </div>
         <div class="card-body p-0">
@@ -151,10 +155,13 @@
                 <table class="table custom-table mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
+                            <th class="ps-4" style="width: 5%">
+                                <div class="table-header">
+                                    <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
+                                </div>
+                            </th>
                             <th style="width: 10%"><div class="table-header">ZONE IMAGE</div></th>
-                            <th style="width: 10%"><div class="table-header">ZONE NAME</div></th>
-                            <th style="width: 50%"><div class="table-header">ZONE LOCATION</div></th>
+                            <th style="width: 65%"><div class="table-header">ZONE INFORMATION</div></th>
                             <th style="width: 10%"><div class="table-header">ZONE STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
                         </tr>
@@ -162,7 +169,7 @@
                     <tbody id="table-body">
                         <!-- Loading State -->
                         <tr>
-                            <td colspan="6" class="text-center py-4">
+                            <td colspan="5" class="text-center py-4">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
@@ -201,20 +208,6 @@
         </nav>
     </div>
 </div>
-
-<!-- Image Preview Modal -->
-<div class="modal fade" id="imagePreviewModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center p-0">
-                <img id="previewImage" src="" alt="Preview" class="img-fluid">
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @section("scripts")
@@ -225,6 +218,7 @@
     window.deleteZoneUrl = "{{ route('admin.zone.destroy', ['id' => ':id']) }}";
     window.availableZoneUrl = "{{ route('admin.zone.available', ['id' => ':id']) }}";
     window.unavailableZoneUrl = "{{ route('admin.zone.unavailable', ['id' => ':id']) }}";
+    window.zoneExportUrl = "{{ route('admin.zone.export') }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

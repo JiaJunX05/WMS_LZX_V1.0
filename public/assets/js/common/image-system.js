@@ -22,7 +22,7 @@
  * 各模組的標準圖片處理配置
  */
 const IMAGE_CONFIGS = {
-    // 貨架管理 (Rack Management)
+    // 基本模組配置
     rack: {
         createImageInputId: 'rack_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -32,8 +32,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 區域管理 (Zone Management)
     zone: {
         createImageInputId: 'zone_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -43,8 +41,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 品牌管理 (Brand Management)
     brand: {
         createImageInputId: 'brand_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -54,8 +50,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 分類管理 (Category Management)
     category: {
         createImageInputId: 'category_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -65,8 +59,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 子分類管理 (Subcategory Management)
     subcategory: {
         createImageInputId: 'subcategory_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -76,8 +68,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 顏色管理 (Color Management)
     color: {
         createImageInputId: 'color_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -87,8 +77,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 性別管理 (Gender Management)
     gender: {
         createImageInputId: 'gender_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -99,7 +87,7 @@ const IMAGE_CONFIGS = {
         updatePreviewContainerId: 'image-preview'
     },
 
-    // 尺碼庫管理 (Library Management)
+    // 擴展模組配置
     library: {
         createImageInputId: 'library_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -109,8 +97,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 模板管理 (Template Management)
     template: {
         createImageInputId: 'template_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -120,8 +106,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 映射管理 (Mapping Management)
     mapping: {
         createImageInputId: 'mapping_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -131,8 +115,6 @@ const IMAGE_CONFIGS = {
         updateImageInputId: 'input_image',
         updatePreviewContainerId: 'image-preview'
     },
-
-    // 位置管理 (Location Management)
     location: {
         createImageInputId: 'location_image',
         createImageUploadAreaId: 'imageUploadArea',
@@ -143,24 +125,28 @@ const IMAGE_CONFIGS = {
         updatePreviewContainerId: 'image-preview'
     },
 
-    // 产品管理 (Product Management)
+    // 特殊模組配置
     product: {
-        // 封面图片配置
         coverImageInputId: 'cover_image',
         coverImageUploadAreaId: 'cover-image-area',
         coverPreviewImageId: 'cover-preview',
         coverUploadPlaceholderId: 'cover-upload-placeholder',
         removeCoverBtnId: 'remove-cover-image',
-
-        // 详细图片配置
         detailImagesInputId: 'detail_images',
         detailImagesGridId: 'detail-images-grid',
         addDetailImageBtnId: 'add-detail-image',
-
-        // 更新页面配置
         updateCoverImageInputId: 'cover_image',
         updateDetailImagesInputId: 'detail_images',
         updateDetailImagesGridId: 'detail-images-grid'
+    },
+    auth: {
+        userImageInputId: 'user_image',
+        userImageUploadAreaId: 'user-image-area',
+        userPreviewImageId: 'user-preview',
+        userUploadPlaceholderId: 'user-upload-placeholder',
+        removeUserImageBtnId: 'remove-user-image',
+        updateUserImageInputId: 'user_image',
+        updateUserPreviewContainerId: 'user-image-preview'
     }
 };
 
@@ -170,7 +156,7 @@ const IMAGE_CONFIGS = {
  * @returns {Object} 配置對象
  */
 function getImageConfig(moduleName) {
-    return IMAGE_CONFIGS[moduleName] || IMAGE_CONFIGS.rack; // 默認使用 rack 配置
+    return IMAGE_CONFIGS[moduleName] || IMAGE_CONFIGS.rack;
 }
 
 // =============================================================================
@@ -258,42 +244,6 @@ function handleCreateImagePreview(event, options = {}) {
     reader.readAsDataURL(file);
 }
 
-/**
- * 圖片預覽處理 - 用於 Update 頁面
- * @param {Event} event 文件選擇事件
- * @param {Object} options 配置選項
- */
-function handleUpdateImagePreview(event, options = {}) {
-    const {
-        previewContainerId = 'image-preview'
-    } = options;
-
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // 驗證文件
-    const validation = validateImageFile(file);
-    if (!validation.isValid) {
-        if (typeof showAlert === 'function') {
-            showAlert(validation.errors.join(', '), 'warning');
-        } else {
-            alert(validation.errors.join(', '));
-        }
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const previewContainer = document.getElementById(previewContainerId);
-        if (previewContainer) {
-            previewContainer.innerHTML = `
-                <img src="${e.target.result}" alt="Preview" id="preview-image"
-                     class="img-fluid rounded-3" style="max-width: 100%; max-height: 280px; object-fit: contain;">
-            `;
-        }
-    };
-    reader.readAsDataURL(file);
-}
 
 /**
  * 圖片預覽 - 用於 Dashboard 頁面的模態框顯示
@@ -325,7 +275,7 @@ function addImageRemoveButton(imageUploadAreaId = 'imageUploadArea', options = {
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'image-remove-btn';
-        removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+        removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
         removeBtn.title = 'Remove image';
         removeBtn.addEventListener('click', () => removeImage(imageUploadAreaId, options));
         imageUploadArea.appendChild(removeBtn);
@@ -608,44 +558,6 @@ function generateNoImageHTML(options = {}) {
 // 導出函數 (Export Functions)
 // =============================================================================
 
-// 將函數添加到全局作用域，以便其他文件使用
-window.ImageSystem = {
-    // 配置管理
-    IMAGE_CONFIGS,
-    getImageConfig,
-    bindModuleImageEvents,
-
-    // 驗證
-    validateImageFile,
-
-    // 預覽
-    handleCreateImagePreview,
-    handleUpdateImagePreview,
-    showImagePreview,
-
-    // 管理
-    addImageRemoveButton,
-    removeImage,
-    resetImage,
-
-    // 拖拽
-    setupDragAndDrop,
-
-    // 事件綁定
-    bindImageUploadEvents,
-
-    // HTML生成
-    generateCreateImageHTML,
-    generateUpdateImageHTML,
-
-    // 工具
-    generateImagePreviewHTML,
-    generateNoImageHTML
-};
-
-// 為了向後兼容，也將主要函數添加到全局作用域
-window.ImageHandler = window.ImageSystem;
-window.ImageConfigs = window.ImageSystem;
 
 // =============================================================================
 // 产品图片特殊处理功能 (Product Image Special Functions)
@@ -929,12 +841,389 @@ function setupProductDragAndDrop() {
     });
 }
 
-// 向後兼容的函數別名
-window.previewImage = showImagePreview;
-window.handleImagePreview = handleCreateImagePreview;
-window.previewUploadedImage = handleUpdateImagePreview;
+// =============================================================================
+// 用戶圖片特殊處理功能 (User Image Special Functions)
+// =============================================================================
 
-// 产品图片处理函数
+/**
+ * 處理用戶頭像預覽
+ * @param {File} file 圖片文件
+ */
+function handleUserImagePreview(file) {
+    if (!file.type.startsWith('image/')) {
+        if (typeof showAlert === 'function') {
+            showAlert('Please select an image file', 'warning');
+        } else {
+            alert('Please select an image file');
+        }
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const userUploadPlaceholder = document.getElementById('user-upload-placeholder');
+        const userPreview = document.getElementById('user-preview');
+        const removeUserImageBtn = document.getElementById('remove-user-image');
+
+        // 隱藏上傳提示
+        if (userUploadPlaceholder) {
+            userUploadPlaceholder.classList.add('d-none');
+        }
+
+        // 顯示圖片預覽
+        if (userPreview) {
+            userPreview.src = e.target.result;
+            userPreview.classList.remove('d-none');
+        }
+
+        // 顯示移除按鈕
+        if (removeUserImageBtn) {
+            removeUserImageBtn.classList.remove('d-none');
+        }
+
+        // 顯示成功提示
+        if (typeof showAlert === 'function') {
+            showAlert('Profile image added successfully', 'success');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 移除用戶頭像
+ */
+function removeUserImage() {
+    if (!confirm('Are you sure you want to remove this profile image?')) {
+        return;
+    }
+
+    const userImageInput = document.getElementById('user_image');
+    const userPreview = document.getElementById('user-preview');
+    const removeUserImageBtn = document.getElementById('remove-user-image');
+    const userUploadPlaceholder = document.getElementById('user-upload-placeholder');
+
+    // 重置用戶圖片
+    if (userImageInput) userImageInput.value = '';
+    if (userPreview) {
+        userPreview.src = '';
+        userPreview.classList.add('d-none');
+    }
+    if (removeUserImageBtn) removeUserImageBtn.classList.add('d-none');
+    if (userUploadPlaceholder) userUploadPlaceholder.classList.remove('d-none');
+
+    // 如果是更新页面，添加 remove_image 字段
+    const form = document.querySelector('form[action*="update"]');
+    if (form) {
+        let removeImageInput = form.querySelector('input[name="remove_image"]');
+        if (!removeImageInput) {
+            removeImageInput = document.createElement('input');
+            removeImageInput.type = 'hidden';
+            removeImageInput.name = 'remove_image';
+            form.appendChild(removeImageInput);
+        }
+        removeImageInput.value = '1';
+    }
+
+    if (typeof showAlert === 'function') {
+        showAlert('Profile image removed successfully', 'success');
+    }
+}
+
+/**
+ * 綁定用戶圖片事件
+ */
+function bindUserImageEvents() {
+    // 用戶頭像事件 - 使用 auth 配置中的 ID
+    const userImageArea = document.getElementById('user-image-area');
+    const userImageInput = document.getElementById('user_image');
+    const removeUserImageBtn = document.getElementById('remove-user-image');
+
+    if (userImageArea && userImageInput) {
+        userImageArea.addEventListener('click', function() {
+            userImageInput.click();
+        });
+
+        userImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleUserImagePreview(file);
+            }
+        });
+
+        if (removeUserImageBtn) {
+            removeUserImageBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeUserImage();
+            });
+        }
+
+        // 拖拽上傳
+        setupUserDragAndDrop();
+    }
+}
+
+/**
+ * 設置用戶拖拽上傳
+ */
+function setupUserDragAndDrop() {
+    const userImageArea = document.getElementById('user-image-area');
+
+    if (!userImageArea) return;
+
+    userImageArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#696cff';
+        this.style.backgroundColor = '#f0f0ff';
+    });
+
+    userImageArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#d9dee3';
+        this.style.backgroundColor = '#f8f9fa';
+    });
+
+    userImageArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#d9dee3';
+        this.style.backgroundColor = '#f8f9fa';
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const userImageInput = document.getElementById('user_image');
+            if (userImageInput) {
+                userImageInput.files = files;
+                handleUserImagePreview(files[0]);
+            }
+        }
+    });
+}
+
+
+// =============================================================================
+// 核心圖片處理功能 (Core Image Processing Functions)
+// =============================================================================
+
+/**
+ * 處理更新頁面圖片預覽（統一版本）
+ * @param {Event} event 文件選擇事件
+ * @param {Object} options 配置選項
+ */
+function handleUpdateImagePreview(event, options = {}) {
+    const {
+        previewContainerId = 'image-preview'
+    } = options;
+
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 驗證文件
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+        if (typeof showAlert === 'function') {
+            showAlert(validation.errors.join(', '), 'warning');
+        } else {
+            alert(validation.errors.join(', '));
+        }
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const previewContainer = document.getElementById(previewContainerId);
+        const removeImageBtn = document.getElementById('removeImage');
+
+        if (previewContainer) {
+            previewContainer.innerHTML = `
+                <img src="${e.target.result}" alt="Preview" id="preview-image"
+                     class="preview-image">
+                <div class="image-remove-btn" title="Remove image">
+                    <i class="bi bi-trash"></i>
+                </div>
+            `;
+
+            // 添加刪除按鈕事件
+            const removeBtn = previewContainer.querySelector('.image-remove-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeUpdateImage();
+                });
+            }
+
+            // 顯示移除圖片按鈕
+            if (removeImageBtn) {
+                removeImageBtn.style.display = 'block';
+            }
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 更新页面图片移除
+ */
+function removeUpdateImage() {
+    // 确认是否要移除图片
+    if (!confirm('Are you sure you want to remove this image?')) {
+        return;
+    }
+
+    const imageInput = document.getElementById('input_image');
+    const previewContainer = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('removeImage');
+    const form = document.querySelector('form[action*="update"]');
+
+    if (imageInput && previewContainer && form) {
+        // 重置文件输入
+        imageInput.value = '';
+
+        // 添加隐藏的 remove_image 参数到表单
+        let removeImageInput = form.querySelector('input[name="remove_image"]');
+        if (!removeImageInput) {
+            removeImageInput = document.createElement('input');
+            removeImageInput.type = 'hidden';
+            removeImageInput.name = 'remove_image';
+            form.appendChild(removeImageInput);
+        }
+        removeImageInput.value = '1';
+
+        // 恢复原始内容
+        const originalContent = previewContainer.getAttribute('data-original-content');
+        if (originalContent) {
+            previewContainer.innerHTML = originalContent;
+        } else {
+            // 如果没有原始内容，显示默认状态
+            previewContainer.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="bi bi-image fs-1 mb-3 d-block"></i>
+                    <p class="mb-0">No image uploaded</p>
+                    <small>Upload an image to see preview</small>
+                </div>
+            `;
+        }
+
+        // 隐藏移除图片按钮
+        if (removeImageBtn) {
+            removeImageBtn.style.display = 'none';
+        }
+
+        showAlert('Image removed successfully', 'success');
+    }
+}
+
+/**
+ * 更新页面移除图片按钮处理
+ */
+function handleRemoveImageButton() {
+    // 确认是否要移除图片
+    if (!confirm('Are you sure you want to remove this image?')) {
+        return;
+    }
+
+    const imageInput = document.getElementById('input_image');
+    const previewContainer = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('removeImage');
+    const form = document.querySelector('form[action*="update"]');
+
+    if (imageInput && previewContainer && form) {
+        // 重置文件输入
+        imageInput.value = '';
+
+        // 添加隐藏的 remove_image 参数到表单
+        let removeImageInput = form.querySelector('input[name="remove_image"]');
+        if (!removeImageInput) {
+            removeImageInput = document.createElement('input');
+            removeImageInput.type = 'hidden';
+            removeImageInput.name = 'remove_image';
+            form.appendChild(removeImageInput);
+        }
+        removeImageInput.value = '1';
+
+        // 显示默认状态
+        previewContainer.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-image fs-1 mb-3 d-block"></i>
+                <p class="mb-0">No image uploaded</p>
+                <small>Upload an image to see preview</small>
+            </div>
+        `;
+
+        // 更新 data-original-content 属性
+        previewContainer.setAttribute('data-original-content', previewContainer.innerHTML);
+
+        // 隐藏移除图片按钮
+        if (removeImageBtn) {
+            removeImageBtn.style.display = 'none';
+        }
+
+        showAlert('Image removed successfully', 'success');
+    }
+}
+
+/**
+ * Create 页面重置图片（不显示消息）
+ * @param {string} moduleName 模块名称
+ */
+function resetImageWithoutMessage(moduleName) {
+    console.log('resetImageWithoutMessage called for:', moduleName);
+    if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
+        console.log('Calling window.ImageSystem.resetImage');
+        window.ImageSystem.resetImage('imageUploadArea', {
+            showMessage: false,
+            imageInputId: `${moduleName}_image`,
+            previewImageId: 'preview-image',
+            previewIconId: 'preview-icon',
+            imageUploadContentId: 'imageUploadContent'
+        });
+    } else {
+        console.log('window.ImageSystem.resetImage not available');
+    }
+}
+
+// =============================================================================
+// 導出函數 (Export Functions)
+// =============================================================================
+
+// 主要圖片系統導出
+window.ImageSystem = {
+    // 配置管理
+    IMAGE_CONFIGS,
+    getImageConfig,
+    bindModuleImageEvents,
+
+    // 驗證
+    validateImageFile,
+
+    // 預覽
+    handleCreateImagePreview,
+    handleUpdateImagePreview,
+    showImagePreview,
+
+    // 管理
+    addImageRemoveButton,
+    removeImage,
+    resetImage,
+
+    // 拖拽
+    setupDragAndDrop,
+
+    // 事件綁定
+    bindImageUploadEvents,
+
+    // HTML生成
+    generateCreateImageHTML,
+    generateUpdateImageHTML,
+
+    // 工具
+    generateImagePreviewHTML,
+    generateNoImageHTML
+};
+
+// 向後兼容的函數別名
+window.ImageHandler = window.ImageSystem;
+window.ImageConfigs = window.ImageSystem;
+
+// 產品圖片處理函數
 window.handleProductCoverImagePreview = handleProductCoverImagePreview;
 window.removeProductCoverImage = removeProductCoverImage;
 window.handleProductDetailImagePreview = handleProductDetailImagePreview;
@@ -943,3 +1232,20 @@ window.updateProductAddButtonPosition = updateProductAddButtonPosition;
 window.resetProductAddButtonToOriginalState = resetProductAddButtonToOriginalState;
 window.bindProductImageEvents = bindProductImageEvents;
 window.setupProductDragAndDrop = setupProductDragAndDrop;
+
+// 用戶圖片處理函數
+window.handleUserImagePreview = handleUserImagePreview;
+window.removeUserImage = removeUserImage;
+window.bindUserImageEvents = bindUserImageEvents;
+window.setupUserDragAndDrop = setupUserDragAndDrop;
+
+// 通用更新頁面圖片處理函數
+window.handleUpdateImagePreview = handleUpdateImagePreview;
+window.removeUpdateImage = removeUpdateImage;
+window.handleRemoveImageButton = handleRemoveImageButton;
+window.resetImageWithoutMessage = resetImageWithoutMessage;
+
+// 向後兼容的函數別名
+window.previewImage = showImagePreview;
+window.handleImagePreview = handleCreateImagePreview;
+window.previewUploadedImage = handleUpdateImagePreview;

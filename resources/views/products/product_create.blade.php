@@ -108,7 +108,7 @@
                                     <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                 </div>
                                 <img id="cover-preview" class="preview-image d-none" alt="Cover Preview">
-                                <button type="button" class="remove-image-btn d-none" id="remove-cover-image">
+                                <button type="button" class="image-remove-btn d-none" id="remove-cover-image">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>

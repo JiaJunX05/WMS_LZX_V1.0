@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">
 
@@ -48,106 +49,169 @@
     {{-- ========================================== --}}
     {{-- 用户信息更新界面 (User Update Interface) --}}
     {{-- ========================================== --}}
-    <div class="card shadow-sm border-0">
-        <div class="row g-0">
-            {{-- 左侧配置区域 --}}
-            <div class="col-md-4">
-                <div class="config-section d-flex flex-column h-100 bg-light p-4">
-                    {{-- 配置标题 --}}
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h6 class="mb-0 fw-bold text-primary">
-                            <i class="bi bi-gear-fill me-2"></i>Configuration
-                        </h6>
-                        <span class="badge bg-white text-dark border px-3 py-2">Update</span>
-                    </div>
+    {{-- 用户信息更新表单 --}}
+    <form action="{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', $user->id) : route('admin.users.update', $user->id) }}" method="post" id="updateUserForm" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
 
-                    {{-- 当前用户信息显示 --}}
-                    <div class="alert alert-info border-0 mb-4">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Current User</strong>
+        <div class="card shadow-sm border-0">
+            <div class="row g-0">
+                {{-- 左侧配置区域 --}}
+                <div class="col-md-4">
+                    <div class="config-section d-flex flex-column h-100 bg-light p-4">
+                        {{-- 配置标题 --}}
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="mb-0 fw-bold text-primary">
+                                <i class="bi bi-gear-fill me-2"></i>Configuration
+                            </h6>
+                            <span class="badge bg-white text-dark border px-3 py-2">Update</span>
                         </div>
-                        <div class="small">
-                            <div class="mb-1">
-                                <i class="bi bi-person me-2 text-muted"></i>
-                                <span>Name: <strong>{{ $user->name }}</strong></span>
-                            </div>
-                            <div class="mb-1">
-                                <i class="bi bi-envelope me-2 text-muted"></i>
-                                <span>Email: <strong>{{ $user->email }}</strong></span>
-                            </div>
-                            <div class="mb-1">
-                                <i class="bi bi-shield-check me-2 text-muted"></i>
-                                <span>Role: <strong>{{ $user->account->account_role ?? 'N/A' }}</strong></span>
-                            </div>
-                            <div>
-                                <i class="bi bi-toggle-on me-2 text-muted"></i>
-                                <span>Status: <strong>{{ $user->account->account_status ?? 'N/A' }}</strong></span>
-                            </div>
-                        </div>
-                    </div>
 
-                    {{-- 统计信息 --}}
-                    <div class="mt-auto">
-                        <div class="row text-center">
-                            <div class="col-12">
-                                <div class="h4 text-primary mb-0">1</div>
-                                <small class="text-muted">User Account</small>
+                        {{-- 用戶頭像 (User Avatar) --}}
+                        <div class="mb-4">
+                            <label class="form-label">Profile Image</label>
+                            <div class="image-upload-area" id="user-image-area">
+                                @if($user->account && $user->account->user_image && file_exists(public_path('assets/images/auth/' . $user->account->user_image)))
+                                    {{-- 有现有图片时显示 --}}
+                                    <div class="upload-placeholder d-none" id="user-upload-placeholder">
+                                        <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                        <h5 class="mt-3">Click to upload image</h5>
+                                        <p class="text-muted">Supports JPG, PNG, GIF formats</p>
+                                    </div>
+                                    <img id="user-preview" class="preview-image" src="{{ asset('assets/images/auth/' . $user->account->user_image) }}" alt="User Preview">
+                                    <button type="button" class="image-remove-btn" id="remove-user-image">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                @else
+                                    {{-- 没有图片时显示上传占位符 --}}
+                                    <div class="upload-placeholder" id="user-upload-placeholder">
+                                        <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                        <h5 class="mt-3">Click to upload image</h5>
+                                        <p class="text-muted">Supports JPG, PNG, GIF formats</p>
+                                    </div>
+                                    <img id="user-preview" class="preview-image d-none" alt="User Preview">
+                                    <button type="button" class="image-remove-btn d-none" id="remove-user-image">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                @endif
+                            </div>
+                            <input type="file" class="d-none" id="user_image" name="user_image" accept="image/*">
+                        </div>
+
+                        {{-- 当前用户信息显示 --}}
+                        <div class="alert alert-info border-0 mb-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                <strong>Current User</strong>
+                            </div>
+                            <div class="small">
+                                <div class="mb-1">
+                                    <i class="bi bi-person me-2 text-muted"></i>
+                                    <span>Name: <strong>{{ trim($user->first_name . ' ' . $user->last_name) }}</strong></span>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-at me-2 text-muted"></i>
+                                    <span>Username: <strong>{{ $user->account->username ?? 'N/A' }}</strong></span>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-envelope me-2 text-muted"></i>
+                                    <span>Email: <strong>{{ $user->email }}</strong></span>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-shield-check me-2 text-muted"></i>
+                                    <span>Role: <strong>{{ $user->account->account_role ?? 'N/A' }}</strong></span>
+                                </div>
+                                <div>
+                                    <i class="bi bi-toggle-on me-2 text-muted"></i>
+                                    <span>Status: <strong>{{ $user->account->account_status ?? 'N/A' }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- 统计信息 --}}
+                        <div class="mt-auto">
+                            <div class="row text-center">
+                                <div class="col-12">
+                                    <div class="h4 text-primary mb-0">1</div>
+                                    <small class="text-muted">User Account</small>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- 右侧编辑表单区域 --}}
-            <div class="col-md-8">
-                <div class="size-values-section p-4">
-                    {{-- 表单标题 --}}
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <div>
-                            <h6 class="mb-0 fw-bold">
-                                <i class="bi bi-pencil-square me-2"></i>Update User Information
-                            </h6>
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Modify user configuration below.
-                            </small>
+                {{-- 右侧编辑表单区域 --}}
+                <div class="col-md-8">
+                    <div class="size-values-section p-4">
+                        {{-- 表单标题 --}}
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <div>
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="bi bi-pencil-square me-2"></i>Update User Information
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Modify user configuration below.
+                                </small>
+                            </div>
                         </div>
-                    </div>
-
-                    {{-- 用户信息更新表单 --}}
-                    <form action="{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', $user->id) : route('admin.users.update', $user->id) }}" method="post" id="updateUserForm">
-                        @csrf
-                        @method('PUT')
 
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
+
+                                {{-- 用户名字段 --}}
+                                <div class="col-12 mb-4">
+                                    <label class="form-label fw-bold text-dark mb-2">
+                                        <i class="bi bi-at me-2 text-primary"></i>Username
+                                    </label>
+                                    <input type="text" class="form-control" id="username" name="username"
+                                           value="{{ old('username', $user->account->username ?? '') }}" placeholder="Enter username" required>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Enter a unique username
+                                    </div>
+                                </div>
 
                                 {{-- 用户基本信息字段 --}}
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-dark mb-2">
-                                            <i class="bi bi-person me-2 text-primary"></i>User Name
+                                            <i class="bi bi-person me-2 text-primary"></i>First Name
                                         </label>
-                                        <input type="text" class="form-control" id="name" name="name"
-                                               value="{{ old('name', $user->name) }}" placeholder="Enter user name" required>
+                                        <input type="text" class="form-control" id="first_name" name="first_name"
+                                               value="{{ old('first_name', $user->first_name) }}" placeholder="Enter first name" required>
                                         <div class="form-text">
                                             <i class="bi bi-info-circle me-1"></i>
-                                            Enter the user's full name
+                                            Enter the user's first name
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-dark mb-2">
-                                            <i class="bi bi-envelope me-2 text-primary"></i>Email Address
+                                            <i class="bi bi-person me-2 text-primary"></i>Last Name
                                         </label>
-                                        <input type="email" class="form-control" id="email" name="email"
-                                               value="{{ old('email', $user->email) }}" placeholder="Enter email address" required>
+                                        <input type="text" class="form-control" id="last_name" name="last_name"
+                                               value="{{ old('last_name', $user->last_name) }}" placeholder="Enter last name" required>
                                         <div class="form-text">
                                             <i class="bi bi-info-circle me-1"></i>
-                                            Enter a valid email address
+                                            Enter the user's last name
                                         </div>
                                     </div>
                                 </div>
+
+                                {{-- 用户邮箱字段 --}}
+                                <div class="col-12 mb-4">
+                                    <label class="form-label fw-bold text-dark mb-2">
+                                        <i class="bi bi-envelope me-2 text-primary"></i>Email Address
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                           value="{{ old('email', $user->email) }}" placeholder="Enter email address" required>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Enter a valid email address
+                                    </div>
+                                </div>
+
+
 
                                 {{-- 密码字段 --}}
                                 <div class="row mb-4">
@@ -409,8 +473,22 @@
     // JavaScript URL definitions
     window.updateUserUrl = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', ':id') : route('admin.users.update', ':id') }}";
     window.updateUserRedirect = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.management') : route('admin.users.management') }}";
+
+    // 传递现有用户图片路径给 JavaScript
+    @if($user->account && $user->account->user_image)
+        window.existingUserImage = '{{ asset('assets/images/auth/' . $user->account->user_image) }}';
+    @endif
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+<script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>
+
+<script>
+    // 初始化用户更新页面
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化图片处理功能和表单提交
+        initializeUserUpdate();
+    });
+</script>
 @endsection

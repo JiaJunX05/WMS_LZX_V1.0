@@ -12,6 +12,8 @@ class Account extends Model
     use HasFactory;
 
     protected $fillable = [
+        'username',
+        'user_image',
         'account_role',
         'account_status',
         'user_id',

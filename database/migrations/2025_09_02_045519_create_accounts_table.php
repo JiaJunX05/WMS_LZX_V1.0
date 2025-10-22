@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('accounts', function (Blueprint $table) {
             $table->id();
+            $table->string('user_image', 500)->nullable();
+            $table->string('username', 255)->unique();
             $table->enum('account_role', ['SuperAdmin', 'Admin', 'Staff'])->default('Staff');
             $table->enum('account_status', ['Available', 'Unavailable'])->default('Available');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

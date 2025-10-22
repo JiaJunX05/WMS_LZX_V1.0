@@ -96,6 +96,24 @@ class GenderDashboard {
                 this.fetchGenders(this.currentPage + 1);
             }
         });
+
+        // 全選/取消全選功能
+        $('#select-all').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.gender-checkbox').prop('checked', isChecked);
+            this.updateExportButton();
+        });
+
+        // 單個勾選框變化
+        $(document).on('change', '.gender-checkbox', () => {
+            this.updateSelectAllCheckbox();
+            this.updateExportButton();
+        });
+
+        // 導出按鈕
+        $('#export-genders-btn').on('click', () => {
+            this.exportSelectedGenders();
+        });
     }
 
     // =============================================================================
@@ -213,6 +231,10 @@ class GenderDashboard {
         const $tableBody = $('#table-body');
         const html = genders.map(gender => this.createGenderRow(gender)).join('');
         $tableBody.html(html);
+
+        // 重置勾選框狀態
+        this.updateSelectAllCheckbox();
+        this.updateExportButton();
     }
 
     createGenderRow(gender) {
@@ -247,9 +269,14 @@ class GenderDashboard {
 
         return `
             <tr>
-                <td class="ps-4"><span class="text-muted">#${gender.id}</span></td>
+                <td class="ps-4">
+                    <div class="table-header">
+                        <input class="gender-checkbox" type="checkbox" value="${gender.id}" id="gender-${gender.id}" style="width: 20px; height: 20px;">
+                    </div>
+                </td>
                 <td>
                     <div class="d-flex align-items-center">
+                        <i class="bi bi-person me-2 text-primary"></i>
                         <h6 class="mb-0 fw-bold">${gender.gender_name.toUpperCase()}</h6>
                     </div>
                 </td>
@@ -472,6 +499,99 @@ class GenderDashboard {
         });
     }
 
+    // =============================================================================
+    // 勾選框管理模塊 (Checkbox Management Module)
+    // =============================================================================
+
+    /**
+     * 更新全選勾選框狀態
+     */
+    updateSelectAllCheckbox() {
+        const totalCheckboxes = $('.gender-checkbox').length;
+        const checkedCheckboxes = $('.gender-checkbox:checked').length;
+        const selectAllCheckbox = $('#select-all');
+
+        if (totalCheckboxes === 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            selectAllCheckbox.prop('checked', true).prop('indeterminate', false);
+        } else if (checkedCheckboxes > 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', true);
+        } else {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        }
+    }
+
+    /**
+     * 更新導出按鈕狀態
+     */
+    updateExportButton() {
+        const checkedCount = $('.gender-checkbox:checked').length;
+        const exportBtn = $('#export-genders-btn');
+
+        if (checkedCount > 0) {
+            exportBtn.prop('disabled', false);
+            exportBtn.html(`<i class="bi bi-download me-2"></i>Export Data (${checkedCount})`);
+        } else {
+            exportBtn.prop('disabled', true);
+            exportBtn.html('<i class="bi bi-download me-2"></i>Export Data');
+        }
+    }
+
+    /**
+     * 導出選中的性別
+     */
+    exportSelectedGenders() {
+        const selectedIds = $('.gender-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) {
+            this.showAlert('Please select at least one gender to export', 'warning');
+            return;
+        }
+
+        // 獲取當前篩選條件
+        const search = this.searchTerm || '';
+        const statusFilter = this.statusFilter || '';
+
+        const params = new URLSearchParams({
+            ids: selectedIds.join(','),
+            search: search,
+            status_filter: statusFilter,
+        });
+
+        // 使用新的Excel導出路由
+        const exportUrl = `${window.genderExportUrl}?${params}`;
+
+        // 顯示加載提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 創建隱藏的鏈接來觸發下載
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延遲隱藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
+    }
+
+    /**
+     * 隱藏提示信息
+     */
+    hideAlert() {
+        const alertElement = document.querySelector('.alert');
+        if (alertElement) {
+            alertElement.remove();
+        }
+    }
+
     // 顯示提示信息
     showAlert(message, type) {
         // 使用統一的 alert 系統
@@ -620,32 +740,40 @@ function updateGenderList() {
     container.innerHTML = '';
 
     genderList.forEach((item, index) => {
-        const genderItem = document.createElement('div');
+        const genderRow = document.createElement('tr');
+        genderRow.className = 'value-item';
 
         // 檢查是否為重複項
         const isDuplicate = isGenderExists(item.genderName) &&
             genderList.filter(i => i.genderName.toLowerCase() === item.genderName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
+        if (isDuplicate) {
+            genderRow.classList.add('table-warning', 'border-warning');
+        }
 
-        genderItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        genderItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-2">
+        genderRow.innerHTML = `
+            <td class="text-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-                <div class="me-2" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-person text-muted"></i></div>
-                <span class="item-value-text fw-medium">${item.genderName}</span>
-                ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-2" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-person text-muted"></i>
+                    </div>
+                    <span class="fw-bold">${item.genderName}</span>
+                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
+                </div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </td>
         `;
-        container.appendChild(genderItem);
+        container.appendChild(genderRow);
     });
 }
 
@@ -656,17 +784,17 @@ function updateGenderList() {
 function highlightExistingGender(genderName) {
     const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
-        const value = item.querySelector('.item-value-text').textContent.trim();
+        const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === genderName.toLowerCase()) {
             // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
+            item.classList.add('table-warning', 'border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
+                item.classList.remove('table-warning', 'border-warning');
             }, 3000);
             break;
         }
@@ -680,19 +808,19 @@ function showGenderValuesArea() {
     // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const genderInputPrompt = document.getElementById('genderInputPrompt');
     if (genderInputPrompt) {
-        genderInputPrompt.style.display = 'none';
+        genderInputPrompt.classList.add('d-none');
     }
 
     // 顯示性別值區域
     const genderValuesArea = document.getElementById('genderValuesArea');
     if (genderValuesArea) {
-        genderValuesArea.style.display = 'block';
+        genderValuesArea.classList.remove('d-none');
     }
 
     // 更新性別名稱顯示
@@ -701,7 +829,7 @@ function showGenderValuesArea() {
     // 顯示提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'block';
+        submitSection.classList.remove('d-none');
     }
 }
 
@@ -712,25 +840,25 @@ function hideAllAreas() {
     // 隱藏性別值區域
     const genderValuesArea = document.getElementById('genderValuesArea');
     if (genderValuesArea) {
-        genderValuesArea.style.display = 'none';
+        genderValuesArea.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const genderInputPrompt = document.getElementById('genderInputPrompt');
     if (genderInputPrompt) {
-        genderInputPrompt.style.display = 'none';
+        genderInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'none';
+        submitSection.classList.add('d-none');
     }
 
     // 顯示初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -786,9 +914,6 @@ function updateUI() {
     // 更新性別名稱顯示
     updateGenderNameDisplay();
 
-    // 更新配置摘要
-    updateConfigSummary();
-
     // 如果沒有性別，隱藏所有區域並顯示初始狀態
     if (genderList.length === 0) {
         hideAllAreas();
@@ -808,16 +933,6 @@ function updateGenderValuesCount() {
     }
 }
 
-function updateConfigSummary() {
-    // 更新性別範圍顯示
-    updateGenderRangeDisplay();
-
-    // 顯示配置摘要
-    const configSummary = document.getElementById('configSummary');
-    if (configSummary) {
-        configSummary.style.display = 'block';
-    }
-}
 
 function updateGenderNameDisplay() {
     const genderNameSpan = document.getElementById('genderName');
@@ -887,7 +1002,7 @@ function sortGenderValuesList() {
     // 獲取性別名稱並排序
     const genderValues = items.map(item => ({
         element: item,
-        value: item.querySelector('.item-value-text').textContent.trim()
+        value: item.querySelector('.fw-bold').textContent.trim()
     }));
 
     // 按字母順序排序
@@ -909,40 +1024,6 @@ function sortGenderValuesList() {
 // 批量添加功能 (Batch Add Functions)
 // =============================================================================
 
-/**
- * 添加常用性別
- */
-function addCommonGenders() {
-    // Common genders
-    const commonGenders = [
-        'Men',
-        'Women',
-        'Unisex',
-        'Kids',
-        'Baby'
-    ];
-
-    addMultipleGenders(commonGenders);
-}
-
-/**
- * 添加時尚性別
- */
-function addFashionGenders() {
-    // Fashion genders
-    const fashionGenders = [
-        'Men\'s',
-        'Women\'s',
-        'Unisex',
-        'Kids\'',
-        'Baby\'s',
-        'Teen\'s',
-        'Youth',
-        'Adult'
-    ];
-
-    addMultipleGenders(fashionGenders);
-}
 
 /**
  * 添加多個性別
@@ -1242,8 +1323,8 @@ function bindGenderCreateEvents() {
 
     // 事件委托：刪除性別按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
             removeGender(index);
         }
@@ -1253,17 +1334,6 @@ function bindGenderCreateEvents() {
     const sortBtn = document.getElementById('sortGenders');
     if (sortBtn) {
         sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 快速添加按鈕
-    const addCommonGendersBtn = document.getElementById('addCommonGenders');
-    if (addCommonGendersBtn) {
-        addCommonGendersBtn.addEventListener('click', addCommonGenders);
-    }
-
-    const addFashionGendersBtn = document.getElementById('addFashionGenders');
-    if (addFashionGendersBtn) {
-        addFashionGendersBtn.addEventListener('click', addFashionGenders);
     }
 }
 
@@ -1304,6 +1374,17 @@ function selectUpdateStatusCard(card) {
  */
 function initializeGenderUpdate() {
     bindGenderEvents();
+
+    // Update 頁面表單提交
+    const updateForm = document.querySelector('form[action*="update"]');
+    if (updateForm) {
+        updateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleUpdateFormSubmit(this);
+        });
+    }
+
+    // Update 頁面狀態卡片初始化
     initializeUpdateStatusCards();
 }
 

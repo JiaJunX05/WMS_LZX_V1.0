@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Rack;
+use App\Exports\RackExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 class RackController extends Controller
 {
@@ -237,6 +240,7 @@ class RackController extends Controller
         $existingRackNumbers = Rack::whereIn('rack_number', $rackNumbersToCheck)->pluck('rack_number')->toArray();
 
         foreach ($racks as $index => $rackData) {
+            // 先标准化数据，再进行验证
             $rackData = $this->normalizeRackData($rackData);
 
             $validator = \Validator::make($rackData, self::RACK_RULES);
@@ -513,6 +517,41 @@ class RackController extends Controller
 
         } catch (\Exception $e) {
             return $this->handleError(request(), 'Failed to delete rack: ' . $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * 導出貨架數據到Excel
+     */
+    public function exportRacks(Request $request)
+    {
+        try {
+            // 獲取篩選條件
+            $filters = [
+                'search' => $request->get('search'),
+                'status_filter' => $request->get('status_filter'),
+                'ids' => $request->get('ids') ? explode(',', $request->get('ids')) : null,
+            ];
+
+            // 生成文件名
+            $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
+            $filename = "racks_export_{$timestamp}.xlsx";
+
+            // 使用Laravel Excel導出
+            return Excel::download(new RackExport($filters), $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Rack export failed: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Export failed: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Export failed. Please try again.');
         }
     }
 }

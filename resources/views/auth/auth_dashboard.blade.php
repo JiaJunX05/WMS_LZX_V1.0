@@ -155,6 +155,12 @@
                     <h5 class="mb-0 fw-semibold">User List</h5>
                     <span class="badge bg-light text-dark" id="results-count">Loading...</span>
                 </div>
+                @if($globalUserRole === 'SuperAdmin')
+                <button class="btn btn-outline-success" id="export-users-btn" disabled>
+                    <i class="bi bi-download me-2"></i>
+                    Export Data
+                </button>
+                @endif
             </div>
         </div>
         <div class="card-body p-0">
@@ -162,18 +168,31 @@
                 <table class="table custom-table mb-0">
                     <thead>
                         <tr>
+                            @if($globalUserRole === 'SuperAdmin')
+                            <th class="ps-4" style="width: 5%">
+                                <div class="table-header">
+                                    <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
+                                </div>
+                            </th>
+                            <th style="width: 30%"><div class="table-header">USER INFO</div></th>
+                            <th style="width: 35%"><div class="table-header">EMAIL</div></th>
+                            <th style="width: 10%"><div class="table-header">ACCOUNT ROLE</div></th>
+                            <th style="width: 10%"><div class="table-header">ACCOUNT STATUS</div></th>
+                            <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
+                            @else
                             <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
-                            <th style="width: 20%"><div class="table-header">USERNAME</div></th>
+                            <th style="width: 20%"><div class="table-header">USER INFO</div></th>
                             <th style="width: 40%"><div class="table-header">EMAIL</div></th>
                             <th style="width: 10%"><div class="table-header">ACCOUNT ROLE</div></th>
                             <th style="width: 10%"><div class="table-header">ACCOUNT STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody id="table-body">
                         <!-- Loading State -->
                         <tr>
-                            <td colspan="6" class="text-center py-4">
+                            <td colspan="7" class="text-center py-4">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
@@ -243,18 +262,21 @@
         window.unavailableUserUrl = "{{ route('superadmin.users.unavailable', ':id') }}";
         window.availableUserUrl = "{{ route('superadmin.users.available', ':id') }}";
         window.changeRoleUrl = "{{ route('superadmin.users.change_role', ':id') }}";
+        window.userExportUrl = "{{ route('superadmin.users.export') }}";
     @elseif($globalUserRole === 'Admin')
         window.editUserUrl = "{{ route('admin.users.edit', ':id') }}";
         window.deleteUserUrl = ""; // Admin cannot delete users
         window.unavailableUserUrl = "{{ route('admin.users.unavailable', ':id') }}";
         window.availableUserUrl = "{{ route('admin.users.available', ':id') }}";
         window.changeRoleUrl = ""; // Admin cannot change roles
+        window.userExportUrl = ""; // Admin cannot export users
     @else
         window.editUserUrl = "";
         window.deleteUserUrl = "";
         window.unavailableUserUrl = "";
         window.availableUserUrl = "";
         window.changeRoleUrl = "";
+        window.userExportUrl = "";
     @endif
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>

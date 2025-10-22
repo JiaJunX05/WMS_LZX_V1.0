@@ -90,6 +90,24 @@ class RackDashboard {
                 this.fetchRacks(this.currentPage + 1);
             }
         });
+
+        // 全選/取消全選功能
+        $('#select-all').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.rack-checkbox').prop('checked', isChecked);
+            this.updateExportButton();
+        });
+
+        // 單個勾選框變化
+        $(document).on('change', '.rack-checkbox', () => {
+            this.updateSelectAllCheckbox();
+            this.updateExportButton();
+        });
+
+        // 導出按鈕
+        $('#export-racks-btn').on('click', () => {
+            this.exportSelectedRacks();
+        });
     }
 
     // =============================================================================
@@ -204,6 +222,10 @@ class RackDashboard {
         const $tableBody = $('#table-body');
         const html = racks.map(rack => this.createRackRow(rack)).join('');
         $tableBody.html(html);
+
+        // 重置勾選框狀態
+        this.updateSelectAllCheckbox();
+        this.updateExportButton();
     }
 
     createRackRow(rack) {
@@ -238,24 +260,27 @@ class RackDashboard {
 
         return `
             <tr>
-                <td class="ps-4"><span class="text-muted">#${rack.id}</span></td>
+                <td class="ps-4">
+                    <div class="table-header">
+                        <input class="rack-checkbox" type="checkbox" value="${rack.id}" id="rack-${rack.id}" style="width: 20px; height: 20px;">
+                    </div>
+                </td>
                 <td>
                     ${rack.rack_image ? `
                         <img src="/assets/images/${rack.rack_image}" alt="Rack Image"
-                             class="preview-image"
-                             onclick="previewImage('/assets/images/${rack.rack_image}')">
+                             class="preview-image">
                     ` : `
                         <div class="no-image">No Image</div>
                     `}
                 </td>
                 <td>
-                    <div class="d-flex align-items-center">
-                        <h6 class="mb-0 fw-bold">${rack.rack_number}</h6>
-                    </div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <span class="fw-medium">${rack.capacity}</span>
+                    <div class="d-flex flex-column">
+                        <div class="fw-bold text-dark mb-1">
+                            <i class="bi bi-box-seam me-2 text-primary"></i>${rack.rack_number}
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-boxes me-1"></i>Capacity: <span class="fw-medium">${rack.capacity} items</span>
+                        </div>
                     </div>
                 </td>
                 <td><span class="status-badge ${this.getStatusClass(rack.rack_status)}">${rack.rack_status}</span></td>
@@ -472,6 +497,99 @@ class RackDashboard {
         });
     }
 
+    // =============================================================================
+    // 勾選框管理模塊 (Checkbox Management Module)
+    // =============================================================================
+
+    /**
+     * 更新全選勾選框狀態
+     */
+    updateSelectAllCheckbox() {
+        const totalCheckboxes = $('.rack-checkbox').length;
+        const checkedCheckboxes = $('.rack-checkbox:checked').length;
+        const selectAllCheckbox = $('#select-all');
+
+        if (totalCheckboxes === 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            selectAllCheckbox.prop('checked', true).prop('indeterminate', false);
+        } else if (checkedCheckboxes > 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', true);
+        } else {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        }
+    }
+
+    /**
+     * 更新導出按鈕狀態
+     */
+    updateExportButton() {
+        const checkedCount = $('.rack-checkbox:checked').length;
+        const exportBtn = $('#export-racks-btn');
+
+        if (checkedCount > 0) {
+            exportBtn.prop('disabled', false);
+            exportBtn.html(`<i class="bi bi-download me-2"></i>Export Data (${checkedCount})`);
+        } else {
+            exportBtn.prop('disabled', true);
+            exportBtn.html('<i class="bi bi-download me-2"></i>Export Data');
+        }
+    }
+
+    /**
+     * 導出選中的貨架
+     */
+    exportSelectedRacks() {
+        const selectedIds = $('.rack-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) {
+            this.showAlert('Please select at least one rack to export', 'warning');
+            return;
+        }
+
+        // 獲取當前篩選條件
+        const search = this.searchTerm || '';
+        const statusFilter = this.statusFilter || '';
+
+        const params = new URLSearchParams({
+            ids: selectedIds.join(','),
+            search: search,
+            status_filter: statusFilter,
+        });
+
+        // 使用新的Excel導出路由
+        const exportUrl = `${window.rackExportUrl}?${params}`;
+
+        // 顯示加載提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 創建隱藏的鏈接來觸發下載
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延遲隱藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
+    }
+
+    /**
+     * 隱藏提示信息
+     */
+    hideAlert() {
+        const alertElement = document.querySelector('.alert');
+        if (alertElement) {
+            alertElement.remove();
+        }
+    }
+
     // 顯示提示信息
     showAlert(message, type) {
         // 使用統一的 alert 系統
@@ -545,7 +663,7 @@ function addRackToArray(rackNumber, capacity, rackStatus, rackImageFile) {
     }
 
     // 清空圖片（不顯示消息）
-    resetImageWithoutMessage();
+    resetImageWithoutMessage('rack');
 
     // 調試信息：檢查添加後的狀態選擇
     const currentStatus = document.querySelector('input[name="rack_status"]:checked');
@@ -568,8 +686,13 @@ function addRack() {
     const rackNumberInput = document.getElementById('rack_number');
     const capacityInput = document.getElementById('capacity');
 
-    const rackNumber = rackNumberInput.value.trim();
-    const capacity = capacityInput.value.trim() || '50'; // 默認容量50
+    console.log('rackNumberInput element:', rackNumberInput);
+    console.log('capacityInput element:', capacityInput);
+
+    const rackNumber = rackNumberInput ? rackNumberInput.value.trim() : '';
+    const capacity = capacityInput ? capacityInput.value.trim() || '50' : '50'; // 默認容量50
+
+    console.log('Rack number:', rackNumber, 'Capacity:', capacity);
 
     // 驗證輸入
     if (!rackNumber) {
@@ -628,136 +751,6 @@ function removeRack(index) {
 }
 
 /**
- * 更新貨架列表
- */
-function updateRackList() {
-    const container = document.getElementById('rackValuesList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    rackList.forEach((item, index) => {
-        const rackItem = document.createElement('div');
-
-        // 檢查是否為重複項
-        const isDuplicate = isRackExists(item.rackNumber) &&
-            rackList.filter(i => i.rackNumber.toLowerCase() === item.rackNumber.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
-
-        rackItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        rackItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-2">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                ${item.rackImageFile ?
-                    `<img src="${URL.createObjectURL(item.rackImageFile)}" alt="${item.rackNumber}" class="item-image me-2" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;">` :
-                    '<div class="item-image-placeholder me-2" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-box text-muted"></i></div>'
-                }
-                <div class="d-flex flex-column">
-                    <span class="item-value-text fw-medium">${item.rackNumber}</span>
-                    <small class="text-muted">Capacity: ${item.capacity} items</small>
-                </div>
-                ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
-        `;
-        container.appendChild(rackItem);
-    });
-}
-
-/**
- * 高亮顯示列表中已存在的貨架編號
- * @param {string} rackNumber 貨架編號
- */
-function highlightExistingRack(rackNumber) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.item-value-text').textContent.trim();
-        if (value.toLowerCase() === rackNumber.toLowerCase()) {
-            // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 顯示貨架值區域
- */
-function showRackValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.style.display = 'none';
-    }
-
-    // 隱藏輸入提示
-    const rackInputPrompt = document.getElementById('rackInputPrompt');
-    if (rackInputPrompt) {
-        rackInputPrompt.style.display = 'none';
-    }
-
-    // 顯示貨架值區域
-    const rackValuesArea = document.getElementById('rackValuesArea');
-    if (rackValuesArea) {
-        rackValuesArea.style.display = 'block';
-    }
-
-    // 更新貨架名稱顯示
-    updateRackNameDisplay();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.style.display = 'block';
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏貨架值區域
-    const rackValuesArea = document.getElementById('rackValuesArea');
-    if (rackValuesArea) {
-        rackValuesArea.style.display = 'none';
-    }
-
-    // 隱藏輸入提示
-    const rackInputPrompt = document.getElementById('rackInputPrompt');
-    if (rackInputPrompt) {
-        rackInputPrompt.style.display = 'none';
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.style.display = 'none';
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.style.display = 'block';
-    }
-}
-
-/**
  * 清除表單
  */
 function clearForm() {
@@ -777,12 +770,8 @@ function clearForm() {
 
     // 清空輸入框
     const rackNumberInput = document.getElementById('rack_number');
-    const capacityInput = document.getElementById('capacity');
     if (rackNumberInput) {
         rackNumberInput.value = '';
-    }
-    if (capacityInput) {
-        capacityInput.value = '';
     }
 
     // 更新UI
@@ -795,6 +784,151 @@ function clearForm() {
     // 隱藏所有區域
     hideAllAreas();
 }
+
+/**
+ * 更新貨架列表
+ */
+function updateRackList() {
+    const container = document.getElementById('rackValuesList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    rackList.forEach((item, index) => {
+        const rackRow = document.createElement('tr');
+
+        // 檢查是否為重複項
+        const isDuplicate = isRackExists(item.rackNumber) &&
+            rackList.filter(i => i.rackNumber.toLowerCase() === item.rackNumber.toLowerCase()).length > 1;
+
+        // 根據是否為重複項設置不同的樣式
+        const baseClasses = 'value-item';
+        const duplicateClasses = isDuplicate ? 'table-warning border-warning' : '';
+
+        rackRow.className = `${baseClasses} ${duplicateClasses}`;
+
+        rackRow.innerHTML = `
+            <td class="text-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+                    ${isDuplicate ? '⚠️' : (index + 1)}
+                </span>
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-3 flex-shrink-0">
+                        ${item.rackImageFile ?
+                            `<img src="${URL.createObjectURL(item.rackImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Rack Image">` :
+                            `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                                <i class="bi bi-box text-muted fs-5"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="fw-bold text-dark mb-1 text-truncate">
+                            <i class="bi bi-box-seam me-2 text-primary"></i>${item.rackNumber}
+                        </div>
+                        <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
+                            <i class="bi bi-boxes me-1"></i>Capacity: <span class="fw-medium">${item.capacity} items</span>
+                        </div>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                    </div>
+                </div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </td>
+        `;
+        container.appendChild(rackRow);
+    });
+}
+
+/**
+ * 高亮顯示列表中已存在的貨架編號
+ * @param {string} rackNumber 貨架編號
+ */
+function highlightExistingRack(rackNumber) {
+    const existingValues = document.querySelectorAll('.value-item');
+    for (let item of existingValues) {
+        const value = item.querySelector('.fw-bold').textContent.trim();
+        if (value.toLowerCase() === rackNumber.toLowerCase()) {
+            // 添加 Bootstrap 高亮樣式
+            item.classList.add('table-warning', 'border-warning');
+
+            // 滾動到該元素
+            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 3秒後移除高亮
+            setTimeout(() => {
+                item.classList.remove('table-warning', 'border-warning');
+            }, 3000);
+            break;
+        }
+    }
+}
+
+/**
+ * 顯示貨架值區域
+ */
+function showRackValuesArea() {
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    // 隱藏輸入提示
+    const rackInputPrompt = document.getElementById('rackInputPrompt');
+    if (rackInputPrompt) {
+        rackInputPrompt.classList.add('d-none');
+    }
+
+    // 顯示貨架值區域
+    const rackValuesArea = document.getElementById('rackValuesArea');
+    if (rackValuesArea) {
+        rackValuesArea.classList.remove('d-none');
+    }
+
+    // 更新貨架名稱顯示
+    updateRackNameDisplay();
+
+    // 顯示提交按鈕
+    const submitSection = document.getElementById('submitSection');
+    if (submitSection) {
+        submitSection.classList.remove('d-none');
+    }
+}
+
+/**
+ * 隱藏所有區域
+ */
+function hideAllAreas() {
+    // 隱藏貨架值區域
+    const rackValuesArea = document.getElementById('rackValuesArea');
+    if (rackValuesArea) {
+        rackValuesArea.classList.add('d-none');
+    }
+
+    // 隱藏輸入提示
+    const rackInputPrompt = document.getElementById('rackInputPrompt');
+    if (rackInputPrompt) {
+        rackInputPrompt.classList.add('d-none');
+    }
+
+    // 隱藏提交按鈕
+    const submitSection = document.getElementById('submitSection');
+    if (submitSection) {
+        submitSection.classList.add('d-none');
+    }
+
+    // 顯示初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
+    }
+}
+
 
 // =============================================================================
 // UI 更新功能 (UI Update Functions)
@@ -812,9 +946,6 @@ function updateUI() {
 
     // 更新貨架名稱顯示
     updateRackNameDisplay();
-
-    // 更新配置摘要
-    updateConfigSummary();
 
     // 如果沒有貨架，隱藏所有區域並顯示初始狀態
     if (rackList.length === 0) {
@@ -835,16 +966,6 @@ function updateRackValuesCount() {
     }
 }
 
-function updateConfigSummary() {
-    // 更新貨架範圍顯示
-    updateRackRangeDisplay();
-
-    // 顯示配置摘要
-    const configSummary = document.getElementById('configSummary');
-    if (configSummary) {
-        configSummary.style.display = 'block';
-    }
-}
 
 function updateRackNameDisplay() {
     const rackNameSpan = document.getElementById('rackName');
@@ -914,7 +1035,7 @@ function sortRackValuesList() {
     // 獲取貨架編號並排序
     const rackValues = items.map(item => ({
         element: item,
-        value: item.querySelector('.item-value-text').textContent.trim()
+        value: item.querySelector('.fw-bold').textContent.trim()
     }));
 
     // 按字母順序排序
@@ -935,75 +1056,6 @@ function sortRackValuesList() {
 // =============================================================================
 // 批量添加功能 (Batch Add Functions)
 // =============================================================================
-
-/**
- * 添加常用貨架
- */
-function addCommonRacks() {
-    // Common racks
-    const commonRacks = [
-        'R001', 'R002', 'R003', 'R004', 'R005',
-        'R006', 'R007', 'R008', 'R009', 'R010',
-        'R011', 'R012', 'R013', 'R014', 'R015',
-        'R016', 'R017', 'R018', 'R019', 'R020'
-    ];
-
-    addMultipleRacks(commonRacks);
-}
-
-/**
- * 添加倉庫貨架
- */
-function addWarehouseRacks() {
-    // Warehouse racks
-    const warehouseRacks = [
-        'A01', 'A02', 'A03', 'A04', 'A05',
-        'B01', 'B02', 'B03', 'B04', 'B05',
-        'C01', 'C02', 'C03', 'C04', 'C05',
-        'D01', 'D02', 'D03', 'D04', 'D05',
-        'E01', 'E02', 'E03', 'E04', 'E05',
-        'F01', 'F02', 'F03', 'F04', 'F05'
-    ];
-
-    addMultipleRacks(warehouseRacks);
-}
-
-/**
- * 添加多個貨架
- * @param {Array} racks 貨架數組
- */
-function addMultipleRacks(racks) {
-    let addedCount = 0;
-    let skippedCount = 0;
-    const capacityInput = document.getElementById('capacity');
-    const defaultCapacity = capacityInput.value.trim() || '50';
-
-    racks.forEach(rack => {
-        if (!isRackExists(rack)) {
-            addRackToList(rack, defaultCapacity, 'Available'); // 默認為 Available
-            addedCount++;
-        } else {
-            skippedCount++;
-        }
-    });
-
-    // 顯示結果
-    if (addedCount > 0 && skippedCount === 0) {
-        showAlert(`Successfully added ${addedCount} racks`, 'success');
-    } else if (addedCount > 0 && skippedCount > 0) {
-        showAlert(`Added ${addedCount} racks, ${skippedCount} already existed`, 'info');
-    } else if (skippedCount > 0) {
-        showAlert('All racks already exist in the list', 'warning');
-    }
-
-    // 更新UI
-    updateUI();
-
-    // 如果有添加貨架，顯示右邊的表格
-    if (addedCount > 0) {
-        showRackValuesArea();
-    }
-}
 
 /**
  * 添加貨架到列表
@@ -1139,158 +1191,7 @@ function validateUpdateForm() {
     return true;
 }
 
-/**
- * Update 頁面圖片預覽處理
- * @param {Event} event 文件選擇事件
- */
-function handleUpdateImagePreview(event) {
-    const file = event.target.files[0];
-    const previewContainer = document.getElementById('image-preview');
-
-    if (file) {
-        // 驗證文件類型
-        if (!file.type.startsWith('image/')) {
-            showAlert('Please select a valid image file', 'warning');
-            return;
-        }
-
-        // 驗證文件大小 (5MB限制)
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert('Image size must be less than 5MB', 'warning');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if (previewContainer) {
-                previewContainer.innerHTML = `
-                    <img src="${e.target.result}" alt="Preview" id="preview-image"
-                         class="img-fluid rounded-3" style="max-width: 100%; max-height: 280px; object-fit: contain;">
-                    <div class="image-remove-btn" title="Remove image">
-                        <i class="bi bi-x"></i>
-                    </div>
-                `;
-
-                // 添加刪除按鈕事件
-                const removeBtn = previewContainer.querySelector('.image-remove-btn');
-                if (removeBtn) {
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        removeUpdateImage();
-                    });
-                }
-
-                // 顯示移除圖片按鈕
-                const removeImageBtn = document.getElementById('removeImage');
-                if (removeImageBtn) {
-                    removeImageBtn.style.display = 'block';
-                }
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-/**
- * Update 頁面圖片移除
- */
-function removeUpdateImage() {
-    // 確認是否要移除圖片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件輸入
-        imageInput.value = '';
-
-        // 添加隱藏的 remove_image 參數到表單
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 恢復原始內容
-        const originalContent = previewContainer.getAttribute('data-original-content');
-        if (originalContent) {
-            previewContainer.innerHTML = originalContent;
-        } else {
-            // 如果沒有原始內容，顯示默認狀態
-            previewContainer.innerHTML = `
-                <div class="text-center text-muted">
-                    <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                    <p class="mb-0">No image uploaded</p>
-                    <small>Upload an image to see preview</small>
-                </div>
-            `;
-        }
-
-        // 隱藏移除圖片按鈕
-        if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
-
-/**
- * Update 頁面移除圖片按鈕處理
- */
-function handleRemoveImageButton() {
-    // 確認是否要移除圖片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件輸入
-        imageInput.value = '';
-
-        // 添加隱藏的 remove_image 參數到表單
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 顯示默認狀態
-        previewContainer.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                <p class="mb-0">No image uploaded</p>
-                <small>Upload an image to see preview</small>
-            </div>
-        `;
-
-        // 更新 data-original-content 屬性
-        previewContainer.setAttribute('data-original-content', previewContainer.innerHTML);
-
-        // 隱藏移除圖片按鈕
-        if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
+// 图片处理函数已移至 image-system.js
 
 /**
  * Update 頁面狀態卡片初始化
@@ -1324,37 +1225,7 @@ function selectUpdateStatusCard(card) {
     }
 }
 
-// =============================================================================
-// 圖片預覽功能 (Image Preview Functions)
-// =============================================================================
-
-/**
- * 圖片預覽函數 - 用於模態框顯示
- * @param {string} src 圖片源
- */
-function previewImage(src) {
-    document.getElementById('previewImage').src = src;
-    new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
-}
-
-/**
- * Create 頁面重置圖片（不顯示消息）
- */
-function resetImageWithoutMessage() {
-    console.log('resetImageWithoutMessage called');
-    if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
-        console.log('Calling window.ImageSystem.resetImage');
-        window.ImageSystem.resetImage('imageUploadArea', {
-            showMessage: false,
-            imageInputId: 'rack_image',
-            previewImageId: 'preview-image',
-            previewIconId: 'preview-icon',
-            imageUploadContentId: 'imageUploadContent'
-        });
-    } else {
-        console.log('window.ImageSystem.resetImage not available');
-    }
-}
+// resetImageWithoutMessage 函数已移至 image-system.js
 
 // =============================================================================
 // 表單驗證和提交 (Form Validation & Submission)
@@ -1402,9 +1273,9 @@ function submitRackForm() {
         console.log(`Rack ${index + 1}:`, { rackNumber: item.rackNumber, rackStatus: item.rackStatus });
 
         // 添加貨架文本數據
-        formData.append(`racks[${index}][rackNumber]`, item.rackNumber);
+        formData.append(`racks[${index}][rack_number]`, item.rackNumber);
         formData.append(`racks[${index}][capacity]`, item.capacity);
-        formData.append(`racks[${index}][rackStatus]`, item.rackStatus);
+        formData.append(`racks[${index}][rack_status]`, item.rackStatus);
 
         // 添加圖片文件（如果有）
         if (item.rackImageFile) {
@@ -1514,16 +1385,10 @@ function bindRackCreateEvents() {
         addRackBtn.addEventListener('click', addRack);
     }
 
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
     // 事件委托：刪除貨架按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
             removeRack(index);
         }
@@ -1535,15 +1400,10 @@ function bindRackCreateEvents() {
         sortBtn.addEventListener('click', toggleSortOrder);
     }
 
-    // 快速添加按鈕
-    const addCommonRacksBtn = document.getElementById('addCommonRacks');
-    if (addCommonRacksBtn) {
-        addCommonRacksBtn.addEventListener('click', addCommonRacks);
-    }
-
-    const addWarehouseRacksBtn = document.getElementById('addWarehouseRacks');
-    if (addWarehouseRacksBtn) {
-        addWarehouseRacksBtn.addEventListener('click', addWarehouseRacks);
+    // 清除表單按鈕
+    const clearFormBtn = document.getElementById('clearForm');
+    if (clearFormBtn) {
+        clearFormBtn.addEventListener('click', clearForm);
     }
 }
 
@@ -1552,6 +1412,51 @@ function bindRackCreateEvents() {
  */
 function initializeRackUpdate() {
     bindRackEvents();
+
+    // Update 頁面表單提交
+    const updateForm = document.querySelector('form[action*="update"]');
+    if (updateForm) {
+        updateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleUpdateFormSubmit(this);
+        });
+    }
+
+    // Update 頁面圖片預覽
+    const updateImageInput = document.getElementById('input_image');
+    if (updateImageInput) {
+        updateImageInput.addEventListener('change', handleUpdateImagePreview);
+    }
+
+    // Update 頁面圖片上傳區域點擊事件
+    const imagePreviewArea = document.getElementById('image-preview');
+    if (imagePreviewArea && updateImageInput) {
+        imagePreviewArea.addEventListener('click', function(e) {
+            // 只檢查是否點擊了移除按鈕
+            if (e.target.closest('.image-remove-btn')) {
+                return; // 不觸發文件選擇
+            }
+            updateImageInput.click();
+        });
+    }
+
+    // Update 頁面移除圖片按鈕
+    const removeImageBtn = document.getElementById('removeImage');
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', handleRemoveImageButton);
+
+        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
+        const previewContainer = document.getElementById('image-preview');
+        if (previewContainer) {
+            const hasImage = previewContainer.querySelector('img');
+            if (!hasImage) {
+                removeImageBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // Update 頁面狀態卡片初始化
+    initializeStatusCards();
 }
 
 /**

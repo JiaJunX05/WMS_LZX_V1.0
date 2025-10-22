@@ -139,22 +139,29 @@
     <!-- Rack List Table -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-3">
-                    <h5 class="mb-0 fw-semibold">Rack List</h5>
-                    <span class="badge bg-light text-dark" id="results-count">Loading...</span>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <h5 class="mb-0 fw-semibold">Rack List</h5>
+                        <span class="badge bg-light text-dark" id="results-count">Loading...</span>
+                    </div>
+                    <button class="btn btn-outline-success" id="export-racks-btn" disabled>
+                        <i class="bi bi-download me-2"></i>
+                        Export Data
+                    </button>
                 </div>
-            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table custom-table mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
+                            <th class="ps-4" style="width: 5%">
+                                <div class="table-header">
+                                    <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
+                                </div>
+                            </th>
                             <th style="width: 10%"><div class="table-header">RACK IMAGE</div></th>
-                            <th style="width: 10%"><div class="table-header">RACK NUMBER</div></th>
-                            <th style="width: 50%"><div class="table-header">CAPACITY</div></th>
+                            <th style="width: 65%"><div class="table-header">RACK INFORMATION</div></th>
                             <th style="width: 10%"><div class="table-header">RACK STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
                         </tr>
@@ -201,20 +208,6 @@
         </nav>
     </div>
 </div>
-
-<!-- Image Preview Modal -->
-<div class="modal fade" id="imagePreviewModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center p-0">
-                <img id="previewImage" src="" alt="Preview" class="img-fluid">
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @section("scripts")
@@ -225,6 +218,7 @@
     window.deleteRackUrl = "{{ route('admin.rack.destroy', ['id' => ':id']) }}";
     window.availableRackUrl = "{{ route('admin.rack.available', ['id' => ':id']) }}";
     window.unavailableRackUrl = "{{ route('admin.rack.unavailable', ['id' => ':id']) }}";
+    window.rackExportUrl = "{{ route('admin.rack.export') }}";
 
     // Pass current user role to JavaScript
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";

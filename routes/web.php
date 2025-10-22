@@ -165,6 +165,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/unavailable', [AuthController::class, 'setUnavailable'])->name('unavailable');
             Route::patch('/{id}/available', [AuthController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/change-role', [AuthController::class, 'changeAccountRole'])->name('change_role');
+            Route::get('/export', [AuthController::class, 'exportUsers'])->name('export');
         });
 
         // 打印管理
@@ -210,6 +211,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [ZoneController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [ZoneController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [ZoneController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [ZoneController::class, 'exportZones'])->name('export');
         });
 
         // 货架管理
@@ -222,6 +224,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [RackController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [RackController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [RackController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [RackController::class, 'exportRacks'])->name('export');
         });
 
         // 位置管理
@@ -251,6 +254,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [CategoryController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [CategoryController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [CategoryController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [CategoryController::class, 'exportCategories'])->name('export');
         });
 
         // 子分类管理
@@ -263,6 +267,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [SubcategoryController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [SubcategoryController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [SubcategoryController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [SubcategoryController::class, 'exportSubcategories'])->name('export');
         });
 
         // 映射管理
@@ -292,6 +297,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [BrandController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [BrandController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [BrandController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [BrandController::class, 'exportBrands'])->name('export');
         });
 
         // 颜色管理
@@ -304,6 +310,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [ColorController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [ColorController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [ColorController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [ColorController::class, 'exportColors'])->name('export');
         });
 
         // 性别管理
@@ -316,6 +323,7 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/available', [GenderController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [GenderController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [GenderController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [GenderController::class, 'exportGenders'])->name('export');
         });
 
         // =============================================================================

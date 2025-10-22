@@ -96,6 +96,24 @@ class ColorDashboard {
                 this.fetchColors(this.currentPage + 1);
             }
         });
+
+        // 全選/取消全選功能
+        $('#select-all').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.color-checkbox').prop('checked', isChecked);
+            this.updateExportButton();
+        });
+
+        // 單個勾選框變化
+        $(document).on('change', '.color-checkbox', () => {
+            this.updateSelectAllCheckbox();
+            this.updateExportButton();
+        });
+
+        // 導出按鈕
+        $('#export-colors-btn').on('click', () => {
+            this.exportSelectedColors();
+        });
     }
 
     // =============================================================================
@@ -213,6 +231,10 @@ class ColorDashboard {
         const $tableBody = $('#table-body');
         const html = colors.map(color => this.createColorRow(color)).join('');
         $tableBody.html(html);
+
+        // 重置勾選框狀態
+        this.updateSelectAllCheckbox();
+        this.updateExportButton();
     }
 
     createColorRow(color) {
@@ -247,17 +269,24 @@ class ColorDashboard {
 
         return `
             <tr>
-                <td class="ps-4"><span class="text-muted">#${color.id}</span></td>
-                <td>
-                    <div class="color-preview-small" style="background-color: ${color.color_hex || '#cccccc'}"></div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <h6 class="mb-0 fw-bold">${color.color_name.toUpperCase()}</h6>
+                <td class="ps-4">
+                    <div class="table-header">
+                        <input class="color-checkbox" type="checkbox" value="${color.id}" id="color-${color.id}" style="width: 20px; height: 20px;">
                     </div>
                 </td>
-                <td><span class="text-muted font-monospace">${color.color_hex || 'N/A'}</span></td>
-                <td><span class="text-muted font-monospace">${color.color_rgb || 'N/A'}</span></td>
+                <td>
+                    <div class="color-preview-small" style="background-color: ${color.color_hex || '#cccccc'}; width: 2.5rem; height: 2.5rem; border-radius: 4px; border: 1px solid #dee2e6;"></div>
+                </td>
+                <td>
+                    <div class="fw-bold text-dark mb-1 text-truncate">
+                        <i class="bi bi-palette me-2 text-primary"></i>${color.color_name}
+                    </div>
+                    <div class="text-muted small" style="line-height: 1.3;">
+                        <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${color.color_hex || 'N/A'}</span>
+                        <span class="mx-2">|</span>
+                        <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${color.color_rgb || 'N/A'}</span>
+                    </div>
+                </td>
                 <td><span class="status-badge ${this.getStatusClass(color.color_status)}">${color.color_status}</span></td>
                 <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
             </tr>
@@ -472,6 +501,99 @@ class ColorDashboard {
         });
     }
 
+    // =============================================================================
+    // 勾選框管理模塊 (Checkbox Management Module)
+    // =============================================================================
+
+    /**
+     * 更新全選勾選框狀態
+     */
+    updateSelectAllCheckbox() {
+        const totalCheckboxes = $('.color-checkbox').length;
+        const checkedCheckboxes = $('.color-checkbox:checked').length;
+        const selectAllCheckbox = $('#select-all');
+
+        if (totalCheckboxes === 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            selectAllCheckbox.prop('checked', true).prop('indeterminate', false);
+        } else if (checkedCheckboxes > 0) {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', true);
+        } else {
+            selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+        }
+    }
+
+    /**
+     * 更新導出按鈕狀態
+     */
+    updateExportButton() {
+        const checkedCount = $('.color-checkbox:checked').length;
+        const exportBtn = $('#export-colors-btn');
+
+        if (checkedCount > 0) {
+            exportBtn.prop('disabled', false);
+            exportBtn.html(`<i class="bi bi-download me-2"></i>Export Data (${checkedCount})`);
+        } else {
+            exportBtn.prop('disabled', true);
+            exportBtn.html('<i class="bi bi-download me-2"></i>Export Data');
+        }
+    }
+
+    /**
+     * 導出選中的顏色
+     */
+    exportSelectedColors() {
+        const selectedIds = $('.color-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) {
+            this.showAlert('Please select at least one color to export', 'warning');
+            return;
+        }
+
+        // 獲取當前篩選條件
+        const search = this.searchTerm || '';
+        const statusFilter = this.statusFilter || '';
+
+        const params = new URLSearchParams({
+            ids: selectedIds.join(','),
+            search: search,
+            status_filter: statusFilter,
+        });
+
+        // 使用新的Excel導出路由
+        const exportUrl = `${window.colorExportUrl}?${params}`;
+
+        // 顯示加載提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 創建隱藏的鏈接來觸發下載
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延遲隱藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
+    }
+
+    /**
+     * 隱藏提示信息
+     */
+    hideAlert() {
+        const alertElement = document.querySelector('.alert');
+        if (alertElement) {
+            alertElement.remove();
+        }
+    }
+
     // 顯示提示信息
     showAlert(message, type) {
         // 使用統一的 alert 系統
@@ -522,6 +644,113 @@ function hexToRgb(hex) {
 
     return `${r},${g},${b}`;
 }
+
+/**
+ * 使用 Color.js 库根据颜色名称自动填充 Hex 代码
+ */
+function autoFillHexFromColorName() {
+    const colorNameInput = document.getElementById('color_name');
+    const colorHexInput = document.getElementById('color_hex');
+
+    if (!colorNameInput || !colorHexInput) return;
+
+    const colorName = colorNameInput.value.trim();
+    if (!colorName) return;
+
+    // 检查 Color.js 是否可用
+    if (typeof Color === 'undefined') {
+        console.log('Color.js library not available, using fallback mapping');
+        fallbackColorMapping();
+        return;
+    }
+
+    try {
+        // 使用 Color.js 库解析颜色名称
+        const color = new Color(colorName);
+
+        if (color && color.isValid && color.isValid()) {
+            const hexCode = color.to('srgb').toString({ format: 'hex' });
+            colorHexInput.value = hexCode;
+
+            // 更新颜色预览
+            const colorPreview = document.getElementById('color-preview');
+            if (colorPreview) {
+                colorPreview.style.backgroundColor = hexCode;
+            }
+
+            // 显示成功提示
+            showInfo(`Auto-filled Hex code: ${hexCode}`);
+        } else {
+            // Color.js 无法解析，尝试备用方案
+            fallbackColorMapping();
+        }
+    } catch (error) {
+        // Color.js 解析失败，使用备用方案
+        console.log('Color.js parsing failed:', error);
+        fallbackColorMapping();
+    }
+
+    function fallbackColorMapping() {
+        // 尝试一些常见的颜色名称映射
+        const colorMap = {
+            'red': '#FF0000', 'green': '#008000', 'blue': '#0000FF', 'yellow': '#FFFF00', 'orange': '#FFA500',
+            'purple': '#800080', 'pink': '#FFC0CB', 'brown': '#A52A2A', 'black': '#000000', 'white': '#FFFFFF',
+            'gray': '#808080', 'grey': '#808080',
+            '紅色': '#FF0000', '綠色': '#008000', '藍色': '#0000FF', '黃色': '#FFFF00', '橙色': '#FFA500',
+            '紫色': '#800080', '粉色': '#FFC0CB', '棕色': '#A52A2A', '黑色': '#000000', '白色': '#FFFFFF',
+            '灰色': '#808080',
+            'light red': '#FFB6C1', 'dark red': '#8B0000', 'light blue': '#ADD8E6', 'dark blue': '#00008B',
+            'light green': '#90EE90', 'dark green': '#006400', 'light yellow': '#FFFFE0', 'dark yellow': '#B8860B',
+            'light pink': '#FFB6C1', 'dark pink': '#FF1493', 'light gray': '#D3D3D3', 'dark gray': '#696969',
+            'light grey': '#D3D3D3', 'dark grey': '#696969',
+            '淺紅色': '#FFB6C1', '深紅色': '#8B0000', '淺藍色': '#ADD8E6', '深藍色': '#00008B',
+            '淺綠色': '#90EE90', '深綠色': '#006400', '淺黃色': '#FFFFE0', '深黃色': '#B8860B',
+            '淺粉色': '#FFB6C1', '深粉色': '#FF1493', '淺灰色': '#D3D3D3', '深灰色': '#696969',
+            'navy': '#000080', 'teal': '#008080', 'lime': '#00FF00', 'cyan': '#00FFFF', 'magenta': '#FF00FF',
+            'silver': '#C0C0C0', 'gold': '#FFD700', 'maroon': '#800000', 'olive': '#808000', 'aqua': '#00FFFF',
+            'fuchsia': '#FF00FF',
+            '海軍藍': '#000080', '青綠色': '#008080', '萊姆綠': '#00FF00', '青色': '#00FFFF',
+            '洋紅色': '#FF00FF', '銀色': '#C0C0C0', '金色': '#FFD700', '栗色': '#800000',
+            '橄欖綠': '#808000', '水藍色': '#00FFFF', '紫紅色': '#FF00FF'
+        };
+
+        const normalizedName = colorName.toLowerCase().trim();
+
+        // 直接匹配
+        if (colorMap[normalizedName]) {
+            const hexCode = colorMap[normalizedName];
+            colorHexInput.value = hexCode;
+
+            // 更新颜色预览
+            const colorPreview = document.getElementById('color-preview');
+            if (colorPreview) {
+                colorPreview.style.backgroundColor = hexCode;
+            }
+
+            showInfo(`Auto-filled Hex code: ${hexCode}`);
+        } else {
+            // 模糊匹配
+            for (const [name, hex] of Object.entries(colorMap)) {
+                if (name.includes(normalizedName) || normalizedName.includes(name)) {
+                    colorHexInput.value = hex;
+
+                    // 更新颜色预览
+                    const colorPreview = document.getElementById('color-preview');
+                    if (colorPreview) {
+                        colorPreview.style.backgroundColor = hex;
+                    }
+
+                    showInfo(`Auto-filled Hex code: ${hex} (matched: ${name})`);
+                    return;
+                }
+            }
+
+            // 没有找到匹配的颜色
+            showWarning(`No matching color found for "${colorName}"`);
+        }
+    }
+}
+
 
 /**
  * 驗證顏色代碼格式
@@ -577,12 +806,19 @@ function addColorToArray(colorName, colorHex, colorStatus) {
     // 清空輸入框
     const colorNameInput = document.getElementById('color_name');
     const colorHexInput = document.getElementById('color_hex');
+    const colorPreview = document.getElementById('color-preview');
+
     if (colorNameInput) {
         colorNameInput.value = '';
         colorNameInput.focus();
     }
     if (colorHexInput) {
         colorHexInput.value = '';
+    }
+
+    // 重置顏色預覽
+    if (colorPreview) {
+        colorPreview.style.backgroundColor = '#f3f4f6';
     }
 }
 
@@ -677,33 +913,49 @@ function updateColorList() {
     container.innerHTML = '';
 
     colorList.forEach((item, index) => {
-        const colorItem = document.createElement('div');
+        const colorRow = document.createElement('tr');
 
         // 檢查是否為重複項
         const isDuplicate = isColorExists(item.colorName) &&
             colorList.filter(i => i.colorName.toLowerCase() === item.colorName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
+        const baseClasses = 'value-item';
+        const duplicateClasses = isDuplicate ? 'table-warning border-warning' : '';
 
-        colorItem.className = `${baseClasses} ${duplicateClasses}`;
+        colorRow.className = `${baseClasses} ${duplicateClasses}`;
 
-        colorItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-2">
+        colorRow.innerHTML = `
+            <td class="text-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-                <div class="color-preview-small me-2" style="width: 32px; height: 32px; border-radius: 4px; background-color: ${item.colorHex || '#f3f4f6'}; border: 1px solid #ddd;"></div>
-                <span class="item-value-text fw-medium">${item.colorName}</span>
-                <small class="text-muted ms-2">${item.colorHex}</small>
-                ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-3 flex-shrink-0">
+                        <div class="color-preview-small" style="background-color: ${item.colorHex}; width: 2.5rem; height: 2.5rem; border-radius: 4px; border: 1px solid #dee2e6;"></div>
+                    </div>
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="fw-bold text-dark mb-1 text-truncate">
+                            <i class="bi bi-palette me-2 text-primary"></i>${item.colorName}
+                        </div>
+                        <div class="text-muted small" style="line-height: 1.3;">
+                            <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${item.colorHex}</span>
+                            <span class="mx-2">|</span>
+                            <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${item.colorRgb}</span>
+                        </div>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                    </div>
+                </div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </td>
         `;
-        container.appendChild(colorItem);
+        container.appendChild(colorRow);
     });
 }
 
@@ -714,17 +966,17 @@ function updateColorList() {
 function highlightExistingColor(colorName) {
     const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
-        const value = item.querySelector('.item-value-text').textContent.trim();
+        const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === colorName.toLowerCase()) {
-            // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
+            // 添加 Bootstrap 高亮樣式
+            item.classList.add('table-warning', 'border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
+                item.classList.remove('table-warning', 'border-warning');
             }, 3000);
             break;
         }
@@ -738,19 +990,19 @@ function showColorValuesArea() {
     // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const colorInputPrompt = document.getElementById('colorInputPrompt');
     if (colorInputPrompt) {
-        colorInputPrompt.style.display = 'none';
+        colorInputPrompt.classList.add('d-none');
     }
 
     // 顯示顏色值區域
     const colorValuesArea = document.getElementById('colorValuesArea');
     if (colorValuesArea) {
-        colorValuesArea.style.display = 'block';
+        colorValuesArea.classList.remove('d-none');
     }
 
     // 更新顏色名稱顯示
@@ -759,7 +1011,7 @@ function showColorValuesArea() {
     // 顯示提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'block';
+        submitSection.classList.remove('d-none');
     }
 }
 
@@ -770,25 +1022,25 @@ function hideAllAreas() {
     // 隱藏顏色值區域
     const colorValuesArea = document.getElementById('colorValuesArea');
     if (colorValuesArea) {
-        colorValuesArea.style.display = 'none';
+        colorValuesArea.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const colorInputPrompt = document.getElementById('colorInputPrompt');
     if (colorInputPrompt) {
-        colorInputPrompt.style.display = 'none';
+        colorInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'none';
+        submitSection.classList.add('d-none');
     }
 
     // 顯示初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -813,11 +1065,18 @@ function clearForm() {
     // 清空輸入框
     const colorNameInput = document.getElementById('color_name');
     const colorHexInput = document.getElementById('color_hex');
+    const colorPreview = document.getElementById('color-preview');
+
     if (colorNameInput) {
         colorNameInput.value = '';
     }
     if (colorHexInput) {
         colorHexInput.value = '';
+    }
+
+    // 重置顏色預覽
+    if (colorPreview) {
+        colorPreview.style.backgroundColor = '#f3f4f6';
     }
 
     // 更新UI
@@ -848,9 +1107,6 @@ function updateUI() {
     // 更新顏色名稱顯示
     updateColorNameDisplay();
 
-    // 更新配置摘要
-    updateConfigSummary();
-
     // 如果沒有顏色，隱藏所有區域並顯示初始狀態
     if (colorList.length === 0) {
         hideAllAreas();
@@ -870,16 +1126,6 @@ function updateColorValuesCount() {
     }
 }
 
-function updateConfigSummary() {
-    // 更新顏色範圍顯示
-    updateColorRangeDisplay();
-
-    // 顯示配置摘要
-    const configSummary = document.getElementById('configSummary');
-    if (configSummary) {
-        configSummary.style.display = 'block';
-    }
-}
 
 function updateColorNameDisplay() {
     const colorNameSpan = document.getElementById('colorName');
@@ -949,7 +1195,7 @@ function sortColorValuesList() {
     // 獲取顏色名稱並排序
     const colorValues = items.map(item => ({
         element: item,
-        value: item.querySelector('.item-value-text').textContent.trim()
+        value: item.querySelector('.fw-bold').textContent.trim()
     }));
 
     // 按字母順序排序
@@ -971,47 +1217,6 @@ function sortColorValuesList() {
 // 批量添加功能 (Batch Add Functions)
 // =============================================================================
 
-/**
- * 添加常用顏色
- */
-function addCommonColors() {
-    // Common colors
-    const commonColors = [
-        { name: 'Red', hex: '#FF0000' },
-        { name: 'Blue', hex: '#0000FF' },
-        { name: 'Green', hex: '#00FF00' },
-        { name: 'Yellow', hex: '#FFFF00' },
-        { name: 'Black', hex: '#000000' },
-        { name: 'White', hex: '#FFFFFF' },
-        { name: 'Orange', hex: '#FFA500' },
-        { name: 'Purple', hex: '#800080' },
-        { name: 'Pink', hex: '#FFC0CB' },
-        { name: 'Brown', hex: '#A52A2A' }
-    ];
-
-    addMultipleColors(commonColors);
-}
-
-/**
- * 添加時尚顏色
- */
-function addFashionColors() {
-    // Fashion colors
-    const fashionColors = [
-        { name: 'Navy Blue', hex: '#000080' },
-        { name: 'Burgundy', hex: '#800020' },
-        { name: 'Cream', hex: '#F5F5DC' },
-        { name: 'Charcoal', hex: '#36454F' },
-        { name: 'Coral', hex: '#FF7F50' },
-        { name: 'Turquoise', hex: '#40E0D0' },
-        { name: 'Lavender', hex: '#E6E6FA' },
-        { name: 'Maroon', hex: '#800000' },
-        { name: 'Beige', hex: '#F5F5DC' },
-        { name: 'Olive', hex: '#808000' }
-    ];
-
-    addMultipleColors(fashionColors);
-}
 
 /**
  * 添加多個顏色
@@ -1094,6 +1299,23 @@ function handleUpdateFormSubmit(form) {
         return;
     }
 
+    // 確保 RGB 值是最新的
+    const hexInput = document.getElementById('color_hex');
+    const rgbInput = document.getElementById('color_rgb');
+
+    if (hexInput && rgbInput) {
+        const hexValue = hexInput.value.trim();
+        if (hexValue && /^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
+            const rgb = hexToRgb(hexValue);
+            if (rgb) {
+                rgbInput.value = rgb;
+            }
+        } else {
+            // 如果 Hex 值无效，设置默认 RGB 值
+            rgbInput.value = '0,0,0';
+        }
+    }
+
     // 顯示加載狀態
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
@@ -1133,10 +1355,16 @@ function handleUpdateFormSubmit(form) {
         }
     })
     .catch(error => {
+        console.error('Update error:', error);
+
         if (error.message.includes('already been taken') || error.message.includes('color_name')) {
             showAlert('This color name already exists. Please choose a different name.', 'warning');
+        } else if (error.message.includes('422')) {
+            showAlert('Validation failed. Please check your input.', 'warning');
+        } else if (error.message.includes('419')) {
+            showAlert('Session expired. Please refresh the page and try again.', 'warning');
         } else {
-            showAlert('Failed to update color', 'error');
+            showAlert('Failed to update color: ' + error.message, 'error');
         }
     })
     .finally(() => {
@@ -1202,7 +1430,7 @@ function updateColorPreview() {
             if (rgbInput) {
                 const rgb = hexToRgb(normalizedColor);
                 if (rgb) {
-                    rgbInput.value = `${rgb.r},${rgb.g},${rgb.b}`;
+                    rgbInput.value = rgb;
                 }
             }
         } else {
@@ -1223,14 +1451,15 @@ function setupColorPreview() {
         // 實時更新顏色預覽
         function updateColorPreviewRealTime() {
             const hexValue = hexInput.value;
+
             if (hexValue && /^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
                 colorPreview.style.backgroundColor = hexValue;
 
-                // 自動生成RGB代碼
+                // 自動生成RGB代碼到隱藏字段
                 if (rgbInput) {
                     const rgb = hexToRgb(hexValue);
                     if (rgb) {
-                        rgbInput.value = `${rgb.r},${rgb.g},${rgb.b}`;
+                        rgbInput.value = rgb;
                     }
                 }
             }
@@ -1376,6 +1605,17 @@ function bindColorCreateEvents() {
                 addColor();
             }
         });
+
+        // 顏色名稱自動填充功能
+        colorNameInput.addEventListener('blur', function() {
+            autoFillHexFromColorName();
+        });
+
+        colorNameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                autoFillHexFromColorName();
+            }
+        });
     }
 
     // 顏色代碼輸入框回車事件
@@ -1403,8 +1643,8 @@ function bindColorCreateEvents() {
 
     // 事件委托：刪除顏色按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
             removeColor(index);
         }
@@ -1414,17 +1654,6 @@ function bindColorCreateEvents() {
     const sortBtn = document.getElementById('sortColors');
     if (sortBtn) {
         sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 快速添加按鈕
-    const addCommonColorsBtn = document.getElementById('addCommonColors');
-    if (addCommonColorsBtn) {
-        addCommonColorsBtn.addEventListener('click', addCommonColors);
-    }
-
-    const addFashionColorsBtn = document.getElementById('addFashionColors');
-    if (addFashionColorsBtn) {
-        addFashionColorsBtn.addEventListener('click', addFashionColors);
     }
 }
 
@@ -1465,7 +1694,20 @@ function selectUpdateStatusCard(card) {
  */
 function initializeColorUpdate() {
     bindColorEvents();
+
+    // Update 頁面表單提交
+    const updateForm = document.querySelector('form[action*="update"]');
+    if (updateForm) {
+        updateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleUpdateFormSubmit(this);
+        });
+    }
+
+    // Update 頁面狀態卡片初始化
     initializeUpdateStatusCards();
+
+    // 設置顏色預覽功能
     setupColorPreview();
 }
 

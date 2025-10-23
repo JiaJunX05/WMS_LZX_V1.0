@@ -576,7 +576,7 @@ class PrintService {
             <html>
             <head>
                 <title>Product Labels</title>
-                <link href="${assetPath}libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
                     @media print {
                         @page {
@@ -696,8 +696,7 @@ class PrintService {
                     </table>
                 </div>
 
-                <script src="${assetPath}libs/jsbarcode/JsBarcode.all.min.js"></script>
-                <script src="${assetPath}libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"></script>
                 <script>
                     // 生成条形码
                     document.addEventListener('DOMContentLoaded', function() {

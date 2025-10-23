@@ -669,48 +669,42 @@ function updateCategoryList() {
     container.innerHTML = '';
 
     categoryList.forEach((item, index) => {
-        const categoryItem = document.createElement('tr');
-
         // 檢查是否為重複項
         const isDuplicate = isCategoryExists(categoryList, item.categoryName) &&
             categoryList.filter(i => i.categoryName.toLowerCase() === item.categoryName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle' : '';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
 
+        const categoryItem = document.createElement('div');
         categoryItem.className = `${baseClasses} ${duplicateClasses}`;
 
         categoryItem.innerHTML = `
-            <td class="text-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+            <div class="d-flex align-items-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-            </td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="me-3 flex-shrink-0">
-                        ${item.categoryImageFile ?
-                            `<img src="${URL.createObjectURL(item.categoryImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Category Image">` :
-                            `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
-                                <i class="bi bi-tags text-muted fs-5"></i>
-                            </div>`
-                        }
-                    </div>
-                    <div class="flex-grow-1 min-width-0">
-                        <div class="fw-bold text-dark mb-1 text-truncate">
-                            <i class="bi bi-tags me-2 text-primary"></i>${item.categoryName}
-                        </div>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
+                <div class="me-3 flex-shrink-0">
+                    ${item.categoryImageFile ?
+                        `<img src="${URL.createObjectURL(item.categoryImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Category Image">` :
+                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                            <i class="bi bi-tags text-muted fs-5"></i>
+                        </div>`
+                    }
                 </div>
-            </td>
-            <td class="text-end">
-                <button type="button" class="btn btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </td>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="fw-bold text-dark mb-1 text-truncate">
+                        <i class="bi bi-tags me-2 text-primary"></i>${item.categoryName}
+                    </div>
+                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                <i class="bi bi-trash me-1"></i>Remove
+            </button>
         `;
+
         container.appendChild(categoryItem);
     });
 }
@@ -722,13 +716,7 @@ function showCategoryValuesArea() {
     // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
-    }
-
-    // 隱藏輸入提示
-    const categoryInputPrompt = document.getElementById('categoryInputPrompt');
-    if (categoryInputPrompt) {
-        categoryInputPrompt.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 
     // 顯示分類值區域
@@ -757,12 +745,6 @@ function hideAllAreas() {
         categoryValuesArea.classList.add('d-none');
     }
 
-    // 隱藏輸入提示
-    const categoryInputPrompt = document.getElementById('categoryInputPrompt');
-    if (categoryInputPrompt) {
-        categoryInputPrompt.classList.add('d-none');
-    }
-
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
@@ -772,7 +754,7 @@ function hideAllAreas() {
     // 顯示初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -914,7 +896,7 @@ function sortCategoryValuesList() {
     // 獲取分類名稱並排序
     const categoryValues = items.map(item => ({
         element: item,
-        value: item.querySelector('.item-value-text').textContent.trim()
+        value: item.querySelector('.fw-bold').textContent.trim()
     }));
 
     // 按字母順序排序
@@ -1199,17 +1181,17 @@ function isCategoryExists(categoryList, categoryName) {
 function highlightExistingCategory(categoryName) {
     const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
-        const value = item.querySelector('.item-value-text').textContent.trim();
+        const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === categoryName.toLowerCase()) {
-            // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
+            // 添加 Bootstrap 高亮樣式
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }

@@ -5,7 +5,6 @@
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 <div class="container-fluid py-4">
@@ -91,16 +90,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- 统计信息 -->
-                    <div class="mt-auto">
-                        <div class="row text-center">
-                            <div class="col-12">
-                                <div class="h4 text-primary mb-0">1</div>
-                                <small class="text-muted">Location Entry</small>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -126,94 +115,98 @@
 
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
-                                <!-- Zone Field -->
-                                <div class="mb-4">
+                                {{-- Zone Field --}}
+                                <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-geo-alt me-2 text-primary"></i>Zone
                                     </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-geo-alt text-muted"></i>
-                                        </span>
-                                        <select class="form-select border-start-0" name="zone_id" id="zone_id" required>
-                                            <option value="">Select zone</option>
-                                            @foreach($zones as $zone)
-                                                <option value="{{ $zone->id }}"
-                                                    {{ $location->zone_id == $zone->id ? 'selected' : '' }}>
-                                                    {{ $zone->zone_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    <select class="form-control" name="zone_id" id="zone_id" required>
+                                        <option value="">Select zone</option>
+                                        @foreach($zones as $zone)
+                                            <option value="{{ $zone->id }}"
+                                                {{ $location->zone_id == $zone->id ? 'selected' : '' }}>
+                                                {{ $zone->zone_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                     <div class="form-text">
                                         <i class="bi bi-info-circle me-1"></i>
                                         Choose the zone for this location
                                     </div>
                                 </div>
 
-                                <!-- Rack Field -->
-                                <div class="mb-4">
+                                {{-- Rack Field --}}
+                                <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-box-seam me-2 text-primary"></i>Rack
                                     </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-box-seam text-muted"></i>
-                                        </span>
-                                        <select class="form-select border-start-0" name="rack_id" id="rack_id" required>
-                                            <option value="">Select rack</option>
-                                            @foreach($racks as $rack)
-                                                <option value="{{ $rack->id }}"
-                                                    {{ $location->rack_id == $rack->id ? 'selected' : '' }}>
-                                                    {{ $rack->rack_number }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    <select class="form-control" name="rack_id" id="rack_id" required>
+                                        <option value="">Select rack</option>
+                                        @foreach($racks as $rack)
+                                            <option value="{{ $rack->id }}"
+                                                {{ $location->rack_id == $rack->id ? 'selected' : '' }}>
+                                                {{ $rack->rack_number }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                     <div class="form-text">
                                         <i class="bi bi-info-circle me-1"></i>
                                         Choose the rack for this location
                                     </div>
                                 </div>
 
-                                <!-- Location Status Field -->
+                                {{-- Location Status Field --}}
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-dark mb-3">Location Status</label>
                                     <div class="row g-3">
+                                        @php
+                                            $currentStatus = $location->location_status ?? 'Available';
+                                        @endphp
+
                                         <div class="col-md-6">
-                                            <div class="card h-100 status-card {{ $location->location_status === 'Available' ? 'selected' : '' }}" data-status="Available">
+                                            <div class="card h-100 border status-card {{ $currentStatus === 'Available' ? 'selected' : '' }}" data-status="Available">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="location_status" value="Available" class="form-check-input me-3" {{ $location->location_status === 'Available' ? 'checked' : '' }}>
+                                                    <input type="radio" name="location_status" value="Available" class="form-check-input me-3"
+                                                           {{ old('location_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
                                                     <div>
-                                                        <div class="fw-semibold text-success">
-                                                            <i class="bi bi-check-circle-fill me-2"></i>Available
-                                                        </div>
-                                                        <small class="text-muted">Location is active and can be used</small>
+                                                        <h6 class="card-title mb-1">
+                                                            <i class="bi bi-check-circle me-2 text-success"></i>Available
+                                                        </h6>
+                                                        <p class="card-text text-muted small mb-0">Location is active and can be used</p>
                                                     </div>
                                                 </label>
                                             </div>
                                         </div>
+
                                         <div class="col-md-6">
-                                            <div class="card h-100 status-card {{ $location->location_status === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
+                                            <div class="card h-100 border status-card {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="location_status" value="Unavailable" class="form-check-input me-3" {{ $location->location_status === 'Unavailable' ? 'checked' : '' }}>
+                                                    <input type="radio" name="location_status" value="Unavailable" class="form-check-input me-3"
+                                                           {{ old('location_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
                                                     <div>
-                                                        <div class="fw-semibold text-secondary">
-                                                            <i class="bi bi-slash-circle-fill me-2"></i>Unavailable
-                                                        </div>
-                                                        <small class="text-muted">Location is inactive and cannot be used</small>
+                                                        <h6 class="card-title mb-1">
+                                                            <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
+                                                        </h6>
+                                                        <p class="card-text text-muted small mb-0">Location is inactive and cannot be used</p>
                                                     </div>
                                                 </label>
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Choose whether the location can be used for stock management
+                                    </div>
                                 </div>
 
-                                <!-- Action Button -->
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-lg">
-                                        <i class="bi bi-check-lg me-2"></i>Update Location
+                                <!-- 提交按钮区域 -->
+                                <div class="d-flex gap-3 mt-4">
+                                    <button type="submit" class="btn btn-warning flex-fill">
+                                        <i class="bi bi-pencil-square me-2"></i>Update Location Information
                                     </button>
+                                    <a href="{{ route('admin.location.index') }}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </a>
                                 </div>
                             </div>
                         </div>

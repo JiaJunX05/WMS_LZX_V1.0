@@ -42,7 +42,7 @@ function validateLibraryForm() {
         return false;
     }
 
-    if (sizeValue && !sizeValue) {
+    if (!sizeValue) {
         window.showAlert('Please enter size value', 'warning');
         return false;
     }
@@ -185,7 +185,7 @@ function getLibraryStatusClass(status) {
 /**
  * 檢查尺碼值是否存在
  */
-function isSizeValueExists(sizeList, sizeValue) {
+function isSizeValueExists(sizeValue) {
     return sizeList.some(item => item.sizeValue.toLowerCase() === sizeValue.toLowerCase());
 }
 
@@ -195,19 +195,22 @@ function isSizeValueExists(sizeList, sizeValue) {
 function highlightExistingSizeValue(element) {
     const existingValues = document.querySelectorAll('.value-item');
     for (let item of existingValues) {
-        const value = item.querySelector('.size-value-text').textContent.trim();
-        if (value.toLowerCase() === element.value.toLowerCase()) {
-            // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
+        const valueElement = item.querySelector('.size-combination div');
+        if (valueElement) {
+            const value = valueElement.textContent.trim();
+            if (value.toLowerCase() === element.value.toLowerCase()) {
+                // 添加高亮樣式
+                item.classList.add('border-warning');
 
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // 滾動到該元素
+                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
-            }, 3000);
-            break;
+                // 3秒後移除高亮
+                setTimeout(() => {
+                    item.classList.remove('border-warning');
+                }, 3000);
+                break;
+            }
         }
     }
 }
@@ -244,7 +247,7 @@ function handleCategoryChange() {
             selectedCategoryDisplay.textContent = selectedCategory.value ? selectedCategory.text : 'None';
         }
 
-        updateConfigSummary();
+        updateUI();
     }
 }
 
@@ -361,7 +364,7 @@ function initializeLibraryPage(config) {
     bindLibraryEvents();
 
     // 初始化狀態
-    updateConfigSummary();
+    updateUI();
 
     // 執行初始化回調函數（如果有）
     if (config && config.initializationCallback && typeof config.initializationCallback === 'function') {
@@ -794,8 +797,8 @@ function bindCreateEvents() {
 
     // 刪除尺碼值按鈕事件委託
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
 
             if (!isNaN(index)) {
@@ -841,7 +844,7 @@ function addSizeValue() {
     const categoryId = categorySelect.value;
 
     // 檢查是否已存在
-    if (isSizeValueExists(sizeList, sizeValue)) {
+    if (isSizeValueExists(sizeValue)) {
         window.showAlert(`Size value "${sizeValue}" already exists in the list`, 'error');
         highlightExistingSizeValue(sizeValueInput);
         sizeValueInput.focus();
@@ -858,8 +861,6 @@ function addSizeValue() {
     updateSizeList();
     updateUI();
 
-    // 顯示配置摘要
-    updateConfigSummary();
 
     // 顯示右邊的尺碼值表格
     showSizeValuesArea();
@@ -903,34 +904,83 @@ function updateSizeList() {
     const container = document.getElementById('sizeValuesList');
     if (!container) return;
 
-    container.innerHTML = '';
+    if (sizeList.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
 
+    let html = '';
     sizeList.forEach((item, index) => {
-        const sizeItem = document.createElement('div');
+        // 獲取該尺碼值對應的分類名稱
+        const categorySelect = document.getElementById('category_id');
+        let categoryName = 'Unknown Category';
+
+        if (categorySelect) {
+            // 查找對應的分類選項
+            for (let option of categorySelect.options) {
+                if (option.value === item.categoryId) {
+                    categoryName = option.text;
+                    break;
+                }
+            }
+        }
 
         // 檢查是否為重複項
-        const isDuplicate = isSizeValueExists(sizeList, item.sizeValue) &&
+        const isDuplicate = isSizeValueExists(item.sizeValue) &&
             sizeList.filter(i => i.sizeValue.toLowerCase() === item.sizeValue.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 rounded border';
-        const duplicateClasses = isDuplicate ? 'duplicate-item bg-warning-subtle border-warning' : 'bg-light';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
 
-        sizeItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        sizeItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-2">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                <span class="size-value-text fw-medium">${item.sizeValue}</span>
-                ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
+        html += `
+            <div class="${baseClasses} ${duplicateClasses}" data-size-value="${item.sizeValue}">
+                <div class="d-flex align-items-center">
+                    <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">${isDuplicate ? '⚠️' : (index + 1)}</span>
+                    <i class="bi bi-rulers text-primary me-2"></i>
+                    <div class="size-combination">
+                        <div class="fw-bold text-dark">${item.sizeValue}</div>
+                        <small class="text-muted">${categoryName}</small>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
         `;
-        container.appendChild(sizeItem);
+    });
+
+    container.innerHTML = html;
+}
+
+/**
+ * 排序尺碼值列表
+ */
+function sortSizeValuesList() {
+    const sizeValuesList = document.getElementById('sizeValuesList');
+    const items = Array.from(sizeValuesList.querySelectorAll('.value-item'));
+
+    if (items.length <= 1) return;
+
+    // 獲取尺碼值並排序
+    const sizeValues = items.map(item => ({
+        element: item,
+        value: item.querySelector('.size-combination div').textContent.trim()
+    }));
+
+    // 按字母順序排序
+    sizeValues.sort((a, b) => {
+        if (isAscending) {
+            return a.value.localeCompare(b.value);
+        } else {
+            return b.value.localeCompare(a.value);
+        }
+    });
+
+    // 重新排列DOM元素
+    sizeValues.forEach(({ element }) => {
+        sizeValuesList.appendChild(element);
     });
 }
 
@@ -939,25 +989,25 @@ function showSizeValuesArea() {
     // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const sizeInputPrompt = document.getElementById('sizeInputPrompt');
     if (sizeInputPrompt) {
-        sizeInputPrompt.style.display = 'none';
+        sizeInputPrompt.classList.add('d-none');
     }
 
     // 顯示尺碼值區域
     const sizeValuesArea = document.getElementById('sizeValuesArea');
     if (sizeValuesArea) {
-        sizeValuesArea.style.display = 'block';
+        sizeValuesArea.classList.remove('d-none');
     }
 
     // 顯示提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'block';
+        submitSection.classList.remove('d-none');
     }
 }
 
@@ -989,18 +1039,15 @@ function clearForm() {
         categorySelect.value = '';
     }
 
-    // 更新UI
+    // 隱藏所有區域
+    hideAllAreas();
+
+    // 更新UI（只調用一次）
     updateSizeList();
     updateUI();
 
     // 顯示成功提示
     window.showAlert('All size values cleared successfully', 'success');
-
-    // 隱藏所有區域
-    hideAllAreas();
-
-    // 更新UI
-    updateUI();
 }
 
 // 隱藏所有區域
@@ -1008,25 +1055,25 @@ function hideAllAreas() {
     // 隱藏尺碼值區域
     const sizeValuesArea = document.getElementById('sizeValuesArea');
     if (sizeValuesArea) {
-        sizeValuesArea.style.display = 'none';
+        sizeValuesArea.classList.add('d-none');
     }
 
     // 隱藏輸入提示
     const sizeInputPrompt = document.getElementById('sizeInputPrompt');
     if (sizeInputPrompt) {
-        sizeInputPrompt.style.display = 'none';
+        sizeInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'none';
+        submitSection.classList.add('d-none');
     }
 
     // 顯示初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -1034,12 +1081,6 @@ function hideAllAreas() {
 function updateUI() {
     // 更新尺碼值計數
     updateSizeValuesCount();
-
-    // 更新尺碼範圍顯示
-    updateSizeRangeDisplay();
-
-    // 更新配置摘要
-    updateConfigSummary();
 }
 
 // 更新尺碼值計數
@@ -1130,7 +1171,7 @@ function sortSizeValuesList() {
     // 獲取尺碼值並排序
     const sizeValues = items.map(item => ({
         element: item,
-        value: item.querySelector('.size-value-text').textContent.trim()
+        value: item.querySelector('.size-combination div').textContent.trim()
     }));
 
     // 按字母順序排序（簡單排序）
@@ -1197,7 +1238,7 @@ function addMultipleSizes(sizes) {
     let skippedCount = 0;
 
     sizes.forEach(size => {
-        if (!isSizeValueExists(sizeList, size)) {
+        if (!isSizeValueExists(size)) {
             addSizeValueToList(size);
             addedCount++;
         } else {
@@ -1229,7 +1270,7 @@ function addSizeValueToList(sizeValue) {
     const categoryId = categorySelect.value;
 
     // 檢查是否為重複項
-    if (isSizeValueExists(sizeList, sizeValue)) {
+    if (isSizeValueExists(sizeValue)) {
         return; // 跳過重複項，不添加到列表
     }
 

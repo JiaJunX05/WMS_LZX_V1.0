@@ -5,7 +5,6 @@
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 <div class="container-fluid py-4">
@@ -117,87 +116,91 @@
 
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
-                                <!-- Category Field -->
-                                <div class="mb-4">
+                                {{-- Category Field --}}
+                                <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-tag me-2 text-primary"></i>Category
                                     </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-tag text-muted"></i>
-                                        </span>
-                                        <select class="form-select border-start-0" name="category_id" id="category_id" required>
-                                            <option value="">Select category</option>
-                                            @foreach($categories as $category)
-                                                <option value="{{ $category->id }}"
-                                                    {{ $sizeLibrary->category_id == $category->id ? 'selected' : '' }}>
-                                                    {{ $category->category_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    <select class="form-control" name="category_id" id="category_id" required>
+                                        <option value="">Select category</option>
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category->id }}"
+                                                {{ $sizeLibrary->category_id == $category->id ? 'selected' : '' }}>
+                                                {{ $category->category_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                     <div class="form-text">
                                         <i class="bi bi-info-circle me-1"></i>
                                         Choose the category for this size library
                                     </div>
                                 </div>
 
-                                <!-- Size Value Field -->
-                                <div class="mb-4">
+                                {{-- Size Value Field --}}
+                                <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-rulers me-2 text-primary"></i>Size Value
                                     </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-rulers text-muted"></i>
-                                        </span>
-                                        <input type="text" class="form-control border-start-0" name="size_value" id="size_value"
-                                               value="{{ $sizeLibrary->size_value }}" required>
-                                    </div>
+                                    <input type="text" class="form-control" name="size_value" id="size_value"
+                                           value="{{ $sizeLibrary->size_value }}" placeholder="Enter size value" required>
                                     <div class="form-text">
                                         <i class="bi bi-info-circle me-1"></i>
                                         Enter the size value for this library entry
                                     </div>
                                 </div>
 
-                                <!-- Size Status Field -->
+                                {{-- Size Status Field --}}
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-dark mb-3">Size Status</label>
                                     <div class="row g-3">
+                                        @php
+                                            $currentStatus = $sizeLibrary->size_status ?? 'Available';
+                                        @endphp
+
                                         <div class="col-md-6">
-                                            <div class="card h-100 status-card {{ $sizeLibrary->size_status === 'Available' ? 'selected' : '' }}" data-status="Available">
+                                            <div class="card h-100 border status-card {{ $currentStatus === 'Available' ? 'selected' : '' }}" data-status="Available">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="size_status" value="Available" class="form-check-input me-3" {{ $sizeLibrary->size_status === 'Available' ? 'checked' : '' }}>
+                                                    <input type="radio" name="size_status" value="Available" class="form-check-input me-3"
+                                                           {{ old('size_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
                                                     <div>
-                                                        <div class="fw-semibold text-success">
-                                                            <i class="bi bi-check-circle-fill me-2"></i>Available
-                                                        </div>
-                                                        <small class="text-muted">Size is active and can be used</small>
+                                                        <h6 class="card-title mb-1">
+                                                            <i class="bi bi-check-circle me-2 text-success"></i>Available
+                                                        </h6>
+                                                        <p class="card-text text-muted small mb-0">Size is active and can be used</p>
                                                     </div>
                                                 </label>
                                             </div>
                                         </div>
+
                                         <div class="col-md-6">
-                                            <div class="card h-100 status-card {{ $sizeLibrary->size_status === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
+                                            <div class="card h-100 border status-card {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="size_status" value="Unavailable" class="form-check-input me-3" {{ $sizeLibrary->size_status === 'Unavailable' ? 'checked' : '' }}>
+                                                    <input type="radio" name="size_status" value="Unavailable" class="form-check-input me-3"
+                                                           {{ old('size_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
                                                     <div>
-                                                        <div class="fw-semibold text-secondary">
-                                                            <i class="bi bi-slash-circle-fill me-2"></i>Unavailable
-                                                        </div>
-                                                        <small class="text-muted">Size is inactive and cannot be used</small>
+                                                        <h6 class="card-title mb-1">
+                                                            <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
+                                                        </h6>
+                                                        <p class="card-text text-muted small mb-0">Size is inactive and cannot be used</p>
                                                     </div>
                                                 </label>
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Choose whether the size can be used for product management
+                                    </div>
                                 </div>
 
-                                <!-- Action Button -->
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-lg">
-                                        <i class="bi bi-check-lg me-2"></i>Update Size Library
+                                <!-- 提交按钮区域 -->
+                                <div class="d-flex gap-3 mt-4">
+                                    <button type="submit" class="btn btn-warning flex-fill">
+                                        <i class="bi bi-pencil-square me-2"></i>Update Size Library Information
                                     </button>
+                                    <a href="{{ route('admin.library.index') }}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </a>
                                 </div>
                             </div>
                         </div>

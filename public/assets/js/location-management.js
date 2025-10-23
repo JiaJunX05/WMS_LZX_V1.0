@@ -185,7 +185,7 @@ function getLocationStatusClass(status) {
 /**
  * 檢查位置組合是否已存在
  */
-function isLocationExists(zoneId, rackId, locationList) {
+function isLocationExists(zoneId, rackId) {
     return locationList.some(location =>
         location.zoneId === zoneId && location.rackId === rackId
     );
@@ -222,18 +222,18 @@ function highlightExistingLocation(zoneId, rackId) {
     // 高亮列表中的重複項
     const existingLocations = document.querySelectorAll('.value-item');
     for (let item of existingLocations) {
-        const itemZoneId = item.dataset.zoneId;
-        const itemRackId = item.dataset.rackId;
-        if (itemZoneId === zoneId && itemRackId === rackId) {
+        const itemZoneId = item.getAttribute('data-zone-id');
+        const itemRackId = item.getAttribute('data-rack-id');
+        if (itemZoneId === zoneId.toString() && itemRackId === rackId.toString()) {
             // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }
@@ -274,19 +274,13 @@ function updateConfigSummary() {
 /**
  * 更新位置計數
  */
-function updateLocationCount(locationList) {
+function updateLocationValuesCount() {
     const count = locationList.length;
 
     // 更新右側計數徽章
-    const countBadge = document.getElementById('locationCount');
+    const countBadge = document.getElementById('locationValuesCount');
     if (countBadge) {
-        countBadge.textContent = `${count} location${count !== 1 ? 's' : ''}`;
-    }
-
-    // 更新左側計數文本
-    const countText = document.getElementById('locationCountText');
-    if (countText) {
-        countText.textContent = count === 0 ? 'No locations added yet' : `${count} location${count !== 1 ? 's' : ''} added`;
+        countBadge.textContent = `${count} locations`;
     }
 }
 
@@ -294,39 +288,29 @@ function updateLocationCount(locationList) {
  * 更新UI（通用）
  */
 function updateUI(locationList = []) {
-    updateLocationCount(locationList);
-    updateConfigSummary();
-
-    // 更新添加按鈕狀態
-    const zoneId = document.getElementById('zone_id').value;
-    const rackId = document.getElementById('rack_id').value;
-    const addBtn = document.getElementById('addLocation');
-
-    if (zoneId && rackId) {
-        addBtn.disabled = false;
-        addBtn.classList.remove('btn-secondary');
-        addBtn.classList.add('btn-primary');
-    } else {
-        addBtn.disabled = true;
-        addBtn.classList.remove('btn-primary');
-        addBtn.classList.add('btn-secondary');
-    }
+    updateLocationValuesCount();
 }
 
 /**
  * 顯示位置區域
  */
-function showLocationArea() {
-    // 顯示位置區域
-    const locationArea = document.getElementById('locationArea');
-    if (locationArea) {
-        locationArea.style.display = 'block';
+function showLocationValuesArea() {
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    // 顯示位置值區域
+    const locationValuesArea = document.getElementById('locationValuesArea');
+    if (locationValuesArea) {
+        locationValuesArea.classList.remove('d-none');
     }
 
     // 顯示提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'block';
+        submitSection.classList.remove('d-none');
     }
 }
 
@@ -334,23 +318,22 @@ function showLocationArea() {
  * 隱藏所有區域
  */
 function hideAllAreas() {
-    // 隱藏位置區域
-    const locationArea = document.getElementById('locationArea');
-    if (locationArea) {
-        locationArea.style.display = 'none';
+    // 隱藏位置值區域
+    const locationValuesArea = document.getElementById('locationValuesArea');
+    if (locationValuesArea) {
+        locationValuesArea.classList.add('d-none');
     }
-
 
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'none';
+        submitSection.classList.add('d-none');
     }
 
     // 顯示初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -387,19 +370,7 @@ function bindLocationEvents() {
  * 處理區域變化
  */
 function handleZoneChange() {
-    const zoneSelect = document.getElementById('zone_id');
-    const selectedZone = zoneSelect.value;
-
-    if (selectedZone) {
-        // 顯示位置輸入提示
-        showLocationInputPrompt();
-        // 更新配置摘要
-        updateConfigSummary();
-    } else {
-        // 隱藏所有相關區域
-        hideAllAreas();
-    }
-
+    // 只更新UI状态，不改变右侧面板
     updateUI();
 }
 
@@ -407,19 +378,7 @@ function handleZoneChange() {
  * 處理貨架變化
  */
 function handleRackChange() {
-    const rackSelect = document.getElementById('rack_id');
-    const selectedRack = rackSelect.value;
-
-    if (selectedRack) {
-        // 顯示位置輸入提示
-        showLocationInputPrompt();
-        // 更新配置摘要
-        updateConfigSummary();
-    } else {
-        // 隱藏所有相關區域
-        hideAllAreas();
-    }
-
+    // 只更新UI状态，不改变右侧面板
     updateUI();
 }
 
@@ -430,7 +389,7 @@ function showLocationInputPrompt() {
     // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 }
 
@@ -892,8 +851,8 @@ function bindCreateEvents() {
 
     // 事件委托：刪除位置按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
             if (!isNaN(index)) {
                 removeLocation(index);
@@ -923,7 +882,7 @@ function addLocation() {
     const rackId = rackSelect.value;
 
     // 檢查是否已存在
-    if (isLocationExists(zoneId, rackId, locationList)) {
+    if (isLocationExists(zoneId, rackId)) {
         window.showAlert('This location combination already exists in the list', 'error');
         highlightExistingLocation(zoneId, rackId);
         return;
@@ -935,18 +894,7 @@ function addLocation() {
     // 清空選擇
     zoneSelect.value = '';
     rackSelect.value = '';
-    document.getElementById('selectedZone').textContent = 'None';
-    document.getElementById('selectedRack').textContent = 'None';
-    updateConfigSummary();
     zoneSelect.focus();
-
-    // 顯示位置區域（第一次添加時）
-    if (locationList.length === 1) {
-        showLocationArea();
-    }
-
-    // 更新UI
-    updateUI(locationList);
 
     // 顯示成功添加的alert
     window.showAlert('Location added successfully', 'success');
@@ -975,6 +923,11 @@ function addLocationToList(zoneId, rackId) {
     // 更新列表顯示
     updateLocationList();
     updateUI(locationList);
+
+    // 顯示位置區域（第一次添加時）
+    if (locationList.length === 1) {
+        showLocationValuesArea();
+    }
 }
 
 /**
@@ -1009,7 +962,7 @@ function removeLocation(index) {
  * 更新位置列表顯示
  */
 function updateLocationList() {
-    const locationListContainer = document.getElementById('locationList');
+    const locationListContainer = document.getElementById('locationValuesList');
 
     if (locationList.length === 0) {
         locationListContainer.innerHTML = '';
@@ -1018,17 +971,29 @@ function updateLocationList() {
 
     let html = '';
     locationList.forEach((location, index) => {
+        const locationId = `location-${location.zoneId}-${location.rackId}`;
+
+        // 檢查是否為重複項
+        const isDuplicate = isLocationExists(location.zoneId, location.rackId) &&
+            locationList.filter(i => i.zoneId === location.zoneId && i.rackId === location.rackId).length > 1;
+
+        // 根據是否為重複項設置不同的樣式
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
+
         html += `
-            <div class="value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in" data-zone-id="${location.zoneId}" data-rack-id="${location.rackId}">
+            <div class="${baseClasses} ${duplicateClasses}" data-zone-id="${location.zoneId}" data-rack-id="${location.rackId}" data-location-id="${locationId}">
                 <div class="d-flex align-items-center">
+                    <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">${isDuplicate ? '⚠️' : (index + 1)}</span>
                     <i class="bi bi-geo-alt text-primary me-2"></i>
                     <div class="location-combination">
-                        <span class="zone-badge">${location.zoneName}</span>
-                        <span>-</span>
-                        <span class="rack-badge">${location.rackName}</span>
+                        <span class="zone-badge fw-bold text-dark">${location.zoneName}</span>
+                        <span class="text-muted mx-2">-</span>
+                        <span class="rack-badge fw-bold text-dark">${location.rackName}</span>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
+                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
                     <i class="bi bi-trash me-1"></i>Remove
                 </button>
             </div>
@@ -1036,6 +1001,36 @@ function updateLocationList() {
     });
 
     locationListContainer.innerHTML = html;
+}
+
+/**
+ * 排序位置值列表
+ */
+function sortLocationValuesList() {
+    const locationValuesList = document.getElementById('locationValuesList');
+    const items = Array.from(locationValuesList.querySelectorAll('.value-item'));
+
+    if (items.length <= 1) return;
+
+    // 獲取位置組合並排序
+    const locationValues = items.map(item => ({
+        element: item,
+        value: item.querySelector('.location-combination').textContent.trim()
+    }));
+
+    // 按字母順序排序
+    locationValues.sort((a, b) => {
+        if (isAscending) {
+            return a.value.localeCompare(b.value);
+        } else {
+            return b.value.localeCompare(a.value);
+        }
+    });
+
+    // 重新排列DOM元素
+    locationValues.forEach(({ element }) => {
+        locationValuesList.appendChild(element);
+    });
 }
 
 /**
@@ -1060,7 +1055,7 @@ function clearForm() {
 
         // 清空位置列表
         locationList = [];
-        const locationListElement = document.getElementById('locationList');
+        const locationListElement = document.getElementById('locationValuesList');
         if (locationListElement) {
             locationListElement.innerHTML = '';
         }
@@ -1099,8 +1094,8 @@ function toggleSortOrder() {
  * 排序位置列表
  */
 function sortLocationList() {
-    const locationList = document.getElementById('locationList');
-    const items = Array.from(locationList.querySelectorAll('.value-item'));
+    const locationListContainer = document.getElementById('locationValuesList');
+    const items = Array.from(locationListContainer.querySelectorAll('.value-item'));
 
     if (items.length <= 1) return;
 
@@ -1125,7 +1120,7 @@ function sortLocationList() {
 
     // 重新排列DOM元素
     locations.forEach(({ element }) => {
-        locationList.appendChild(element);
+        locationListContainer.appendChild(element);
     });
 }
 

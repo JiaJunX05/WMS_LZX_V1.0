@@ -6,7 +6,6 @@
 <!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
@@ -84,16 +83,6 @@
                                 <div>
                                     <i class="bi bi-calendar me-2 text-muted"></i>
                                     <span>Created: <strong>{{ $gender->created_at->format('M d, Y') }}</strong></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 统计信息 --}}
-                        <div class="mt-auto">
-                            <div class="row text-center">
-                                <div class="col-12">
-                                    <div class="h4 text-primary mb-0">1</div>
-                                    <small class="text-muted">Gender Record</small>
                                 </div>
                             </div>
                         </div>

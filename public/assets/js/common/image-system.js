@@ -87,44 +87,6 @@ const IMAGE_CONFIGS = {
         updatePreviewContainerId: 'image-preview'
     },
 
-    // 擴展模組配置
-    library: {
-        createImageInputId: 'library_image',
-        createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
-        createPreviewIconId: 'preview-icon',
-        createImageUploadContentId: 'imageUploadContent',
-        updateImageInputId: 'input_image',
-        updatePreviewContainerId: 'image-preview'
-    },
-    template: {
-        createImageInputId: 'template_image',
-        createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
-        createPreviewIconId: 'preview-icon',
-        createImageUploadContentId: 'imageUploadContent',
-        updateImageInputId: 'input_image',
-        updatePreviewContainerId: 'image-preview'
-    },
-    mapping: {
-        createImageInputId: 'mapping_image',
-        createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
-        createPreviewIconId: 'preview-icon',
-        createImageUploadContentId: 'imageUploadContent',
-        updateImageInputId: 'input_image',
-        updatePreviewContainerId: 'image-preview'
-    },
-    location: {
-        createImageInputId: 'location_image',
-        createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
-        createPreviewIconId: 'preview-icon',
-        createImageUploadContentId: 'imageUploadContent',
-        updateImageInputId: 'input_image',
-        updatePreviewContainerId: 'image-preview'
-    },
-
     // 特殊模組配置
     product: {
         coverImageInputId: 'cover_image',

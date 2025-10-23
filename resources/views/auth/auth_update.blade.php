@@ -6,7 +6,6 @@
 <!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">

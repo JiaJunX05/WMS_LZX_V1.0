@@ -740,40 +740,38 @@ function updateGenderList() {
     container.innerHTML = '';
 
     genderList.forEach((item, index) => {
-        const genderRow = document.createElement('tr');
-        genderRow.className = 'value-item';
-
         // 檢查是否為重複項
         const isDuplicate = isGenderExists(item.genderName) &&
             genderList.filter(i => i.genderName.toLowerCase() === item.genderName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        if (isDuplicate) {
-            genderRow.classList.add('table-warning', 'border-warning');
-        }
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
 
-        genderRow.innerHTML = `
-            <td class="text-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+        const genderItem = document.createElement('div');
+        genderItem.className = `${baseClasses} ${duplicateClasses}`;
+
+        genderItem.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-            </td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="me-2" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                        <i class="bi bi-person text-muted"></i>
-                    </div>
-                    <span class="fw-bold">${item.genderName}</span>
-                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2">Duplicate</span>' : ''}
+                <div class="me-3 flex-shrink-0" style="width: 32px; height: 32px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-person text-muted"></i>
                 </div>
-            </td>
-            <td class="text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </td>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="fw-bold text-dark mb-1 text-truncate">
+                        ${item.genderName}
+                    </div>
+                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                <i class="bi bi-trash me-1"></i>Remove
+            </button>
         `;
-        container.appendChild(genderRow);
+
+        container.appendChild(genderItem);
     });
 }
 
@@ -786,15 +784,15 @@ function highlightExistingGender(genderName) {
     for (let item of existingValues) {
         const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === genderName.toLowerCase()) {
-            // 添加高亮樣式
-            item.classList.add('table-warning', 'border-warning');
+            // 添加 Bootstrap 高亮樣式
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('table-warning', 'border-warning');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }
@@ -809,12 +807,6 @@ function showGenderValuesArea() {
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
         initialMessage.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const genderInputPrompt = document.getElementById('genderInputPrompt');
-    if (genderInputPrompt) {
-        genderInputPrompt.classList.add('d-none');
     }
 
     // 顯示性別值區域
@@ -841,12 +833,6 @@ function hideAllAreas() {
     const genderValuesArea = document.getElementById('genderValuesArea');
     if (genderValuesArea) {
         genderValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const genderInputPrompt = document.getElementById('genderInputPrompt');
-    if (genderInputPrompt) {
-        genderInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕

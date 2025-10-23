@@ -275,7 +275,7 @@ class ColorDashboard {
                     </div>
                 </td>
                 <td>
-                    <div class="color-preview-small" style="background-color: ${color.color_hex || '#cccccc'}; width: 2.5rem; height: 2.5rem; border-radius: 4px; border: 1px solid #dee2e6;"></div>
+                    <div class="rounded border border-2 border-white shadow-sm" style="background-color: ${color.color_hex || '#cccccc'}; width: 2.5rem; height: 2.5rem;"></div>
                 </td>
                 <td>
                     <div class="fw-bold text-dark mb-1 text-truncate">
@@ -913,49 +913,43 @@ function updateColorList() {
     container.innerHTML = '';
 
     colorList.forEach((item, index) => {
-        const colorRow = document.createElement('tr');
-
         // 檢查是否為重複項
         const isDuplicate = isColorExists(item.colorName) &&
             colorList.filter(i => i.colorName.toLowerCase() === item.colorName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item';
-        const duplicateClasses = isDuplicate ? 'table-warning border-warning' : '';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
 
-        colorRow.className = `${baseClasses} ${duplicateClasses}`;
+        const colorItem = document.createElement('div');
+        colorItem.className = `${baseClasses} ${duplicateClasses}`;
 
-        colorRow.innerHTML = `
-            <td class="text-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+        colorItem.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-            </td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="me-3 flex-shrink-0">
-                        <div class="color-preview-small" style="background-color: ${item.colorHex}; width: 2.5rem; height: 2.5rem; border-radius: 4px; border: 1px solid #dee2e6;"></div>
-                    </div>
-                    <div class="flex-grow-1 min-width-0">
-                        <div class="fw-bold text-dark mb-1 text-truncate">
-                            <i class="bi bi-palette me-2 text-primary"></i>${item.colorName}
-                        </div>
-                        <div class="text-muted small" style="line-height: 1.3;">
-                            <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${item.colorHex}</span>
-                            <span class="mx-2">|</span>
-                            <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${item.colorRgb}</span>
-                        </div>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
+                <div class="me-3 flex-shrink-0">
+                    <div class="rounded border border-2 border-white shadow-sm" style="background-color: ${item.colorHex}; width: 2.5rem; height: 2.5rem;"></div>
                 </div>
-            </td>
-            <td class="text-end">
-                <button type="button" class="btn btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </td>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="fw-bold text-dark mb-1 text-truncate">
+                        <i class="bi bi-palette me-2 text-primary"></i>${item.colorName}
+                    </div>
+                    <div class="text-muted small" style="line-height: 1.3;">
+                        <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${item.colorHex}</span>
+                        <span class="mx-2">|</span>
+                        <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${item.colorRgb}</span>
+                    </div>
+                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                <i class="bi bi-trash me-1"></i>Remove
+            </button>
         `;
-        container.appendChild(colorRow);
+
+        container.appendChild(colorItem);
     });
 }
 
@@ -969,14 +963,14 @@ function highlightExistingColor(colorName) {
         const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === colorName.toLowerCase()) {
             // 添加 Bootstrap 高亮樣式
-            item.classList.add('table-warning', 'border-warning');
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('table-warning', 'border-warning');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }
@@ -991,12 +985,6 @@ function showColorValuesArea() {
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
         initialMessage.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const colorInputPrompt = document.getElementById('colorInputPrompt');
-    if (colorInputPrompt) {
-        colorInputPrompt.classList.add('d-none');
     }
 
     // 顯示顏色值區域
@@ -1023,12 +1011,6 @@ function hideAllAreas() {
     const colorValuesArea = document.getElementById('colorValuesArea');
     if (colorValuesArea) {
         colorValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const colorInputPrompt = document.getElementById('colorInputPrompt');
-    if (colorInputPrompt) {
-        colorInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕

@@ -192,24 +192,13 @@ function getTemplateStatusClass(status) {
  * 更新配置摘要
  */
 function updateConfigSummary() {
-    const categorySelect = document.getElementById('category_id');
-    const genderSelect = document.getElementById('gender_id');
-    const configSummary = document.getElementById('configSummary');
-
-    if (categorySelect && genderSelect && configSummary) {
-        if (categorySelect.value && genderSelect.value) {
-            configSummary.style.display = 'block';
-        } else {
-            configSummary.style.display = 'none';
-        }
-    }
+    // 配置摘要已移除，此函数保留为空以避免错误
 }
 
 /**
  * 處理分類選擇變化
  */
 function handleCategoryChange() {
-    updateConfigSummary();
     updateUI();
     loadAvailableSizeLibraries();
 }
@@ -218,7 +207,6 @@ function handleCategoryChange() {
  * 處理性別選擇變化
  */
 function handleGenderChange() {
-    updateConfigSummary();
     updateUI();
     loadAvailableSizeLibraries();
 }
@@ -364,7 +352,13 @@ function loadAvailableSizeLibraries() {
  * 顯示尺碼庫加載狀態
  */
 function showSizeLibraryLoading() {
+    const selectionArea = document.getElementById('sizeLibrarySelection');
     const container = document.getElementById('sizeLibraryCardsContainer');
+
+    if (selectionArea) {
+        selectionArea.classList.remove('d-none');
+    }
+
     if (container) {
         container.innerHTML = `
             <div class="text-center py-4">
@@ -374,6 +368,12 @@ function showSizeLibraryLoading() {
                 <p class="mt-2 text-muted">Loading available size libraries...</p>
             </div>
         `;
+    }
+
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
     }
 }
 
@@ -386,12 +386,12 @@ function displaySizeLibraryCards(sizeLibraries) {
     if (!selectionArea || !container) return;
 
     // 顯示選擇區域
-    selectionArea.style.display = 'block';
+    selectionArea.classList.remove('d-none');
 
     // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 
     if (sizeLibraries.length === 0) {
@@ -405,22 +405,36 @@ function displaySizeLibraryCards(sizeLibraries) {
         return;
     }
 
-    container.innerHTML = `
-        <div class="sizes-grid">
-            ${sizeLibraries.map(library => `
-                <div class="size-card" data-size-value="${library.size_value}" data-library-id="${library.id}" data-status="${library.size_status}">
-                    <input type="checkbox" name="size_library_ids[]" value="${library.id}" class="size-checkbox" id="size_${library.id}">
-                    <label for="size_${library.id}" class="size-label">
-                        <div class="size-value">${library.size_value}</div>
-                        <div class="size-status">${library.size_status}</div>
-                    </label>
-                </div>
-            `).join('')}
+    container.innerHTML = sizeLibraries.map(library => `
+        <div class="col-6 col-md-4 col-lg-3 mb-3">
+            <div class="card size-card h-100 border-2 border-light shadow-sm"
+                 data-size-value="${library.size_value}"
+                 data-library-id="${library.id}"
+                 data-status="${library.size_status}"
+                 style="cursor: pointer; transition: all 0.3s ease;">
+                <input type="checkbox" name="size_library_ids[]" value="${library.id}"
+                       class="size-checkbox position-absolute opacity-0"
+                       id="size_${library.id}"
+                       style="pointer-events: none;">
+                <label for="size_${library.id}" class="card-body d-flex flex-column justify-content-center align-items-center text-center p-3"
+                       style="cursor: pointer; min-height: 80px;">
+                    <div class="size-value fw-bold text-dark mb-2">${library.size_value}</div>
+                    <div class="size-status badge ${library.size_status === 'Available' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} px-2 py-1 rounded-pill small">
+                        ${library.size_status}
+                    </div>
+                </label>
+            </div>
         </div>
-    `;
+    `).join('');
 
     // 綁定卡片點擊事件
     bindSizeLibraryCardEvents();
+
+    // 顯示提交按鈕
+    const submitSection = document.getElementById('submitSection');
+    if (submitSection) {
+        submitSection.classList.remove('d-none');
+    }
 }
 
 /**
@@ -429,13 +443,19 @@ function displaySizeLibraryCards(sizeLibraries) {
 function hideSizeLibraryCards() {
     const selectionArea = document.getElementById('sizeLibrarySelection');
     if (selectionArea) {
-        selectionArea.style.display = 'none';
+        selectionArea.classList.add('d-none');
+    }
+
+    // 隱藏提交按鈕
+    const submitSection = document.getElementById('submitSection');
+    if (submitSection) {
+        submitSection.classList.add('d-none');
     }
 
     // 顯示初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -450,13 +470,30 @@ function bindSizeLibraryCardEvents() {
         if (checkbox) {
             checkbox.addEventListener('change', function() {
                 if (this.checked) {
-                    card.classList.add('selected');
+                    card.classList.add('border-success', 'bg-success-subtle');
+                    card.classList.remove('border-light');
                 } else {
-                    card.classList.remove('selected');
+                    card.classList.remove('border-success', 'bg-success-subtle');
+                    card.classList.add('border-light');
                 }
                 updateSelectionCounter();
             });
         }
+
+        // 添加悬停效果
+        card.addEventListener('mouseenter', function() {
+            if (!checkbox.checked) {
+                this.classList.add('border-primary');
+                this.classList.remove('border-light');
+            }
+        });
+
+        card.addEventListener('mouseleave', function() {
+            if (!checkbox.checked) {
+                this.classList.remove('border-primary');
+                this.classList.add('border-light');
+            }
+        });
     });
 }
 
@@ -468,11 +505,20 @@ function updateSelectionCounter() {
     const counter = document.getElementById('selectionCounter');
     if (counter) {
         counter.textContent = `${selectedCount} selected`;
-        counter.className = selectedCount > 0 ? 'badge bg-success' : 'badge bg-primary';
+
+        // 檢查是否超過限制
+        const MAX_TEMPLATES = 20;
+        if (selectedCount > MAX_TEMPLATES) {
+            counter.className = 'badge bg-danger';
+            counter.textContent = `${selectedCount} selected (Max: ${MAX_TEMPLATES})`;
+        } else if (selectedCount > 0) {
+            counter.className = 'badge bg-success';
+        } else {
+            counter.className = 'badge bg-primary';
+        }
     }
 
-    // 同時更新配置摘要
-    updateConfigSummary();
+    // 配置摘要已移除
 }
 
 /**
@@ -511,9 +557,6 @@ function bindTemplateEvents() {
 function initializeTemplatePage(config) {
     // 綁定事件監聽器
     bindTemplateEvents();
-
-    // 初始化狀態
-    updateConfigSummary();
 
     // 執行初始化回調函數（如果有）
     if (config && config.initializationCallback && typeof config.initializationCallback === 'function') {
@@ -954,18 +997,6 @@ function initializeTemplateCreate() {
  * 綁定創建頁面事件
  */
 function bindCreateEvents() {
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // Select All
-    const selectAllBtn = document.getElementById('selectAllLibraries');
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', selectAllLibraries);
-    }
-
     // 綁定選擇按鈕事件
     bindSelectionButtons();
 
@@ -983,33 +1014,13 @@ function bindSelectionButtons() {
     // 全選按鈕
     const selectAllBtn = document.getElementById('selectAllBtn');
     if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', function() {
-            const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = true;
-                checkbox.closest('.size-card').classList.add('selected');
-            });
-            updateSelectionCounter();
-        });
+        selectAllBtn.addEventListener('click', selectAllLibraries);
     }
 
-    // 清除按鈕
+    // 清除按鈕 - 使用 clearForm 函数
     const clearAllBtn = document.getElementById('clearAllBtn');
     if (clearAllBtn) {
-        clearAllBtn.addEventListener('click', function() {
-            // 添加確認對話框
-            if (!confirm('Are you sure you want to clear all selected size libraries?')) {
-                return;
-            }
-
-            const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
-                checkbox.closest('.size-card').classList.remove('selected');
-            });
-            updateSelectionCounter();
-            window.showAlert('All selections cleared', 'success');
-        });
+        clearAllBtn.addEventListener('click', clearForm);
     }
 }
 
@@ -1017,74 +1028,24 @@ function bindSelectionButtons() {
  * 更新配置摘要
  */
 function updateConfigSummary() {
-    const categorySelect = document.getElementById('category_id');
-    const genderSelect = document.getElementById('gender_id');
-    const configSummary = document.getElementById('configSummary');
-
-    // 檢查元素是否存在（Update 頁面可能沒有這些元素）
-    if (categorySelect && genderSelect && configSummary) {
-        if (categorySelect.value && genderSelect.value) {
-            configSummary.style.display = 'block';
-        } else {
-            configSummary.style.display = 'none';
-        }
-    }
-
-    // 只有在 Create 頁面才更新這些元素
-    const selectedCategory = document.getElementById('selectedCategory');
-    const selectedGender = document.getElementById('selectedGender');
-    const selectedSizeLibrary = document.getElementById('selectedSizeLibrary');
-
-    if (selectedCategory && selectedGender && selectedSizeLibrary) {
-        const categoryName = categorySelect ? (categorySelect.options[categorySelect.selectedIndex]?.text || 'None') : 'None';
-        const genderName = genderSelect ? (genderSelect.options[genderSelect.selectedIndex]?.text || 'None') : 'None';
-
-        // 獲取選中的尺碼庫
-        const selectedCheckboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked');
-        let sizeLibraryText = 'None';
-
-        if (selectedCheckboxes.length > 0) {
-            const selectedSizes = Array.from(selectedCheckboxes).map(checkbox => {
-                return checkbox.closest('.size-card').getAttribute('data-size-value');
-            });
-            if (selectedSizes.length === 1) {
-                sizeLibraryText = selectedSizes[0];
-            } else {
-                sizeLibraryText = `${selectedSizes.length} templates`;
-            }
-        }
-
-        selectedCategory.textContent = categoryName;
-        selectedGender.textContent = genderName;
-        selectedSizeLibrary.textContent = sizeLibraryText;
-
-        // 顯示配置摘要
-        if (categorySelect && genderSelect) {
-            if (categorySelect.value && genderSelect.value) {
-                configSummary.style.display = 'block';
-
-                // 更新選擇信息
-                const selectionInfo = document.getElementById('selectionInfo');
-                if (selectionInfo) {
-                    selectionInfo.textContent = `(${categoryName} - ${genderName})`;
-                }
-            } else {
-                configSummary.style.display = 'none';
-
-                // 清空選擇信息
-                const selectionInfo = document.getElementById('selectionInfo');
-                if (selectionInfo) {
-                    selectionInfo.textContent = '';
-                }
-            }
-        }
-    }
+    // 配置摘要已移除，此函数保留为空以避免错误
 }
 
 /**
  * 清除表單
  */
 function clearForm() {
+    // 檢查是否有數據需要清除
+    const categoryId = document.getElementById('category_id').value;
+    const genderId = document.getElementById('gender_id').value;
+    const selectedCheckboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked');
+
+    // 如果沒有任何選擇，顯示提示
+    if (!categoryId && !genderId && selectedCheckboxes.length === 0) {
+        window.showAlert('No data to clear', 'info');
+        return;
+    }
+
     // 添加確認對話框
     if (!confirm('Are you sure you want to clear all selections? This action cannot be undone.')) {
         return;
@@ -1098,12 +1059,13 @@ function clearForm() {
     const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
         checkbox.checked = false;
-        checkbox.closest('.size-card').classList.remove('selected');
+        const card = checkbox.closest('.size-card');
+        card.classList.remove('border-success', 'bg-success-subtle');
+        card.classList.add('border-light');
     });
 
     // 更新UI
     updateUI();
-    updateConfigSummary();
     hideSizeLibraryCards();
 
     window.showAlert('Form cleared successfully', 'success');
@@ -1121,7 +1083,9 @@ function selectAllLibraries() {
 
     checkboxes.forEach(checkbox => {
         checkbox.checked = true;
-        checkbox.closest('.size-card').classList.add('selected');
+        const card = checkbox.closest('.size-card');
+        card.classList.add('border-success', 'bg-success-subtle');
+        card.classList.remove('border-light');
     });
 
     updateSelectionCounter();
@@ -1138,16 +1102,25 @@ function updateUI() {
     // 顯示/隱藏區域
     const initialMessage = document.getElementById('initial-message');
     const sizeLibrarySelection = document.getElementById('sizeLibrarySelection');
+    const submitSection = document.getElementById('submitSection');
 
     // 檢查是否有選擇區域顯示
-    const isSelectionVisible = sizeLibrarySelection && sizeLibrarySelection.style.display !== 'none';
+    const isSelectionVisible = sizeLibrarySelection && !sizeLibrarySelection.classList.contains('d-none');
 
     if (isSelectionVisible) {
         // 如果選擇區域已顯示，隱藏初始消息
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
+        // 顯示提交按鈕
+        if (submitSection) {
+            submitSection.classList.remove('d-none');
+        }
     } else {
         // 如果選擇區域未顯示，顯示初始消息
-        initialMessage.style.display = 'block';
+        initialMessage.classList.remove('d-none');
+        // 隱藏提交按鈕
+        if (submitSection) {
+            submitSection.classList.add('d-none');
+        }
     }
 }
 
@@ -1162,6 +1135,13 @@ function handleFormSubmit(e) {
 
     if (selectedCheckboxes.length === 0) {
         window.showAlert('Please select at least one size library', 'warning');
+        return;
+    }
+
+    // 檢查是否超過限制
+    const MAX_TEMPLATES = 20;
+    if (selectedCheckboxes.length > MAX_TEMPLATES) {
+        window.showAlert(`Cannot create more than ${MAX_TEMPLATES} templates at once. Please select fewer templates.`, 'warning');
         return;
     }
 

@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-table.css')}}">
-<link rel="stylesheet" href="{{ asset('assets/css/color-view.css')}}">
 
 <div class="container-fluid py-4">
     <!-- 页面标题和添加按钮 -->
@@ -225,6 +224,5 @@
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 </script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/color-management.js') }}"></script>
 @endsection

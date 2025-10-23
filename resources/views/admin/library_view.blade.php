@@ -5,7 +5,6 @@
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-view.css') }}">
 
 <div class="container-fluid py-4">
 
@@ -19,18 +18,18 @@
                     {{-- 标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="page-icon me-4">
-                                <i class="bi bi-eye-fill"></i>
+                            <div class="header-icon-wrapper me-4">
+                                <i class="bi bi-rulers"></i>
                             </div>
                             <div>
-                                <h2 class="page-title mb-1">
+                                <h2 class="dashboard-title mb-1">
                                     @if(isset($category))
                                         View {{ $category->category_name }} Size Library
                                     @else
                                         View Size Library
                                     @endif
                                 </h2>
-                                <p class="page-subtitle mb-0">
+                                <p class="dashboard-subtitle mb-0">
                                     @if(isset($category))
                                         View size library for {{ $category->category_name }} category
                                     @else
@@ -72,67 +71,71 @@
                     </div>
 
                     <!-- 信息显示 -->
-                    <div class="info-card">
-                        <div class="info-title">
+                    <div class="alert alert-info border-0 mb-4">
+                        <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>
+                                @if(isset($category))
+                                    Selected Category
+                                @else
+                                    Current Size Library
+                                @endif
+                            </strong>
+                        </div>
+                        <div class="small">
+                            <div class="mb-1">
+                                <i class="bi bi-tag me-2 text-muted"></i>
+                                <span>Category: <strong>
+                                    @if(isset($category))
+                                        {{ $category->category_name }}
+                                    @else
+                                        {{ $sizeLibrary->category->category_name ?? 'N/A' }}
+                                    @endif
+                                </strong></span>
+                            </div>
                             @if(isset($category))
-                                Selected Category
+                                <div class="mb-1">
+                                    <i class="bi bi-rulers me-2 text-muted"></i>
+                                    <span>Total Sizes: <strong>{{ $sizeLibraries->count() }}</strong></span>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-check-circle me-2 text-muted"></i>
+                                    <span>Available: <strong>{{ $sizeLibraries->where('size_status', 'Available')->count() }}</strong></span>
+                                </div>
                             @else
-                                Current Size Library
+                                <div class="mb-1">
+                                    <i class="bi bi-rulers me-2 text-muted"></i>
+                                    <span>Size: <strong>{{ $sizeLibrary->size_value }}</strong></span>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-toggle-on me-2 text-muted"></i>
+                                    <span>Status: <strong>{{ $sizeLibrary->size_status }}</strong></span>
+                                </div>
                             @endif
                         </div>
-                        <div class="info-item">
-                            <i class="bi bi-tag"></i>
-                            <span>Category: <strong>
-                                @if(isset($category))
-                                    {{ $category->category_name }}
-                                @else
-                                    {{ $sizeLibrary->category->category_name ?? 'N/A' }}
-                                @endif
-                            </strong></span>
-                        </div>
-                        @if(isset($category))
-                            <div class="info-item">
-                                <i class="bi bi-rulers"></i>
-                                <span>Total Sizes: <strong>{{ $sizeLibraries->count() }}</strong></span>
-                            </div>
-                            <div class="info-item">
-                                <i class="bi bi-check-circle"></i>
-                                <span>Available: <strong>{{ $sizeLibraries->where('size_status', 'Available')->count() }}</strong></span>
-                            </div>
-                        @else
-                            <div class="info-item">
-                                <i class="bi bi-rulers"></i>
-                                <span>Size: <strong>{{ $sizeLibrary->size_value }}</strong></span>
-                            </div>
-                            <div class="info-item">
-                                <i class="bi bi-toggle-on"></i>
-                                <span>Status: <strong>{{ $sizeLibrary->size_status }}</strong></span>
-                            </div>
-                        @endif
                     </div>
 
                     @if(isset($category))
                         <!-- 统计信息 -->
-                        <div class="stats-container">
-                            <div class="stats-row">
-                                <div class="stat-item">
-                                    <div class="stat-number text-success" id="availableCount">{{ $sizeLibraries->where('size_status', 'Available')->count() }}</div>
-                                    <div class="stat-label">Available</div>
+                        <div class="mt-auto">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="h4 text-success mb-0" id="availableCount">{{ $sizeLibraries->where('size_status', 'Available')->count() }}</div>
+                                    <small class="text-muted">Available</small>
                                 </div>
-                                <div class="stat-item">
-                                    <div class="stat-number text-danger" id="unavailableCount">{{ $sizeLibraries->where('size_status', 'Unavailable')->count() }}</div>
-                                    <div class="stat-label">Unavailable</div>
+                                <div class="col-6">
+                                    <div class="h4 text-danger mb-0" id="unavailableCount">{{ $sizeLibraries->where('size_status', 'Unavailable')->count() }}</div>
+                                    <small class="text-muted">Unavailable</small>
                                 </div>
                             </div>
                         </div>
                     @else
                         <!-- 统计信息 -->
-                        <div class="stats-container">
-                            <div class="stats-row">
-                                <div class="stat-item">
-                                    <div class="stat-number text-primary">1</div>
-                                    <div class="stat-label">Size Entry</div>
+                        <div class="mt-auto">
+                            <div class="row text-center">
+                                <div class="col-12">
+                                    <div class="h4 text-primary mb-0">1</div>
+                                    <small class="text-muted">Size Entry</small>
                                 </div>
                             </div>
                         </div>

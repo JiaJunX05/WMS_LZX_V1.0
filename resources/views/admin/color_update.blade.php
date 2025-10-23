@@ -6,8 +6,6 @@
 <!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-normal.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 <div class="container-fluid py-4">
@@ -69,7 +67,8 @@
                         {{-- 颜色预览 (Color Preview) --}}
                         <div class="mb-4">
                             <label class="form-label">Color Preview</label>
-                            <div class="color-preview" id="color-preview" style="background-color: {{ $color->color_hex }}; width: 100%; height: 80px; border-radius: 12px; border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);"></div>
+                            <div class="rounded-3 border border-3 border-white shadow-sm" id="color-preview"
+                                 style="background-color: {{ $color->color_hex }}; width: 100%; height: 80px; transition: all 0.3s ease;"></div>
                         </div>
 
                         {{-- 当前颜色信息显示 --}}
@@ -98,16 +97,6 @@
                                 <div>
                                     <i class="bi bi-calendar me-2 text-muted"></i>
                                     <span>Created: <strong>{{ $color->created_at->format('M d, Y') }}</strong></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 统计信息 --}}
-                        <div class="mt-auto">
-                            <div class="row text-center">
-                                <div class="col-12">
-                                    <div class="h4 text-primary mb-0">1</div>
-                                    <small class="text-muted">Color Record</small>
                                 </div>
                             </div>
                         </div>
@@ -247,7 +236,6 @@
 <!-- Color.js 颜色库 (本地安装) -->
 <script src="{{ asset('node_modules/colorjs.io/dist/color.js') }}"></script>
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 <script src="{{ asset('assets/js/color-management.js') }}"></script>
 

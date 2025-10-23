@@ -795,52 +795,46 @@ function updateRackList() {
     container.innerHTML = '';
 
     rackList.forEach((item, index) => {
-        const rackRow = document.createElement('tr');
-
         // 檢查是否為重複項
         const isDuplicate = isRackExists(item.rackNumber) &&
             rackList.filter(i => i.rackNumber.toLowerCase() === item.rackNumber.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item';
-        const duplicateClasses = isDuplicate ? 'table-warning border-warning' : '';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
 
-        rackRow.className = `${baseClasses} ${duplicateClasses}`;
+        const rackItem = document.createElement('div');
+        rackItem.className = `${baseClasses} ${duplicateClasses}`;
 
-        rackRow.innerHTML = `
-            <td class="text-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+        rackItem.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-            </td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="me-3 flex-shrink-0">
-                        ${item.rackImageFile ?
-                            `<img src="${URL.createObjectURL(item.rackImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Rack Image">` :
-                            `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
-                                <i class="bi bi-box text-muted fs-5"></i>
-                            </div>`
-                        }
-                    </div>
-                    <div class="flex-grow-1 min-width-0">
-                        <div class="fw-bold text-dark mb-1 text-truncate">
-                            <i class="bi bi-box-seam me-2 text-primary"></i>${item.rackNumber}
-                        </div>
-                        <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
-                            <i class="bi bi-boxes me-1"></i>Capacity: <span class="fw-medium">${item.capacity} items</span>
-                        </div>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
+                <div class="me-3 flex-shrink-0">
+                    ${item.rackImageFile ?
+                        `<img src="${URL.createObjectURL(item.rackImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Rack Image">` :
+                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                            <i class="bi bi-box text-muted fs-5"></i>
+                        </div>`
+                    }
                 </div>
-            </td>
-            <td class="text-end">
-                <button type="button" class="btn btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </td>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="fw-bold text-dark mb-1 text-truncate">
+                        <i class="bi bi-box-seam me-2 text-primary"></i>${item.rackNumber}
+                    </div>
+                    <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
+                        <i class="bi bi-boxes me-1"></i>Capacity: <span class="fw-medium">${item.capacity} items</span>
+                    </div>
+                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                <i class="bi bi-trash me-1"></i>Remove
+            </button>
         `;
-        container.appendChild(rackRow);
+
+        container.appendChild(rackItem);
     });
 }
 
@@ -854,14 +848,14 @@ function highlightExistingRack(rackNumber) {
         const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === rackNumber.toLowerCase()) {
             // 添加 Bootstrap 高亮樣式
-            item.classList.add('table-warning', 'border-warning');
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('table-warning', 'border-warning');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }
@@ -876,12 +870,6 @@ function showRackValuesArea() {
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
         initialMessage.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const rackInputPrompt = document.getElementById('rackInputPrompt');
-    if (rackInputPrompt) {
-        rackInputPrompt.classList.add('d-none');
     }
 
     // 顯示貨架值區域
@@ -908,12 +896,6 @@ function hideAllAreas() {
     const rackValuesArea = document.getElementById('rackValuesArea');
     if (rackValuesArea) {
         rackValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const rackInputPrompt = document.getElementById('rackInputPrompt');
-    if (rackInputPrompt) {
-        rackInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕

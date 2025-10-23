@@ -777,8 +777,12 @@ function clearForm() {
 
     // 清空輸入框
     const zoneNameInput = document.getElementById('zone_name');
+    const locationInput = document.getElementById('location');
     if (zoneNameInput) {
         zoneNameInput.value = '';
+    }
+    if (locationInput) {
+        locationInput.value = '';
     }
 
     // 更新UI
@@ -802,52 +806,46 @@ function updateZoneList() {
     container.innerHTML = '';
 
     zoneList.forEach((item, index) => {
-        const zoneRow = document.createElement('tr');
-
         // 檢查是否為重複項
         const isDuplicate = isZoneExists(item.zoneName) &&
             zoneList.filter(i => i.zoneName.toLowerCase() === item.zoneName.toLowerCase()).length > 1;
 
         // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item';
-        const duplicateClasses = isDuplicate ? 'table-warning border-warning' : '';
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
 
-        zoneRow.className = `${baseClasses} ${duplicateClasses}`;
+        const zoneItem = document.createElement('div');
+        zoneItem.className = `${baseClasses} ${duplicateClasses}`;
 
-        zoneRow.innerHTML = `
-            <td class="text-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'}">
+        zoneItem.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
                     ${isDuplicate ? '⚠️' : (index + 1)}
                 </span>
-            </td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="me-3 flex-shrink-0">
-                        ${item.zoneImageFile ?
-                            `<img src="${URL.createObjectURL(item.zoneImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Zone Image">` :
-                            `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
-                                <i class="bi bi-geo-alt text-muted fs-5"></i>
-                            </div>`
-                        }
-                    </div>
-                    <div class="flex-grow-1 min-width-0">
-                        <div class="fw-bold text-dark mb-1 text-truncate">
-                            <i class="bi bi-geo-alt me-2 text-primary"></i>${item.zoneName}
-                        </div>
-                        <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
-                            <i class="bi bi-geo me-1"></i>${item.location || 'N/A'}
-                        </div>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
+                <div class="me-3 flex-shrink-0">
+                    ${item.zoneImageFile ?
+                        `<img src="${URL.createObjectURL(item.zoneImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Zone Image">` :
+                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                            <i class="bi bi-geo-alt text-muted fs-5"></i>
+                        </div>`
+                    }
                 </div>
-            </td>
-            <td class="text-end">
-                <button type="button" class="btn btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </td>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="fw-bold text-dark mb-1 text-truncate">
+                        <i class="bi bi-geo-alt me-2 text-primary"></i>${item.zoneName}
+                    </div>
+                    <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
+                        <i class="bi bi-geo me-1"></i>${item.location || 'N/A'}
+                    </div>
+                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                <i class="bi bi-trash me-1"></i>Remove
+            </button>
         `;
-        container.appendChild(zoneRow);
+
+        container.appendChild(zoneItem);
     });
 }
 
@@ -861,14 +859,14 @@ function highlightExistingZone(zoneName) {
         const value = item.querySelector('.fw-bold').textContent.trim();
         if (value.toLowerCase() === zoneName.toLowerCase()) {
             // 添加 Bootstrap 高亮樣式
-            item.classList.add('table-warning', 'border-warning');
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('table-warning', 'border-warning');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }
@@ -883,12 +881,6 @@ function showZoneValuesArea() {
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
         initialMessage.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const zoneInputPrompt = document.getElementById('zoneInputPrompt');
-    if (zoneInputPrompt) {
-        zoneInputPrompt.classList.add('d-none');
     }
 
     // 顯示區域值區域
@@ -915,12 +907,6 @@ function hideAllAreas() {
     const zoneValuesArea = document.getElementById('zoneValuesArea');
     if (zoneValuesArea) {
         zoneValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const zoneInputPrompt = document.getElementById('zoneInputPrompt');
-    if (zoneInputPrompt) {
-        zoneInputPrompt.classList.add('d-none');
     }
 
     // 隱藏提交按鈕
@@ -1021,7 +1007,7 @@ function sortZoneValuesList() {
     // 獲取區域名稱並排序
     const zoneValues = items.map(item => ({
         element: item,
-        value: item.querySelector('.item-value-text').textContent.trim()
+        value: item.querySelector('.fw-bold').textContent.trim()
     }));
 
     // 按字母順序排序

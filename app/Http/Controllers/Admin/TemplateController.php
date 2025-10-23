@@ -27,7 +27,7 @@ use App\Models\Gender;
 class TemplateController extends Controller
 {
     // Constants for better maintainability
-    private const MAX_BULK_TEMPLATES = 10;
+    private const MAX_BULK_TEMPLATES = 20;
     private const STATUSES = ['Available', 'Unavailable'];
 
     // Validation rules

@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-quick-action.css') }}">
 
 <div class="container-fluid py-4">
     {{-- ========================================== --}}
@@ -45,25 +44,29 @@
 
     <form action="{{ route('admin.subcategory.store') }}" method="post" id="subcategoryForm" enctype="multipart/form-data">
         @csrf
-        <div class="row">
+
+        <div class="card shadow-sm border-0">
+            <div class="row g-0">
             {{-- =============================================================================
                  左側主要內容區域 (Left Content Area)
                  ============================================================================= --}}
-            <div class="col-lg-4">
-                {{-- 子分類基本信息卡片 (Subcategory Basic Information Card) --}}
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Subcategory Information</h5>
-                    </div>
-                    <div class="card-body">
+                <div class="col-md-4">
+                    <div class="config-section d-flex flex-column h-100 bg-light p-4">
+                        {{-- 配置标题 --}}
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="mb-0 fw-bold text-primary">
+                                <i class="bi bi-gear-fill me-2"></i>Configuration
+                            </h6>
+                            <span class="badge bg-white text-dark border px-3 py-2">Create</span>
+                        </div>
                         {{-- 子分類名稱 (Subcategory Name) --}}
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label">Subcategory Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="subcategory_name" id="subcategory_name" placeholder="Enter subcategory name">
                         </div>
 
                         {{-- 子分類圖片上傳 (Subcategory Image Upload) --}}
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label">Subcategory Image</label>
                             <div class="image-upload-area" id="imageUploadArea">
                                 <div class="image-upload-content" id="imageUploadContent">
@@ -73,32 +76,39 @@
                                 </div>
                                 <img id="preview-image" class="preview-image d-none" alt="Subcategory preview">
                             </div>
-                            <input type="file" class="form-control" id="subcategory_image" name="subcategory_image" accept="image/*" style="display: none;">
+                            <input type="file" class="d-none" id="subcategory_image" name="subcategory_image" accept="image/*">
                         </div>
 
-                    </div>
-                    <div class="card-footer">
-                        <div class="d-flex gap-3">
-                            <button type="button" class="btn btn-primary flex-fill" id="addSubcategory">
-                                <i class="bi bi-plus-circle me-2"></i>Add To List
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="clearForm">
-                                <i class="bi bi-x-circle me-2"></i>Clear All
-                            </button>
+                        {{-- 操作按钮区域 --}}
+                        <div class="mt-auto">
+                            <div class="d-flex gap-3">
+                                <button type="button" class="btn btn-success flex-fill" id="addSubcategory">
+                                    <i class="bi bi-plus-circle me-2"></i>Add To List
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" id="clearForm">
+                                    <i class="bi bi-x-circle me-2"></i>Clear All
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
             {{-- =============================================================================
                  右側操作面板 (Right Sidebar)
                  ============================================================================= --}}
-            <div class="col-lg-8">
-                {{-- 子分類管理卡片 (Subcategory Management Card) --}}
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Subcategory Management</h5>
+                <div class="col-md-8">
+                    <div class="size-values-section p-4">
+                        {{-- 表单标题 --}}
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <div>
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="bi bi-collection me-2"></i>Subcategory Management
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Manage and organize your subcategories below.
+                                </small>
+                            </div>
                             <div class="d-flex align-items-center gap-2">
                                 <button type="button" class="btn btn-sm btn-outline-secondary" id="sortSubcategories" title="Sort subcategories">
                                     <i class="bi bi-sort-down" id="sortIcon"></i>
@@ -106,8 +116,6 @@
                                 <span class="badge bg-primary" id="subcategoryValuesCount">0 subcategories</span>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body">
                         <!-- 初始提示界面 -->
                         <div class="text-center text-muted py-5" id="initial-message">
                             <i class="bi bi-gear-fill fs-1 text-muted mb-3"></i>
@@ -117,37 +125,20 @@
 
                         <!-- 子分类列表区域 -->
                         <div id="subcategoryValuesArea" class="d-none">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="text-center" style="width: 8%">#</th>
-                                            <th style="width: 60%">SUBCATEGORY INFORMATION</th>
-                                            <th class="text-end" style="width: 32%">ACTIONS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="subcategoryValuesList"></tbody>
-                                </table>
+                            <div class="values-list overflow-auto" id="subcategoryValuesList" style="max-height: 400px;">
+                                <!-- 子分类将通过JavaScript动态添加 -->
                             </div>
                         </div>
-
-                        <!-- 子分类输入提示 -->
-                        <div id="subcategoryInputPrompt" class="text-center text-muted py-4 d-none">
-                            <i class="bi bi-arrow-up-circle fs-1 text-muted mb-3"></i>
-                            <h6 class="text-muted">Add More Subcategories</h6>
-                            <p class="text-muted small">Enter subcategory details in the left panel to continue</p>
+                        <!-- 提交按钮区域 -->
+                        <div id="submitSection" class="mt-4 d-none">
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-stack me-2"></i>Create All Subcategories
+                                </button>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- 提交按钮区域 -->
-                    <div id="submitSection" class="card-footer d-none">
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-stack me-2"></i>Create Subcategories
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            </div>
             </div>
         </div>
     </form>

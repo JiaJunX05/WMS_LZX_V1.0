@@ -177,8 +177,8 @@ function getMappingStatusClass(status) {
 /**
  * 檢查映射是否存在
  */
-function isMappingExists(mappingList, categoryId, subcategoryId) {
-    return mappingList.find(mapping =>
+function isMappingExists(categoryId, subcategoryId) {
+    return mappingList.some(mapping =>
         mapping.categoryId === categoryId && mapping.subcategoryId === subcategoryId
     );
 }
@@ -221,14 +221,14 @@ function highlightExistingMapping(categoryId, subcategoryId) {
 
         if (itemCategoryId === categoryId && itemSubcategoryId === subcategoryId) {
             // 添加高亮樣式
-            item.classList.add('duplicate-highlight');
+            item.classList.add('border-warning');
 
             // 滾動到該元素
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // 3秒後移除高亮
             setTimeout(() => {
-                item.classList.remove('duplicate-highlight');
+                item.classList.remove('border-warning');
             }, 3000);
             break;
         }
@@ -256,49 +256,28 @@ function updateConfigSummary() {
  * 處理分類選擇變化
  */
 function handleCategoryChange() {
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        const selectedCategory = categorySelect.options[categorySelect.selectedIndex];
-        const selectedCategoryDisplay = document.getElementById('selectedCategory');
-
-        if (selectedCategoryDisplay) {
-            selectedCategoryDisplay.textContent = selectedCategory.value ? selectedCategory.text : 'None';
-        }
-
-        updateConfigSummary();
-    }
+    // 只更新UI状态，不改变右侧面板
+    updateUI();
 }
 
 /**
  * 處理子分類選擇變化
  */
 function handleSubcategoryChange() {
-    const subcategorySelect = document.getElementById('subcategory_id');
-    if (subcategorySelect) {
-        const selectedSubcategory = subcategorySelect.options[subcategorySelect.selectedIndex];
-        const selectedSubcategoryDisplay = document.getElementById('selectedSubcategory');
-
-        if (selectedSubcategoryDisplay) {
-            selectedSubcategoryDisplay.textContent = selectedSubcategory.value ? selectedSubcategory.text : 'None';
-        }
-
-        updateConfigSummary();
-    }
+    // 只更新UI状态，不改变右侧面板
+    updateUI();
 }
 
 /**
- * 更新分類信息
+ * 更新映射計數
  */
-function updateCategoryInfo() {
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-        const categoryName = selectedOption.text;
-        const categoryDisplay = document.querySelector('#selectedCategory');
+function updateMappingValuesCount() {
+    const count = mappingList.length;
 
-        if (categoryDisplay) {
-            categoryDisplay.textContent = categoryName;
-        }
+    // 更新右側計數徽章
+    const countBadge = document.getElementById('mappingValuesCount');
+    if (countBadge) {
+        countBadge.textContent = `${count} mappings`;
     }
 }
 
@@ -773,10 +752,9 @@ function bindCreateEvents() {
 
     // 刪除映射按鈕事件委託
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const button = e.target.closest('.remove-item');
+        if (e.target.closest('button[data-index]')) {
+            const button = e.target.closest('button[data-index]');
             const index = parseInt(button.getAttribute('data-index'));
-
             if (!isNaN(index)) {
                 removeMapping(index);
             }
@@ -802,20 +780,36 @@ function addMapping() {
     const subcategoryId = document.getElementById('subcategory_id').value;
 
     // 檢查是否已存在
-    const existingMapping = isMappingExists(mappingList, categoryId, subcategoryId);
+    const existingMapping = isMappingExists(categoryId, subcategoryId);
     if (existingMapping) {
         window.showAlert('This mapping combination already exists', 'error');
         highlightExistingMapping(categoryId, subcategoryId);
         return;
     }
 
-    // 獲取名稱
+    // 添加映射到列表
+    addMappingToList(categoryId, subcategoryId);
+
+    // 清空選擇
+    document.getElementById('category_id').value = '';
+    document.getElementById('subcategory_id').value = '';
+    document.getElementById('category_id').focus();
+
+    // 顯示成功添加的alert
+    window.showAlert('Mapping added successfully', 'success');
+}
+
+/**
+ * 添加映射到列表
+ */
+function addMappingToList(categoryId, subcategoryId) {
+    // 獲取分類和子分類信息
     const categorySelect = document.getElementById('category_id');
     const subcategorySelect = document.getElementById('subcategory_id');
     const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
     const subcategoryName = subcategorySelect.options[subcategorySelect.selectedIndex].text;
 
-    // 添加到列表
+    // 添加到數組
     const mapping = {
         categoryId: categoryId,
         subcategoryId: subcategoryId,
@@ -826,23 +820,14 @@ function addMapping() {
 
     mappingList.push(mapping);
 
-    // 顯示映射區域（第一次添加時）
-    if (mappingList.length === 1) {
-        showMappingArea();
-    }
-
-    // 更新UI
+    // 更新列表顯示
     updateMappingList();
     updateUI();
 
-    // 清空選擇
-    document.getElementById('category_id').value = '';
-    document.getElementById('subcategory_id').value = '';
-    document.getElementById('selectedCategory').textContent = 'None';
-    document.getElementById('selectedSubcategory').textContent = 'None';
-    updateConfigSummary();
-
-    window.showAlert('Mapping added successfully', 'success');
+    // 顯示映射區域（第一次添加時）
+    if (mappingList.length === 1) {
+        showMappingValuesArea();
+    }
 }
 
 /**
@@ -877,7 +862,7 @@ function removeMapping(index) {
  * 更新映射列表顯示
  */
 function updateMappingList() {
-    const mappingListContainer = document.getElementById('mappingList');
+    const mappingListContainer = document.getElementById('mappingValuesList');
 
     if (mappingList.length === 0) {
         mappingListContainer.innerHTML = '';
@@ -886,19 +871,29 @@ function updateMappingList() {
 
     let html = '';
     mappingList.forEach((mapping, index) => {
+        // 檢查是否為重複項
+        const isDuplicate = isMappingExists(mapping.categoryId, mapping.subcategoryId) &&
+            mappingList.filter(i => i.categoryId === mapping.categoryId && i.subcategoryId === mapping.subcategoryId).length > 1;
+
+        // 根據是否為重複項設置不同的樣式
+        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
+        const duplicateClasses = isDuplicate ? 'border-warning' : '';
+
         html += `
-            <div class="value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in" data-category-id="${mapping.categoryId}" data-subcategory-id="${mapping.subcategoryId}">
+            <div class="${baseClasses} ${duplicateClasses}" data-category-id="${mapping.categoryId}" data-subcategory-id="${mapping.subcategoryId}">
                 <div class="d-flex align-items-center">
+                    <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">${isDuplicate ? '⚠️' : (index + 1)}</span>
                     <i class="bi bi-link-45deg text-primary me-2"></i>
                     <div class="mapping-combination">
-                        <span class="category-badge">${mapping.categoryName}</span>
-                        <span>-</span>
-                        <span class="subcategory-badge">${mapping.subcategoryName}</span>
+                        <span class="category-badge fw-bold text-dark">${mapping.categoryName}</span>
+                        <span class="text-muted mx-2">-</span>
+                        <span class="subcategory-badge fw-bold text-dark">${mapping.subcategoryName}</span>
+                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
                     </div>
                 </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
             </div>
         `;
     });
@@ -907,25 +902,55 @@ function updateMappingList() {
 }
 
 /**
+ * 排序映射值列表
+ */
+function sortMappingValuesList() {
+    const mappingValuesList = document.getElementById('mappingValuesList');
+    const items = Array.from(mappingValuesList.querySelectorAll('.value-item'));
+
+    if (items.length <= 1) return;
+
+    // 獲取映射組合並排序
+    const mappingValues = items.map(item => ({
+        element: item,
+        value: item.querySelector('.mapping-combination').textContent.trim()
+    }));
+
+    // 按字母順序排序
+    mappingValues.sort((a, b) => {
+        if (isAscending) {
+            return a.value.localeCompare(b.value);
+        } else {
+            return b.value.localeCompare(a.value);
+        }
+    });
+
+    // 重新排列DOM元素
+    mappingValues.forEach(({ element }) => {
+        mappingValuesList.appendChild(element);
+    });
+}
+
+/**
  * 顯示映射區域
  */
-function showMappingArea() {
-    // 隱藏初始提示信息
+function showMappingValuesArea() {
+    // 隱藏初始消息
     const initialMessage = document.getElementById('initial-message');
     if (initialMessage) {
-        initialMessage.style.display = 'none';
+        initialMessage.classList.add('d-none');
     }
 
-    // 顯示映射區域
-    const mappingArea = document.getElementById('mappingArea');
-    if (mappingArea) {
-        mappingArea.style.display = 'block';
+    // 顯示映射值區域
+    const mappingValuesArea = document.getElementById('mappingValuesArea');
+    if (mappingValuesArea) {
+        mappingValuesArea.classList.remove('d-none');
     }
 
     // 顯示提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'block';
+        submitSection.classList.remove('d-none');
     }
 }
 
@@ -933,22 +958,22 @@ function showMappingArea() {
  * 隱藏所有區域
  */
 function hideAllAreas() {
-    // 顯示初始提示信息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.style.display = 'block';
-    }
-
-    // 隱藏映射區域
-    const mappingArea = document.getElementById('mappingArea');
-    if (mappingArea) {
-        mappingArea.style.display = 'none';
+    // 隱藏映射值區域
+    const mappingValuesArea = document.getElementById('mappingValuesArea');
+    if (mappingValuesArea) {
+        mappingValuesArea.classList.add('d-none');
     }
 
     // 隱藏提交按鈕
     const submitSection = document.getElementById('submitSection');
     if (submitSection) {
-        submitSection.style.display = 'none';
+        submitSection.classList.add('d-none');
+    }
+
+    // 顯示初始消息
+    const initialMessage = document.getElementById('initial-message');
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
     }
 }
 
@@ -956,35 +981,8 @@ function hideAllAreas() {
  * 更新UI狀態
  */
 function updateUI() {
-    const categoryId = document.getElementById('category_id').value;
-    const subcategoryId = document.getElementById('subcategory_id').value;
-    const addBtn = document.getElementById('addMapping');
-
-    // 更新添加按鈕狀態
-    if (categoryId && subcategoryId) {
-        addBtn.disabled = false;
-        addBtn.classList.remove('btn-secondary');
-        addBtn.classList.add('btn-primary');
-    } else {
-        addBtn.disabled = true;
-        addBtn.classList.remove('btn-primary');
-        addBtn.classList.add('btn-secondary');
-    }
-
     // 更新映射計數
-    const count = mappingList.length;
-    const mappingCount = document.getElementById('mappingCount');
-    const mappingCountText = document.getElementById('mappingCountText');
-
-    if (mappingCount) {
-        mappingCount.textContent = `${count} mapping${count !== 1 ? 's' : ''}`;
-    }
-    if (mappingCountText) {
-        mappingCountText.textContent = count === 0 ? 'No mappings added yet' : `${count} mapping${count !== 1 ? 's' : ''} added`;
-    }
-
-    // 更新配置摘要
-    updateConfigSummary();
+    updateMappingValuesCount();
 }
 
 /**
@@ -997,12 +995,27 @@ function clearForm() {
     }
 
     if (confirm('Are you sure you want to clear all mappings?')) {
+        // 清空選擇
+        const categorySelect = document.getElementById('category_id');
+        const subcategorySelect = document.getElementById('subcategory_id');
+        if (categorySelect) {
+            categorySelect.value = '';
+        }
+        if (subcategorySelect) {
+            subcategorySelect.value = '';
+        }
+
+        // 清空映射列表
         mappingList = [];
-        updateMappingList();
+        const mappingListElement = document.getElementById('mappingValuesList');
+        if (mappingListElement) {
+            mappingListElement.innerHTML = '';
+        }
 
         // 隱藏所有區域
         hideAllAreas();
 
+        // 更新UI
         updateUI();
         window.showAlert('All mappings cleared', 'info');
     }
@@ -1013,17 +1026,42 @@ function clearForm() {
  */
 function toggleSortOrder() {
     isAscending = !isAscending;
+    const sortIcon = document.getElementById('sortIcon');
+    const sortBtn = document.getElementById('sortMappings');
 
     // 更新圖標
-    const sortIcon = document.getElementById('sortIcon');
-    if (sortIcon) {
-        sortIcon.className = isAscending ? 'bi bi-sort-down' : 'bi bi-sort-up';
+    if (isAscending) {
+        sortIcon.className = 'bi bi-sort-up';
+        sortBtn.title = 'Sort ascending (A-Z)';
+    } else {
+        sortIcon.className = 'bi bi-sort-down';
+        sortBtn.title = 'Sort descending (Z-A)';
     }
 
-    // 排序映射列表
-    mappingList.sort((a, b) => {
-        const aText = `${a.categoryName} - ${a.subcategoryName}`;
-        const bText = `${b.categoryName} - ${b.subcategoryName}`;
+    // 重新排序列表
+    sortMappingList();
+}
+
+/**
+ * 排序映射列表
+ */
+function sortMappingList() {
+    const mappingListContainer = document.getElementById('mappingValuesList');
+    const items = Array.from(mappingListContainer.querySelectorAll('.value-item'));
+
+    if (items.length <= 1) return;
+
+    // 獲取映射信息並排序
+    const mappings = items.map(item => ({
+        element: item,
+        categoryName: item.querySelector('.category-badge').textContent.trim(),
+        subcategoryName: item.querySelector('.subcategory-badge').textContent.trim()
+    }));
+
+    // 按分類和子分類名稱排序
+    mappings.sort((a, b) => {
+        const aText = a.categoryName + ' - ' + a.subcategoryName;
+        const bText = b.categoryName + ' - ' + b.subcategoryName;
 
         if (isAscending) {
             return aText.localeCompare(bText);
@@ -1032,10 +1070,10 @@ function toggleSortOrder() {
         }
     });
 
-    // 更新顯示
-    updateMappingList();
-
-    window.showAlert(`Sorted ${isAscending ? 'ascending' : 'descending'}`, 'info');
+    // 重新排列DOM元素
+    mappings.forEach(({ element }) => {
+        mappingListContainer.appendChild(element);
+    });
 }
 
 /**

@@ -6,7 +6,6 @@
 <meta name="print-index-url" content="{{ route('superadmin.print.index') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-quick-action.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/print-form.css') }}">
 
@@ -101,7 +100,7 @@
                     </div>
 
                     <!-- 快捷操作按钮 -->
-                    <div class="quick-actions mt-auto p-3 bg-light">
+                    <div class="mt-auto p-3 bg-light">
                         <div class="d-grid gap-2">
                             <!-- PDF按钮 -->
                             <button type="button" class="btn btn-outline-danger w-100" id="generate-pdf">

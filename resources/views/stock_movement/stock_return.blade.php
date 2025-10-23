@@ -5,7 +5,6 @@
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-table.css')}}">
 
 <div class="container-fluid py-4">
     <!-- 页面标题 -->
@@ -83,16 +82,16 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table custom-table mb-0">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th class="ps-4" style="width: 10%"><div class="table-header">#</div></th>
-                            <th style="width: 10%"><div class="table-header">IMAGE</div></th>
-                            <th style="width: 30%"><div class="table-header">PRODUCT NAME</div></th>
-                            <th style="width: 20%"><div class="table-header">SKU CODE</div></th>
-                            <th style="width: 10%"><div class="table-header">CURRENT STOCK</div></th>
-                            <th style="width: 10%"><div class="table-header">QUANTITY</div></th>
-                            <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTION</div></th>
+                            <th class="ps-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">#</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">IMAGE</div></th>
+                            <th style="width: 30%"><div class="fw-bold text-muted small text-uppercase">PRODUCT NAME</div></th>
+                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">CURRENT STOCK</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">QUANTITY</div></th>
+                            <th class="text-end pe-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACTION</div></th>
                         </tr>
                     </thead>
                     <tbody id="scanned-products-table-body">

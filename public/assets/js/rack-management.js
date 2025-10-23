@@ -238,11 +238,11 @@ class RackDashboard {
                </a>`;
 
         const actionButtons = `
-            <button class="btn-action" title="Edit" onclick="rackDashboard.editRack(${rack.id})">
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="rackDashboard.editRack(${rack.id})">
                 <i class="bi bi-pencil"></i>
             </button>
-            <div class="btn-group dropend d-inline">
-                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">
@@ -261,16 +261,16 @@ class RackDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <div class="table-header">
-                        <input class="rack-checkbox" type="checkbox" value="${rack.id}" id="rack-${rack.id}" style="width: 20px; height: 20px;">
-                    </div>
+                    <input class="rack-checkbox" type="checkbox" value="${rack.id}" id="rack-${rack.id}" style="width: 20px; height: 20px;">
                 </td>
                 <td>
                     ${rack.rack_image ? `
                         <img src="/assets/images/${rack.rack_image}" alt="Rack Image"
-                             class="preview-image">
+                             class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
                     ` : `
-                        <div class="no-image">No Image</div>
+                        <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                            <i class="bi bi-image text-muted"></i>
+                        </div>
                     `}
                 </td>
                 <td>
@@ -283,8 +283,12 @@ class RackDashboard {
                         </div>
                     </div>
                 </td>
-                <td><span class="status-badge ${this.getStatusClass(rack.rack_status)}">${rack.rack_status}</span></td>
-                <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
+                <td>
+                    <span class="badge ${rack.rack_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${rack.rack_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${rack.rack_status}
+                    </span>
+                </td>
+                <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">${actionButtons}</div></td>
             </tr>
         `;
     }
@@ -1415,7 +1419,7 @@ function initializeRackUpdate() {
     if (imagePreviewArea && updateImageInput) {
         imagePreviewArea.addEventListener('click', function(e) {
             // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.image-remove-btn')) {
+            if (e.target.closest('.img-remove-btn')) {
                 return; // 不觸發文件選擇
             }
             updateImageInput.click();

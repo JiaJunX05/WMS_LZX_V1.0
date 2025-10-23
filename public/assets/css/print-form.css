@@ -50,8 +50,8 @@
 
 /* 产品图片容器 */
 .product-image-container {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     border-radius: 8px;
     overflow: hidden;
     background: #f8fafc;
@@ -202,6 +202,39 @@
     padding: 1rem 0.75rem;
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
+}
+
+/* 產品表格樣式 */
+.table.table-bordered {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table.table-bordered th {
+    border-color: #e2e8f0;
+    padding: 1rem 0.75rem;
+}
+
+/* 確保 table-dark 樣式優先級更高 */
+.table.table-bordered thead.table-dark th {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+    border-color: #495057 !important;
+}
+
+.table.table-bordered td {
+    border-color: #e2e8f0;
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.table.table-bordered tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.table.table-bordered tbody tr.table-active {
+    background-color: #e0f2fe;
 }
 
 /* 表格头部 */

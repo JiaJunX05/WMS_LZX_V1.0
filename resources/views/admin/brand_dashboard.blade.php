@@ -5,7 +5,6 @@
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-table.css')}}">
 
 
 <div class="container-fluid py-4">
@@ -153,18 +152,18 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table custom-table mb-0">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
                             <th class="ps-4" style="width: 5%">
-                                <div class="table-header">
+                                <div class="fw-bold text-muted small text-uppercase">
                                     <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
                                 </div>
                             </th>
-                            <th style="width: 10%"><div class="table-header">BRAND IMAGE</div></th>
-                            <th style="width: 65%"><div class="table-header">BRAND NAME</div></th>
-                            <th style="width: 10%"><div class="table-header">BRAND STATUS</div></th>
-                            <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">BRAND IMAGE</div></th>
+                            <th style="width: 60%"><div class="fw-bold text-muted small text-uppercase">BRAND NAME</div></th>
+                            <th style="width: 15%"><div class="fw-bold text-muted small text-uppercase">BRAND STATUS</div></th>
+                            <th class="text-end pe-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACTIONS</div></th>
                         </tr>
                     </thead>
                     <tbody id="table-body">

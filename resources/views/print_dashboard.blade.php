@@ -197,10 +197,8 @@
 @endsection
 
 @section("scripts")
-{{-- Barcode Generation Library --}}
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-{{-- PDF Generation Library --}}
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+{{-- 使用 Vite 構建的庫文件 --}}
+@vite(['resources/js/print-libs.js'])
 
 <script>
     const assetPath = '{{ asset('') }}';

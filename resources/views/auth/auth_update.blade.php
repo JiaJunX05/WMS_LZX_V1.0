@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">
 
 <div class="container-fluid py-4">
     {{-- ========================================== --}}
@@ -69,7 +68,7 @@
                         {{-- 用戶頭像 (User Avatar) --}}
                         <div class="mb-4">
                             <label class="form-label">Profile Image</label>
-                            <div class="image-upload-area" id="user-image-area">
+                            <div class="img-upload-area" id="user-image-area">
                                 @if($user->account && $user->account->user_image && file_exists(public_path('assets/images/auth/' . $user->account->user_image)))
                                     {{-- 有现有图片时显示 --}}
                                     <div class="upload-placeholder d-none" id="user-upload-placeholder">
@@ -77,8 +76,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="user-preview" class="preview-image" src="{{ asset('assets/images/auth/' . $user->account->user_image) }}" alt="User Preview">
-                                    <button type="button" class="image-remove-btn" id="remove-user-image">
+                                    <img id="user-preview" class="img-preview" src="{{ asset('assets/images/auth/' . $user->account->user_image) }}" alt="User Preview">
+                                    <button type="button" class="img-remove-btn" id="remove-user-image">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @else
@@ -88,8 +87,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="user-preview" class="preview-image d-none" alt="User Preview">
-                                    <button type="button" class="image-remove-btn d-none" id="remove-user-image">
+                                    <img id="user-preview" class="img-preview d-none" alt="User Preview">
+                                    <button type="button" class="img-remove-btn d-none" id="remove-user-image">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @endif
@@ -265,8 +264,8 @@
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                         <input type="radio" name="account_role" value="Staff" class="form-check-input me-3"
                                                                {{ old('account_role', $currentUserAccountRole) === 'Staff' ? 'checked' : '' }}>
-                                                        <div>
-                                                            <h6 class="card-title mb-1">
+                                                        <div class="flex-fill">
+                                                            <h6 class="card-title mb-1 fw-semibold">
                                                                 <i class="bi bi-person-badge me-2 text-success"></i>Staff
                                                             </h6>
                                                             <p class="card-text text-muted small mb-0">Basic user permissions</p>
@@ -281,8 +280,8 @@
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                         <input type="radio" name="account_role" value="Admin" class="form-check-input me-3"
                                                                {{ old('account_role', $currentUserAccountRole) === 'Admin' ? 'checked' : '' }}>
-                                                        <div>
-                                                            <h6 class="card-title mb-1">
+                                                        <div class="flex-fill">
+                                                            <h6 class="card-title mb-1 fw-semibold">
                                                                 <i class="bi bi-shield-check me-2 text-warning"></i>Admin
                                                             </h6>
                                                             <p class="card-text text-muted small mb-0">Full management permissions</p>
@@ -297,8 +296,8 @@
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                         <input type="radio" name="account_role" value="SuperAdmin" class="form-check-input me-3"
                                                                {{ old('account_role', $currentUserAccountRole) === 'SuperAdmin' ? 'checked' : '' }}>
-                                                        <div>
-                                                            <h6 class="card-title mb-1">
+                                                        <div class="flex-fill">
+                                                            <h6 class="card-title mb-1 fw-semibold">
                                                                 <i class="bi bi-person-fill-gear me-2 text-danger"></i>Super Admin
                                                             </h6>
                                                             <p class="card-text text-muted small mb-0">Highest system permissions</p>
@@ -322,13 +321,10 @@
                                                 <div class="card border">
                                                     <div class="card-body d-flex align-items-center">
                                                         <div class="me-3">
-                                                            @if($currentUserAccountRole === 'SuperAdmin')
-                                                                <i class="bi bi-person-fill-gear text-danger fs-4"></i>
-                                                            @elseif($currentUserAccountRole === 'Admin')
-                                                                <i class="bi bi-shield-check text-warning fs-4"></i>
-                                                            @else
-                                                                <i class="bi bi-person-badge text-success fs-4"></i>
-                                                            @endif
+                                                            <span class="badge {{ $currentUserAccountRole === 'SuperAdmin' ? 'bg-danger' : ($currentUserAccountRole === 'Admin' ? 'bg-warning' : 'bg-success') }} px-3 py-2">
+                                                                <i class="bi {{ $currentUserAccountRole === 'SuperAdmin' ? 'bi-person-fill-gear' : ($currentUserAccountRole === 'Admin' ? 'bi-shield-check' : 'bi-person-badge') }} me-1"></i>
+                                                                {{ $currentUserAccountRole === 'SuperAdmin' ? 'SUPER ADMIN' : ($currentUserAccountRole === 'Admin' ? 'ADMIN' : 'STAFF') }}
+                                                            </span>
                                                         </div>
                                                         <div>
                                                             <h6 class="card-title mb-1">
@@ -379,8 +375,8 @@
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                         <input type="radio" name="account_status" value="Available" class="form-check-input me-3"
                                                                {{ old('account_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
-                                                        <div>
-                                                            <h6 class="card-title mb-1">
+                                                        <div class="flex-fill">
+                                                            <h6 class="card-title mb-1 fw-semibold">
                                                                 <i class="bi bi-check-circle me-2 text-success"></i>Available
                                                             </h6>
                                                             <p class="card-text text-muted small mb-0">User can login and use normally</p>
@@ -394,8 +390,8 @@
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                         <input type="radio" name="account_status" value="Unavailable" class="form-check-input me-3"
                                                                {{ old('account_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
-                                                        <div>
-                                                            <h6 class="card-title mb-1">
+                                                        <div class="flex-fill">
+                                                            <h6 class="card-title mb-1 fw-semibold">
                                                                 <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
                                                             </h6>
                                                             <p class="card-text text-muted small mb-0">User cannot login to the system</p>

@@ -68,13 +68,13 @@
                         {{-- 子分類圖片上傳 (Subcategory Image Upload) --}}
                         <div class="mb-4">
                             <label class="form-label">Subcategory Image</label>
-                            <div class="image-upload-area" id="imageUploadArea">
-                                <div class="image-upload-content" id="imageUploadContent">
+                            <div class="img-upload-area" id="imageUploadArea">
+                                <div class="img-upload-content" id="imageUploadContent">
                                     <i class="bi bi-cloud-upload fs-1 text-muted mb-3" id="preview-icon"></i>
                                     <h6 class="text-muted">Click to upload image</h6>
                                     <p class="text-muted small">Supports JPG, PNG, GIF formats</p>
                                 </div>
-                                <img id="preview-image" class="preview-image d-none" alt="Subcategory preview">
+                                <img id="preview-image" class="img-preview d-none" alt="Subcategory preview">
                             </div>
                             <input type="file" class="d-none" id="subcategory_image" name="subcategory_image" accept="image/*">
                         </div>

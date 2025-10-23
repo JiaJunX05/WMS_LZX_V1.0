@@ -154,6 +154,13 @@ function initializeProductStatusCardSelection() {
     initializeStatusCardSelection('product_status');
 }
 
+/**
+ * 用戶狀態卡片初始化
+ */
+function initializeAuthStatusCardSelection() {
+    initializeStatusCardSelection('account_status');
+}
+
 // =============================================================================
 // 狀態管理工具函數 (Status Management Utilities)
 // =============================================================================
@@ -210,7 +217,8 @@ function initializeAllStatusCards(modules = []) {
         'mapping': initializeMappingStatusCardSelection,
         'zone': initializeZoneStatusCardSelection,
         'location': initializeLocationStatusCardSelection,
-        'product': initializeProductStatusCardSelection
+        'product': initializeProductStatusCardSelection,
+        'auth': initializeAuthStatusCardSelection
     };
 
     modules.forEach(module => {
@@ -241,6 +249,7 @@ window.initializeMappingStatusCardSelection = initializeMappingStatusCardSelecti
 window.initializeZoneStatusCardSelection = initializeZoneStatusCardSelection;
 window.initializeLocationStatusCardSelection = initializeLocationStatusCardSelection;
 window.initializeProductStatusCardSelection = initializeProductStatusCardSelection;
+window.initializeAuthStatusCardSelection = initializeAuthStatusCardSelection;
 
 // 工具函數
 window.getStatusClass = getStatusClass;
@@ -266,6 +275,7 @@ window.StatusSystem = {
     initializeZoneStatusCardSelection,
     initializeLocationStatusCardSelection,
     initializeProductStatusCardSelection,
+    initializeAuthStatusCardSelection,
 
     // 工具函數
     getStatusClass,

@@ -478,9 +478,13 @@ class ProductController extends Controller
                 }
             }
 
-            // 处理详情图片
+            \Log::info('=== DETAIL IMAGE DEBUG START ===');
+            \Log::info('Request has detail_image files: ' . ($request->hasFile('detail_image') ? 'YES' : 'NO'));
             if ($request->hasFile('detail_image')) {
-                foreach ($request->file('detail_image') as $image) {
+                $detailImages = $request->file('detail_image');
+                \Log::info('Number of detail images: ' . count($detailImages));
+                foreach ($detailImages as $index => $image) {
+                    \Log::info("Processing detail image {$index}: " . $image->getClientOriginalName());
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                     $directory = public_path('assets/images/products/details');
                     if (!file_exists($directory)) {
@@ -488,12 +492,16 @@ class ProductController extends Controller
                     }
                     $image->move($directory, $imageName);
 
-                    Image::create([
+                    $imageRecord = Image::create([
                         'detail_image' => 'details/' . $imageName,
                         'product_id' => $product->id,
                     ]);
+                    \Log::info("Created image record with ID: " . $imageRecord->id);
                 }
+            } else {
+                \Log::info('No detail images found in request');
             }
+            \Log::info('=== DETAIL IMAGE DEBUG END ===');
 
             // 生成条形码图片（可选）
             $this->generateBarcodeImage($barcodeNumber, $skuCode, $productVariant->id);

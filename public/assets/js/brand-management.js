@@ -238,11 +238,11 @@ class BrandDashboard {
                </a>`;
 
         const actionButtons = `
-            <button class="btn-action" title="Edit" onclick="brandDashboard.editBrand(${brand.id})">
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="brandDashboard.editBrand(${brand.id})">
                 <i class="bi bi-pencil"></i>
             </button>
-            <div class="btn-group dropend d-inline">
-                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">
@@ -261,16 +261,16 @@ class BrandDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <div class="table-header">
-                        <input class="brand-checkbox" type="checkbox" value="${brand.id}" id="brand-${brand.id}" style="width: 20px; height: 20px;">
-                    </div>
+                    <input class="brand-checkbox" type="checkbox" value="${brand.id}" id="brand-${brand.id}" style="width: 20px; height: 20px;">
                 </td>
                 <td>
                     ${brand.brand_image ? `
                         <img src="/assets/images/${brand.brand_image}" alt="Brand Image"
-                             class="preview-image">
+                             class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
                     ` : `
-                        <div class="no-image">No Image</div>
+                        <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                            <i class="bi bi-image text-muted"></i>
+                        </div>
                     `}
                 </td>
                 <td>
@@ -279,8 +279,12 @@ class BrandDashboard {
                         <h6 class="mb-0 fw-bold">${brand.brand_name}</h6>
                     </div>
                 </td>
-                <td><span class="status-badge ${this.getStatusClass(brand.brand_status)}">${brand.brand_status}</span></td>
-                <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
+                <td>
+                    <span class="badge ${brand.brand_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${brand.brand_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${brand.brand_status}
+                    </span>
+                </td>
+                <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">${actionButtons}</div></td>
             </tr>
         `;
     }
@@ -1412,7 +1416,7 @@ function initializeBrandUpdate() {
     if (imagePreviewArea && updateImageInput) {
         imagePreviewArea.addEventListener('click', function(e) {
             // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.image-remove-btn')) {
+            if (e.target.closest('.img-remove-btn')) {
                 return; // 不觸發文件選擇
             }
             updateImageInput.click();

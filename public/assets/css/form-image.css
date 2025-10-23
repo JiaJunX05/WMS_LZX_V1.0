@@ -1,15 +1,35 @@
+/*
+|||--------------------------------------------------------------------------
+||| 图片样式表 (Image Styles)
+|||--------------------------------------------------------------------------
+|||
+||| 🎯 此CSS文件专门用于所有图片相关的样式
+|||
+||| ✅ 包含的样式：
+||| - 图片上传样式
+||| - 图片预览样式
+||| - 图片占位符样式
+||| - 图片删除按钮样式
+||| - 图片上传进度条样式
+||| - 图片状态样式（成功、错误、拖拽）
+||| - 响应式设计
+|||
+||| @author WMS Team
+||| @version 1.0.0
+*/
+
 /* =============================================================================
-   4. 图片上传样式 (Image Upload Styles)
+   1. 图片上传样式 (Image Upload Styles)
    ============================================================================= */
 
 /* 图片上传容器 */
-.image-upload-container {
+.img-upload-container {
     position: relative;
     margin-bottom: var(--spacing-md);
 }
 
 /* 图片上传区域 */
-.image-upload-area {
+.img-upload-area {
     border: 2px dashed var(--gray-300);
     border-radius: var(--border-radius);
     background: var(--gray-50);
@@ -25,21 +45,21 @@
     justify-content: center;
 }
 
-.image-upload-area:hover {
+.img-upload-area:hover {
     border-color: var(--primary-color);
     background: var(--primary-light);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
-.image-upload-area.dragover {
+.img-upload-area.dragover {
     border-color: var(--success-color);
     background: var(--success-light);
     transform: scale(1.02);
 }
 
 /* 图片上传内容 */
-.image-upload-content {
+.img-upload-content {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -48,42 +68,57 @@
     height: 100%;
 }
 
-.image-upload-content i {
+.img-upload-content i {
     font-size: 3rem;
     color: var(--gray-400);
     margin-bottom: var(--spacing-md);
     transition: all var(--transition-normal);
 }
 
-.image-upload-area:hover .image-upload-content i {
+.img-upload-area:hover .img-upload-content i {
     color: var(--primary-color);
     transform: scale(1.1);
 }
 
-.image-upload-content h6 {
+.img-upload-content h6 {
     color: var(--gray-600);
     font-weight: var(--font-semibold);
     margin-bottom: var(--spacing-sm);
     transition: all var(--transition-normal);
 }
 
-.image-upload-area:hover .image-upload-content h6 {
+.img-upload-area:hover .img-upload-content h6 {
     color: var(--primary-color);
 }
 
-.image-upload-content p {
+.img-upload-content p {
     color: var(--gray-500);
     font-size: var(--font-sm);
     margin: 0;
     transition: all var(--transition-normal);
 }
 
-.image-upload-area:hover .image-upload-content p {
+.img-upload-area:hover .img-upload-content p {
     color: var(--gray-600);
 }
 
-/* 图片预览 */
-.preview-image {
+/* 图片预览时的上传区域样式 */
+.img-upload-area.has-image {
+    border: 2px solid var(--success-color);
+    background: var(--card-bg);
+    padding: var(--spacing-sm);
+}
+
+.img-upload-area.has-image .img-upload-content {
+    display: none;
+}
+
+/* =============================================================================
+   2. 图片预览样式 (Image Preview Styles)
+   ============================================================================= */
+
+/* 🖼️ 上传区域的图片预览样式 */
+.img-preview {
     max-width: 100%;
     max-height: 200px;
     width: auto;
@@ -91,21 +126,91 @@
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
     object-fit: cover;
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
 
-/* 图片预览时的上传区域样式 */
-.image-upload-area.has-image {
-    border: 2px solid var(--success-color);
-    background: var(--card-bg);
-    padding: var(--spacing-sm);
+/* ✨ 图片悬停覆盖层效果 */
+.img-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(2, 132, 199, 0.1) 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    border-radius: calc(var(--border-radius-lg) - 3px);
 }
 
-.image-upload-area.has-image .image-upload-content {
-    display: none;
+/* 🎯 图片悬停效果 */
+.img-preview:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--info-color);
 }
+
+/* 🎨 显示悬停覆盖层 */
+.img-preview:hover::before {
+    opacity: 1;
+}
+
+/* =============================================================================
+   3. 图片占位符样式 (Image Placeholder Styles)
+   ============================================================================= */
+
+/* 📷 无图片占位符样式 */
+.img-placeholder {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--border-radius-lg);
+    background: linear-gradient(135deg, var(--info-light) 0%, var(--primary-light) 100%);
+    border: 3px solid var(--card-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    color: var(--gray-500);
+    font-size: var(--font-xs);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.img-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(2, 132, 199, 0.1) 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    border-radius: calc(var(--border-radius-lg) - 3px);
+}
+
+.img-placeholder:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--info-color);
+}
+
+.img-placeholder:hover::before {
+    opacity: 1;
+}
+
+/* =============================================================================
+   4. 图片删除按钮样式 (Image Remove Button Styles)
+   ============================================================================= */
 
 /* 图片删除按钮 */
-.image-remove-btn {
+.img-remove-btn {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -127,26 +232,30 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.image-upload-area.has-image .image-remove-btn {
+.img-upload-area.has-image .img-remove-btn {
     opacity: 0.8;
 }
 
-.image-upload-area.has-image:hover .image-remove-btn {
+.img-upload-area.has-image:hover .img-remove-btn {
     opacity: 1;
 }
 
-.image-remove-btn:hover {
+.img-remove-btn:hover {
     background: rgba(0, 0, 0, 0.9);
     transform: scale(1.1);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.image-remove-btn:active {
+.img-remove-btn:active {
     transform: scale(0.95);
 }
 
+/* =============================================================================
+   5. 图片上传进度条样式 (Image Upload Progress Styles)
+   ============================================================================= */
+
 /* 图片上传进度条 */
-.image-upload-progress {
+.img-upload-progress {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -158,29 +267,182 @@
     display: none;
 }
 
-.image-upload-progress-bar {
+.img-upload-progress-bar {
     height: 100%;
     background: linear-gradient(90deg, var(--primary-color), var(--success-color));
     width: 0%;
     transition: width var(--transition-normal);
 }
 
+/* =============================================================================
+   6. 图片状态样式 (Image Status Styles)
+   ============================================================================= */
+
 /* 图片上传错误状态 */
-.image-upload-area.error {
+.img-upload-area.error {
     border-color: var(--danger-color);
     background: var(--danger-light);
 }
 
-.image-upload-area.error .image-upload-content i {
+.img-upload-area.error .img-upload-content i {
     color: var(--danger-color);
 }
 
-.image-upload-area.error .image-upload-content h6 {
+.img-upload-area.error .img-upload-content h6 {
     color: var(--danger-color);
 }
 
 /* 图片上传成功状态 */
-.image-upload-area.success {
+.img-upload-area.success {
     border-color: var(--success-color);
     background: var(--success-light);
+}
+
+/* =============================================================================
+   产品详细图片样式 (Product Detail Images Styles)
+   ============================================================================= */
+
+/* 详细图片容器 */
+.detail-images-container {
+    margin-top: 1rem;
+}
+
+/* 详细图片网格 */
+.detail-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 详细图片项目 */
+.detail-image-item {
+    position: relative;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    aspect-ratio: 1;
+}
+
+.detail-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.detail-image-item .remove-btn {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: rgba(220, 53, 69, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+/* 添加详细图片按钮 */
+.add-detail-image-btn {
+    border: 2px dashed var(--gray-300);
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    position: relative;
+    overflow: hidden;
+}
+
+.add-detail-image-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.add-detail-image-btn:hover {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.add-detail-image-btn:hover::before {
+    opacity: 1;
+}
+
+.add-detail-image-btn i {
+    font-size: 2.5rem;
+    color: var(--gray-500);
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.add-detail-image-btn:hover i {
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.add-detail-image-btn span {
+    color: var(--gray-600);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.add-detail-image-btn:hover span {
+    color: var(--primary-dark);
+}
+
+/* =============================================================================
+   7. 响应式设计 (Responsive Design)
+   ============================================================================= */
+
+/* 📱 手机端适配 (576px以下) */
+@media (max-width: 576px) {
+    .img-placeholder {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* 产品详细图片响应式 */
+    .add-detail-image-btn {
+        min-height: 120px;
+        padding: 1.5rem 1rem;
+    }
+
+    .add-detail-image-btn i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .add-detail-image-btn span {
+        font-size: 0.9rem;
+    }
+
+    .detail-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
+    }
 }

@@ -247,15 +247,15 @@ class AuthDashboard {
 
         if (currentUserRole && currentUserRole.replace(/[_\s]/g, '').toLowerCase() === 'admin') {
             const statusButton = user.status === 'Unavailable'
-                ? `<button class="btn-action available" title="Activate Account" onclick="setUserAvailable(${user.id})">
+                ? `<button class="btn btn-sm btn-outline-success" title="Activate Account" onclick="setUserAvailable(${user.id})">
                        <i class="bi bi-check-circle"></i>
                    </button>`
-                : `<button class="btn-action unavailable" title="Deactivate Account" onclick="setUserUnavailable(${user.id})">
+                : `<button class="btn btn-sm btn-outline-warning" title="Deactivate Account" onclick="setUserUnavailable(${user.id})">
                        <i class="bi bi-slash-circle"></i>
                    </button>`;
 
             actionButtons = `
-                <button class="btn-action" title="Edit" onclick="authDashboard.editUser(${user.id})">
+                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="authDashboard.editUser(${user.id})">
                     <i class="bi bi-pencil"></i>
                 </button>
                 ${statusButton}
@@ -272,11 +272,11 @@ class AuthDashboard {
                    </a>`;
 
             actionButtons = `
-                <button class="btn-action" title="Edit" onclick="authDashboard.editUser(${user.id})">
+                <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="authDashboard.editUser(${user.id})">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <div class="btn-group dropend d-inline">
-                    <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropdown d-inline">
+                    <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
                     <ul class="dropdown-menu">
@@ -313,7 +313,7 @@ class AuthDashboard {
                 ${firstColumn}
                 <td>
                     <div class="d-flex align-items-start">
-                        <div class="user-avatar me-3">
+                        <div class="me-3">
                             ${userImageUrl ?
                                 `<img src="${userImageUrl}" alt="User Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">` :
                                 `<div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -328,9 +328,17 @@ class AuthDashboard {
                     </div>
                 </td>
                 <td><span class="text-muted small">${user.email}</span></td>
-                <td><span class="role-badge ${this.getRoleClass(user.role)}" data-role="${user.role}">${user.role.toUpperCase()}</span></td>
-                <td><span class="status-badge ${this.getStatusClass(user.status)}">${user.status}</span></td>
-                <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
+                <td>
+                    <span class="badge ${user.role === 'SuperAdmin' ? 'bg-danger' : user.role === 'Admin' ? 'bg-warning' : 'bg-success'} px-3 py-2">
+                        <i class="bi ${user.role === 'SuperAdmin' ? 'bi-person-fill-gear' : user.role === 'Admin' ? 'bi-shield-check' : 'bi-person-badge'} me-1"></i>${user.role.toUpperCase()}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge ${user.status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${user.status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${user.status}
+                    </span>
+                </td>
+                <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">${actionButtons}</div></td>
             </tr>
         `;
     }
@@ -1199,11 +1207,62 @@ function initializeUserUpdateFormSubmit() {
 }
 
 /**
+ * 綁定狀態選擇事件
+ */
+function bindStatusSelectionEvents() {
+    // 使用統一的狀態系統
+    if (typeof window.initializeStatusCardSelection === 'function') {
+        window.initializeStatusCardSelection('account_status');
+    } else {
+        // 備用實現
+        $('.status-card').on('click', function() {
+            $('.status-card').removeClass('selected');
+            $(this).addClass('selected');
+            $(this).find('input[type="radio"]').prop('checked', true);
+        });
+
+        $('input[name="account_status"]').on('change', function() {
+            $('.status-card').removeClass('selected');
+            const statusCard = $(this).closest('.status-card');
+            statusCard.addClass('selected');
+        });
+    }
+}
+
+/**
+ * 綁定角色選擇事件
+ */
+function bindRoleSelectionEvents() {
+    $('.role-card').on('click', function() {
+        // 移除所有卡片的選中狀態
+        $('.role-card').removeClass('selected');
+
+        // 添加當前卡片的選中狀態
+        $(this).addClass('selected');
+
+        // 選中對應的單選按鈕
+        $(this).find('input[type="radio"]').prop('checked', true);
+    });
+
+    // 為單選按鈕添加變化事件
+    $('input[name="account_role"]').on('change', function() {
+        // 移除所有卡片的選中狀態
+        $('.role-card').removeClass('selected');
+
+        // 添加對應卡片的選中狀態
+        const roleCard = $(this).closest('.role-card');
+        roleCard.addClass('selected');
+    });
+}
+
+/**
  * 初始化用戶更新頁面
  */
 function initializeUserUpdate() {
     bindUserImageEvents();
     initializeUserUpdateFormSubmit();
+    bindStatusSelectionEvents();
+    bindRoleSelectionEvents();
 }
 
 // =============================================================================
@@ -1419,6 +1478,8 @@ window.addUser = addUser;
 window.clearForm = clearForm;
 window.initializeUserRegistration = initializeUserRegistration;
 window.initializeUserUpdate = initializeUserUpdate;
+window.bindStatusSelectionEvents = bindStatusSelectionEvents;
+window.bindRoleSelectionEvents = bindRoleSelectionEvents;
 
 // Login 頁面函數
 window.togglePassword = togglePassword;

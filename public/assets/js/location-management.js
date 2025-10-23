@@ -599,8 +599,6 @@ function generateZoneCard(zone, racks) {
     // 直接使用原始數據，不進行排序
     const rackValuesHTML = racks.map((rack, index) => {
         const status = rack.location_status || 'Unavailable';
-        const statusClass = status === 'Available' ? 'text-success' : 'text-danger';
-        const statusIcon = status === 'Available' ? 'bi-check-circle' : 'bi-x-circle';
 
         console.log(`Rack ${index + 1}: ${rack.rack_number}, Status: ${status}`);
 
@@ -608,12 +606,10 @@ function generateZoneCard(zone, racks) {
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                 <span class="fw-medium" style="cursor: pointer;" onclick="editLocation(${rack.location_id})" title="Click to edit location">${rack.rack_number}</span>
                 <div class="d-flex align-items-center gap-4">
-                    <button class="btn ${status === 'Available' ? 'btn-success' : 'btn-danger'} btn-sm"
-                            onclick="toggleLocationStatus(${rack.location_id}, '${status}')"
-                            style="padding: 0.25rem 0.75rem; font-weight: 600;">
-                        ${status.toUpperCase()}
-                    </button>
-                    <button class="btn-action ${status === 'Available' ? 'unavailable' : 'available'}"
+                    <span class="badge ${status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${status}
+                    </span>
+                    <button class="btn btn-sm ${status === 'Available' ? 'btn-outline-warning' : 'btn-outline-success'}"
                             title="${status === 'Available' ? 'Deactivate' : 'Activate'}"
                             onclick="console.log('Button clicked, location.id:', ${rack.location_id}, 'status:', '${status}'); ${status === 'Available' ? 'setLocationUnavailable' : 'setLocationAvailable'}(${rack.location_id})">
                         <i class="bi ${status === 'Available' ? 'bi-slash-circle' : 'bi-check-circle'}"></i>

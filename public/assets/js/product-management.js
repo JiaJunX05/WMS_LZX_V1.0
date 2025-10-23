@@ -346,14 +346,14 @@ class ProductManagement {
 
     createProductCard(product) {
         return `
-            <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="col-sm-6 col-md-4 col-lg-4">
                 <div class="product-card h-100">
                     <div class="image-container">
                         ${product.cover_image ?
                             `<img src="/assets/images/products/${product.cover_image}"
                                   alt="Product Image"
-                                  class="preview-image">` :
-                            '<div class="no-image">No image available</div>'
+                                  class="img-preview">` :
+                            '<div class="img-placeholder w-100" style="height: 200px;"><i class="bi bi-image text-muted fs-1"></i></div>'
                         }
                     </div>
 
@@ -825,7 +825,7 @@ function generateBarcode() {
         }
 
         const barcodeCanvas = document.getElementById('barcodeCanvas');
-        const barcodeNumberElement = document.querySelector('.barcode-number');
+        const barcodeNumberElement = document.getElementById('barcode-number');
         const barcodeNumber = barcodeNumberElement?.textContent?.trim();
 
         console.log('barcodeCanvas:', barcodeCanvas);
@@ -881,7 +881,7 @@ function copyBarcode(barcodeNumber) {
             alert('Barcode copied to clipboard!');
         }
 
-        const btn = event.target.closest('.barcode-copy-btn');
+        const btn = event.target.closest('.btn');
         if (btn) {
             const originalIcon = btn.innerHTML;
             btn.innerHTML = '<i class="bi bi-check"></i>';

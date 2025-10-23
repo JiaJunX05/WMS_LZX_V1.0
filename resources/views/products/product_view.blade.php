@@ -21,6 +21,8 @@
      ============================================================================= --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-card.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/product-view.css') }}">
 
 {{-- =============================================================================
@@ -154,22 +156,22 @@
 
                 {{-- Barcode Section --}}
                 @if($variant && $variant->barcode_number)
-                    <div class="barcode-section">
-                        <div class="barcode-header">
-                            <div class="barcode-title">
-                                <i class="bi bi-upc-scan"></i>
+                    <div class="barcode-section p-4 bg-light border-top">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2 fw-semibold text-dark small">
+                                <i class="bi bi-upc-scan text-primary fs-5"></i>
                                 <span>Product Barcode</span>
                             </div>
-                            <button class="barcode-copy-btn" onclick="copyBarcode('{{ $variant->barcode_number }}')" title="Copy Barcode">
+                            <button class="btn btn-outline-primary btn-sm" onclick="copyBarcode('{{ $variant->barcode_number }}')" title="Copy Barcode">
                                 <i class="bi bi-copy"></i>
                             </button>
                         </div>
-                        <div class="barcode-content">
-                            <div class="barcode-image-container">
+                        <div class="bg-white rounded-3 p-4 text-center shadow-sm border">
+                            <div class="mb-3">
                                 <canvas id="barcodeCanvas" style="max-width: 100%; height: 60px;"></canvas>
                             </div>
-                            <div class="barcode-number-container">
-                                <span class="barcode-number">{{ $variant->barcode_number }}</span>
+                            <div class="mt-2">
+                                <span id="barcode-number" class="font-monospace small text-muted fw-semibold bg-light px-3 py-2 rounded border d-inline-block" style="letter-spacing: 1px; min-width: 120px;">{{ $variant->barcode_number }}</span>
                             </div>
                         </div>
                     </div>
@@ -189,16 +191,16 @@
                         </h5>
                         {{-- Action Buttons Area --}}
                         @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin' || Auth::user()->getAccountRole() === 'Staff')
-                        <div class="action-buttons">
+                        <div class="d-flex justify-content-end gap-1">
                             @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin')
-                            <button class="btn-action" title="Edit" onclick="editProduct({{ $product->id }})">
+                            <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="editProduct({{ $product->id }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             @endif
 
                             @if(Auth::user()->getAccountRole() === 'SuperAdmin')
-                            <div class="btn-group dropstart d-inline">
-                                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="dropdown d-inline">
+                                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-three-dots-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
@@ -222,11 +224,11 @@
                             </div>
                             @elseif(Auth::user()->getAccountRole() === 'Admin')
                                 @if($product->product_status === 'Available')
-                                    <button class="btn-action unavailable" title="Deactivate Product" onclick="setUnavailable({{ $product->id }})">
+                                    <button class="btn btn-sm btn-outline-warning" title="Deactivate Product" onclick="setUnavailable({{ $product->id }})">
                                         <i class="bi bi-slash-circle"></i>
                                     </button>
                                 @else
-                                    <button class="btn-action available" title="Activate Product" onclick="setAvailable({{ $product->id }})">
+                                    <button class="btn btn-sm btn-outline-success" title="Activate Product" onclick="setAvailable({{ $product->id }})">
                                         <i class="bi bi-check-circle"></i>
                                     </button>
                                 @endif
@@ -237,127 +239,127 @@
                 </div>
                 <div class="card-body p-0">
                     {{-- Product Name Section --}}
-                    <div class="product-name-section">
-                        <h4 class="product-name">{{ $product->name }}</h4>
-                        <div class="price-status-container">
-                            <div class="product-price">RM {{ number_format($product->price, 2) }}</div>
-                            <div class="product-status">
-                                <span class="status-badge {{ $product->product_status === 'Available' ? 'available' : 'unavailable' }}">
-                                    {{ $product->product_status }}
+                    <div class="p-4 pb-3 border-bottom bg-light">
+                        <h4 class="fw-bold fs-3 lh-sm mb-3 text-truncate">{{ $product->name }}</h4>
+                        <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
+                            <div class="fw-bold fs-4 text-success mb-0">RM {{ number_format($product->price, 2) }}</div>
+                            <div>
+                                <span class="badge {{ $product->product_status === 'Available' ? 'bg-success' : 'bg-danger' }} px-3 py-2">
+                                    <i class="bi {{ $product->product_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle' }} me-1"></i>{{ $product->product_status }}
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     {{-- Product Information Grid --}}
-                    <div class="product-info-grid">
+                    <div class="bg-white rounded-bottom-3 overflow-hidden p-4 d-flex gap-4">
                         {{-- Left Information Column --}}
-                        <div class="info-column">
+                        <div class="flex-fill d-flex flex-column gap-3">
                             {{-- 产品分类信息 --}}
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-tags"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-tags text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Category</span>
-                                    <span class="info-value">{{ $product->category->category_name ?? 'N/A' }}</span>
-                                </div>
-                            </div>
-
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-tag"></i>
-                                </div>
-                                <div class="info-content">
-                                    <span class="info-label">Subcategory</span>
-                                    <span class="info-value">{{ $product->subcategory->subcategory_name ?? 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Category</span>
+                                    <span class="fw-semibold lh-sm">{{ $product->category->category_name ?? 'N/A' }}</span>
                                 </div>
                             </div>
 
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-award"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-tag text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Brand</span>
-                                    <span class="info-value">{{ $brand ? $brand->brand_name : 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Subcategory</span>
+                                    <span class="fw-semibold lh-sm">{{ $product->subcategory->subcategory_name ?? 'N/A' }}</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-award text-white fs-5"></i>
+                                </div>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Brand</span>
+                                    <span class="fw-semibold lh-sm">{{ $brand ? $brand->brand_name : 'N/A' }}</span>
                                 </div>
                             </div>
 
                             {{-- 产品属性信息 --}}
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-palette"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-palette text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Color</span>
-                                    <span class="info-value">{{ $color ? $color->color_name : 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Color</span>
+                                    <span class="fw-semibold lh-sm">{{ $color ? $color->color_name : 'N/A' }}</span>
                                 </div>
                             </div>
 
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-rulers"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-rulers text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Size</span>
-                                    <span class="info-value">{{ $size ? $size->size_value : 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Size</span>
+                                    <span class="fw-semibold lh-sm">{{ $size ? $size->size_value : 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>
 
                         {{-- Right Information Column --}}
-                        <div class="info-column">
+                        <div class="flex-fill d-flex flex-column gap-3">
                             {{-- 库存管理信息 --}}
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-upc-scan"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-upc-scan text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">SKU Code</span>
-                                    <span class="info-value">{{ $variant ? $variant->sku_code : 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">SKU Code</span>
+                                    <span class="fw-semibold lh-sm">{{ $variant ? $variant->sku_code : 'N/A' }}</span>
                                 </div>
                             </div>
 
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-box-seam"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-box-seam text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Quantity</span>
-                                    <span class="info-value">{{ $product->quantity }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Quantity</span>
+                                    <span class="fw-semibold lh-sm">{{ $product->quantity }}</span>
                                 </div>
                             </div>
 
                             {{-- 存储位置信息 --}}
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-geo-alt"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-geo-alt text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Zone</span>
-                                    <span class="info-value">{{ $product->zone->zone_name ?? 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Zone</span>
+                                    <span class="fw-semibold lh-sm">{{ $product->zone->zone_name ?? 'N/A' }}</span>
                                 </div>
                             </div>
 
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-boxes"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-boxes text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Rack</span>
-                                    <span class="info-value">{{ $product->rack->rack_number ?? 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Rack</span>
+                                    <span class="fw-semibold lh-sm">{{ $product->rack->rack_number ?? 'N/A' }}</span>
                                 </div>
                             </div>
 
                             {{-- 目标客户信息 --}}
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <i class="bi bi-person"></i>
+                            <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                                    <i class="bi bi-person text-white fs-5"></i>
                                 </div>
-                                <div class="info-content">
-                                    <span class="info-label">Gender</span>
-                                    <span class="info-value">{{ $gender ? $gender->gender_name : 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-1 flex-fill">
+                                    <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Gender</span>
+                                    <span class="fw-semibold lh-sm">{{ $gender ? $gender->gender_name : 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -365,9 +367,9 @@
 
                     {{-- Product Description --}}
                     @if($product->description)
-                        <div class="product-description">
-                            <h6 class="description-title">Description</h6>
-                            <p class="description-text">{{ $product->description }}</p>
+                        <div class="p-4 bg-light">
+                            <h6 class="fw-semibold mb-2 d-flex align-items-center gap-2 border-start border-primary border-3 ps-3">Description</h6>
+                            <p class="text-muted mb-0">{{ $product->description }}</p>
                         </div>
                     @endif
                 </div>

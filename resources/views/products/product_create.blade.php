@@ -8,8 +8,7 @@
      ============================================================================= --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-product.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 
 {{-- =============================================================================
      主要容器 (Main Container)
@@ -101,14 +100,15 @@
                         {{-- 封面圖片 (Cover Image) --}}
                         <div class="mb-4">
                             <label class="form-label">Cover Image</label>
-                            <div class="image-upload-area" id="cover-image-area">
+                            <div class="img-upload-area" id="cover-image-area">
                                 <div class="upload-placeholder" id="cover-upload-placeholder">
                                     <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                     <h5 class="mt-3">Click to upload image</h5>
                                     <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                 </div>
-                                <img id="cover-preview" class="preview-image d-none" alt="Cover Preview">
-                                <button type="button" class="image-remove-btn d-none" id="remove-cover-image">
+                                <img id="cover-preview" class="img-preview d-none"
+                                    style="height: auto; max-height: 200px; object-fit: contain;" alt="Cover Preview">
+                                <button type="button" class="img-remove-btn d-none" id="remove-cover-image">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -293,7 +293,7 @@
                     <div class="card-body">
                         {{-- 提交按鈕 (Submit Button) --}}
                         <div class="text-center">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 w-100">
+                            <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-check-circle me-2"></i>Create Product
                             </button>
                         </div>

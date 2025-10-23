@@ -498,19 +498,15 @@ function generateCategoryCard(category, libraries) {
     // 生成尺碼值列表
     const sizeValuesHTML = libraries.map((library, index) => {
         const status = library.size_status || 'Unavailable';
-        const statusClass = getLibraryStatusClass(status);
-        const statusIcon = status === 'Available' ? 'bi-check-circle' : 'bi-x-circle';
 
         return `
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                 <span class="fw-medium">${library.size_value}</span>
                 <div class="d-flex align-items-center gap-4">
-                    <button class="btn ${status === 'Available' ? 'btn-success' : 'btn-danger'} btn-sm"
-                            onclick="toggleLibraryStatus(${library.id}, '${status}')"
-                            style="padding: 0.25rem 0.75rem; font-weight: 600;">
-                        ${status.toUpperCase()}
-                    </button>
-                    <button class="btn-action ${status === 'Available' ? 'unavailable' : 'available'}"
+                    <span class="badge ${status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${status}
+                    </span>
+                    <button class="btn btn-sm ${status === 'Available' ? 'btn-outline-warning' : 'btn-outline-success'}"
                             title="${status === 'Available' ? 'Deactivate' : 'Activate'}"
                             onclick="${status === 'Available' ? 'setLibraryUnavailable' : 'setLibraryAvailable'}(${library.id})">
                         <i class="bi ${status === 'Available' ? 'bi-slash-circle' : 'bi-check-circle'}"></i>

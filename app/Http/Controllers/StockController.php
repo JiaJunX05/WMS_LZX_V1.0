@@ -304,7 +304,8 @@ class StockController extends Controller
     private function buildBaseStockHistoryQuery()
     {
         $query = StockMovement::with([
-            'user:id,name,email',
+            'user:id,first_name,last_name,email',
+            'user.account:id,user_id,username,account_role',
             'product:id,name,cover_image',
             'variant:id,product_id,sku_code,barcode_number'
         ])->orderBy('movement_date', 'desc');
@@ -382,7 +383,7 @@ class StockController extends Controller
                 'current_stock' => $movement->current_stock,
                 'reference_number' => $movement->reference_number,
                 'user_id' => $movement->user_id,
-                'user_name' => $movement->user->name ?? 'Unknown User',
+                'user_name' => $movement->user->account->username ?? ($movement->user->first_name . ' ' . $movement->user->last_name) ?? 'Unknown User',
                 'user_email' => $movement->user->email ?? null,
             ];
         });
@@ -790,7 +791,8 @@ class StockController extends Controller
         if ($request->ajax()) {
             try {
                 $query = StockMovement::with([
-                    'user:id,name,email',
+                    'user:id,first_name,last_name,email',
+                    'user.account:id,user_id,username,account_role',
                     'product:id,name,cover_image',
                     'variant:id,product_id,sku_code,barcode_number'
                 ])->orderBy('movement_date', 'desc');
@@ -861,7 +863,7 @@ class StockController extends Controller
                         'current_stock' => $movement->current_stock,
                         'reference_number' => $movement->reference_number,
                         'user_id' => $movement->user_id,
-                        'user_name' => $movement->user->name ?? 'Unknown User',
+                        'user_name' => $movement->user->account->username ?? ($movement->user->first_name . ' ' . $movement->user->last_name) ?? 'Unknown User',
                         'user_email' => $movement->user->email ?? null,
                     ];
                 });
@@ -927,7 +929,8 @@ class StockController extends Controller
                 $product = Product::findOrFail($productId);
 
                 $query = StockMovement::with([
-                    'user:id,name,email',
+                    'user:id,first_name,last_name,email',
+                    'user.account:id,user_id,username,account_role',
                     'product:id,name',
                     'variant:id,product_id,sku_code,barcode_number'
                 ])->where('product_id', $productId)
@@ -980,7 +983,7 @@ class StockController extends Controller
                             'notes' => $movement->notes,
                             'movement_reason' => $movement->movement_reason,
                             'user_id' => $movement->user_id,
-                            'user_name' => $movement->user->name ?? 'Unknown User',
+                            'user_name' => $movement->user->account->username ?? ($movement->user->first_name . ' ' . $movement->user->last_name) ?? 'Unknown User',
                             'user_email' => $movement->user->email ?? null,
                         ];
                     }),

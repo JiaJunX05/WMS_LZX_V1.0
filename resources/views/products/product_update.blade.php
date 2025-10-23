@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/form-product.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 
 {{-- =============================================================================
      主要容器 (Main Container)
@@ -113,18 +113,20 @@
                         {{-- 封面圖片 (Cover Image) --}}
                         <div class="mb-4">
                             <label class="form-label">Cover Image</label>
-                            <div class="image-upload-area" id="cover-image-area">
+                            <div class="img-upload-area" id="cover-image-area">
                                 <div class="upload-placeholder {{ $product->cover_image ? 'd-none' : '' }}" id="cover-upload-placeholder">
                                     <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                     <h5 class="mt-3">Click to upload image</h5>
                                     <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                 </div>
                                 @if($product->cover_image && file_exists(public_path('assets/images/products/' . $product->cover_image)))
-                                    <img id="cover-preview" class="preview-image" src="{{ asset('assets/images/products/' . $product->cover_image) }}" alt="Cover Preview">
+                                    <img id="cover-preview" class="img-preview"
+                                        style="height: auto; max-height: 200px; object-fit: contain;" src="{{ asset('assets/images/products/' . $product->cover_image) }}" alt="Cover Preview">
                                 @else
-                                    <img id="cover-preview" class="preview-image d-none" alt="Cover Preview">
+                                    <img id="cover-preview" class="img-preview d-none"
+                                        style="height: auto; max-height: 200px; object-fit: contain;" alt="Cover Preview">
                                 @endif
-                                <button type="button" class="remove-image-btn {{ $product->cover_image ? '' : 'd-none' }}" id="remove-cover-image">
+                                <button type="button" class="img-remove-btn {{ $product->cover_image ? '' : 'd-none' }}" id="remove-cover-image">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>

@@ -68,7 +68,7 @@
                         {{-- 子分类图片 (Subcategory Image) --}}
                         <div class="mb-4">
                             <label class="form-label">Subcategory Image</label>
-                            <div class="image-upload-area" id="image-preview">
+                            <div class="img-upload-area" id="image-preview">
                                 @if($subcategory->subcategory_image && file_exists(public_path('assets/images/' . $subcategory->subcategory_image)))
                                     {{-- 有现有图片时显示 --}}
                                     <div class="upload-placeholder d-none" id="imageUploadContent">
@@ -76,8 +76,9 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="preview-image" src="{{ asset('assets/images/' . $subcategory->subcategory_image) }}" alt="Subcategory Preview">
-                                    <button type="button" class="image-remove-btn" id="removeImage">
+                                    <img id="preview-image" class="img-preview"
+                                        style="height: auto; max-height: 200px; object-fit: contain;" src="{{ asset('assets/images/' . $subcategory->subcategory_image) }}" alt="Subcategory Preview">
+                                    <button type="button" class="img-remove-btn" id="removeImage">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @else
@@ -87,8 +88,9 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="preview-image d-none" alt="Subcategory Preview">
-                                    <button type="button" class="image-remove-btn d-none" id="removeImage">
+                                    <img id="preview-image" class="img-preview d-none"
+                                        style="height: auto; max-height: 200px; object-fit: contain;" alt="Subcategory Preview">
+                                    <button type="button" class="img-remove-btn d-none" id="removeImage">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @endif

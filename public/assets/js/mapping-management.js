@@ -490,8 +490,6 @@ function generateCategoryCard(category, mappings) {
     // 直接使用原始數據，不進行排序
     const mappingValuesHTML = mappings.map((mapping, index) => {
         const status = mapping.mapping_status || 'Unavailable';
-        const statusClass = getMappingStatusClass(status);
-        const statusIcon = status === 'Available' ? 'bi-check-circle' : 'bi-x-circle';
 
         console.log(`Mapping ${index + 1}: ${mapping.subcategory_name}, Status: ${status}`);
 
@@ -499,12 +497,10 @@ function generateCategoryCard(category, mappings) {
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                 <span class="fw-medium" style="cursor: pointer;" onclick="editMapping(${mapping.mapping_id})" title="Click to edit mapping">${mapping.subcategory_name}</span>
                 <div class="d-flex align-items-center gap-4">
-                    <button class="btn ${status === 'Available' ? 'btn-success' : 'btn-danger'} btn-sm"
-                            onclick="toggleMappingStatus(${mapping.mapping_id}, '${status}')"
-                            style="padding: 0.25rem 0.75rem; font-weight: 600;">
-                        ${status.toUpperCase()}
-                    </button>
-                    <button class="btn-action ${status === 'Available' ? 'unavailable' : 'available'}"
+                    <span class="badge ${status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${status}
+                    </span>
+                    <button class="btn btn-sm ${status === 'Available' ? 'btn-outline-warning' : 'btn-outline-success'}"
                             title="${status === 'Available' ? 'Deactivate' : 'Activate'}"
                             onclick="console.log('Button clicked, mapping.id:', ${mapping.mapping_id}, 'status:', '${status}'); ${status === 'Available' ? 'setMappingUnavailable' : 'setMappingAvailable'}(${mapping.mapping_id})">
                         <i class="bi ${status === 'Available' ? 'bi-slash-circle' : 'bi-check-circle'}"></i>

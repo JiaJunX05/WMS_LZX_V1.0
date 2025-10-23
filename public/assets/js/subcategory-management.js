@@ -238,11 +238,11 @@ class SubcategoryDashboard {
                </a>`;
 
         const actionButtons = `
-            <button class="btn-action" title="Edit" onclick="subcategoryDashboard.editSubcategory(${subcategory.id})">
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="subcategoryDashboard.editSubcategory(${subcategory.id})">
                 <i class="bi bi-pencil"></i>
             </button>
-            <div class="btn-group dropend d-inline">
-                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">
@@ -261,16 +261,16 @@ class SubcategoryDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <div class="table-header">
-                        <input class="subcategory-checkbox" type="checkbox" value="${subcategory.id}" id="subcategory-${subcategory.id}" style="width: 20px; height: 20px;">
-                    </div>
+                    <input class="subcategory-checkbox" type="checkbox" value="${subcategory.id}" id="subcategory-${subcategory.id}" style="width: 20px; height: 20px;">
                 </td>
                 <td>
                     ${subcategory.subcategory_image ? `
                         <img src="/assets/images/${subcategory.subcategory_image}" alt="Subcategory Image"
-                             class="preview-image">
+                             class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
                     ` : `
-                        <div class="no-image">No Image</div>
+                        <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                            <i class="bi bi-image text-muted"></i>
+                        </div>
                     `}
                 </td>
                 <td>
@@ -279,8 +279,12 @@ class SubcategoryDashboard {
                         <h6 class="mb-0 fw-bold">${subcategory.subcategory_name}</h6>
                     </div>
                 </td>
-                <td><span class="status-badge ${this.getStatusClass(subcategory.subcategory_status)}">${subcategory.subcategory_status}</span></td>
-                <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
+                <td>
+                    <span class="badge ${subcategory.subcategory_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${subcategory.subcategory_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${subcategory.subcategory_status}
+                    </span>
+                </td>
+                <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">${actionButtons}</div></td>
             </tr>
         `;
     }
@@ -1349,7 +1353,7 @@ function initializeSubcategoryUpdate() {
     if (imagePreviewArea && updateImageInput) {
         imagePreviewArea.addEventListener('click', function(e) {
             // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.image-remove-btn')) {
+            if (e.target.closest('.img-remove-btn')) {
                 return; // 不觸發文件選擇
             }
             updateImageInput.click();

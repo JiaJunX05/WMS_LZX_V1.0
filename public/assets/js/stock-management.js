@@ -139,6 +139,7 @@ class StockDashboard {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
 
@@ -210,13 +211,13 @@ class StockDashboard {
                         </span>
                     </td>
                     <td>
-                        <span class="status-badge ${product.product_status === 'Available' ? 'available' : 'unavailable'}">
-                            ${product.product_status}
+                        <span class="badge ${product.product_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                            <i class="bi ${product.product_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${product.product_status}
                         </span>
                     </td>
                     <td class="text-end pe-4">
-                        <div class="action-buttons">
-                            <button class="btn-action" title="View History" onclick="viewStockHistory(${product.id}, '${product.name}')">
+                        <div class="d-flex justify-content-end gap-1">
+                            <button class="btn btn-sm btn-outline-primary" title="View History" onclick="viewStockHistory(${product.id}, '${product.name}')">
                                 <i class="bi bi-clock-history"></i>
                             </button>
                         </div>
@@ -531,7 +532,8 @@ class StockHistory {
             const response = await fetch(`${window.stockHistoryApiRoute}?${params}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
 
@@ -585,7 +587,8 @@ class StockHistory {
             const response = await fetch(`/api/stock-statistics?${params}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
 
@@ -682,7 +685,7 @@ class StockHistory {
                             `<div class="me-2 rounded d-flex align-items-center justify-content-center bg-light" style="width: 40px; height: 40px;"><i class="bi bi-image text-muted"></i></div>`
                         }
                         <div>
-                            <div class="fw-medium">${movement.product_name || 'N/A'}</div>
+                            <div class="fw-medium text-truncate" style="max-width: 200px;" title="${movement.product_name || 'N/A'}">${movement.product_name || 'N/A'}</div>
                             <div class="text-muted small">SKU: ${movement.sku_code || 'N/A'}</div>
                         </div>
                     </div>
@@ -697,7 +700,21 @@ class StockHistory {
                     <span class="fw-medium">${movement.current_stock}</span>
                 </td>
                 <td>
-                    <span class="badge bg-primary">${movement.user_name || '-'}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-person-fill text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="flex-fill">
+                            <div class="fw-semibold text-dark mb-1">
+                                ${movement.user_name || 'Unknown User'}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">${movement.user_email || ''}</span>
+                            </div>
+                        </div>
+                    </div>
                 </td>
                 <td>
                     <code class="bg-light px-2 py-1 rounded">${movement.reference_number || '-'}</code>
@@ -1064,9 +1081,9 @@ class StockIn {
                     <td>
                         ${product.cover_image
                             ? `<img src="/assets/images/products/${product.cover_image}"
-                                 alt="Product Image" class="preview-image"
-                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">`
-                        : `<div class="no-image" style="width: 50px; height: 50px; border-radius: 8px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                 alt="Product Image" class="rounded border border-2 border-white shadow-sm"
+                                 style="width: 50px; height: 50px; object-fit: cover;">`
+                        : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                              <i class="bi bi-image text-muted"></i>
                                </div>`
                         }
@@ -1554,9 +1571,9 @@ class StockOut {
                     <td>
                         ${product.cover_image
                             ? `<img src="/assets/images/products/${product.cover_image}"
-                                 alt="Product Image" class="preview-image"
-                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">`
-                        : `<div class="no-image" style="width: 50px; height: 50px; border-radius: 8px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                 alt="Product Image" class="rounded border border-2 border-white shadow-sm"
+                                 style="width: 50px; height: 50px; object-fit: cover;">`
+                        : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                              <i class="bi bi-image text-muted"></i>
                                </div>`
                         }
@@ -2044,9 +2061,9 @@ class StockReturn {
                     <td>
                         ${product.cover_image
                             ? `<img src="/assets/images/products/${product.cover_image}"
-                                 alt="Product Image" class="preview-image"
-                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">`
-                        : `<div class="no-image" style="width: 50px; height: 50px; border-radius: 8px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                 alt="Product Image" class="rounded border border-2 border-white shadow-sm"
+                                 style="width: 50px; height: 50px; object-fit: cover;">`
+                        : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                              <i class="bi bi-image text-muted"></i>
                                </div>`
                         }
@@ -2342,7 +2359,8 @@ class StockDetail {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
 
@@ -2380,7 +2398,8 @@ class StockDetail {
             const response = await fetch(`${window.stockHistoryApiRoute}?${params}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
 
@@ -2441,8 +2460,8 @@ class StockDetail {
 
         // 更新產品狀態
         const statusElement = document.getElementById('product-status');
-        statusElement.textContent = product.product_status;
-        statusElement.className = `status-badge ${product.product_status === 'Available' ? 'available' : 'unavailable'}`;
+        statusElement.className = `badge ${product.product_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2 fs-6`;
+        statusElement.innerHTML = `<i class="bi ${product.product_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${product.product_status}`;
     }
 
     /**
@@ -2491,7 +2510,21 @@ class StockDetail {
                     <span class="fw-medium">${movement.current_stock}</span>
                 </td>
                 <td>
-                    <span class="badge bg-primary">${movement.user_name || '-'}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-person-fill text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="flex-fill">
+                            <div class="fw-semibold text-dark mb-1">
+                                ${movement.user_name || 'Unknown User'}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">${movement.user_email || ''}</span>
+                            </div>
+                        </div>
+                    </div>
                 </td>
                 <td>
                     <code class="bg-light px-2 py-1 rounded">${movement.reference_number || '-'}</code>

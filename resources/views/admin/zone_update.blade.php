@@ -68,7 +68,7 @@
                         {{-- 区域图片 (Zone Image) --}}
                         <div class="mb-4">
                             <label class="form-label">Zone Image</label>
-                            <div class="image-upload-area" id="image-preview">
+                            <div class="img-upload-area" id="image-preview">
                                 @if($zone->zone_image && file_exists(public_path('assets/images/' . $zone->zone_image)))
                                     {{-- 有现有图片时显示 --}}
                                     <div class="upload-placeholder d-none" id="imageUploadContent">
@@ -76,8 +76,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="preview-image" src="{{ asset('assets/images/' . $zone->zone_image) }}" alt="Zone Preview">
-                                    <button type="button" class="image-remove-btn" id="removeImage">
+                                    <img id="preview-image" class="img-preview" src="{{ asset('assets/images/' . $zone->zone_image) }}" alt="Zone Preview">
+                                    <button type="button" class="img-remove-btn" id="removeImage">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @else
@@ -87,8 +87,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="preview-image d-none" alt="Zone Preview">
-                                    <button type="button" class="image-remove-btn d-none" id="removeImage">
+                                    <img id="preview-image" class="img-preview d-none" alt="Zone Preview">
+                                    <button type="button" class="img-remove-btn d-none" id="removeImage">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @endif

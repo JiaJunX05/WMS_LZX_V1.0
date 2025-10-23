@@ -5,7 +5,6 @@
 
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-table.css')}}">
 
 <div class="container-fluid py-4">
     <!-- 页面标题 -->
@@ -203,18 +202,18 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table custom-table mb-0">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
-                            <th style="width: 10%"><div class="table-header">DATE</div></th>
-                            <th style="width: 10%"><div class="table-header">TYPE</div></th>
-                            <th style="width: 20%"><div class="table-header">PRODUCT</div></th>
-                            <th style="width: 10%"><div class="table-header">QUANTITY</div></th>
-                            <th style="width: 10%"><div class="table-header">BEFORE</div></th>
-                            <th style="width: 10%"><div class="table-header">AFTER</div></th>
-                            <th style="width: 10%"><div class="table-header">USER</div></th>
-                            <th style="width: 10%"><div class="table-header">REFERENCE</div></th>
+                            <th class="ps-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">DATE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">TYPE</div></th>
+                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">QUANTITY</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">BEFORE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">AFTER</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">USER INFO</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">REFERENCE</div></th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">

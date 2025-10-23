@@ -26,7 +26,7 @@ const IMAGE_CONFIGS = {
     rack: {
         createImageInputId: 'rack_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -35,7 +35,7 @@ const IMAGE_CONFIGS = {
     zone: {
         createImageInputId: 'zone_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -44,7 +44,7 @@ const IMAGE_CONFIGS = {
     brand: {
         createImageInputId: 'brand_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -53,7 +53,7 @@ const IMAGE_CONFIGS = {
     category: {
         createImageInputId: 'category_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -62,7 +62,7 @@ const IMAGE_CONFIGS = {
     subcategory: {
         createImageInputId: 'subcategory_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -71,7 +71,7 @@ const IMAGE_CONFIGS = {
     color: {
         createImageInputId: 'color_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -80,7 +80,7 @@ const IMAGE_CONFIGS = {
     gender: {
         createImageInputId: 'gender_image',
         createImageUploadAreaId: 'imageUploadArea',
-        createPreviewImageId: 'preview-image',
+        createPreviewImageId: 'img-preview',
         createPreviewIconId: 'preview-icon',
         createImageUploadContentId: 'imageUploadContent',
         updateImageInputId: 'input_image',
@@ -161,7 +161,7 @@ function validateImageFile(file) {
 function handleCreateImagePreview(event, options = {}) {
     const {
         imageInputId = 'image_input',
-        previewImageId = 'preview-image',
+        previewImageId = 'img-preview',
         previewIconId = 'preview-icon',
         imageUploadAreaId = 'imageUploadArea',
         imageUploadContentId = 'imageUploadContent'
@@ -231,12 +231,12 @@ function showImagePreview(src) {
  */
 function addImageRemoveButton(imageUploadAreaId = 'imageUploadArea', options = {}) {
     const imageUploadArea = document.getElementById(imageUploadAreaId);
-    const existingRemoveBtn = imageUploadArea?.querySelector('.image-remove-btn');
+    const existingRemoveBtn = imageUploadArea?.querySelector('.img-remove-btn');
 
     if (!existingRemoveBtn && imageUploadArea) {
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
-        removeBtn.className = 'image-remove-btn';
+        removeBtn.className = 'img-remove-btn';
         removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
         removeBtn.title = 'Remove image';
         removeBtn.addEventListener('click', () => removeImage(imageUploadAreaId, options));
@@ -252,7 +252,7 @@ function addImageRemoveButton(imageUploadAreaId = 'imageUploadArea', options = {
 function removeImage(imageUploadAreaId = 'imageUploadArea', options = {}) {
     const {
         imageInputId = 'image_input',
-        previewImageId = 'preview-image',
+        previewImageId = 'img-preview',
         previewIconId = 'preview-icon',
         imageUploadContentId = 'imageUploadContent',
         showMessage = true,
@@ -269,7 +269,7 @@ function removeImage(imageUploadAreaId = 'imageUploadArea', options = {}) {
     const previewIcon = document.getElementById(previewIconId);
     const imageUploadArea = document.getElementById(imageUploadAreaId);
     const imageUploadContent = document.getElementById(imageUploadContentId);
-    const removeBtn = imageUploadArea?.querySelector('.image-remove-btn');
+    const removeBtn = imageUploadArea?.querySelector('.img-remove-btn');
 
     if (imageInput && previewImage && previewIcon && imageUploadArea && imageUploadContent) {
         // 重置文件輸入
@@ -381,7 +381,7 @@ function bindImageUploadEvents(options = {}) {
         // 點擊上傳區域觸發文件選擇
         createImageUploadArea.addEventListener('click', function(e) {
             // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.image-remove-btn')) {
+            if (e.target.closest('.img-remove-btn')) {
                 return; // 不觸發文件選擇
             }
             createImageInput.click();
@@ -423,9 +423,9 @@ function generateCreateImageHTML(moduleName) {
 
     return `
         <div class="image-upload-section">
-            <div id="${config.createImageUploadAreaId}" class="image-upload-area">
-                <div id="${config.createImageUploadContentId}" class="image-upload-content">
-                    <img id="${config.createPreviewImageId}" src="" alt="Preview" class="preview-image d-none">
+            <div id="${config.createImageUploadAreaId}" class="img-upload-area">
+                <div id="${config.createImageUploadContentId}" class="img-upload-content">
+                    <img id="${config.createPreviewImageId}" src="" alt="Preview" class="img-preview d-none">
                     <div id="${config.createPreviewIconId}" class="upload-icon">
                         <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                         <p class="mt-2 mb-0">Click or drag to upload image</p>
@@ -488,10 +488,10 @@ function generateImagePreviewHTML(src, options = {}) {
         alt = 'Preview',
         className = 'img-fluid rounded-3',
         style = 'max-width: 100%; max-height: 280px; object-fit: contain;',
-        id = 'preview-image'
+        id = 'img-preview'
     } = options;
 
-    return `<img src="${src}" alt="${alt}" id="${id}" class="${className}" style="${style}">`;
+    return `<img src="${src}" alt="${alt}" id="${id}" class="img-preview" style="${style}">`;
 }
 
 /**
@@ -762,7 +762,8 @@ function bindProductImageEvents() {
             files.forEach(file => {
                 handleProductDetailImagePreview(file);
             });
-            e.target.value = '';
+            // 不要清空input的值，让文件能够被提交
+            // e.target.value = '';
         });
     }
 }
@@ -996,15 +997,16 @@ function handleUpdateImagePreview(event, options = {}) {
 
         if (previewContainer) {
             previewContainer.innerHTML = `
-                <img src="${e.target.result}" alt="Preview" id="preview-image"
-                     class="preview-image">
-                <div class="image-remove-btn" title="Remove image">
+                <img src="${e.target.result}" alt="Preview" id="img-preview"
+                     class="img-preview w-100"
+                     style="height: auto; max-height: 200px; object-fit: contain;">
+                <div class="img-remove-btn" title="Remove image">
                     <i class="bi bi-trash"></i>
                 </div>
             `;
 
             // 添加刪除按鈕事件
-            const removeBtn = previewContainer.querySelector('.image-remove-btn');
+            const removeBtn = previewContainer.querySelector('.img-remove-btn');
             if (removeBtn) {
                 removeBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -1133,7 +1135,7 @@ function resetImageWithoutMessage(moduleName) {
         window.ImageSystem.resetImage('imageUploadArea', {
             showMessage: false,
             imageInputId: `${moduleName}_image`,
-            previewImageId: 'preview-image',
+            previewImageId: 'img-preview',
             previewIconId: 'preview-icon',
             imageUploadContentId: 'imageUploadContent'
         });

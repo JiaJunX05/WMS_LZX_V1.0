@@ -200,51 +200,58 @@ class PrintDashboard {
         }
 
         $("#no-results").hide();
-        $previewGrid.show().html(products.map(product => `
-            <div class="col-sm-12 col-xl-6 mb-3">
-                <div class="product-card h-100">
-                    <!-- 主要内容区域 -->
-                    <div class="d-flex gap-3">
-                        <!-- 左侧: 选择框 -->
-                        <div class="d-flex align-items-start pt-2">
-                            <div class="form-check">
-                                <input class="form-check-input product-select" type="checkbox" value="${product.id}">
-                            </div>
-                        </div>
-
-                        <!-- 中间: 产品图片 -->
-                        <div class="product-image-container">
-                            ${product.cover_image ? `
-                                <img src="${assetPath}assets/images/products/${product.cover_image}"
-                                    alt="product-${product.name}">
-                            ` : `
-                                <i class="bi bi-image text-muted fs-2"></i>
-                            `}
-                        </div>
-
-                        <!-- 右侧: 产品信息和条形码 -->
-                        <div class="flex-grow-1">
-                            <!-- 产品名称 -->
-                            <div class="product-name">
-                                ${product.name || 'No Name'}
-                            </div>
-
-                            <!-- 条形码区域 -->
-                            ${product.barcode ? `
-                                <div class="barcode-container">
-                                    <canvas class="barcode-canvas"
-                                            data-barcode="${product.barcode.barcode_number}"
-                                            style="height: 50px; width: 200px;"></canvas>
-                                    <div class="barcode-number">
-                                        ${product.barcode.barcode_number}
+        $previewGrid.show().html(`
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 50px;" class="text-center">Select</th>
+                            <th style="width: 100px;" class="text-center">Image</th>
+                            <th class="text-center">Product Name</th>
+                            <th style="width: 200px;" class="text-center">Barcode</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${products.map(product => `
+                            <tr>
+                                <td class="text-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input product-select" type="checkbox" value="${product.id}">
                                     </div>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="product-image-container mx-auto">
+                                        ${product.cover_image ? `
+                                            <img src="${assetPath}assets/images/products/${product.cover_image}"
+                                                alt="product-${product.name}" class="img-fluid">
+                                        ` : `
+                                            <i class="bi bi-image text-muted fs-2"></i>
+                                        `}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="product-name">
+                                        ${product.name || 'No Name'}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    ${product.barcode ? `
+                                        <div class="barcode-container">
+                                            <canvas class="barcode-canvas"
+                                                    data-barcode="${product.barcode.barcode_number}"
+                                                    style="height: 50px; width: 200px;"></canvas>
+                                            <div class="barcode-number">
+                                                ${product.barcode.barcode_number}
+                                            </div>
+                                        </div>
+                                    ` : '<span class="text-muted">No Barcode</span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
-        `).join(''));
+        `);
 
         // 更新全选框状态
         this.updateSelectAllState();
@@ -268,8 +275,8 @@ class PrintDashboard {
         $('#selected-count').text(checkedProducts);
 
         // 更新产品卡片选中状态
-        $('.product-card').removeClass('selected');
-        $('.product-select:checked').closest('.product-card').addClass('selected');
+        $('.table tbody tr').removeClass('table-active');
+        $('.product-select:checked').closest('tr').addClass('table-active');
 
         // 更新全选框状态
         if (checkedProducts === 0) {
@@ -357,10 +364,10 @@ class PrintDashboard {
         // 直接打印
         this.printPreviewWithLaravel(selectedProducts);
 
-        // 恢复按钮状态
+        // 恢复按钮状态 - 減少延遲時間
         setTimeout(() => {
             $printBtn.html(originalText).prop('disabled', false);
-        }, 2000);
+        }, 1000);
     }
 
     /**
@@ -382,10 +389,10 @@ class PrintDashboard {
         // 生成PDF
         this.generatePDFWithLaravel(selectedProducts);
 
-        // 恢复按钮状态
+        // 恢复按钮状态 - 減少延遲時間
         setTimeout(() => {
             $pdfBtn.html(originalText).prop('disabled', false);
-        }, 2000);
+        }, 1000);
     }
 
     /**
@@ -509,6 +516,9 @@ class PrintService {
         .catch(error => {
             console.error('Error generating PDF:', error);
             alert('Failed to generate PDF. Please try again.');
+            // 確保按鈕狀態恢復
+            const $pdfBtn = $('#generate-pdf');
+            $pdfBtn.html('<i class="bi bi-file-earmark-pdf-fill me-2"></i>Generate PDF').prop('disabled', false);
         });
     }
 
@@ -551,6 +561,9 @@ class PrintService {
         .catch(error => {
             console.error('Error generating print preview:', error);
             alert('Failed to generate print preview. Please try again.');
+            // 確保按鈕狀態恢復
+            const $printBtn = $('#print-now');
+            $printBtn.html('<i class="bi bi-printer-fill me-2"></i>Print Now').prop('disabled', false);
         });
     }
 
@@ -563,7 +576,7 @@ class PrintService {
             <html>
             <head>
                 <title>Product Labels</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <link href="${assetPath}libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
                 <style>
                     @media print {
                         @page {
@@ -575,6 +588,49 @@ class PrintService {
                             padding: 0;
                             margin: 0;
                         }
+                        .table {
+                            border-collapse: collapse !important;
+                        }
+                        .table-bordered {
+                            border: 2px solid #000 !important;
+                        }
+                        .table-bordered th,
+                        .table-bordered td {
+                            border: 1px solid #000 !important;
+                        }
+                        .table-striped tbody tr:nth-of-type(odd) {
+                            background-color: rgba(0,0,0,.05) !important;
+                        }
+                        .table-dark th {
+                            background-color: #212529 !important;
+                            color: #ffffff !important;
+                            border-color: #495057 !important;
+                        }
+                    }
+                    .table {
+                        border-collapse: collapse;
+                        width: 100%;
+                    }
+                    .table-bordered {
+                        border: 2px solid #000;
+                    }
+                    .table-bordered th,
+                    .table-bordered td {
+                        border: 1px solid #000;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    .table-striped tbody tr:nth-of-type(odd) {
+                        background-color: rgba(0,0,0,.05);
+                    }
+                    .table th {
+                        background-color: #f8f9fa;
+                        font-weight: bold;
+                    }
+                    .table-dark th {
+                        background-color: #212529 !important;
+                        color: #ffffff !important;
+                        border-color: #495057 !important;
                     }
                 </style>
             </head>
@@ -593,12 +649,12 @@ class PrintService {
 
                 <!-- 表格容器 -->
                 <div class="container-fluid">
-                    <table class="table table-bordered table-striped table-hover">
+                    <table class="table table-bordered table-striped table-hover" style="border-collapse: collapse; width: 100%; border: 2px solid #000;">
                         <thead class="table-dark">
                             <tr>
-                                <th class="text-center" style="width: 120px;">Image</th>
-                                <th class="text-center">Product Name</th>
-                                ${includeBarcode ? '<th class="text-center" style="width: 120px;">Barcode</th>' : ''}
+                                <th class="text-center" style="width: 120px; border: 1px solid #000; padding: 8px;">Image</th>
+                                <th class="text-center" style="border: 1px solid #000; padding: 8px;">Product Name</th>
+                                ${includeBarcode ? '<th class="text-center" style="width: 120px; border: 1px solid #000; padding: 8px;">Barcode</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
@@ -611,7 +667,7 @@ class PrintService {
 
             html += `
                 <tr>
-                    <td class="text-center">
+                    <td class="text-center" style="border: 1px solid #000; padding: 8px;">
                         ${includeImage && productImage ? `
                             <img src="${productImage}" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;" alt="${productName}">
                         ` : `
@@ -620,11 +676,11 @@ class PrintService {
                             </div>
                         `}
                     </td>
-                    <td class="text-center align-middle">
+                    <td class="text-center align-middle" style="border: 1px solid #000; padding: 8px;">
                         <div class="fw-medium">${productName}</div>
                     </td>
                     ${includeBarcode && barcodeNumber ? `
-                        <td class="text-center align-middle">
+                        <td class="text-center align-middle" style="border: 1px solid #000; padding: 8px;">
                             <div class="d-flex flex-column align-items-center">
                                 <canvas class="border rounded" data-barcode="${barcodeNumber}" style="width: 100px; height: 25px;"></canvas>
                                 <small class="text-muted font-monospace mt-1">${barcodeNumber}</small>
@@ -640,8 +696,8 @@ class PrintService {
                     </table>
                 </div>
 
-                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="${assetPath}libs/jsbarcode/JsBarcode.all.min.js"></script>
+                <script src="${assetPath}libs/bootstrap/js/bootstrap.bundle.min.js"></script>
                 <script>
                     // 生成条形码
                     document.addEventListener('DOMContentLoaded', function() {

@@ -238,11 +238,11 @@ class ZoneDashboard {
                </a>`;
 
         const actionButtons = `
-            <button class="btn-action" title="Edit" onclick="zoneDashboard.editZone(${zone.id})">
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="zoneDashboard.editZone(${zone.id})">
                 <i class="bi bi-pencil"></i>
             </button>
-            <div class="btn-group dropend d-inline">
-                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">
@@ -261,16 +261,16 @@ class ZoneDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <div class="table-header">
-                        <input class="zone-checkbox" type="checkbox" value="${zone.id}" id="zone-${zone.id}" style="width: 20px; height: 20px;">
-                    </div>
+                    <input class="zone-checkbox" type="checkbox" value="${zone.id}" id="zone-${zone.id}" style="width: 20px; height: 20px;">
                 </td>
                 <td>
                     ${zone.zone_image ? `
                         <img src="/assets/images/${zone.zone_image}" alt="Zone Image"
-                             class="preview-image">
+                             class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
                     ` : `
-                        <div class="no-image">No Image</div>
+                        <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                            <i class="bi bi-image text-muted"></i>
+                        </div>
                     `}
                 </td>
                 <td>
@@ -283,8 +283,12 @@ class ZoneDashboard {
                         </div>
                     </div>
                 </td>
-                <td><span class="status-badge ${this.getStatusClass(zone.zone_status)}">${zone.zone_status}</span></td>
-                <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
+                <td>
+                    <span class="badge ${zone.zone_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${zone.zone_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${zone.zone_status}
+                    </span>
+                </td>
+                <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">${actionButtons}</div></td>
             </tr>
         `;
     }
@@ -824,8 +828,9 @@ function updateZoneList() {
                 </span>
                 <div class="me-3 flex-shrink-0">
                     ${item.zoneImageFile ?
-                        `<img src="${URL.createObjectURL(item.zoneImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Zone Image">` :
-                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
+                        `<img src="${URL.createObjectURL(item.zoneImageFile)}" class="rounded border border-2 border-white shadow-sm" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Zone Image">` :
+                        `<div class="bg-light rounded border border-2 border-white shadow-sm d-flex align-items-center justify-content-center"
+                            style="width: 3.125rem; height: 3.125rem;">
                             <i class="bi bi-geo-alt text-muted fs-5"></i>
                         </div>`
                     }
@@ -1373,7 +1378,7 @@ function initializeZoneUpdate() {
     if (imagePreviewArea && updateImageInput) {
         imagePreviewArea.addEventListener('click', function(e) {
             // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.image-remove-btn')) {
+            if (e.target.closest('.img-remove-btn')) {
                 return; // 不觸發文件選擇
             }
             updateImageInput.click();

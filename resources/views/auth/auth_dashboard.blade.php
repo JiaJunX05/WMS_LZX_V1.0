@@ -6,7 +6,6 @@
 <!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-table.css')}}">
 <link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">
 
 <div class="container-fluid py-4">
@@ -165,27 +164,27 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table custom-table mb-0">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
                             @if($globalUserRole === 'SuperAdmin')
                             <th class="ps-4" style="width: 5%">
-                                <div class="table-header">
+                                <div class="fw-bold text-muted small text-uppercase">
                                     <input type="checkbox" name="select-all" id="select-all" style="width: 20px; height: 20px;">
                                 </div>
                             </th>
-                            <th style="width: 30%"><div class="table-header">USER INFO</div></th>
-                            <th style="width: 35%"><div class="table-header">EMAIL</div></th>
-                            <th style="width: 10%"><div class="table-header">ACCOUNT ROLE</div></th>
-                            <th style="width: 10%"><div class="table-header">ACCOUNT STATUS</div></th>
-                            <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
+                            <th style="width: 30%"><div class="fw-bold text-muted small text-uppercase">USER INFO</div></th>
+                            <th style="width: 35%"><div class="fw-bold text-muted small text-uppercase">EMAIL</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACCOUNT ROLE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACCOUNT STATUS</div></th>
+                            <th class="text-end pe-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACTIONS</div></th>
                             @else
-                            <th class="ps-4" style="width: 10%"><div class="table-header">ID</div></th>
-                            <th style="width: 20%"><div class="table-header">USER INFO</div></th>
-                            <th style="width: 40%"><div class="table-header">EMAIL</div></th>
-                            <th style="width: 10%"><div class="table-header">ACCOUNT ROLE</div></th>
-                            <th style="width: 10%"><div class="table-header">ACCOUNT STATUS</div></th>
-                            <th class="text-end pe-4" style="width: 10%"><div class="table-header">ACTIONS</div></th>
+                            <th class="ps-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
+                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">USER INFO</div></th>
+                            <th style="width: 40%"><div class="fw-bold text-muted small text-uppercase">EMAIL</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACCOUNT ROLE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACCOUNT STATUS</div></th>
+                            <th class="text-end pe-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACTIONS</div></th>
                             @endif
                         </tr>
                     </thead>

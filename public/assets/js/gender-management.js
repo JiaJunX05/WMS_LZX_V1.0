@@ -247,11 +247,11 @@ class GenderDashboard {
                </a>`;
 
         const actionButtons = `
-            <button class="btn-action" title="Edit" onclick="genderDashboard.editGender(${gender.id})">
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="genderDashboard.editGender(${gender.id})">
                 <i class="bi bi-pencil"></i>
             </button>
-            <div class="btn-group dropend d-inline">
-                <button class="btn-action dropdown-toggle" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">
@@ -270,9 +270,7 @@ class GenderDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <div class="table-header">
-                        <input class="gender-checkbox" type="checkbox" value="${gender.id}" id="gender-${gender.id}" style="width: 20px; height: 20px;">
-                    </div>
+                    <input class="gender-checkbox" type="checkbox" value="${gender.id}" id="gender-${gender.id}" style="width: 20px; height: 20px;">
                 </td>
                 <td>
                     <div class="d-flex align-items-center">
@@ -285,8 +283,12 @@ class GenderDashboard {
                         ${gender.sizes_count || 0} sizes
                     </span>
                 </td>
-                <td><span class="status-badge ${this.getStatusClass(gender.gender_status)}">${gender.gender_status}</span></td>
-                <td class="text-end pe-4"><div class="action-buttons">${actionButtons}</div></td>
+                <td>
+                    <span class="badge ${gender.gender_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                        <i class="bi ${gender.gender_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${gender.gender_status}
+                    </span>
+                </td>
+                <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">${actionButtons}</div></td>
             </tr>
         `;
     }

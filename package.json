@@ -15,6 +15,9 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
-        "colorjs.io": "^0.5.2"
+        "bootstrap": "^5.3.8",
+        "colorjs.io": "^0.5.2",
+        "jsbarcode": "^3.12.1",
+        "jspdf": "^3.0.3"
     }
 }

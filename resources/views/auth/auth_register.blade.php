@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 
 <div class="container-fluid py-4">
@@ -118,14 +117,14 @@
                         {{-- 用戶頭像 (User Avatar) --}}
                         <div class="mb-4">
                             <label class="form-label">Profile Image</label>
-                            <div class="image-upload-area" id="user-image-area">
+                            <div class="img-upload-area" id="user-image-area">
                                 <div class="upload-placeholder" id="user-upload-placeholder">
                                     <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                     <h5 class="mt-3">Click to upload image</h5>
                                     <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                 </div>
-                                <img id="user-preview" class="preview-image d-none" alt="User Preview">
-                                <button type="button" class="image-remove-btn d-none" id="remove-user-image">
+                                <img id="user-preview" class="img-preview d-none" alt="User Preview">
+                                <button type="button" class="img-remove-btn d-none" id="remove-user-image">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -154,8 +153,8 @@
                             <div class="card h-100 border role-card selected" data-role="Staff">
                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                     <input type="radio" name="account_role" value="Staff" class="form-check-input me-3" checked>
-                                    <div>
-                                        <h6 class="card-title mb-1">
+                                    <div class="flex-fill">
+                                        <h6 class="card-title mb-1 fw-semibold">
                                             <i class="bi bi-person-badge me-2 text-success"></i>Staff
                                         </h6>
                                         <p class="card-text text-muted small mb-0">Basic user permissions</p>
@@ -170,8 +169,8 @@
                                 <div class="card h-100 border role-card" data-role="Admin">
                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                         <input type="radio" name="account_role" value="Admin" class="form-check-input me-3">
-                                        <div>
-                                            <h6 class="card-title mb-1">
+                                        <div class="flex-fill">
+                                            <h6 class="card-title mb-1 fw-semibold">
                                                 <i class="bi bi-shield-check me-2 text-warning"></i>Admin
                                             </h6>
                                             <p class="card-text text-muted small mb-0">Full management permissions</p>
@@ -185,8 +184,8 @@
                                 <div class="card h-100 border role-card" data-role="SuperAdmin">
                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                         <input type="radio" name="account_role" value="SuperAdmin" class="form-check-input me-3">
-                                        <div>
-                                            <h6 class="card-title mb-1">
+                                        <div class="flex-fill">
+                                            <h6 class="card-title mb-1 fw-semibold">
                                                 <i class="bi bi-person-fill-gear me-2 text-danger"></i>Super Admin
                                             </h6>
                                             <p class="card-text text-muted small mb-0">Highest system permissions</p>

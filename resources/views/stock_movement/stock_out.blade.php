@@ -1,13 +1,19 @@
+{{-- ==========================================
+    库存出库页面 - 扫描产品并从库存中移除
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Stock Out")
 @section("content")
 
+{{-- CSS 文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- 主容器 --}}
 <div class="container-fluid py-4">
-    <!-- Page Title -->
+    {{-- 页面标题区域 --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -34,10 +40,10 @@
         </div>
     </div>
 
-    {{-- Alert Container --}}
+    {{-- 警告信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- Scanner Area -->
+    {{-- 扫描器区域 --}}
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-danger text-white">
             <h5 class="mb-0">
@@ -45,7 +51,7 @@
                 Barcode Scanner
             </h5>
         </div>
-            <div class="card-body">
+        <div class="card-body">
             <div class="input-group mb-3">
                 <span class="input-group-text bg-light">
                     <i class="bi bi-upc-scan text-danger"></i>
@@ -55,7 +61,7 @@
                 <span class="input-group-text">
                     <i class="bi bi-check-circle text-danger">Scan Barcode</i>
                 </span>
-                        </div>
+            </div>
             <div class="form-text mt-2">
                 <i class="bi bi-info-circle me-1"></i>
                 Please use scanner to scan barcode (manual input disabled)
@@ -63,7 +69,7 @@
         </div>
     </div>
 
-    <!-- Scanned Products Table -->
+    {{-- 已扫描产品表格 --}}
     <div class="card shadow-sm border-0 d-none" id="scanned-products-card">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -95,55 +101,57 @@
                         </tr>
                     </thead>
                     <tbody id="scanned-products-table-body">
-                        <!-- Dynamically generated scanned products -->
+                        {{-- 动态生成已扫描产品 --}}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Empty State -->
+    {{-- 空状态 --}}
     <div class="card shadow-sm border-0" id="empty-state-card">
         <div class="card-body text-center py-5">
             <i class="bi bi-upc-scan display-1 text-muted mb-3"></i>
             <h5 class="text-muted mb-2">No Products Scanned Yet</h5>
             <p class="text-muted mb-0">Start scanning product barcodes to add them to the stock out list</p>
-                    </div>
-                </div>
+        </div>
+    </div>
 
-    <!-- Submit Section -->
+    {{-- 提交区域 --}}
     <div class="card shadow-sm border-0 mt-4 d-none" id="submit-section">
         <div class="card-body">
             <div class="mb-3">
                 <label for="reference-number" class="form-label fw-medium">
                     <i class="bi bi-tag text-primary me-1"></i>
                     Reference Number <span class="text-danger">*</span>
-                        </label>
+                </label>
                 <input type="text" class="form-control" id="reference-number" required
                        placeholder="e.g., SO-2024-001, OUT-001">
                 <div class="form-text">Required reference number for tracking this stock out batch</div>
-                    </div>
+            </div>
 
             <button class="btn btn-danger w-100" onclick="submitStockOut()" id="submit-btn">
                 <i class="bi bi-check-circle me-2"></i>
                 Submit Stock Out
             </button>
-
-                    </div>
-                </div>
-
+        </div>
+    </div>
 </div>
 
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // Set stock out related URLs
+    {{-- 设置出库相关 URL --}}
     window.stockOutPageRoute = "{{ route('staff.stock_out_page') }}";
     window.stockOutRoute = "{{ route('staff.stock_out') }}";
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
 </script>
 
+{{-- 通用 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

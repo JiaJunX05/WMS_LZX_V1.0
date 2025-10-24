@@ -1,27 +1,36 @@
+{{-- ==========================================
+    位置更新页面
+    功能：修改位置信息，管理存储位置组合
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Update Location")
 @section("content")
 
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
 
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-pencil-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-pencil-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">
                                     @if(isset($zone))
@@ -40,11 +49,10 @@
                             </div>
                         </div>
                     </div>
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('admin.location.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>
@@ -52,16 +60,20 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 统一的位置管理界面 -->
+    {{-- ==========================================
+        位置更新界面
+        ========================================== --}}
     <div class="card shadow-sm border-0">
         <div class="row g-0">
-            <!-- 左侧配置区域 -->
+            {{-- ==========================================
+                左侧配置区域
+                ========================================== --}}
             <div class="col-md-4">
                 <div class="config-section d-flex flex-column h-100 bg-light p-4">
-                    <!-- 配置标题 -->
+                    {{-- 配置标题 --}}
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h6 class="mb-0 fw-bold text-primary">
                             <i class="bi bi-gear-fill me-2"></i>Configuration
@@ -69,7 +81,7 @@
                         <span class="badge bg-white text-dark border px-3 py-2">Update</span>
                     </div>
 
-                    <!-- 信息显示 -->
+                    {{-- 当前位置信息显示 --}}
                     <div class="alert alert-info border-0 mb-4">
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-info-circle-fill me-2"></i>
@@ -93,9 +105,12 @@
                 </div>
             </div>
 
-            <!-- 右侧编辑表单区域 -->
+            {{-- ==========================================
+                右侧编辑表单区域
+                ========================================== --}}
             <div class="col-md-8">
                 <div class="size-values-section p-4">
+                    {{-- 表单标题 --}}
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <div>
                             <h6 class="mb-0 fw-bold">
@@ -108,14 +123,14 @@
                         </div>
                     </div>
 
-                    <!-- 编辑表单 -->
+                    {{-- 编辑表单 --}}
                     <form action="{{ route('admin.location.update', $location->id) }}" method="POST" id="updateLocationForm">
                         @csrf
                         @method('PUT')
 
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
-                                {{-- Zone Field --}}
+                                {{-- 区域字段 --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-geo-alt me-2 text-primary"></i>Zone
@@ -135,7 +150,7 @@
                                     </div>
                                 </div>
 
-                                {{-- Rack Field --}}
+                                {{-- 货架字段 --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-box-seam me-2 text-primary"></i>Rack
@@ -155,7 +170,7 @@
                                     </div>
                                 </div>
 
-                                {{-- Location Status Field --}}
+                                {{-- 位置状态字段 --}}
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-dark mb-3">Location Status</label>
                                     <div class="row g-3">
@@ -179,7 +194,8 @@
                                         </div>
 
                                         <div class="col-md-6">
-                                            <div class="card h-100 border status-card {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
+                                            <div class="card h-100 border status-card
+                                                {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                     <input type="radio" name="location_status" value="Unavailable" class="form-check-input me-3"
                                                            {{ old('location_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
@@ -199,7 +215,7 @@
                                     </div>
                                 </div>
 
-                                <!-- 提交按钮区域 -->
+                                {{-- 提交按钮区域 --}}
                                 <div class="d-flex gap-3 mt-4">
                                     <button type="submit" class="btn btn-warning flex-fill">
                                         <i class="bi bi-pencil-square me-2"></i>Update Location Information
@@ -220,6 +236,11 @@
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
+
+{{-- 位置管理路由配置 --}}
 <script>
     // 设置全局变量
     window.updateLocationUrl = "{{ route('admin.location.update', $location->id) }}";
@@ -228,6 +249,8 @@
     window.unavailableLocationUrl = "{{ route('admin.location.unavailable', ['id' => ':id']) }}";
     window.deleteLocationUrl = "{{ route('admin.location.destroy', ['id' => ':id']) }}";
 </script>
+
+{{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 <script src="{{ asset('assets/js/location-management.js') }}"></script>

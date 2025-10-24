@@ -1,13 +1,18 @@
+{{-- ==========================================
+    库存管理仪表板 - 管理产品库存变动
+    ========================================== --}}
 @extends("layouts.app")
 
 @section("title", "Stock Management")
 @section("content")
 
+{{-- CSS 文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- 主容器 --}}
 <div class="container-fluid py-4">
-    <!-- Page Title and Add Button -->
+    {{-- 页面标题和操作按钮区域 --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -44,10 +49,10 @@
         </div>
     </div>
 
-    {{-- Alert Container --}}
+    {{-- 警告信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- Product Search and Filter -->
+    {{-- 产品搜索和筛选区域 --}}
     <div class="search-filter-section mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -71,7 +76,7 @@
         </div>
     </div>
 
-    <!-- Product List Table -->
+    {{-- 产品列表表格 --}}
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -92,26 +97,28 @@
                             <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">STOCK</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">STATUS</div></th>
-                            <th class="text-end pe-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ACTIONS</div></th>
+                            <th class="text-end pe-4" style="width: 10%">
+                                <div class="fw-bold text-muted small text-uppercase">ACTIONS</div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="products-table-body">
-                        <!-- Loading State -->
+                        {{-- 加载状态 --}}
                         <tr>
                             <td colspan="7" class="text-center py-4">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
-                                        </div>
+                                </div>
                                 <p class="mt-2 text-muted">Loading products...</p>
-                                </td>
-                            </tr>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Pagination and Results Statistics -->
+    {{-- 分页和结果统计 --}}
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="pagination-info text-muted">
             Showing <span class="fw-medium" id="dashboard-showing-start">0</span>
@@ -138,12 +145,14 @@
     </div>
 </div>
 
-
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // Set stock management related URLs
+    {{-- 设置库存管理相关 URL --}}
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
     window.stockInPageRoute = "{{ route('staff.stock_in_page') }}";
     window.stockOutPageRoute = "{{ route('staff.stock_out_page') }}";
@@ -151,5 +160,7 @@
     window.productImagePath = "{{ asset('assets/images/products') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
 </script>
+
+{{-- 库存管理 JavaScript --}}
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

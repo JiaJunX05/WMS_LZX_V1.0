@@ -1,26 +1,35 @@
+{{-- ==========================================
+    尺码库查看页面
+    功能：查看尺码库信息，支持按分类查看或单个尺码库查看
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "View Size Library")
 @section("content")
 
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
 
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-rulers"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-rulers"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">
                                     @if(isset($category))
@@ -39,8 +48,7 @@
                             </div>
                         </div>
                     </div>
-
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ route('admin.library.index') }}" class="btn btn-primary">
@@ -53,16 +61,20 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 统一的尺码库管理界面 -->
+    {{-- ==========================================
+        尺码库查看界面
+        ========================================== --}}
     <div class="card shadow-sm border-0">
         <div class="row g-0">
-            <!-- 左侧配置区域 -->
+            {{-- ==========================================
+                左侧配置区域
+                ========================================== --}}
             <div class="col-md-4">
                 <div class="config-section d-flex flex-column h-100 bg-light p-4">
-                    <!-- 配置标题 -->
+                    {{-- 配置标题 --}}
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h6 class="mb-0 fw-bold text-primary">
                             <i class="bi bi-gear-fill me-2"></i>Configuration
@@ -70,7 +82,7 @@
                         <span class="badge bg-white text-dark border px-3 py-2">View</span>
                     </div>
 
-                    <!-- 信息显示 -->
+                    {{-- 信息显示 --}}
                     <div class="alert alert-info border-0 mb-4">
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-info-circle-fill me-2"></i>
@@ -116,7 +128,7 @@
                     </div>
 
                     @if(isset($category))
-                        <!-- 统计信息 -->
+                        {{-- 统计信息 --}}
                         <div class="mt-auto">
                             <div class="row text-center">
                                 <div class="col-6">
@@ -130,7 +142,7 @@
                             </div>
                         </div>
                     @else
-                        <!-- 统计信息 -->
+                        {{-- 统计信息 --}}
                         <div class="mt-auto">
                             <div class="row text-center">
                                 <div class="col-12">
@@ -143,7 +155,9 @@
                 </div>
             </div>
 
-            <!-- 右侧尺码值列表区域 -->
+            {{-- ==========================================
+                右侧尺码值列表区域
+                ========================================== --}}
             <div class="col-md-8">
                 <div class="size-values-section p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -175,7 +189,7 @@
                     </div>
 
                     @if(isset($category))
-                        <!-- Size Libraries列表显示 -->
+                        {{-- 尺码库列表显示 --}}
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-striped">
                                 <thead class="table-light sticky-top">
@@ -218,7 +232,7 @@
                             </table>
                         </div>
                     @else
-                        <!-- 单个Size Library查看信息 -->
+                        {{-- 单个尺码库查看信息 --}}
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
                             View the size library details on the left panel.
@@ -230,16 +244,21 @@
     </div>
 </div>
 
+@endsection
+
+@section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/library-management.js') }}"></script>
 
 <script>
-    // 设置全局变量
+    {{-- 尺码库管理路由配置 --}}
     window.viewSizeLibraryUrl = "{{ route('admin.library.view', ['id' => ':id']) }}";
     window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
     window.availableSizeLibraryUrl = "{{ route('admin.library.available', ['id' => ':id']) }}";
     window.unavailableSizeLibraryUrl = "{{ route('admin.library.unavailable', ['id' => ':id']) }}";
     window.deleteSizeLibraryUrl = "{{ route('admin.library.destroy', ['id' => ':id']) }}";
 </script>
-
 @endsection

@@ -1,13 +1,19 @@
+{{-- ==========================================
+    库存详情页面 - 显示产品库存信息和变动历史
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Stock Detail")
 @section("content")
 
+{{-- CSS 文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- 主容器 --}}
 <div class="container-fluid py-4">
-    <!-- Page Title -->
+    {{-- 页面标题区域 --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -36,10 +42,10 @@
         </div>
     </div>
 
-    {{-- Alert Container --}}
+    {{-- 警告信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- Product Basic Information -->
+    {{-- 产品基本信息卡片 --}}
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-transparent border-0 pb-3">
             <h5 class="mb-0 fw-semibold">Product Information</h5>
@@ -76,7 +82,7 @@
         </div>
     </div>
 
-    <!-- Stock History Table -->
+    {{-- 库存历史表格 --}}
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -102,14 +108,14 @@
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
-                        <!-- Dynamically loaded -->
+                        {{-- 动态加载内容 --}}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Pagination and Results Statistics -->
+    {{-- 分页和结果统计 --}}
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="pagination-info text-muted">
             Showing <span class="fw-medium" id="detail-showing-start">0</span>
@@ -139,14 +145,17 @@
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // Set stock detail related URLs
+    {{-- 设置库存详情相关 URL --}}
     window.stockHistoryApiRoute = "{{ route('api.stock_history') }}";
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
     window.productImagePath = "{{ asset('assets/images/products') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
 
-    // Get product ID from URL parameter
+    {{-- 从 URL 参数获取产品 ID --}}
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
 
@@ -155,11 +164,12 @@
         console.log('Product ID from URL:', productId);
     } else {
         console.error('No product ID found in URL');
-        // Redirect back to dashboard if no ID
+        {{-- 如果没有 ID 则重定向回仪表板 --}}
         window.location.href = window.stockManagementRoute;
     }
 </script>
 
+{{-- 通用 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

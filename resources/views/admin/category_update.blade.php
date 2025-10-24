@@ -1,39 +1,47 @@
+{{-- ==========================================
+    分类更新页面
+    功能：修改分类信息，管理产品分类
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Update Category")
 @section("content")
 
-<!-- CSS -->
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-tags-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-tags-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">Update Category</h2>
                                 <p class="dashboard-subtitle mb-0">Modify category information to better organize products</p>
                             </div>
                         </div>
                     </div>
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('admin.category.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>
@@ -41,20 +49,21 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- ========================================== --}}
-    {{-- 分类信息更新界面 (Category Update Interface) --}}
-    {{-- ========================================== --}}
-    {{-- 分类信息更新表单 --}}
+    {{-- ==========================================
+        分类更新表单
+        ========================================== --}}
     <form action="{{ route('admin.category.update', $category->id) }}" method="post" id="updateCategoryForm" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div class="card shadow-sm border-0">
             <div class="row g-0">
-                {{-- 左侧配置区域 --}}
+                {{-- ==========================================
+                    左侧配置区域
+                    ========================================== --}}
                 <div class="col-md-4">
                     <div class="config-section d-flex flex-column h-100 bg-light p-4">
                         {{-- 配置标题 --}}
@@ -65,7 +74,7 @@
                             <span class="badge bg-white text-dark border px-3 py-2">Update</span>
                         </div>
 
-                        {{-- 分类图片 (Category Image) --}}
+                        {{-- 分类图片上传 --}}
                         <div class="mb-4">
                             <label class="form-label">Category Image</label>
                             <div class="img-upload-area" id="image-preview">
@@ -76,11 +85,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="img-preview"
-                                        style="height: auto; max-height: 200px; object-fit: contain;" src="{{ asset('assets/images/' . $category->category_image) }}" alt="Category Preview">
-                                    <button type="button" class="img-remove-btn" id="removeImage">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <img id="preview-image" class="img-preview" src="{{ asset('assets/images/' . $category->category_image) }}" alt="Category Preview">
+                                    <button type="button" class="img-remove-btn" id="removeImage"><i class="bi bi-trash"></i></button>
                                 @else
                                     {{-- 没有图片时显示上传占位符 --}}
                                     <div class="upload-placeholder" id="imageUploadContent">
@@ -88,11 +94,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="img-preview d-none"
-                                        style="height: auto; max-height: 200px; object-fit: contain;" alt="Category Preview">
-                                    <button type="button" class="img-remove-btn d-none" id="removeImage">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <img id="preview-image" class="img-preview d-none" alt="Category Preview">
+                                    <button type="button" class="img-remove-btn d-none" id="removeImage"><i class="bi bi-trash"></i></button>
                                 @endif
                             </div>
                             <input type="file" class="d-none" id="input_image" name="category_image" accept="image/*">
@@ -122,7 +125,9 @@
                     </div>
                 </div>
 
-                {{-- 右侧编辑表单区域 --}}
+                {{-- ==========================================
+                    右侧编辑表单区域
+                    ========================================== --}}
                 <div class="col-md-8">
                     <div class="size-values-section p-4">
                         {{-- 表单标题 --}}
@@ -140,21 +145,20 @@
 
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
-
                                 {{-- 分类名字段 --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-tags me-2 text-primary"></i>Category Name
                                     </label>
                                     <input type="text" class="form-control" id="category_name" name="category_name"
-                                           value="{{ old('category_name', $category->category_name) }}" placeholder="Enter category name" required>
+                                        value="{{ $category->category_name }}" placeholder="Enter category name" required>
                                     <div class="form-text">
                                         <i class="bi bi-info-circle me-1"></i>
                                         Enter a unique category name
                                     </div>
                                 </div>
 
-                                {{-- Category Status Field --}}
+                                {{-- 分类状态字段 --}}
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-dark mb-3">Category Status</label>
                                     <div class="row g-3">
@@ -198,7 +202,7 @@
                                     </div>
                                 </div>
 
-                                <!-- 提交按钮区域 -->
+                                {{-- 提交按钮区域 --}}
                                 <div class="d-flex gap-3 mt-4">
                                     <button type="submit" class="btn btn-warning flex-fill">
                                         <i class="bi bi-pencil-square me-2"></i>Update Category Information
@@ -219,22 +223,29 @@
 @endsection
 
 @section("scripts")
-<!-- JavaScript -->
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
+
+{{-- 分类管理路由配置 --}}
 <script>
-    // JavaScript URL definitions
+    // JavaScript URL定义
     window.categoryManagementRoute = "{{ route('admin.category.index') }}";
     window.updateCategoryUrl = "{{ route('admin.category.update', $category->id) }}";
 
-    // 传递现有分类图片路径给 JavaScript
+    // 传递现有分类图片路径给JavaScript
     @if($category->category_image)
         window.existingCategoryImage = '{{ asset('assets/images/' . $category->category_image) }}';
     @endif
 </script>
+
+{{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 <script src="{{ asset('assets/js/category-management.js') }}"></script>
 
+{{-- 页面初始化脚本 --}}
 <script>
     // 初始化分类更新页面
     document.addEventListener('DOMContentLoaded', function() {

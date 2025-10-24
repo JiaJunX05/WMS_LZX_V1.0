@@ -1,36 +1,45 @@
+{{-- ==========================================
+    位置创建页面
+    功能：创建单个或多个位置组合，连接区域与货架
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Create Location")
 @section("content")
 
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-geo-alt-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-geo-alt-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">Create Location</h2>
                                 <p class="dashboard-subtitle mb-0">Add single or multiple location combinations to connect zones with racks</p>
                             </div>
                         </div>
                     </div>
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('admin.location.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>
@@ -38,20 +47,20 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- =============================================================================
-         主要表單 (Main Form)
-         ============================================================================= --}}
+    {{-- ==========================================
+        位置创建表单
+        ========================================== --}}
     <form action="{{ route('admin.location.store') }}" method="post" id="locationForm">
         @csrf
 
         <div class="card shadow-sm border-0">
             <div class="row g-0">
-            {{-- =============================================================================
-                 左側主要內容區域 (Left Content Area)
-                 ============================================================================= --}}
+                {{-- ==========================================
+                    左侧配置区域
+                    ========================================== --}}
                 <div class="col-md-4">
                     <div class="config-section d-flex flex-column h-100 bg-light p-4">
                         {{-- 配置标题 --}}
@@ -61,7 +70,8 @@
                             </h6>
                             <span class="badge bg-white text-dark border px-3 py-2">Create</span>
                         </div>
-                        {{-- 區域選擇 (Zone Selection) --}}
+
+                        {{-- 区域选择 --}}
                         <div class="mb-4">
                             <label class="form-label">Zone <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -84,7 +94,7 @@
                             </div>
                         </div>
 
-                        {{-- 貨架選擇 (Rack Selection) --}}
+                        {{-- 货架选择 --}}
                         <div class="mb-4">
                             <label class="form-label">Rack <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -121,12 +131,12 @@
                     </div>
                 </div>
 
-            {{-- =============================================================================
-                 右側操作面板 (Right Sidebar)
-                 ============================================================================= --}}
+                {{-- ==========================================
+                    右侧位置管理区域
+                    ========================================== --}}
                 <div class="col-md-8">
                     <div class="size-values-section p-4">
-                        {{-- 表单标题 --}}
+                        {{-- 管理区域标题 --}}
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div>
                                 <h6 class="mb-0 fw-bold">
@@ -144,20 +154,20 @@
                                 <span class="badge bg-primary" id="locationValuesCount">0 locations</span>
                             </div>
                         </div>
-                        <!-- 初始提示界面 -->
+
+                        {{-- 初始提示信息 --}}
                         <div class="text-center text-muted py-5" id="initial-message">
                             <i class="bi bi-gear-fill fs-1 text-muted mb-3"></i>
                             <h5 class="text-muted">Ready to Configure Locations</h5>
                             <p class="text-muted mb-0">Select zone and rack on the left and click "Add To List"</p>
                         </div>
 
-                        <!-- 位置列表区域 -->
+                        {{-- 位置列表区域 --}}
                         <div id="locationValuesArea" class="d-none">
-                            <div class="values-list overflow-auto" id="locationValuesList" style="max-height: 400px;">
-                                <!-- 位置将通过JavaScript动态添加 -->
-                            </div>
+                            <div class="values-list overflow-auto" id="locationValuesList" style="max-height: 400px;"></div>
                         </div>
-                        <!-- 提交按钮区域 -->
+
+                        {{-- 提交按钮区域 --}}
                         <div id="submitSection" class="mt-4 d-none">
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-success">
@@ -175,11 +185,17 @@
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
+
+{{-- 位置管理路由配置 --}}
 <script>
-    // JavaScript URL definitions
     window.createLocationUrl = "{{ route('admin.location.store') }}";
     window.locationManagementRoute = "{{ route('admin.location.index') }}";
 </script>
+
+{{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/location-management.js') }}"></script>
 @endsection

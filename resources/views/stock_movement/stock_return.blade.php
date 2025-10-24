@@ -1,13 +1,19 @@
+{{-- ==========================================
+    库存退货页面 - 扫描产品并退回库存
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Stock Return")
 @section("content")
 
+{{-- CSS 文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- 主容器 --}}
 <div class="container-fluid py-4">
-    <!-- Page Title -->
+    {{-- 页面标题区域 --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -34,10 +40,10 @@
         </div>
     </div>
 
-    {{-- Alert Container --}}
+    {{-- 警告信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- Scanner Area -->
+    {{-- 扫描器区域 --}}
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-warning text-dark">
             <h5 class="mb-0">
@@ -63,7 +69,7 @@
         </div>
     </div>
 
-    <!-- Scanned Products Table -->
+    {{-- 已扫描产品表格 --}}
     <div class="card shadow-sm border-0 d-none" id="scanned-products-card">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -95,14 +101,14 @@
                         </tr>
                     </thead>
                     <tbody id="scanned-products-table-body">
-                        <!-- Dynamically generated scanned products -->
+                        {{-- 动态生成已扫描产品 --}}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Empty State -->
+    {{-- 空状态 --}}
     <div class="card shadow-sm border-0" id="empty-state-card">
         <div class="card-body text-center py-5">
             <i class="bi bi-upc-scan display-1 text-muted mb-3"></i>
@@ -111,7 +117,7 @@
         </div>
     </div>
 
-    <!-- Submit Section -->
+    {{-- 提交区域 --}}
     <div class="card shadow-sm border-0 mt-4 d-none" id="submit-section">
         <div class="card-body">
             <div class="mb-3">
@@ -128,22 +134,24 @@
                 <i class="bi bi-check-circle me-2"></i>
                 Submit Stock Return
             </button>
-
         </div>
     </div>
-
 </div>
 
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // Set stock return related URLs
+    {{-- 设置退货相关 URL --}}
     window.stockReturnPageRoute = "{{ route('staff.stock_return_page') }}";
     window.stockReturnRoute = "{{ route('staff.stock_return') }}";
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
 </script>
 
+{{-- 通用 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

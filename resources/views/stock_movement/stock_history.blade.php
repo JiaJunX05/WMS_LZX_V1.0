@@ -1,13 +1,20 @@
+{{-- ==========================================
+    库存历史页面 - 查看库存变动记录
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Stock History")
 @section("content")
 
+
+{{-- CSS 文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- 主容器 --}}
 <div class="container-fluid py-4">
-    <!-- Page Title -->
+    {{-- 页面标题区域 --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -47,10 +54,10 @@
         </div>
     </div>
 
-    {{-- Alert Container --}}
+    {{-- 警告信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- Statistics Cards - Only visible to Admin and SuperAdmin -->
+    {{-- 统计卡片 - 仅对管理员和超级管理员可见 --}}
     @if(in_array(Auth::user()->getAccountRole(), ['Admin', 'SuperAdmin']))
     <div class="statistics-section mb-4">
         <div class="row g-4">
@@ -148,7 +155,7 @@
     </div>
     @endif
 
-    <!-- Filter -->
+    {{-- 筛选表单 --}}
     <form id="filter-form" method="GET" action="{{ route('stock_history') }}">
         <div class="search-filter-section mb-4">
             <div class="card shadow-sm border-0">
@@ -190,7 +197,7 @@
         </div>
     </form>
 
-    <!-- Stock History Table -->
+    {{-- 库存历史表格 --}}
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -217,14 +224,14 @@
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
-                        <!-- Dynamically loaded -->
+                        {{-- 动态加载内容 --}}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Pagination and Results Statistics -->
+    {{-- 分页和结果统计 --}}
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="pagination-info text-muted">
             Showing <span class="fw-medium" id="history-showing-start">0</span>
@@ -254,14 +261,18 @@
 @endsection
 
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // Set stock history related URLs
+    {{-- 设置库存历史相关 URL --}}
     window.stockHistoryApiRoute = "{{ route('api.stock_history') }}";
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
     window.productImagePath = "{{ asset('assets/images/products') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
 </script>
 
+{{-- 通用 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

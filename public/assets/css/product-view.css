@@ -345,6 +345,28 @@
 }
 
 /* =============================================================================
+   4. Product Information Icons (Product Information Icon Styles)
+   ============================================================================= */
+
+/* 信息图标容器样式 */
+.info-icon-container {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.info-icon-container i {
+    color: white;
+    font-size: 1.25rem;
+}
+
+/* =============================================================================
    5. Responsive Design (Mobile Adaptation)
    ============================================================================= */
 

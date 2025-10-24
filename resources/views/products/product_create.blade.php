@@ -1,41 +1,46 @@
+{{-- ==========================================
+    产品创建页面
+    功能：创建新产品，包含基本信息、图片、代码、位置和属性
+    ========================================== --}}
+
 @extends('layouts.app')
 
 @section('title', 'Create Product')
-
 @section('content')
-{{-- =============================================================================
-     CSS 文件引入 (CSS Files)
-     ============================================================================= --}}
+
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 
-{{-- =============================================================================
-     主要容器 (Main Container)
-     ============================================================================= --}}
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
-    {{-- =============================================================================
-         頁面標題和操作區域 (Page Header & Actions)
-         ============================================================================= --}}
+
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-plus-circle-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-plus-circle-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">Create Product</h2>
                                 <p class="dashboard-subtitle mb-0">Add a new product to your inventory system</p>
                             </div>
                         </div>
                     </div>
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('product.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>
@@ -43,35 +48,33 @@
         </div>
     </div>
 
-    {{-- =============================================================================
-         提示信息容器 (Alert Container)
-         ============================================================================= --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- =============================================================================
-         主要表單 (Main Form)
-         ============================================================================= --}}
+    {{-- ==========================================
+        产品创建表单
+        ========================================== --}}
     <form action="{{ route('product.store') }}" method="post" enctype="multipart/form-data" id="product-form">
         @csrf
 
         <div class="row">
-            {{-- =============================================================================
-                 左側主要內容區域 (Left Content Area)
-                 ============================================================================= --}}
+            {{-- ==========================================
+                左侧主要内容区域
+                ========================================== --}}
             <div class="col-lg-6">
-                {{-- 產品基本信息卡片 (Product Basic Information Card) --}}
+                {{-- 产品基本信息卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Product Information</h5>
                     </div>
                     <div class="card-body">
-                        {{-- 產品名稱 (Product Name) --}}
+                        {{-- 产品名称 --}}
                         <div class="mb-3">
                             <label class="form-label">Product Name</label>
                             <input type="text" class="form-control" name="name" placeholder="Enter product name" required>
                         </div>
 
-                        {{-- 價格和數量 (Price & Quantity) --}}
+                        {{-- 价格和数量 --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Price (RM)</label>
@@ -83,7 +86,7 @@
                             </div>
                         </div>
 
-                        {{-- 產品描述 (Product Description) --}}
+                        {{-- 产品描述 --}}
                         <div class="mb-3">
                             <label class="form-label">Description (Optional)</label>
                             <textarea class="form-control" name="description" rows="4" placeholder="Enter product description"></textarea>
@@ -91,13 +94,13 @@
                     </div>
                 </div>
 
-                {{-- 產品圖片卡片 (Product Images Card) --}}
+                {{-- 产品图片卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Product Images</h5>
                     </div>
                     <div class="card-body">
-                        {{-- 封面圖片 (Cover Image) --}}
+                        {{-- 封面图片 --}}
                         <div class="mb-4">
                             <label class="form-label">Cover Image</label>
                             <div class="img-upload-area" id="cover-image-area">
@@ -106,8 +109,7 @@
                                     <h5 class="mt-3">Click to upload image</h5>
                                     <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                 </div>
-                                <img id="cover-preview" class="img-preview d-none"
-                                    style="height: auto; max-height: 200px; object-fit: contain;" alt="Cover Preview">
+                                <img id="cover-preview" class="img-preview d-none" style="height: auto; max-height: 200px; object-fit: contain;" alt="Cover Preview">
                                 <button type="button" class="img-remove-btn d-none" id="remove-cover-image">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -115,12 +117,12 @@
                             <input type="file" class="d-none" id="cover_image" name="cover_image">
                         </div>
 
-                        {{-- 詳細圖片 (Detail Images) --}}
+                        {{-- 详细图片 --}}
                         <div>
                             <label class="form-label">Detail Images</label>
                             <div class="detail-images-container">
                                 <div class="detail-images-grid" id="detail-images-grid">
-                                    {{-- 動態添加的圖片將在這裡顯示 --}}
+                                    {{-- 动态添加的图片将在这里显示 --}}
                                 </div>
                                 <div class="add-detail-image-btn" id="add-detail-image">
                                     <i class="bi bi-cloud-upload"></i>
@@ -132,13 +134,13 @@
                     </div>
                 </div>
 
-                {{-- 產品代碼生成卡片 (Product Codes Card) --}}
+                {{-- 产品代码生成卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Product Codes</h5>
                     </div>
                     <div class="card-body">
-                        {{-- SKU 和 Barcode 輸入框 (SKU & Barcode Inputs) --}}
+                        {{-- SKU 和 Barcode 输入框 --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">SKU Code</label>
@@ -160,7 +162,7 @@
                             </div>
                         </div>
 
-                        {{-- 生成按鈕 (Generate Button) --}}
+                        {{-- 生成按钮 --}}
                         <div class="text-center">
                             <button type="button" class="btn btn-primary w-100" id="generate-codes-btn">
                                 <i class="bi bi-magic me-2"></i>Generate Both Codes
@@ -170,17 +172,17 @@
                 </div>
             </div>
 
-            {{-- =============================================================================
-                 右側操作面板 (Right Sidebar)
-                 ============================================================================= --}}
+            {{-- ==========================================
+                右侧操作面板
+                ========================================== --}}
             <div class="col-lg-6">
-                {{-- 庫存位置卡片 (Storage Location Card) --}}
+                {{-- 库存位置卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Storage Location</h5>
                     </div>
                     <div class="card-body">
-                        {{-- 區域選擇 (Zone Selection) --}}
+                        {{-- 区域选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Zone</label>
                             <select class="form-select" name="zone_id" required>
@@ -191,7 +193,7 @@
                             </select>
                         </div>
 
-                        {{-- 貨架選擇 (Rack Selection) --}}
+                        {{-- 货架选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Rack</label>
                             <select class="form-select" name="rack_id" required disabled>
@@ -206,13 +208,13 @@
                     </div>
                 </div>
 
-                {{-- 庫存位置卡片 (Category Mapping Card) --}}
+                {{-- 分类映射卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Category Mapping</h5>
                     </div>
                     <div class="card-body">
-                        {{-- 分類選擇 (Category Selection) --}}
+                        {{-- 分类选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Select Category</label>
                             <select class="form-select" name="category_id" required>
@@ -223,7 +225,7 @@
                             </select>
                         </div>
 
-                        {{-- 子分類選擇 (Subcategory Selection) --}}
+                        {{-- 子分类选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Subcategory</label>
                             <select class="form-select" name="subcategory_id" required disabled>
@@ -233,13 +235,13 @@
                     </div>
                 </div>
 
-                {{-- 產品屬性卡片 (Product Attributes Card) --}}
+                {{-- 产品属性卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Product Attributes</h5>
                     </div>
                     <div class="card-body">
-                        {{-- 品牌選擇 (Brand Selection) --}}
+                        {{-- 品牌选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Brand</label>
                             <select class="form-select" name="brand_id" required>
@@ -250,7 +252,7 @@
                             </select>
                         </div>
 
-                        {{-- 顏色選擇 (Color Selection) --}}
+                        {{-- 颜色选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Color</label>
                             <select class="form-select" name="color_id" required>
@@ -261,7 +263,7 @@
                             </select>
                         </div>
 
-                        {{-- 性別選擇 (Gender Selection) --}}
+                        {{-- 性别选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Gender</label>
                             <select class="form-select" name="gender_id" required>
@@ -272,7 +274,7 @@
                             </select>
                         </div>
 
-                        {{-- 尺寸選擇 (Size Selection) --}}
+                        {{-- 尺寸选择 --}}
                         <div class="mb-3">
                             <label class="form-label">Size</label>
                             <select class="form-select" name="size_id" required>
@@ -285,13 +287,13 @@
                     </div>
                 </div>
 
-                {{-- 產品提交卡片 (Product Submit Card) --}}
+                {{-- 产品提交卡片 --}}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Submit Product</h5>
                     </div>
                     <div class="card-body">
-                        {{-- 提交按鈕 (Submit Button) --}}
+                        {{-- 提交按钮 --}}
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-check-circle me-2"></i>Create Product
@@ -303,26 +305,27 @@
         </div>
     </form>
 </div>
+
 @endsection
 
-{{-- =============================================================================
-     JavaScript 文件引入 (JavaScript Files)
-     ============================================================================= --}}
 @section('scripts')
-{{-- 通用 JavaScript 文件 (Common JavaScript Files) --}}
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
+{{-- 通用 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 
-{{-- 數據傳遞給 JavaScript (Data for JavaScript) --}}
+{{-- 数据传递给 JavaScript --}}
 <script>
-    // 傳遞關聯數據給 JavaScript
+    {{-- 传递关联数据给 JavaScript --}}
     window.mappingsData = @json($mappings);
     window.locationsData = @json($locations);
     window.sizesData = @json($sizes);
     window.rackCapacitiesData = @json($rackCapacities);
 </script>
 
-{{-- 统一产品管理 JavaScript (Unified Product Management JavaScript) --}}
+{{-- 统一产品管理 JavaScript --}}
 <script src="{{ asset('assets/js/product-management.js') }}"></script>
 @endsection

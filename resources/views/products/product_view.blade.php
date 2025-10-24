@@ -1,11 +1,14 @@
+{{-- ==========================================
+    产品查看页面 - 显示产品详细信息
+    ========================================== --}}
 @extends('layouts.app')
 
 @section('title', 'View Product')
-
 @section('content')
-{{-- =============================================================================
-     PHP Variables Processing
-     ============================================================================= --}}
+
+{{-- ==========================================
+    PHP 变量处理
+    ========================================== --}}
 @php
     $variant = $product->variants->first();
     $attributeVariant = $variant ? $variant->attributeVariant : null;
@@ -13,25 +16,24 @@
     $color = $attributeVariant && $attributeVariant->color ? $attributeVariant->color : null;
     $size = $attributeVariant && $attributeVariant->size ? $attributeVariant->size : null;
     $gender = $attributeVariant && $attributeVariant->gender ? $attributeVariant->gender : null;
-
 @endphp
 
-{{-- =============================================================================
-     CSS Files
-     ============================================================================= --}}
+{{-- ==========================================
+    CSS 文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-card.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/product-view.css') }}">
 
-{{-- =============================================================================
-     Main Container
-     ============================================================================= --}}
+{{-- ==========================================
+    主容器
+    ========================================== --}}
 <div class="container-fluid py-4">
-    {{-- =============================================================================
-         Page Header & Actions
-         ============================================================================= --}}
+    {{-- ==========================================
+        页面标题和操作区域
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -58,41 +60,51 @@
         </div>
     </div>
 
-    {{-- =============================================================================
-         Alert Container
-         ============================================================================= --}}
+    {{-- ==========================================
+        警告信息容器
+        ========================================== --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- =============================================================================
-         Product Details Display Area
-         ============================================================================= --}}
+    {{-- ==========================================
+        产品详情显示区域
+        ========================================== --}}
     <div class="row g-4">
-        {{-- =============================================================================
-             Left Image Area
-             ============================================================================= --}}
+        {{-- ==========================================
+            左侧图片区域
+            ========================================== --}}
         <div class="col-lg-5">
             <div class="product-image-gallery">
-                {{-- Main Image Display Area --}}
+                {{-- ==========================================
+                    主图片显示区域
+                    ========================================== --}}
                 <div class="main-image-container">
                     @if($product->cover_image && file_exists(public_path('assets/images/products/' . $product->cover_image)))
                         <div class="main-image-wrapper">
                             <img src="{{ asset('assets/images/products/' . $product->cover_image) }}"
                                  alt="Product Image" class="main-image" id="mainImage">
 
-                            {{-- Image Control Buttons --}}
+                            {{-- ==========================================
+                                图片控制按钮
+                                ========================================== --}}
                             <div class="image-controls">
-                                {{-- Zoom Button --}}
+                                {{-- ==========================================
+                                    放大按钮
+                                    ========================================== --}}
                                 <button class="control-btn zoom-btn" onclick="openImageModal(document.getElementById('mainImage').src)" title="Zoom In">
                                     <i class="bi bi-zoom-in"></i>
                                 </button>
 
-                                {{-- Fullscreen Button --}}
+                                {{-- ==========================================
+                                    全屏按钮
+                                    ========================================== --}}
                                 <button class="control-btn fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen">
                                     <i class="bi bi-arrows-fullscreen"></i>
                                 </button>
                             </div>
 
-                            {{-- Navigation Buttons --}}
+                            {{-- ==========================================
+                                导航按钮
+                                ========================================== --}}
                             <div class="nav-button nav-button-left" onclick="previousImage()" title="Previous">
                                 <i class="bi bi-chevron-left"></i>
                             </div>
@@ -100,7 +112,9 @@
                                 <i class="bi bi-chevron-right"></i>
                             </div>
 
-                            {{-- Image Counter --}}
+                            {{-- ==========================================
+                                图片计数器
+                                ========================================== --}}
                             <div class="image-counter">
                                 <span id="currentImageIndex">1</span> / <span id="totalImages">{{ $product->images ? $product->images->count() + 1 : 1 }}</span>
                             </div>
@@ -116,7 +130,9 @@
                     @endif
                 </div>
 
-                {{-- Thumbnail Navigation --}}
+                {{-- ==========================================
+                    缩略图导航
+                    ========================================== --}}
                 <div class="thumbnail-nav">
                     <div class="thumbnail-header">
                         <h6 class="thumbnail-title">
@@ -154,7 +170,9 @@
                     </div>
                 </div>
 
-                {{-- Barcode Section --}}
+                {{-- ==========================================
+                    条形码区域
+                    ========================================== --}}
                 @if($variant && $variant->barcode_number)
                     <div class="barcode-section p-4 bg-light border-top">
                         <div class="d-flex align-items-center justify-content-between mb-3">
@@ -171,7 +189,8 @@
                                 <canvas id="barcodeCanvas" style="max-width: 100%; height: 60px;"></canvas>
                             </div>
                             <div class="mt-2">
-                                <span id="barcode-number" class="font-monospace small text-muted fw-semibold bg-light px-3 py-2 rounded border d-inline-block" style="letter-spacing: 1px; min-width: 120px;">{{ $variant->barcode_number }}</span>
+                                <span id="barcode-number" class="font-monospace small text-muted fw-semibold bg-light px-3 py-2 rounded border d-inline-block"
+                                    style="letter-spacing: 1px; min-width: 120px;">{{ $variant->barcode_number }}</span>
                             </div>
                         </div>
                     </div>
@@ -179,9 +198,9 @@
             </div>
         </div>
 
-        {{-- =============================================================================
-             Right Product Information
-             ============================================================================= --}}
+        {{-- ==========================================
+            右侧产品信息
+            ========================================== --}}
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white border-0 p-4 pb-0">
@@ -189,7 +208,9 @@
                         <h5 class="fw-bold text-primary mb-0">
                             <i class="bi bi-info-circle me-2"></i>Product Information
                         </h5>
-                        {{-- Action Buttons Area --}}
+                        {{-- ==========================================
+                            操作按钮区域
+                            ========================================== --}}
                         @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin' || Auth::user()->getAccountRole() === 'Staff')
                         <div class="d-flex justify-content-end gap-1">
                             @if(Auth::user()->getAccountRole() === 'SuperAdmin' || Auth::user()->getAccountRole() === 'Admin')
@@ -238,7 +259,9 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    {{-- Product Name Section --}}
+                    {{-- ==========================================
+                        产品名称区域
+                        ========================================== --}}
                     <div class="p-4 pb-3 border-bottom bg-light">
                         <h4 class="fw-bold fs-3 lh-sm mb-3 text-truncate">{{ $product->name }}</h4>
                         <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
@@ -251,14 +274,20 @@
                         </div>
                     </div>
 
-                    {{-- Product Information Grid --}}
+                    {{-- ==========================================
+                        产品信息网格
+                        ========================================== --}}
                     <div class="bg-white rounded-bottom-3 overflow-hidden p-4 d-flex gap-4">
-                        {{-- Left Information Column --}}
+                        {{-- ==========================================
+                            左侧信息列
+                            ========================================== --}}
                         <div class="flex-fill d-flex flex-column gap-3">
-                            {{-- 产品分类信息 --}}
+                            {{-- ==========================================
+                                产品分类信息
+                                ========================================== --}}
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-tags text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-tags"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Category</span>
@@ -267,8 +296,8 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-tag text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-tag"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Subcategory</span>
@@ -277,8 +306,8 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-award text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-award"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Brand</span>
@@ -286,10 +315,12 @@
                                 </div>
                             </div>
 
-                            {{-- 产品属性信息 --}}
+                            {{-- ==========================================
+                                产品属性信息
+                                ========================================== --}}
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-palette text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-palette"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Color</span>
@@ -298,8 +329,8 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-rulers text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-rulers"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Size</span>
@@ -308,12 +339,16 @@
                             </div>
                         </div>
 
-                        {{-- Right Information Column --}}
+                        {{-- ==========================================
+                            右侧信息列
+                            ========================================== --}}
                         <div class="flex-fill d-flex flex-column gap-3">
-                            {{-- 库存管理信息 --}}
+                            {{-- ==========================================
+                                库存管理信息
+                                ========================================== --}}
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-upc-scan text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-upc-scan"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">SKU Code</span>
@@ -322,8 +357,8 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-box-seam text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-box-seam"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Quantity</span>
@@ -331,10 +366,12 @@
                                 </div>
                             </div>
 
-                            {{-- 存储位置信息 --}}
+                            {{-- ==========================================
+                                存储位置信息
+                                ========================================== --}}
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-geo-alt text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-geo-alt"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Zone</span>
@@ -343,8 +380,8 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-boxes text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-boxes"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Rack</span>
@@ -352,10 +389,12 @@
                                 </div>
                             </div>
 
-                            {{-- 目标客户信息 --}}
+                            {{-- ==========================================
+                                目标客户信息
+                                ========================================== --}}
                             <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                                    <i class="bi bi-person text-white fs-5"></i>
+                                <div class="info-icon-container">
+                                    <i class="bi bi-person"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-1 flex-fill">
                                     <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Gender</span>
@@ -365,7 +404,9 @@
                         </div>
                     </div>
 
-                    {{-- Product Description --}}
+                    {{-- ==========================================
+                        产品描述
+                        ========================================== --}}
                     @if($product->description)
                         <div class="p-4 bg-light">
                             <h6 class="fw-semibold mb-2 d-flex align-items-center gap-2 border-start border-primary border-3 ps-3">Description</h6>
@@ -378,9 +419,9 @@
     </div>
 </div>
 
-{{-- =============================================================================
-     Image Zoom Modal
-     ============================================================================= --}}
+{{-- ==========================================
+    图片放大模态框
+    ========================================== --}}
 <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -396,21 +437,27 @@
 </div>
 @endsection
 
-{{-- =============================================================================
-     JavaScript Files
-     ============================================================================= --}}
 @section('scripts')
-{{-- Barcode Generation Library --}}
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
+{{-- ==========================================
+    条形码生成库
+    ========================================== --}}
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
-{{-- Common JavaScript Files --}}
+{{-- ==========================================
+    通用 JavaScript 文件
+    ========================================== --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 
-{{-- Data for JavaScript --}}
+{{-- ==========================================
+    数据传递给 JavaScript
+    ========================================== --}}
 <script>
-    // Pass routes to JavaScript
+    {{-- 传递路由给 JavaScript --}}
     window.editProductUrl = '{{ route("product.edit", ":id") }}';
     window.deleteProductUrl = '{{ route("product.destroy", ":id") }}';
     window.availableProductUrl = '{{ route("product.available", ":id") }}';
@@ -418,6 +465,8 @@
     window.productIndexUrl = '{{ route("product.index") }}';
 </script>
 
-{{-- 统一产品管理 JavaScript (Unified Product Management JavaScript) --}}
+{{-- ==========================================
+    统一产品管理 JavaScript
+    ========================================== --}}
 <script src="{{ asset('assets/js/product-management.js') }}"></script>
 @endsection

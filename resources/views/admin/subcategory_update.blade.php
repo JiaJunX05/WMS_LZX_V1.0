@@ -1,39 +1,47 @@
+{{-- ==========================================
+    子分类更新页面
+    功能：修改子分类信息，管理产品子分类
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Update Subcategory")
 @section("content")
 
-<!-- CSS -->
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-collection-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-collection-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">Update Subcategory</h2>
                                 <p class="dashboard-subtitle mb-0">Modify subcategory information to better organize products</p>
                             </div>
                         </div>
                     </div>
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('admin.subcategory.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>
@@ -41,20 +49,21 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- ========================================== --}}
-    {{-- 子分类信息更新界面 (Subcategory Update Interface) --}}
-    {{-- ========================================== --}}
-    {{-- 子分类信息更新表单 --}}
+    {{-- ==========================================
+        子分类更新表单
+        ========================================== --}}
     <form action="{{ route('admin.subcategory.update', $subcategory->id) }}" method="post" id="updateSubcategoryForm" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div class="card shadow-sm border-0">
             <div class="row g-0">
-                {{-- 左侧配置区域 --}}
+                {{-- ==========================================
+                    左侧配置区域
+                    ========================================== --}}
                 <div class="col-md-4">
                     <div class="config-section d-flex flex-column h-100 bg-light p-4">
                         {{-- 配置标题 --}}
@@ -65,7 +74,7 @@
                             <span class="badge bg-white text-dark border px-3 py-2">Update</span>
                         </div>
 
-                        {{-- 子分类图片 (Subcategory Image) --}}
+                        {{-- 子分类图片上传 --}}
                         <div class="mb-4">
                             <label class="form-label">Subcategory Image</label>
                             <div class="img-upload-area" id="image-preview">
@@ -76,11 +85,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="img-preview"
-                                        style="height: auto; max-height: 200px; object-fit: contain;" src="{{ asset('assets/images/' . $subcategory->subcategory_image) }}" alt="Subcategory Preview">
-                                    <button type="button" class="img-remove-btn" id="removeImage">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <img id="preview-image" class="img-preview" src="{{ asset('assets/images/' . $subcategory->subcategory_image) }}" alt="Subcategory Preview">
+                                    <button type="button" class="img-remove-btn" id="removeImage"><i class="bi bi-trash"></i></button>
                                 @else
                                     {{-- 没有图片时显示上传占位符 --}}
                                     <div class="upload-placeholder" id="imageUploadContent">
@@ -88,11 +94,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="img-preview d-none"
-                                        style="height: auto; max-height: 200px; object-fit: contain;" alt="Subcategory Preview">
-                                    <button type="button" class="img-remove-btn d-none" id="removeImage">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <img id="preview-image" class="img-preview d-none" alt="Subcategory Preview">
+                                    <button type="button" class="img-remove-btn d-none" id="removeImage"><i class="bi bi-trash"></i></button>
                                 @endif
                             </div>
                             <input type="file" class="d-none" id="input_image" name="subcategory_image" accept="image/*">
@@ -101,8 +104,7 @@
                         {{-- 当前子分类信息显示 --}}
                         <div class="alert alert-info border-0 mb-4">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-info-circle-fill me-2"></i>
-                                <strong>Current Subcategory</strong>
+                                <i class="bi bi-info-circle-fill me-2"></i><strong>Current Subcategory</strong>
                             </div>
                             <div class="small">
                                 <div class="mb-1">
@@ -122,7 +124,9 @@
                     </div>
                 </div>
 
-                {{-- 右侧编辑表单区域 --}}
+                {{-- ==========================================
+                    右侧编辑表单区域
+                    ========================================== --}}
                 <div class="col-md-8">
                     <div class="size-values-section p-4">
                         {{-- 表单标题 --}}
@@ -132,41 +136,35 @@
                                     <i class="bi bi-pencil-square me-2"></i>Update Subcategory Information
                                 </h6>
                                 <small class="text-muted">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Modify subcategory configuration below.
+                                    <i class="bi bi-info-circle me-1"></i>Modify subcategory configuration below.
                                 </small>
                             </div>
                         </div>
 
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
-
                                 {{-- 子分类名字段 --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-collection me-2 text-primary"></i>Subcategory Name
                                     </label>
                                     <input type="text" class="form-control" id="subcategory_name" name="subcategory_name"
-                                           value="{{ old('subcategory_name', $subcategory->subcategory_name) }}" placeholder="Enter subcategory name" required>
+                                        value="{{ old('subcategory_name', $subcategory->subcategory_name) }}" placeholder="Enter subcategory name" required>
                                     <div class="form-text">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Enter a unique subcategory name
+                                        <i class="bi bi-info-circle me-1"></i>Enter a unique subcategory name
                                     </div>
                                 </div>
 
-                                {{-- Subcategory Status Field --}}
+                                {{-- 子分类状态字段 --}}
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-dark mb-3">Subcategory Status</label>
                                     <div class="row g-3">
-                                        @php
-                                            $currentStatus = $subcategory->subcategory_status ?? 'Available';
-                                        @endphp
-
+                                        @php $currentStatus = $subcategory->subcategory_status ?? 'Available'; @endphp
                                         <div class="col-md-6">
                                             <div class="card h-100 border status-card {{ $currentStatus === 'Available' ? 'selected' : '' }}" data-status="Available">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                     <input type="radio" name="subcategory_status" value="Available" class="form-check-input me-3"
-                                                           {{ old('subcategory_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
+                                                        {{ old('subcategory_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
                                                     <div>
                                                         <h6 class="card-title mb-1">
                                                             <i class="bi bi-check-circle me-2 text-success"></i>Available
@@ -176,12 +174,11 @@
                                                 </label>
                                             </div>
                                         </div>
-
                                         <div class="col-md-6">
                                             <div class="card h-100 border status-card {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
                                                 <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                     <input type="radio" name="subcategory_status" value="Unavailable" class="form-check-input me-3"
-                                                           {{ old('subcategory_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
+                                                        {{ old('subcategory_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
                                                     <div>
                                                         <h6 class="card-title mb-1">
                                                             <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
@@ -193,12 +190,11 @@
                                         </div>
                                     </div>
                                     <div class="form-text">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Choose whether the subcategory can be used for product organization
+                                        <i class="bi bi-info-circle me-1"></i>Choose whether the subcategory can be used for product organization
                                     </div>
                                 </div>
 
-                                <!-- 提交按钮区域 -->
+                                {{-- 提交按钮区域 --}}
                                 <div class="d-flex gap-3 mt-4">
                                     <button type="submit" class="btn btn-warning flex-fill">
                                         <i class="bi bi-pencil-square me-2"></i>Update Subcategory Information
@@ -219,26 +215,29 @@
 @endsection
 
 @section("scripts")
-<!-- JavaScript -->
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // JavaScript URL definitions
+    {{-- 子分类管理路由配置 --}}
     window.subcategoryManagementRoute = "{{ route('admin.subcategory.index') }}";
     window.updateSubcategoryUrl = "{{ route('admin.subcategory.update', $subcategory->id) }}";
 
-    // 传递现有子分类图片路径给 JavaScript
+    {{-- 传递现有子分类图片路径给JavaScript --}}
     @if($subcategory->subcategory_image)
         window.existingSubcategoryImage = '{{ asset('assets/images/' . $subcategory->subcategory_image) }}';
     @endif
 </script>
+
+{{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 <script src="{{ asset('assets/js/subcategory-management.js') }}"></script>
 
 <script>
-    // 初始化子分类更新页面
+    {{-- 页面初始化脚本 --}}
     document.addEventListener('DOMContentLoaded', function() {
-        // 初始化图片处理功能和表单提交
         initializeSubcategoryUpdate();
     });
 </script>

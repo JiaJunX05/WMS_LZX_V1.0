@@ -1,39 +1,47 @@
+{{-- ==========================================
+    货架更新页面
+    功能：修改货架信息，管理存储位置
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "Update Rack")
 @section("content")
 
-<!-- CSS -->
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-box-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-box-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">Update Rack</h2>
                                 <p class="dashboard-subtitle mb-0">Modify rack information to better organize and manage stock storage efficiently</p>
                             </div>
                         </div>
                     </div>
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('admin.rack.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>
@@ -41,20 +49,21 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- ========================================== --}}
-    {{-- 货架信息更新界面 (Rack Update Interface) --}}
-    {{-- ========================================== --}}
-    {{-- 货架信息更新表单 --}}
+    {{-- ==========================================
+        货架更新表单
+        ========================================== --}}
     <form action="{{ route('admin.rack.update', $rack->id) }}" method="post" id="updateRackForm" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div class="card shadow-sm border-0">
             <div class="row g-0">
-                {{-- 左侧配置区域 --}}
+                {{-- ==========================================
+                    左侧配置区域
+                    ========================================== --}}
                 <div class="col-md-4">
                     <div class="config-section d-flex flex-column h-100 bg-light p-4">
                         {{-- 配置标题 --}}
@@ -65,7 +74,7 @@
                             <span class="badge bg-white text-dark border px-3 py-2">Update</span>
                         </div>
 
-                        {{-- 货架图片 (Rack Image) --}}
+                        {{-- 货架图片上传 --}}
                         <div class="mb-4">
                             <label class="form-label">Rack Image</label>
                             <div class="img-upload-area" id="image-preview">
@@ -76,11 +85,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="img-preview"
-                                        style="height: auto; max-height: 200px; object-fit: contain;" src="{{ asset('assets/images/' . $rack->rack_image) }}" alt="Rack Preview">
-                                    <button type="button" class="img-remove-btn" id="removeImage">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <img id="preview-image" class="img-preview" src="{{ asset('assets/images/' . $rack->rack_image) }}" alt="Rack Preview">
+                                    <button type="button" class="img-remove-btn" id="removeImage"><i class="bi bi-trash"></i></button>
                                 @else
                                     {{-- 没有图片时显示上传占位符 --}}
                                     <div class="upload-placeholder" id="imageUploadContent">
@@ -88,11 +94,8 @@
                                         <h5 class="mt-3">Click to upload image</h5>
                                         <p class="text-muted">Supports JPG, PNG, GIF formats</p>
                                     </div>
-                                    <img id="preview-image" class="img-preview d-none"
-                                        style="height: auto; max-height: 200px; object-fit: contain;" alt="Rack Preview">
-                                    <button type="button" class="img-remove-btn d-none" id="removeImage">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <img id="preview-image" class="img-preview d-none" alt="Rack Preview">
+                                    <button type="button" class="img-remove-btn d-none" id="removeImage"><i class="bi bi-trash"></i></button>
                                 @endif
                             </div>
                             <input type="file" class="d-none" id="input_image" name="rack_image" accept="image/*">
@@ -126,7 +129,9 @@
                     </div>
                 </div>
 
-                {{-- 右侧编辑表单区域 --}}
+                {{-- ==========================================
+                    右侧编辑表单区域
+                    ========================================== --}}
                 <div class="col-md-8">
                     <div class="size-values-section p-4">
                         {{-- 表单标题 --}}
@@ -236,22 +241,29 @@
 @endsection
 
 @section("scripts")
-<!-- JavaScript -->
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
+
+{{-- 货架管理路由配置 --}}
 <script>
-    // JavaScript URL definitions
+    // JavaScript URL定义
     window.rackManagementRoute = "{{ route('admin.rack.index') }}";
     window.updateRackUrl = "{{ route('admin.rack.update', $rack->id) }}";
 
-    // 传递现有货架图片路径给 JavaScript
+    // 传递现有货架图片路径给JavaScript
     @if($rack->rack_image)
         window.existingRackImage = '{{ asset('assets/images/' . $rack->rack_image) }}';
     @endif
 </script>
+
+{{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/image-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 <script src="{{ asset('assets/js/rack-management.js') }}"></script>
 
+{{-- 页面初始化脚本 --}}
 <script>
     // 初始化货架更新页面
     document.addEventListener('DOMContentLoaded', function() {

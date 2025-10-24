@@ -1,26 +1,35 @@
+{{-- ==========================================
+    尺码模板查看页面
+    功能：查看尺码模板信息，支持按分类和性别查看或单个模板查看
+    ========================================== --}}
+
 @extends("layouts.app")
 
 @section("title", "View Size Template")
 @section("content")
 
+{{-- ==========================================
+    页面样式文件引入
+    ========================================== --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
+{{-- ==========================================
+    页面主体内容
+    ========================================== --}}
 <div class="container-fluid py-4">
 
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
+    {{-- ==========================================
+        页面头部导航
+        ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
+                    {{-- 左侧标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-layout-text-window-reverse"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-layout-text-window-reverse"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">
                                     @if(isset($category) && isset($gender))
@@ -39,8 +48,7 @@
                             </div>
                         </div>
                     </div>
-
-                    {{-- 操作按钮区域 --}}
+                    {{-- 右侧返回按钮 --}}
                     <div class="col-lg-4">
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ route('admin.template.index') }}" class="btn btn-primary">
@@ -53,16 +61,20 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 统一的模板管理界面 -->
+    {{-- ==========================================
+        尺码模板查看界面
+        ========================================== --}}
     <div class="card shadow-sm border-0">
         <div class="row g-0">
-            <!-- 左侧配置区域 -->
+            {{-- ==========================================
+                左侧配置区域
+                ========================================== --}}
             <div class="col-md-4">
                 <div class="config-section d-flex flex-column h-100 bg-light p-4">
-                    <!-- 配置标题 -->
+                    {{-- 配置标题 --}}
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h6 class="mb-0 fw-bold text-primary">
                             <i class="bi bi-gear-fill me-2"></i>Configuration
@@ -70,7 +82,7 @@
                         <span class="badge bg-white text-dark border px-3 py-2">View</span>
                     </div>
 
-                    <!-- 信息显示 -->
+                    {{-- 信息显示 --}}
                     <div class="alert alert-info border-0 mb-4">
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-info-circle-fill me-2"></i>
@@ -120,7 +132,7 @@
                     </div>
 
                     @if(isset($category) && isset($gender))
-                        <!-- 统计信息 -->
+                        {{-- 统计信息 --}}
                         <div class="mt-auto">
                             <div class="row text-center">
                                 <div class="col-6">
@@ -134,7 +146,7 @@
                             </div>
                         </div>
                     @else
-                        <!-- 统计信息 -->
+                        {{-- 统计信息 --}}
                         <div class="mt-auto">
                             <div class="row text-center">
                                 <div class="col-12">
@@ -147,7 +159,9 @@
                 </div>
             </div>
 
-            <!-- 右侧尺码值列表区域 -->
+            {{-- ==========================================
+                右侧模板值列表区域
+                ========================================== --}}
             <div class="col-md-8">
                 <div class="size-values-section p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -179,7 +193,7 @@
                     </div>
 
                     @if(isset($category) && isset($gender))
-                        <!-- Templates列表显示 -->
+                        {{-- 模板列表显示 --}}
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-striped">
                                 <thead class="table-light sticky-top">
@@ -222,7 +236,7 @@
                             </table>
                         </div>
                     @else
-                        <!-- 单个Template查看信息 -->
+                        {{-- 单个模板查看信息 --}}
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
                             View the template details on the left panel.
@@ -233,14 +247,15 @@
         </div>
     </div>
 </div>
+
 @endsection
 
-{{-- ========================================== --}}
-{{-- JavaScript 脚本区域 (Scripts Section) --}}
-{{-- ========================================== --}}
 @section("scripts")
+{{-- ==========================================
+    页面脚本区域
+    ========================================== --}}
 <script>
-    // 设置全局变量
+    {{-- 尺码模板管理路由配置 --}}
     window.viewTemplateUrl = "{{ route('admin.template.view', ['id' => ':id']) }}";
     window.templateManagementRoute = "{{ route('admin.template.index') }}";
     window.availableTemplateUrl = "{{ route('admin.template.available', ['id' => ':id']) }}";
@@ -248,7 +263,7 @@
     window.deleteTemplateUrl = "{{ route('admin.template.destroy', ['id' => ':id']) }}";
 </script>
 
-{{-- 引入模板管理JavaScript文件 --}}
+{{-- 引入尺码模板管理JavaScript文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/template-management.js') }}"></script>
 @endsection

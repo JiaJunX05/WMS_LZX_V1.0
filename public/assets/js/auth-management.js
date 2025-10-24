@@ -1304,6 +1304,87 @@ function togglePasswordConfirmation() {
 }
 
 /**
+ * 初始化登錄頁面表單提交加載狀態
+ */
+function initializeLoginFormSubmit() {
+    const loginForm = document.querySelector('form');
+    const loginBtn = document.getElementById('loginBtn');
+
+    if (loginForm && loginBtn) {
+        const btnText = loginBtn.querySelector('.btn-text');
+        const btnLoading = loginBtn.querySelector('.btn-loading');
+
+        loginForm.addEventListener('submit', function() {
+            // 显示加载状态
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            loginBtn.disabled = true;
+
+            // 模拟加载时间（实际项目中会由服务器响应控制）
+            setTimeout(() => {
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+                loginBtn.disabled = false;
+            }, 2000);
+        });
+    }
+}
+
+/**
+ * 初始化密碼重置頁面表單提交加載狀態
+ */
+function initializeResetFormSubmit() {
+    const resetForm = document.querySelector('form');
+    const resetBtn = document.getElementById('resetBtn');
+
+    if (resetForm && resetBtn) {
+        const btnText = resetBtn.querySelector('.btn-text');
+        const btnLoading = resetBtn.querySelector('.btn-loading');
+
+        resetForm.addEventListener('submit', function() {
+            // 显示加载状态
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            resetBtn.disabled = true;
+
+            // 模拟加载时间（实际项目中会由服务器响应控制）
+            setTimeout(() => {
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+                resetBtn.disabled = false;
+            }, 2000);
+        });
+    }
+}
+
+/**
+ * 初始化郵箱驗證頁面表單提交加載狀態
+ */
+function initializeVerifyFormSubmit() {
+    const verifyForm = document.querySelector('form');
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    if (verifyForm && verifyBtn) {
+        const btnText = verifyBtn.querySelector('.btn-text');
+        const btnLoading = verifyBtn.querySelector('.btn-loading');
+
+        verifyForm.addEventListener('submit', function() {
+            // 显示加载状态
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            verifyBtn.disabled = true;
+
+            // 模拟加载时间（实际项目中会由服务器响应控制）
+            setTimeout(() => {
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+                verifyBtn.disabled = false;
+            }, 2000);
+        });
+    }
+}
+
+/**
  * 初始化登錄頁面
  */
 function initializeLoginPage() {
@@ -1454,6 +1535,9 @@ function initializeLoginPage() {
     if (emailInput) {
         emailInput.focus();
     }
+
+    // 初始化表單提交加載狀態
+    initializeLoginFormSubmit();
 }
 
 // =============================================================================
@@ -1485,6 +1569,9 @@ window.bindRoleSelectionEvents = bindRoleSelectionEvents;
 window.togglePassword = togglePassword;
 window.togglePasswordConfirmation = togglePasswordConfirmation;
 window.initializeLoginPage = initializeLoginPage;
+window.initializeLoginFormSubmit = initializeLoginFormSubmit;
+window.initializeResetFormSubmit = initializeResetFormSubmit;
+window.initializeVerifyFormSubmit = initializeVerifyFormSubmit;
 
 // Dashboard 相關函數
 window.deleteUser = (userId) => authDashboard.deleteUser(userId);

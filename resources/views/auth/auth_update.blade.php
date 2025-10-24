@@ -3,33 +3,25 @@
 @section("title", "Edit User Information")
 @section("content")
 
-<!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 <div class="container-fluid py-4">
-    {{-- ========================================== --}}
-    {{-- 页面标题和操作区域 (Page Header & Actions) --}}
-    {{-- ========================================== --}}
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <div class="row align-items-center">
-                    {{-- 标题区域 --}}
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-pencil-fill"></i>
-                            </div>
+                            <div class="header-icon-wrapper me-4"><i class="bi bi-pencil-fill"></i></div>
                             <div>
                                 <h2 class="dashboard-title mb-1">Update User Information</h2>
                                 <p class="dashboard-subtitle mb-0">Modify user basic information and permission settings</p>
                             </div>
                         </div>
                     </div>
-                    {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ $userRole === 'SuperAdmin' ? route('superadmin.users.management') : route('admin.users.management') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
@@ -41,36 +33,25 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- ========================================== --}}
-    {{-- 用户信息更新界面 (User Update Interface) --}}
-    {{-- ========================================== --}}
-    {{-- 用户信息更新表单 --}}
     <form action="{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', $user->id) : route('admin.users.update', $user->id) }}" method="post" id="updateUserForm" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div class="card shadow-sm border-0">
             <div class="row g-0">
-                {{-- 左侧配置区域 --}}
                 <div class="col-md-4">
                     <div class="config-section d-flex flex-column h-100 bg-light p-4">
-                        {{-- 配置标题 --}}
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h6 class="mb-0 fw-bold text-primary">
-                                <i class="bi bi-gear-fill me-2"></i>Configuration
-                            </h6>
+                            <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-gear-fill me-2"></i>Configuration</h6>
                             <span class="badge bg-white text-dark border px-3 py-2">Update</span>
                         </div>
 
-                        {{-- 用戶頭像 (User Avatar) --}}
                         <div class="mb-4">
                             <label class="form-label">Profile Image</label>
                             <div class="img-upload-area" id="user-image-area">
                                 @if($user->account && $user->account->user_image && file_exists(public_path('assets/images/auth/' . $user->account->user_image)))
-                                    {{-- 有现有图片时显示 --}}
                                     <div class="upload-placeholder d-none" id="user-upload-placeholder">
                                         <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                         <h5 class="mt-3">Click to upload image</h5>
@@ -81,7 +62,6 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @else
-                                    {{-- 没有图片时显示上传占位符 --}}
                                     <div class="upload-placeholder" id="user-upload-placeholder">
                                         <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                         <h5 class="mt-3">Click to upload image</h5>
@@ -96,7 +76,6 @@
                             <input type="file" class="d-none" id="user_image" name="user_image" accept="image/*">
                         </div>
 
-                        {{-- 当前用户信息显示 --}}
                         <div class="alert alert-info border-0 mb-4">
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-info-circle-fill me-2"></i>
@@ -126,7 +105,6 @@
                             </div>
                         </div>
 
-                        {{-- 统计信息 --}}
                         <div class="mt-auto">
                             <div class="row text-center">
                                 <div class="col-12">
@@ -138,10 +116,8 @@
                     </div>
                 </div>
 
-                {{-- 右侧编辑表单区域 --}}
                 <div class="col-md-8">
                     <div class="size-values-section p-4">
-                        {{-- 表单标题 --}}
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div>
                                 <h6 class="mb-0 fw-bold">
@@ -157,7 +133,6 @@
                         <div class="card border-0 bg-white shadow-sm">
                             <div class="card-body p-4">
 
-                                {{-- 用户名字段 --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-at me-2 text-primary"></i>Username
@@ -170,7 +145,6 @@
                                     </div>
                                 </div>
 
-                                {{-- 用户基本信息字段 --}}
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-dark mb-2">
@@ -196,7 +170,6 @@
                                     </div>
                                 </div>
 
-                                {{-- 用户邮箱字段 --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-envelope me-2 text-primary"></i>Email Address
@@ -209,9 +182,6 @@
                                     </div>
                                 </div>
 
-
-
-                                {{-- 密码字段 --}}
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-dark mb-2">
@@ -254,11 +224,9 @@
                                 @endphp
 
                                 @if($currentUserRole === 'SuperAdmin' && !$isUpdatingSelf)
-                                    <!-- Role Selection Field -->
                                     <div class="mb-4">
                                         <label class="form-label fw-bold text-dark mb-3">User Role</label>
                                         <div class="row g-3">
-                                            <!-- Staff 选项 -->
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="card h-100 border role-card {{ $currentUserAccountRole === 'Staff' ? 'selected' : '' }}" data-role="Staff">
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
@@ -274,7 +242,6 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Admin 选项 -->
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="card h-100 border role-card {{ $currentUserAccountRole === 'Admin' ? 'selected' : '' }}" data-role="Admin">
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
@@ -290,7 +257,6 @@
                                                 </div>
                                             </div>
 
-                                            <!-- SuperAdmin 选项 -->
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="card h-100 border role-card {{ $currentUserAccountRole === 'SuperAdmin' ? 'selected' : '' }}" data-role="SuperAdmin">
                                                     <label class="card-body d-flex align-items-center" style="cursor: pointer;">
@@ -313,7 +279,6 @@
                                     </div>
                                 @else
 
-                                    <!-- Role Display (Read-only for Admin) -->
                                     <div class="mb-4">
                                         <label class="form-label fw-bold">User Role</label>
                                         <div class="row g-3">
@@ -351,7 +316,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Permission Notice -->
                                         <div class="mt-3">
                                             <div class="alert alert-info alert-sm d-flex align-items-center" role="alert">
                                                 <i class="bi bi-info-circle me-2"></i>
@@ -362,7 +326,6 @@
                                 @endif
 
                                 @if(!$isUpdatingSelf)
-                                    <!-- Account Status Field -->
                                     <div class="mb-4">
                                         <label class="form-label fw-bold text-dark mb-3">Account Status</label>
                                         <div class="row g-3">
@@ -406,7 +369,6 @@
                                         </div>
                                     </div>
                                 @else
-                                    <!-- Account Status Display (Read-only when updating self) -->
                                     <div class="mb-4">
                                         <label class="form-label fw-bold text-dark mb-3">Account Status</label>
                                         <div class="row g-3">
@@ -442,7 +404,6 @@
                                     </div>
                                 @endif
 
-                                <!-- 提交按钮区域 -->
                                 <div class="d-flex gap-3 mt-4">
                                     <button type="submit" class="btn btn-warning flex-fill">
                                         <i class="bi bi-pencil-square me-2"></i>Update User Information
@@ -463,13 +424,10 @@
 @endsection
 
 @section("scripts")
-<!-- JavaScript -->
 <script>
-    // JavaScript URL definitions
     window.updateUserUrl = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.update', ':id') : route('admin.users.update', ':id') }}";
     window.updateUserRedirect = "{{ $userRole === 'SuperAdmin' ? route('superadmin.users.management') : route('admin.users.management') }}";
 
-    // 传递现有用户图片路径给 JavaScript
     @if($user->account && $user->account->user_image)
         window.existingUserImage = '{{ asset('assets/images/auth/' . $user->account->user_image) }}';
     @endif
@@ -480,9 +438,7 @@
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 
 <script>
-    // 初始化用户更新页面
     document.addEventListener('DOMContentLoaded', function() {
-        // 初始化图片处理功能和表单提交
         initializeUserUpdate();
     });
 </script>

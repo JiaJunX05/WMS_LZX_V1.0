@@ -3,13 +3,11 @@
 @section("title", "User Management")
 @section("content")
 
-<!-- CSS -->
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">
 
 <div class="container-fluid py-4">
-    <!-- 页面标题和添加按钮 -->
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -36,10 +34,8 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 统计数据卡片 -->
     <div class="statistics-section mb-4">
         <div class="row g-4">
             <div class="col-xl-3 col-md-6">
@@ -105,7 +101,6 @@
         </div>
     </div>
 
-    <!-- 搜索和筛选区域 -->
     <div class="search-filter-section mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -146,7 +141,6 @@
         </div>
     </div>
 
-    <!-- User List Table -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -204,7 +198,6 @@
         </div>
     </div>
 
-    <!-- Pagination and Results Statistics -->
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="pagination-info text-muted">
             Showing <span class="fw-medium" id="showing-start">0</span>
@@ -241,20 +234,16 @@
         @elseif (Auth::user()->getAccountRole() === 'Admin') {{-- If admin --}}
             window.staffManagementRoute = "{{ route('admin.users.management') }}"; {{-- Set to admin users management route --}}
         @else
-            window.staffManagementRoute = ""; // Other roles (like regular staff) may not have access to this page or corresponding API routes
+            window.staffManagementRoute = "";
         @endif
     @else
-        window.staffManagementRoute = ""; // User not authenticated, not allowed to make data requests
+        window.staffManagementRoute = "";
     @endif
 
-    // Pass current user role to JavaScript to display different action buttons based on role in JS.
-    // `{{ $globalUserRole ?? '' }}`: `?? ''` is to prevent errors when `$globalUserRole` is undefined.
     window.currentUserRole = "{{ $globalUserRole ?? '' }}";
 
-    // Pass current user ID to JavaScript to prevent self-modification
     window.currentUserId = {{ Auth::id() ?? 0 }};
 
-    // User operation related URLs - dynamically set based on current user role
     @if($globalUserRole === 'SuperAdmin')
         window.editUserUrl = "{{ route('superadmin.users.edit', ':id') }}";
         window.deleteUserUrl = "{{ route('superadmin.users.delete', ':id') }}";
@@ -264,11 +253,11 @@
         window.userExportUrl = "{{ route('superadmin.users.export') }}";
     @elseif($globalUserRole === 'Admin')
         window.editUserUrl = "{{ route('admin.users.edit', ':id') }}";
-        window.deleteUserUrl = ""; // Admin cannot delete users
+        window.deleteUserUrl = "";
         window.unavailableUserUrl = "{{ route('admin.users.unavailable', ':id') }}";
         window.availableUserUrl = "{{ route('admin.users.available', ':id') }}";
-        window.changeRoleUrl = ""; // Admin cannot change roles
-        window.userExportUrl = ""; // Admin cannot export users
+        window.changeRoleUrl = "";
+        window.userExportUrl = "";
     @else
         window.editUserUrl = "";
         window.deleteUserUrl = "";

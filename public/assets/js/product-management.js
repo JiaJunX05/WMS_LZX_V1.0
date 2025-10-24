@@ -339,8 +339,9 @@ class ProductManagement {
             return;
         }
 
-        noResults.style.display = 'none';
-        container.style.display = 'flex';
+        noResults.classList.add('d-none');
+        container.classList.remove('d-none');
+        container.classList.add('d-flex');
         container.innerHTML = this.products.map(product => this.createProductCard(product)).join('');
     }
 
@@ -401,8 +402,8 @@ class ProductManagement {
                 </div>
             </div>
         `;
-        noResults.style.display = 'block';
-        container.style.display = 'block';
+        noResults.classList.remove('d-none');
+        container.classList.remove('d-none');
     }
 
     generatePagination(data) {
@@ -465,8 +466,8 @@ class ProductManagement {
                 </div>
             </div>
         `;
-        container.style.display = 'block';
-        document.getElementById('no-results').style.display = 'none';
+        container.classList.remove('d-none');
+        document.getElementById('no-results').classList.add('d-none');
     }
 }
 
@@ -1267,7 +1268,7 @@ function showRackCapacityError(message) {
 
     if (errorDiv && errorText && rackSelect) {
         errorText.textContent = message;
-        errorDiv.style.display = 'block';
+        errorDiv.classList.remove('d-none');
         rackSelect.classList.add('is-invalid');
     }
 }
@@ -1280,7 +1281,7 @@ function hideRackCapacityError() {
     const rackSelect = document.querySelector('select[name="rack_id"]');
 
     if (errorDiv && rackSelect) {
-        errorDiv.style.display = 'none';
+        errorDiv.classList.add('d-none');
         rackSelect.classList.remove('is-invalid');
     }
 }

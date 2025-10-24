@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
 <div class="container-fluid py-4">
-    <!-- 页面标题 -->
+    <!-- Page Title -->
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -34,10 +34,10 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- Alert Container --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 扫描区域 -->
+    <!-- Scanner Area -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-warning text-dark">
             <h5 class="mb-0">
@@ -51,20 +51,20 @@
                     <i class="bi bi-upc-scan text-warning"></i>
                 </span>
                 <input type="text" class="form-control" id="barcode-scanner"
-                       placeholder="請使用掃描槍掃描條碼..." aria-label="Barcode Scanner">
+                       placeholder="Please scan barcode using scanner..." aria-label="Barcode Scanner">
                 <span class="input-group-text">
                     <i class="bi bi-check-circle text-warning">Scan Barcode</i>
                 </span>
             </div>
             <div class="form-text mt-2">
                 <i class="bi bi-info-circle me-1"></i>
-                請使用掃描槍掃描條碼 (手動輸入已禁用)
+                Please use scanner to scan barcode (manual input disabled)
             </div>
         </div>
     </div>
 
-    <!-- 扫描结果表格 -->
-    <div class="card shadow-sm border-0" id="scanned-products-card" style="display: none;">
+    <!-- Scanned Products Table -->
+    <div class="card shadow-sm border-0 d-none" id="scanned-products-card">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-3">
@@ -95,14 +95,14 @@
                         </tr>
                     </thead>
                     <tbody id="scanned-products-table-body">
-                        <!-- 动态生成扫描的产品 -->
+                        <!-- Dynamically generated scanned products -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- 空状态提示 -->
+    <!-- Empty State -->
     <div class="card shadow-sm border-0" id="empty-state-card">
         <div class="card-body text-center py-5">
             <i class="bi bi-upc-scan display-1 text-muted mb-3"></i>
@@ -111,8 +111,8 @@
         </div>
     </div>
 
-    <!-- 提交按钮区域 -->
-    <div class="card shadow-sm border-0 mt-4" id="submit-section" style="display: none;">
+    <!-- Submit Section -->
+    <div class="card shadow-sm border-0 mt-4 d-none" id="submit-section">
         <div class="card-body">
             <div class="mb-3">
                 <label for="reference-number" class="form-label fw-medium">

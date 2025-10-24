@@ -575,7 +575,7 @@ class ColorDashboard {
         const link = document.createElement('a');
         link.href = exportUrl;
         link.download = '';
-        link.style.display = 'none';
+        link.classList.add('d-none');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1408,7 +1408,7 @@ function updateColorPreview() {
         if (colorValue && isValidColorCode(colorValue)) {
             const normalizedColor = colorValue.startsWith('#') ? colorValue : '#' + colorValue;
             colorPreview.style.backgroundColor = normalizedColor;
-            colorPreview.style.display = 'block';
+            colorPreview.classList.remove('d-none');
 
             // 自動生成RGB代碼
             if (rgbInput) {
@@ -1418,7 +1418,7 @@ function updateColorPreview() {
                 }
             }
         } else {
-            colorPreview.style.display = 'none';
+            colorPreview.classList.add('d-none');
         }
     }
 }

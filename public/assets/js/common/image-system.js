@@ -702,7 +702,7 @@ function resetProductAddButtonToOriginalState() {
     const addDetailImageBtn = document.getElementById('add-detail-image');
 
     if (addDetailImageBtn) {
-        addDetailImageBtn.style.display = '';
+        addDetailImageBtn.classList.remove('d-none');
         addDetailImageBtn.style.position = '';
         addDetailImageBtn.style.top = '';
         addDetailImageBtn.style.left = '';
@@ -1016,7 +1016,7 @@ function handleUpdateImagePreview(event, options = {}) {
 
             // 顯示移除圖片按鈕
             if (removeImageBtn) {
-                removeImageBtn.style.display = 'block';
+                removeImageBtn.classList.remove('d-none');
             }
         }
     };
@@ -1068,7 +1068,7 @@ function removeUpdateImage() {
 
         // 隐藏移除图片按钮
         if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
+            removeImageBtn.classList.add('d-none');
         }
 
         showAlert('Image removed successfully', 'success');
@@ -1117,7 +1117,7 @@ function handleRemoveImageButton() {
 
         // 隐藏移除图片按钮
         if (removeImageBtn) {
-            removeImageBtn.style.display = 'none';
+            removeImageBtn.classList.add('d-none');
         }
 
         showAlert('Image removed successfully', 'success');

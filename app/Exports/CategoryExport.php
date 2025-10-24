@@ -53,7 +53,7 @@ class CategoryExport implements FromCollection, WithHeadings, WithMapping, WithS
             $query->whereIn('id', $this->filters['ids']);
         }
 
-        return $query->orderBy('category_name', 'asc')->get();
+        return $query->orderBy('id', 'asc')->get();
     }
 
     /**

@@ -53,7 +53,7 @@ class RackExport implements FromCollection, WithHeadings, WithMapping, WithStyle
             $query->whereIn('id', $this->filters['ids']);
         }
 
-        return $query->orderBy('rack_number', 'asc')->get();
+        return $query->orderBy('id', 'asc')->get();
     }
 
     /**

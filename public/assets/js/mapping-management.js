@@ -245,9 +245,9 @@ function updateConfigSummary() {
 
     if (categorySelect && subcategorySelect && configSummary) {
         if (categorySelect.value && subcategorySelect.value) {
-            configSummary.style.display = 'block';
+            configSummary.classList.remove('d-none');
         } else {
-            configSummary.style.display = 'none';
+            configSummary.classList.add('d-none');
         }
     }
 }
@@ -390,11 +390,11 @@ function renderCategoryCards(mappings) {
 
     if (!mappings || mappings.length === 0) {
         container.innerHTML = '';
-        emptyState.style.display = 'block';
+        emptyState.classList.remove('d-none');
         return;
     }
 
-    emptyState.style.display = 'none';
+    emptyState.classList.add('d-none');
 
     // 按分類分組
     const groupedByCategory = groupByCategory(mappings);
@@ -670,7 +670,7 @@ function filterMappings(searchTerm) {
     cards.forEach(card => {
         const categoryName = card.querySelector('.card-title').textContent.toLowerCase();
         const shouldShow = categoryName.includes(searchTerm.toLowerCase());
-        card.style.display = shouldShow ? 'block' : 'none';
+        card.classList.toggle('d-none', !shouldShow);
     });
 }
 

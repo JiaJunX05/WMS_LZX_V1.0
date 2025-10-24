@@ -573,7 +573,7 @@ class ZoneDashboard {
         const link = document.createElement('a');
         link.href = exportUrl;
         link.download = '';
-        link.style.display = 'none';
+        link.classList.add('d-none');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1395,7 +1395,7 @@ function initializeZoneUpdate() {
         if (previewContainer) {
             const hasImage = previewContainer.querySelector('img');
             if (!hasImage) {
-                removeImageBtn.style.display = 'none';
+                removeImageBtn.classList.add('d-none');
             }
         }
     }
@@ -1468,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (previewContainer) {
             const hasImage = previewContainer.querySelector('img');
             if (!hasImage) {
-                removeImageBtn.style.display = 'none';
+                removeImageBtn.classList.add('d-none');
             }
         }
     }

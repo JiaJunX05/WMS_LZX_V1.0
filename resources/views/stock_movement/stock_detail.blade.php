@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
 <div class="container-fluid py-4">
-    <!-- 页面标题 -->
+    <!-- Page Title -->
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -36,10 +36,10 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- Alert Container --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 产品基本信息 -->
+    <!-- Product Basic Information -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-transparent border-0 pb-3">
             <h5 class="mb-0 fw-semibold">Product Information</h5>
@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <!-- 库存历史表格 -->
+    <!-- Stock History Table -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -102,7 +102,7 @@
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
-                        <!-- 动态加载 -->
+                        <!-- Dynamically loaded -->
                     </tbody>
                 </table>
             </div>

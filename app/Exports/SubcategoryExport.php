@@ -53,7 +53,7 @@ class SubcategoryExport implements FromCollection, WithHeadings, WithMapping, Wi
             $query->whereIn('id', $this->filters['ids']);
         }
 
-        return $query->orderBy('subcategory_name', 'asc')->get();
+        return $query->orderBy('id', 'asc')->get();
     }
 
     /**

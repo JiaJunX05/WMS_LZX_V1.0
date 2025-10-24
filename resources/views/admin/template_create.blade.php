@@ -30,7 +30,7 @@
                     {{-- 操作按钮区域 --}}
                     <div class="col-lg-4 text-lg-end">
                         <a href="{{ route('admin.template.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>← Back to List
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
                         </a>
                     </div>
                 </div>

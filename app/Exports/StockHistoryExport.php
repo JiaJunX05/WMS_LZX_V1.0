@@ -32,9 +32,10 @@ class StockHistoryExport implements FromCollection, WithHeadings, WithMapping, W
     {
         $query = StockMovement::with([
             'user:id,name,email',
+            'user.account:id,user_id,username',
             'product:id,name,cover_image',
             'variant:id,product_id,sku_code,barcode_number'
-        ])->orderBy('movement_date', 'desc');
+        ])->orderBy('id', 'asc');
 
         // 權限控制：Staff 只能看到自己的記錄，Admin 和 SuperAdmin 可以看到所有記錄
         $userRole = auth()->user()->getAccountRole();
@@ -86,7 +87,7 @@ class StockHistoryExport implements FromCollection, WithHeadings, WithMapping, W
             'Previous Stock',
             'Current Stock',
             'Reference Number',
-            'User Name',
+            'Username',
             'User Email',
         ];
     }
@@ -120,7 +121,7 @@ class StockHistoryExport implements FromCollection, WithHeadings, WithMapping, W
             $row->previous_stock,
             $row->current_stock,
             $row->reference_number ?? 'N/A',
-            $row->user->name ?? 'Unknown User',
+            $row->user->account->username ?? 'N/A',
             $row->user->email ?? 'N/A',
         ];
     }
@@ -167,7 +168,8 @@ class StockHistoryExport implements FromCollection, WithHeadings, WithMapping, W
             'I' => 12,  // Current Stock
             'J' => 20,  // Reference Number
             'K' => 20,  // User Name
-            'L' => 25,  // User Email
+            'L' => 15,  // Username
+            'M' => 25,  // User Email
         ];
     }
 

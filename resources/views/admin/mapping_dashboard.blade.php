@@ -125,7 +125,7 @@
     </div>
 
     {{-- 空状态提示 (Empty State) --}}
-    <div id="empty-state" class="text-center py-5" style="display: none;">
+    <div id="empty-state" class="text-center py-5 d-none">
         <div class="empty-state-container">
             <div class="empty-state-icon mb-4">
                 <i class="bi bi-diagram-2" style="font-size: 4rem;"></i>
@@ -139,7 +139,7 @@
     </div>
 
     {{-- 无结果提示 --}}
-    <div id="no-results" class="text-center py-4" style="display: none;">
+    <div id="no-results" class="text-center py-4 d-none">
         <div class="text-muted">No mappings found</div>
     </div>
 

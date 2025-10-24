@@ -53,7 +53,7 @@ class GenderExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $query->whereIn('id', $this->filters['ids']);
         }
 
-        return $query->orderBy('gender_name', 'asc')->get();
+        return $query->orderBy('id', 'asc')->get();
     }
 
     /**

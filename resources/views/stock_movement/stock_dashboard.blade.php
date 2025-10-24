@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
 <div class="container-fluid py-4">
-    <!-- 页面标题和添加按钮 -->
+    <!-- Page Title and Add Button -->
     <div class="dashboard-header mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -44,10 +44,10 @@
         </div>
     </div>
 
-    {{-- 提示信息容器 --}}
+    {{-- Alert Container --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    <!-- 产品搜索和筛选 -->
+    <!-- Product Search and Filter -->
     <div class="search-filter-section mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -71,7 +71,7 @@
         </div>
     </div>
 
-    <!-- 产品列表表格 -->
+    <!-- Product List Table -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-transparent border-0 pb-3 mb-3">
             <div class="d-flex justify-content-between align-items-center">

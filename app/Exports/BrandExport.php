@@ -53,7 +53,7 @@ class BrandExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $query->whereIn('id', $this->filters['ids']);
         }
 
-        return $query->orderBy('brand_name', 'asc')->get();
+        return $query->orderBy('id', 'asc')->get();
     }
 
     /**

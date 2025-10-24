@@ -194,15 +194,15 @@ class PrintDashboard {
      */
     renderProducts(products) {
         if (!products || products.length === 0) {
-            $("#no-results").show();
-            $previewGrid.hide();
+            $("#no-results").removeClass('d-none');
+            $previewGrid.addClass('d-none');
             return;
         }
 
-        $("#no-results").hide();
-        $previewGrid.show().html(`
+        $("#no-results").addClass('d-none');
+        $previewGrid.removeClass('d-none').html(`
             <div class="table-responsive">
-                <table class="table table-bordered table-hover">
+                <table class="table table-bordered table-striped table-hover">
                     <thead class="table-dark">
                         <tr>
                             <th style="width: 50px;" class="text-center">Select</th>
@@ -304,8 +304,8 @@ class PrintDashboard {
      * 顯示無結果信息
      */
     showNoResults() {
-        $previewGrid.hide();
-        $("#no-results").show();
+        $previewGrid.addClass('d-none');
+        $("#no-results").removeClass('d-none');
     }
 
     /**

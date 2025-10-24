@@ -49,13 +49,13 @@
                 </div>
                 <div class="card-body d-flex flex-column p-0">
                     <!-- 打印范围选项 -->
-                    <div class="filter-section">
-                        <div class="filter-header bg-light">
+                    <div class="border-bottom">
+                        <div class="p-3 bg-light d-flex justify-content-between align-items-center">
                             <h6 class="mb-0 text-dark fw-semibold">
                                 <i class="bi bi-funnel me-2 text-primary"></i>Print Range
                             </h6>
                         </div>
-                        <div class="filter-list p-3">
+                        <div class="p-3">
                             <div class="mb-3">
                                 <label class="form-label fw-medium text-muted small">Select Products</label>
                                 <select class="form-select" id="print-range">
@@ -156,7 +156,7 @@
                          data-url="{{ route('superadmin.print.index') }}">
                         <!-- 内容将通过 JavaScript 动态加载 -->
                     </div>
-                    <div id="no-results" class="text-center py-5" style="display: none;">
+                    <div id="no-results" class="text-center py-5 d-none">
                         <div class="text-muted">
                             <i class="bi bi-search display-4 text-muted"></i>
                             <h4 class="mt-3 text-muted">No products found</h4>
@@ -197,9 +197,7 @@
 @endsection
 
 @section("scripts")
-{{-- CDN 版本 --}}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{{-- 只添加打印相关的库 --}}
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 

@@ -126,7 +126,7 @@
     </div>
 
     {{-- 空状态显示 --}}
-    <div id="empty-state" class="text-center py-5" style="display: none;">
+    <div id="empty-state" class="text-center py-5 d-none">
         <div class="empty-state-container">
             <div class="empty-state-icon mb-4">
                 <i class="bi bi-geo-alt" style="font-size: 4rem; color: #6c757d;"></i>

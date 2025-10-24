@@ -54,7 +54,7 @@ class ZoneExport implements FromCollection, WithHeadings, WithMapping, WithStyle
             $query->whereIn('id', $this->filters['ids']);
         }
 
-        return $query->orderBy('zone_name', 'asc')->get();
+        return $query->orderBy('id', 'asc')->get();
     }
 
     /**

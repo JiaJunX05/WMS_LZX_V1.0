@@ -661,11 +661,11 @@ function renderCategoryCards(groupedData) {
 
     if (!groupedData || groupedData.length === 0) {
         container.innerHTML = '';
-        emptyState.style.display = 'block';
+        emptyState.classList.remove('d-none');
         return;
     }
 
-    emptyState.style.display = 'none';
+    emptyState.classList.add('d-none');
 
     // 生成卡片HTML
     let cardsHTML = '';

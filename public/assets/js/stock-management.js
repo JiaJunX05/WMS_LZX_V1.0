@@ -1060,15 +1060,15 @@ class StockIn {
         const submitSection = document.getElementById('submit-section');
 
         if (this.scannedProducts.length === 0) {
-            scannedCard.style.display = 'none';
-            emptyCard.style.display = 'block';
-            submitSection.style.display = 'none';
+            scannedCard.classList.add('d-none');
+            emptyCard.classList.remove('d-none');
+            submitSection.classList.add('d-none');
             return;
         }
 
-        scannedCard.style.display = 'block';
-        emptyCard.style.display = 'none';
-        submitSection.style.display = 'block';
+        scannedCard.classList.remove('d-none');
+        emptyCard.classList.add('d-none');
+        submitSection.classList.remove('d-none');
 
         // 重新绑定参考编号输入框事件（确保在显示时绑定）
         this.bindReferenceInput();
@@ -1550,15 +1550,15 @@ class StockOut {
         const submitSection = document.getElementById('submit-section');
 
         if (this.scannedProducts.length === 0) {
-            scannedCard.style.display = 'none';
-            emptyCard.style.display = 'block';
-            submitSection.style.display = 'none';
+            scannedCard.classList.add('d-none');
+            emptyCard.classList.remove('d-none');
+            submitSection.classList.add('d-none');
             return;
         }
 
-        scannedCard.style.display = 'block';
-        emptyCard.style.display = 'none';
-        submitSection.style.display = 'block';
+        scannedCard.classList.remove('d-none');
+        emptyCard.classList.add('d-none');
+        submitSection.classList.remove('d-none');
 
         // 重新绑定参考编号输入框事件（确保在显示时绑定）
         this.bindReferenceInput();
@@ -2040,15 +2040,15 @@ class StockReturn {
         const submitSection = document.getElementById('submit-section');
 
         if (this.scannedProducts.length === 0) {
-            scannedCard.style.display = 'none';
-            emptyCard.style.display = 'block';
-            submitSection.style.display = 'none';
+            scannedCard.classList.add('d-none');
+            emptyCard.classList.remove('d-none');
+            submitSection.classList.add('d-none');
             return;
         }
 
-        scannedCard.style.display = 'block';
-        emptyCard.style.display = 'none';
-        submitSection.style.display = 'block';
+        scannedCard.classList.remove('d-none');
+        emptyCard.classList.add('d-none');
+        submitSection.classList.remove('d-none');
 
         // 重新绑定参考编号输入框事件（确保在显示时绑定）
         this.bindReferenceInput();
@@ -2642,7 +2642,7 @@ function exportStockHistory() {
     const link = document.createElement('a');
     link.href = exportUrl;
     link.download = '';
-    link.style.display = 'none';
+    link.classList.add('d-none');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

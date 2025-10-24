@@ -266,7 +266,7 @@ function updateConfigSummary() {
         // 顯示配置摘要
         const configSummary = document.getElementById('configSummary');
         if (configSummary) {
-            configSummary.style.display = 'block';
+            configSummary.classList.remove('d-none');
         }
     }
 }
@@ -498,11 +498,11 @@ function renderZoneCards(locations) {
 
     if (!locations || locations.length === 0) {
         container.innerHTML = '';
-        emptyState.style.display = 'block';
+        emptyState.classList.remove('d-none');
         return;
     }
 
-    emptyState.style.display = 'none';
+    emptyState.classList.add('d-none');
 
     // 按區域分組
     const groupedByZone = groupByZone(locations);
@@ -779,7 +779,7 @@ function filterLocations(searchTerm) {
     cards.forEach(card => {
         const zoneName = card.querySelector('.card-title').textContent.toLowerCase();
         const shouldShow = zoneName.includes(searchTerm.toLowerCase());
-        card.style.display = shouldShow ? 'block' : 'none';
+        card.classList.toggle('d-none', !shouldShow);
     });
 }
 

@@ -194,7 +194,7 @@
                     </div>
 
                     {{-- No Results Message --}}
-                    <div id="no-results" class="text-center py-3" style="display: none;">
+                    <div id="no-results" class="text-center py-3 d-none">
                         <div class="text-muted">No products found</div>
                     </div>
                 </div>

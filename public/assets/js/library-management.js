@@ -224,9 +224,9 @@ function updateConfigSummary() {
 
     if (categorySelect && configSummary) {
         if (categorySelect.value) {
-            configSummary.style.display = 'block';
+            configSummary.classList.remove('d-none');
         } else {
-            configSummary.style.display = 'none';
+            configSummary.classList.add('d-none');
         }
     }
 
@@ -453,11 +453,11 @@ function renderCategoryCards(groupedData) {
 
     if (!groupedData || groupedData.length === 0) {
         container.innerHTML = '';
-        emptyState.style.display = 'block';
+        emptyState.classList.remove('d-none');
         return;
     }
 
-    emptyState.style.display = 'none';
+    emptyState.classList.add('d-none');
 
     // 生成卡片HTML
     let cardsHTML = '';

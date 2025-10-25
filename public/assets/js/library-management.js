@@ -674,28 +674,41 @@ function updateStatistics(groupedData) {
         categoryCount
     });
 
-    // 更新統計數據
-    document.getElementById('total-items').textContent = totalLibraries; // 總尺碼庫數量
-    document.getElementById('available-items').textContent = availableLibraries;
-    document.getElementById('unavailable-items').textContent = unavailableLibraries;
-    document.getElementById('total-groups').textContent = categoryCount; // 總分類數量
+    // 更新統計數據 - 添加 DOM 元素存在性檢查
+    const totalLibrariesEl = document.getElementById('total-libraries');
+    const activeLibrariesEl = document.getElementById('active-libraries');
+    const inactiveLibrariesEl = document.getElementById('inactive-libraries');
+    const libraryGroupsEl = document.getElementById('library-groups');
+
+    if (totalLibrariesEl) totalLibrariesEl.textContent = totalLibraries;
+    if (activeLibrariesEl) activeLibrariesEl.textContent = availableLibraries;
+    if (inactiveLibrariesEl) inactiveLibrariesEl.textContent = unavailableLibraries;
+    if (libraryGroupsEl) libraryGroupsEl.textContent = categoryCount;
 }
 
 function updatePaginationInfo(pagination) {
     if (pagination) {
-        document.getElementById('showing-start').textContent = pagination.from || 0;
-        document.getElementById('showing-end').textContent = pagination.to || 0;
-        document.getElementById('total-count').textContent = pagination.total || 0;
+        const showingStartEl = document.getElementById('showing-start');
+        const showingEndEl = document.getElementById('showing-end');
+        const totalCountEl = document.getElementById('total-count');
+
+        if (showingStartEl) showingStartEl.textContent = pagination.from || 0;
+        if (showingEndEl) showingEndEl.textContent = pagination.to || 0;
+        if (totalCountEl) totalCountEl.textContent = pagination.total || 0;
     }
 }
 
 function updatePaginationInfoByCategory(groupedData, pagination) {
     const categoryCount = groupedData.length;
 
-    // 更新分頁信息顯示
-    document.getElementById('showing-start').textContent = 1;
-    document.getElementById('showing-end').textContent = categoryCount;
-    document.getElementById('total-count').textContent = categoryCount;
+    // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
+    const showingStartEl = document.getElementById('showing-start');
+    const showingEndEl = document.getElementById('showing-end');
+    const totalCountEl = document.getElementById('total-count');
+
+    if (showingStartEl) showingStartEl.textContent = 1;
+    if (showingEndEl) showingEndEl.textContent = categoryCount;
+    if (totalCountEl) totalCountEl.textContent = categoryCount;
 
     // 更新分頁按鈕狀態
     updatePaginationButtons(categoryCount);

@@ -8,178 +8,46 @@
 @section("title", "Category Mapping Management")
 @section("content")
 
-{{-- ==========================================
-    页面样式文件引入
-    ========================================== --}}
+{{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-card.css') }}">
 
-{{-- ==========================================
-    页面主体内容
-    ========================================== --}}
+{{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
 
-    {{-- ==========================================
-        页面头部导航
-        ========================================== --}}
-    <div class="dashboard-header mb-4">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    {{-- 左侧标题区域 --}}
-                    <div class="col-lg-8">
-                        <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4"><i class="bi bi-diagram-2-fill"></i></div>
-                            <div>
-                                <h2 class="dashboard-title mb-1">Category Mapping Management</h2>
-                                <p class="dashboard-subtitle mb-0">Manage category and subcategory relationships</p>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- 右侧添加映射按钮 --}}
-                    <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.mapping.create') }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle-fill me-2"></i>Add Mapping
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- 页面头部导航 --}}
+    @include('components.main-display.dashboard-header.mapping-header', ['type' => 'dashboard'])
 
     {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- ==========================================
-        统计卡片区域
-        ========================================== --}}
-    <div class="statistics-section mb-4">
-        <div class="row g-4">
-            {{-- 总映射数 --}}
-            <div class="col-xl-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="total-items">0</div>
-                                <div class="stats-label">Total Mappings</div>
-                            </div>
-                            <div class="stats-icon bg-primary"><i class="bi bi-diagram-2"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {{-- 活跃分类数 --}}
-            <div class="col-xl-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="available-items">0</div>
-                                <div class="stats-label">Available Categories</div>
-                            </div>
-                            <div class="stats-icon bg-success"><i class="bi bi-folder"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {{-- 活跃子分类数 --}}
-            <div class="col-xl-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="unavailable-items">0</div>
-                                <div class="stats-label">Available Subcategories</div>
-                            </div>
-                            <div class="stats-icon bg-info"><i class="bi bi-folder2"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {{-- 总分组数 --}}
-            <div class="col-xl-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="total-groups">0</div>
-                                <div class="stats-label">Total Groups</div>
-                            </div>
-                            <div class="stats-icon bg-warning"><i class="bi bi-collection"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- 统计卡片区域 --}}
+    @include('components.main-display.stats-cards.mapping-stats-cards')
 
-    {{-- ==========================================
-        主要内容区域
-        ========================================== --}}
+    {{-- 主要内容区域 --}}
     <div class="row g-4" id="dashboard-cards-container">
         {{-- 分类映射卡片将通过JavaScript动态加载 --}}
     </div>
 
-    {{-- 空状态提示 --}}
-    <div id="empty-state" class="text-center py-5 d-none">
-        <div class="empty-state-container">
-            <div class="empty-state-icon mb-4">
-                <i class="bi bi-diagram-2" style="font-size: 4rem;"></i>
-            </div>
-            <h4 class="empty-state-title mb-3">No Category Mapping Data</h4>
-            <p class="empty-state-description mb-4">No category mappings have been created in the system yet</p>
-            <a href="{{ route('admin.mapping.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-2"></i>Create First Mapping
-            </a>
-        </div>
-    </div>
+    {{-- 空状态显示 --}}
+    @include('components.main-display.empty-state.mapping-empty-state')
 
     {{-- 无结果提示 --}}
     <div id="no-results" class="text-center py-4 d-none">
         <div class="text-muted">No mappings found</div>
     </div>
 
-    {{-- ==========================================
-        分页导航区域
-        ========================================== --}}
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        {{-- 分页信息 --}}
-        <div class="pagination-info text-muted">
-            Showing <span class="fw-medium" id="showing-start">0</span>
-            to <span class="fw-medium" id="showing-end">0</span>
-            of <span class="fw-medium" id="total-count">0</span> entries
-        </div>
-        {{-- 分页控件 --}}
-        <nav aria-label="Page navigation">
-            <ul id="pagination" class="pagination pagination-sm mb-0">
-                <li class="page-item disabled" id="prev-page">
-                    <a class="page-link" href="#" aria-label="Previous">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-                <li class="page-item active" id="current-page">
-                    <span class="page-link" id="page-number">1</span>
-                </li>
-                <li class="page-item disabled" id="next-page">
-                    <a class="page-link" href="#" aria-label="Next">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+    {{-- 分页导航区域 --}}
+    @include('components.main-display.pagination-nav.mapping-pagination-nav')
 </div>
 
 @endsection
 
 @section("scripts")
-{{-- ==========================================
-    页面脚本区域
-    ========================================== --}}
+{{-- 分类映射管理路由配置 --}}
 <script>
-    {{-- 分类映射管理路由配置 --}}
+    // 设置分类映射管理相关路由
     window.categoryMappingManagementRoute = "{{ route('admin.mapping.index') }}";
     window.viewCategoryMappingUrl = "{{ route('admin.mapping.view', ['id' => ':id']) }}";
     window.editCategoryMappingUrl = "{{ route('admin.mapping.edit', ['id' => ':id']) }}";
@@ -189,7 +57,7 @@
     window.unavailableMappingUrl = "{{ route('admin.mapping.unavailable', ['id' => ':id']) }}";
 </script>
 
-{{-- 引入映射管理JavaScript文件 --}}
+{{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/mapping-management.js') }}"></script>
 @endsection

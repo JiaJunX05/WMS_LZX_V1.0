@@ -668,28 +668,28 @@ function generateZoneCard(zone, racks) {
  */
 function updateStatistics(data) {
     // 更新頁面頂部的統計信息
-    const totalItemsElement = document.getElementById('total-items');
-    const availableItemsElement = document.getElementById('available-items');
-    const unavailableItemsElement = document.getElementById('unavailable-items');
-    const totalGroupsElement = document.getElementById('total-groups');
+    const totalLocationsElement = document.getElementById('total-locations');
+    const availableZonesElement = document.getElementById('available-zones');
+    const availableRacksElement = document.getElementById('available-racks');
+    const locationGroupsElement = document.getElementById('location-groups');
 
-    if (totalItemsElement) {
-        totalItemsElement.textContent = data.total || 0;
+    if (totalLocationsElement) {
+        totalLocationsElement.textContent = data.total || 0;
     }
 
-    if (availableItemsElement) {
-        availableItemsElement.textContent = data.zones_count || 0;
+    if (availableZonesElement) {
+        availableZonesElement.textContent = data.zones_count || 0;
     }
 
-    if (unavailableItemsElement) {
-        unavailableItemsElement.textContent = data.racks_count || 0;
+    if (availableRacksElement) {
+        availableRacksElement.textContent = data.racks_count || 0;
     }
 
-    if (totalGroupsElement) {
+    if (locationGroupsElement) {
         // 按區域分組計算
         const groupedByZone = groupByZone(data.data || []);
         const zoneCount = Object.keys(groupedByZone).length;
-        totalGroupsElement.textContent = zoneCount;
+        locationGroupsElement.textContent = zoneCount;
     }
 }
 
@@ -701,10 +701,14 @@ function updatePaginationInfoByZone(locations, pagination) {
     const groupedByZone = groupByZone(locations);
     const zoneCount = Object.keys(groupedByZone).length;
 
-    // 更新分頁信息顯示
-    document.getElementById('showing-start').textContent = 1;
-    document.getElementById('showing-end').textContent = zoneCount;
-    document.getElementById('total-count').textContent = zoneCount;
+    // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
+    const showingStartEl = document.getElementById('showing-start');
+    const showingEndEl = document.getElementById('showing-end');
+    const totalCountEl = document.getElementById('total-count');
+
+    if (showingStartEl) showingStartEl.textContent = 1;
+    if (showingEndEl) showingEndEl.textContent = zoneCount;
+    if (totalCountEl) totalCountEl.textContent = zoneCount;
 
     // 更新分頁按鈕狀態
     updatePaginationButtons(zoneCount);
@@ -726,16 +730,16 @@ function updatePaginationButtons(zoneCount) {
 
     // 如果只有一個區域或沒有區域，禁用分頁按鈕
     if (zoneCount <= 1) {
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
         if (currentPageElement) {
             currentPageElement.classList.add('disabled');
         }
     } else {
         // 這裡可以根據需要實現真正的分頁邏輯
         // 目前顯示所有區域，所以按鈕保持禁用狀態
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
         if (currentPageElement) {
             currentPageElement.classList.remove('disabled');
         }

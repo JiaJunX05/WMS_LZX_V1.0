@@ -900,10 +900,16 @@ function updateStatistics(groupedData) {
     });
 
     // 更新統計數據 - 顯示模板總數而不是分組數量
-    document.getElementById('total-items').textContent = totalTemplates; // 總模板數
-    document.getElementById('available-items').textContent = availableTemplates;
-    document.getElementById('unavailable-items').textContent = unavailableTemplates;
-    document.getElementById('total-groups').textContent = groupCount; // 總分組數
+    // 添加 DOM 元素存在性檢查
+    const totalTemplatesEl = document.getElementById('total-templates');
+    const activeTemplatesEl = document.getElementById('active-templates');
+    const inactiveTemplatesEl = document.getElementById('inactive-templates');
+    const templateGroupsEl = document.getElementById('template-groups');
+
+    if (totalTemplatesEl) totalTemplatesEl.textContent = totalTemplates;
+    if (activeTemplatesEl) activeTemplatesEl.textContent = availableTemplates;
+    if (inactiveTemplatesEl) inactiveTemplatesEl.textContent = unavailableTemplates;
+    if (templateGroupsEl) templateGroupsEl.textContent = groupCount;
 }
 
 /**
@@ -913,10 +919,14 @@ function updatePaginationInfoByCategory(groupedData, pagination) {
     // 計算分組數量（category + gender 組合）
     const groupCount = groupedData.length;
 
-    // 更新分頁信息顯示
-    document.getElementById('showing-start').textContent = 1;
-    document.getElementById('showing-end').textContent = groupCount;
-    document.getElementById('total-count').textContent = groupCount;
+    // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
+    const showingStartEl = document.getElementById('showing-start');
+    const showingEndEl = document.getElementById('showing-end');
+    const totalCountEl = document.getElementById('total-count');
+
+    if (showingStartEl) showingStartEl.textContent = 1;
+    if (showingEndEl) showingEndEl.textContent = groupCount;
+    if (totalCountEl) totalCountEl.textContent = groupCount;
 
     // 更新分頁按鈕狀態
     updatePaginationButtons(groupCount);
@@ -938,16 +948,16 @@ function updatePaginationButtons(categoryCount) {
 
     // 如果只有一個類別或沒有類別，禁用分頁按鈕
     if (categoryCount <= 1) {
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
         if (currentPageElement) {
             currentPageElement.classList.remove('disabled');
         }
     } else {
         // 這裡可以根據需要實現真正的分頁邏輯
         // 目前顯示所有類別，所以按鈕保持禁用狀態
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
         if (currentPageElement) {
             currentPageElement.classList.remove('disabled');
         }

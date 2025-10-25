@@ -8,241 +8,30 @@
 @section("title", "Update Location")
 @section("content")
 
-{{-- ==========================================
-    页面样式文件引入
-    ========================================== --}}
+{{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
-{{-- ==========================================
-    页面主体内容
-    ========================================== --}}
+{{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
 
-    {{-- ==========================================
-        页面头部导航
-        ========================================== --}}
-    <div class="dashboard-header mb-4">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    {{-- 左侧标题区域 --}}
-                    <div class="col-lg-8">
-                        <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4"><i class="bi bi-pencil-fill"></i></div>
-                            <div>
-                                <h2 class="dashboard-title mb-1">
-                                    @if(isset($zone))
-                                        Update {{ $zone->zone_name }} Locations
-                                    @else
-                                        Update Location
-                                    @endif
-                                </h2>
-                                <p class="dashboard-subtitle mb-0">
-                                    @if(isset($zone))
-                                        Manage location combinations for {{ $zone->zone_name }} zone
-                                    @else
-                                        Modify existing location information
-                                    @endif
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- 右侧返回按钮 --}}
-                    <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('admin.location.index') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-left me-2"></i>Back to List
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- 页面头部导航 --}}
+    @include('components.main-display.dashboard-header.location-header', ['type' => 'update'])
 
     {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
-    {{-- ==========================================
-        位置更新界面
-        ========================================== --}}
-    <div class="card shadow-sm border-0">
-        <div class="row g-0">
-            {{-- ==========================================
-                左侧配置区域
-                ========================================== --}}
-            <div class="col-md-4">
-                <div class="config-section d-flex flex-column h-100 bg-light p-4">
-                    {{-- 配置标题 --}}
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h6 class="mb-0 fw-bold text-primary">
-                            <i class="bi bi-gear-fill me-2"></i>Configuration
-                        </h6>
-                        <span class="badge bg-white text-dark border px-3 py-2">Update</span>
-                    </div>
-
-                    {{-- 当前位置信息显示 --}}
-                    <div class="alert alert-info border-0 mb-4">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Current Location</strong>
-                        </div>
-                        <div class="small">
-                            <div class="mb-1">
-                                <i class="bi bi-geo-alt me-2 text-muted"></i>
-                                <span>Zone: <strong>{{ $location->zone->zone_name ?? 'N/A' }}</strong></span>
-                            </div>
-                            <div class="mb-1">
-                                <i class="bi bi-box-seam me-2 text-muted"></i>
-                                <span>Rack: <strong>{{ $location->rack->rack_number ?? 'N/A' }}</strong></span>
-                            </div>
-                            <div>
-                                <i class="bi bi-toggle-on me-2 text-muted"></i>
-                                <span>Status: <strong>{{ $location->location_status ?? 'N/A' }}</strong></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ==========================================
-                右侧编辑表单区域
-                ========================================== --}}
-            <div class="col-md-8">
-                <div class="size-values-section p-4">
-                    {{-- 表单标题 --}}
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <div>
-                            <h6 class="mb-0 fw-bold">
-                                <i class="bi bi-pencil-square me-2"></i>Update Storage Location
-                            </h6>
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Modify location configuration below.
-                            </small>
-                        </div>
-                    </div>
-
-                    {{-- 编辑表单 --}}
-                    <form action="{{ route('admin.location.update', $location->id) }}" method="POST" id="updateLocationForm">
-                        @csrf
-                        @method('PUT')
-
-                        <div class="card border-0 bg-white shadow-sm">
-                            <div class="card-body p-4">
-                                {{-- 区域字段 --}}
-                                <div class="col-12 mb-4">
-                                    <label class="form-label fw-bold text-dark mb-2">
-                                        <i class="bi bi-geo-alt me-2 text-primary"></i>Zone
-                                    </label>
-                                    <select class="form-control" name="zone_id" id="zone_id" required>
-                                        <option value="">Select zone</option>
-                                        @foreach($zones as $zone)
-                                            <option value="{{ $zone->id }}"
-                                                {{ $location->zone_id == $zone->id ? 'selected' : '' }}>
-                                                {{ $zone->zone_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <div class="form-text">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Choose the zone for this location
-                                    </div>
-                                </div>
-
-                                {{-- 货架字段 --}}
-                                <div class="col-12 mb-4">
-                                    <label class="form-label fw-bold text-dark mb-2">
-                                        <i class="bi bi-box-seam me-2 text-primary"></i>Rack
-                                    </label>
-                                    <select class="form-control" name="rack_id" id="rack_id" required>
-                                        <option value="">Select rack</option>
-                                        @foreach($racks as $rack)
-                                            <option value="{{ $rack->id }}"
-                                                {{ $location->rack_id == $rack->id ? 'selected' : '' }}>
-                                                {{ $rack->rack_number }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <div class="form-text">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Choose the rack for this location
-                                    </div>
-                                </div>
-
-                                {{-- 位置状态字段 --}}
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold text-dark mb-3">Location Status</label>
-                                    <div class="row g-3">
-                                        @php
-                                            $currentStatus = $location->location_status ?? 'Available';
-                                        @endphp
-
-                                        <div class="col-md-6">
-                                            <div class="card h-100 border status-card {{ $currentStatus === 'Available' ? 'selected' : '' }}" data-status="Available">
-                                                <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="location_status" value="Available" class="form-check-input me-3"
-                                                           {{ old('location_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
-                                                    <div>
-                                                        <h6 class="card-title mb-1">
-                                                            <i class="bi bi-check-circle me-2 text-success"></i>Available
-                                                        </h6>
-                                                        <p class="card-text text-muted small mb-0">Location is active and can be used</p>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <div class="card h-100 border status-card
-                                                {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
-                                                <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="location_status" value="Unavailable" class="form-check-input me-3"
-                                                           {{ old('location_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
-                                                    <div>
-                                                        <h6 class="card-title mb-1">
-                                                            <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
-                                                        </h6>
-                                                        <p class="card-text text-muted small mb-0">Location is inactive and cannot be used</p>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-text">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Choose whether the location can be used for stock management
-                                    </div>
-                                </div>
-
-                                {{-- 提交按钮区域 --}}
-                                <div class="d-flex gap-3 mt-4">
-                                    <button type="submit" class="btn btn-warning flex-fill">
-                                        <i class="bi bi-pencil-square me-2"></i>Update Location Information
-                                    </button>
-                                    <a href="{{ route('admin.location.index') }}" class="btn btn-outline-secondary">
-                                        <i class="bi bi-x-circle me-2"></i>Cancel
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- 位置更新表单 --}}
+    @include('components.form-templates.location-update-form')
 </div>
 
 @endsection
 
 @section("scripts")
-{{-- ==========================================
-    页面脚本区域
-    ========================================== --}}
-
 {{-- 位置管理路由配置 --}}
 <script>
-    // 设置全局变量
+    // 设置位置管理相关路由
     window.updateLocationUrl = "{{ route('admin.location.update', $location->id) }}";
     window.locationManagementRoute = "{{ route('admin.location.index') }}";
     window.availableLocationUrl = "{{ route('admin.location.available', ['id' => ':id']) }}";
@@ -250,7 +39,7 @@
     window.deleteLocationUrl = "{{ route('admin.location.destroy', ['id' => ':id']) }}";
 </script>
 
-{{-- 引入必要的 JavaScript 文件 --}}
+{{-- 引入位置管理JavaScript文件 --}}
 <script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
 <script src="{{ asset('assets/js/common/status-system.js') }}"></script>
 <script src="{{ asset('assets/js/location-management.js') }}"></script>

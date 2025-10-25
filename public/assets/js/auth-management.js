@@ -177,6 +177,7 @@ class AuthDashboard {
                     this.updateResultsCount(0);
                 }
                 this.generatePagination(response);
+                this.updateStatistics(response);
 
                 // 更新勾選框狀態 (僅SuperAdmin)
                 if (window.currentUserRole && window.currentUserRole.replace(/[_\s]/g, '').toLowerCase() === 'superadmin') {
@@ -224,7 +225,29 @@ class AuthDashboard {
      * @param {number} count 結果數量
      */
     updateResultsCount(count) {
-        $('#results-count').text(`${count} results`);
+        $('#records-count').text(`${count} records`);
+    }
+
+    /**
+     * 更新統計數據
+     * @param {Object} response API響應數據
+     */
+    updateStatistics(response) {
+        const total = response.pagination?.total || 0;
+        $('#total-users').text(total);
+
+        // 計算可用和不可用用戶數量
+        if (response.data) {
+            const activeCount = response.data.filter(user => user.status === 'Available').length;
+            const inactiveCount = response.data.filter(user => user.status === 'Unavailable').length;
+            const adminCount = response.data.filter(user =>
+                user.role === 'Admin' || user.role === 'SuperAdmin'
+            ).length;
+
+            $('#active-users').text(activeCount);
+            $('#inactive-users').text(inactiveCount);
+            $('#admin-users').text(adminCount);
+        }
     }
 
     // =============================================================================

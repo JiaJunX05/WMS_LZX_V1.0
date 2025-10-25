@@ -559,28 +559,28 @@ function generateCategoryCard(category, mappings) {
  */
 function updateStatistics(data) {
     // 更新頁面頂部的統計信息
-    const totalItemsElement = document.getElementById('total-items');
-    const availableItemsElement = document.getElementById('available-items');
-    const unavailableItemsElement = document.getElementById('unavailable-items');
-    const totalGroupsElement = document.getElementById('total-groups');
+    const totalMappingsElement = document.getElementById('total-mappings');
+    const availableCategoriesElement = document.getElementById('available-categories');
+    const availableSubcategoriesElement = document.getElementById('available-subcategories');
+    const mappingGroupsElement = document.getElementById('mapping-groups');
 
-    if (totalItemsElement) {
-        totalItemsElement.textContent = data.total || 0;
+    if (totalMappingsElement) {
+        totalMappingsElement.textContent = data.total || 0;
     }
 
-    if (availableItemsElement) {
-        availableItemsElement.textContent = data.categories_count || 0;
+    if (availableCategoriesElement) {
+        availableCategoriesElement.textContent = data.categories_count || 0;
     }
 
-    if (unavailableItemsElement) {
-        unavailableItemsElement.textContent = data.subcategories_count || 0;
+    if (availableSubcategoriesElement) {
+        availableSubcategoriesElement.textContent = data.subcategories_count || 0;
     }
 
-    if (totalGroupsElement) {
+    if (mappingGroupsElement) {
         // 按分類分組計算
         const groupedByCategory = groupByCategory(data.data || []);
         const categoryCount = Object.keys(groupedByCategory).length;
-        totalGroupsElement.textContent = categoryCount;
+        mappingGroupsElement.textContent = categoryCount;
     }
 }
 
@@ -592,10 +592,14 @@ function updatePaginationInfoByCategory(mappings, pagination) {
     const groupedByCategory = groupByCategory(mappings);
     const categoryCount = Object.keys(groupedByCategory).length;
 
-    // 更新分頁信息顯示
-    document.getElementById('showing-start').textContent = 1;
-    document.getElementById('showing-end').textContent = categoryCount;
-    document.getElementById('total-count').textContent = categoryCount;
+    // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
+    const showingStartEl = document.getElementById('showing-start');
+    const showingEndEl = document.getElementById('showing-end');
+    const totalCountEl = document.getElementById('total-count');
+
+    if (showingStartEl) showingStartEl.textContent = 1;
+    if (showingEndEl) showingEndEl.textContent = categoryCount;
+    if (totalCountEl) totalCountEl.textContent = categoryCount;
 
     // 更新分頁按鈕狀態
     updatePaginationButtons(categoryCount);
@@ -617,16 +621,16 @@ function updatePaginationButtons(categoryCount) {
 
     // 如果只有一個分類或沒有分類，禁用分頁按鈕
     if (categoryCount <= 1) {
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
         if (currentPageElement) {
             currentPageElement.classList.add('disabled');
         }
     } else {
         // 這裡可以根據需要實現真正的分頁邏輯
         // 目前顯示所有分類，所以按鈕保持禁用狀態
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
         if (currentPageElement) {
             currentPageElement.classList.remove('disabled');
         }

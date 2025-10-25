@@ -10,23 +10,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warehouse Management System - Reset Password</title>
 
-    {{-- ==========================================
-        页面样式文件引入
-        ========================================== --}}
+    {{-- 页面样式文件引入 --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/login-page.css') }}">
 </head>
 <body>
 
-    {{-- ==========================================
-        页面主体内容
-        ========================================== --}}
+    {{-- 页面主体内容 --}}
     <div class="main-container">
 
-        {{-- ==========================================
-            左侧插图区域
-            ========================================== --}}
+        {{-- 左侧插图区域 --}}
         <div class="illustration-section">
             <div class="illustration-content">
                 <div class="illustration-icon"><i class="bi bi-key"></i></div>
@@ -35,9 +29,7 @@
             </div>
         </div>
 
-        {{-- ==========================================
-            右侧表单区域
-            ========================================== --}}
+        {{-- 右侧表单区域 --}}
         <div class="form-section">
 
             {{-- 错误消息显示 --}}
@@ -64,9 +56,7 @@
                 <p class="form-subtitle">Enter your new password below</p>
             </div>
 
-            {{-- ==========================================
-                密码重置表单
-                ========================================== --}}
+            {{-- 密码重置表单 --}}
             <form action="{{ route('password.update') }}" method="post" class="needs-validation" novalidate>
                 @csrf
 
@@ -136,10 +126,6 @@
             </form>
         </div>
     </div>
-
-    {{-- ==========================================
-        页面脚本区域
-        ========================================== --}}
 
     {{-- 引入必要的 JavaScript 文件 --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

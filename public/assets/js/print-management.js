@@ -222,7 +222,7 @@ class PrintDashboard {
                                 <td class="text-center">
                                     <div class="product-image-container mx-auto">
                                         ${product.cover_image ? `
-                                            <img src="${assetPath}assets/images/products/${product.cover_image}"
+                                            <img src="${assetPath}assets/images/${product.cover_image}"
                                                 alt="product-${product.name}" class="img-fluid">
                                         ` : `
                                             <i class="bi bi-image text-muted fs-2"></i>
@@ -478,7 +478,7 @@ class PrintDashboard {
 
 class PrintService {
     /**
-     * 生成PDF - 使用JavaScript生成HTML并直接打印
+     * 生成PDF - 使用 Blade 模板渲染并打印
      */
     static generatePDFWithLaravel(selectedProducts) {
         const includeBarcode = $('#include-barcode').is(':checked');
@@ -492,26 +492,25 @@ class PrintService {
             _token: $('meta[name="csrf-token"]').attr('content')
         };
 
-        // 发送POST请求到Laravel后端获取产品数据
-        fetch('/superadmin/print/get-products', {
+        // 发送POST请求到Laravel后端渲染Blade模板
+        fetch('/superadmin/print/render-labels', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'Accept': 'application/json'
+                'Accept': 'text/html'
             },
             body: JSON.stringify(requestData)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // 使用JS模板生成PDF内容
-                const content = this.createPDFContent(data.products, data.includeBarcode, data.includeImage);
-                // 直接打印
-                this.printAsPDF(content);
-            } else {
-                throw new Error(data.error || 'Failed to generate PDF');
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            return response.text();
+        })
+        .then(html => {
+            // 直接打印渲染后的HTML
+            this.printAsPDF(html);
         })
         .catch(error => {
             console.error('Error generating PDF:', error);
@@ -523,7 +522,7 @@ class PrintService {
     }
 
     /**
-     * 直接打印 - 使用JavaScript生成HTML并直接打印
+     * 直接打印 - 使用 Blade 模板渲染并打印
      */
     static printPreviewWithLaravel(selectedProducts) {
         const includeBarcode = $('#include-barcode').is(':checked');
@@ -537,26 +536,25 @@ class PrintService {
             _token: $('meta[name="csrf-token"]').attr('content')
         };
 
-        // 发送POST请求到Laravel后端获取产品数据
-        fetch('/superadmin/print/get-products', {
+        // 发送POST请求到Laravel后端渲染Blade模板
+        fetch('/superadmin/print/render-labels', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'Accept': 'application/json'
+                'Accept': 'text/html'
             },
             body: JSON.stringify(requestData)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // 使用JS模板生成PDF内容
-                const content = this.createPDFContent(data.products, data.includeBarcode, data.includeImage);
-                // 直接打印
-                this.printAsPDF(content);
-            } else {
-                throw new Error(data.error || 'Failed to generate print preview');
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            return response.text();
+        })
+        .then(html => {
+            // 直接打印渲染后的HTML
+            this.printAsPDF(html);
         })
         .catch(error => {
             console.error('Error generating print preview:', error);
@@ -567,162 +565,6 @@ class PrintService {
         });
     }
 
-    /**
-     * 创建PDF内容 - 生成完整的HTML文档
-     */
-    static createPDFContent(products, includeBarcode, includeImage) {
-        let html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Product Labels</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    @media print {
-                        @page {
-                            margin: 0.5cm;
-                            size: A4;
-                        }
-                        body {
-                            background: white;
-                            padding: 0;
-                            margin: 0;
-                        }
-                        .table {
-                            border-collapse: collapse !important;
-                        }
-                        .table-bordered {
-                            border: 2px solid #000 !important;
-                        }
-                        .table-bordered th,
-                        .table-bordered td {
-                            border: 1px solid #000 !important;
-                        }
-                        .table-striped tbody tr:nth-of-type(odd) {
-                            background-color: rgba(0,0,0,.05) !important;
-                        }
-                        .table-dark th {
-                            background-color: #212529 !important;
-                            color: #ffffff !important;
-                            border-color: #495057 !important;
-                        }
-                    }
-                    .table {
-                        border-collapse: collapse;
-                        width: 100%;
-                    }
-                    .table-bordered {
-                        border: 2px solid #000;
-                    }
-                    .table-bordered th,
-                    .table-bordered td {
-                        border: 1px solid #000;
-                        padding: 8px;
-                        text-align: left;
-                    }
-                    .table-striped tbody tr:nth-of-type(odd) {
-                        background-color: rgba(0,0,0,.05);
-                    }
-                    .table th {
-                        background-color: #f8f9fa;
-                        font-weight: bold;
-                    }
-                    .table-dark th {
-                        background-color: #212529 !important;
-                        color: #ffffff !important;
-                        border-color: #495057 !important;
-                    }
-                </style>
-            </head>
-            <body>
-                <!-- 打印头部 -->
-                <div class="container-fluid py-3 border-bottom mb-3">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <p class="mb-0 fw-bold">WMS_LZX_V1.0</p>
-                        </div>
-                        <div class="col-auto">
-                            <small class="text-muted font-monospace">${new Date().toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: '2-digit'})}, ${new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: true})}</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 表格容器 -->
-                <div class="container-fluid">
-                    <table class="table table-bordered table-striped table-hover" style="border-collapse: collapse; width: 100%; border: 2px solid #000;">
-                        <thead class="table-dark">
-                            <tr>
-                                <th class="text-center" style="width: 120px; border: 1px solid #000; padding: 8px;">Image</th>
-                                <th class="text-center" style="border: 1px solid #000; padding: 8px;">Product Name</th>
-                                ${includeBarcode ? '<th class="text-center" style="width: 120px; border: 1px solid #000; padding: 8px;">Barcode</th>' : ''}
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-
-        products.forEach(product => {
-            const productName = product.name || 'No Name';
-            const productImage = product.cover_image ? `${assetPath}assets/images/products/${product.cover_image}` : '';
-            const barcodeNumber = product.barcode ? product.barcode.barcode_number : '';
-
-            html += `
-                <tr>
-                    <td class="text-center" style="border: 1px solid #000; padding: 8px;">
-                        ${includeImage && productImage ? `
-                            <img src="${productImage}" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;" alt="${productName}">
-                        ` : `
-                            <div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                                <i class="bi bi-image text-muted fs-1"></i>
-                            </div>
-                        `}
-                    </td>
-                    <td class="text-center align-middle" style="border: 1px solid #000; padding: 8px;">
-                        <div class="fw-medium">${productName}</div>
-                    </td>
-                    ${includeBarcode && barcodeNumber ? `
-                        <td class="text-center align-middle" style="border: 1px solid #000; padding: 8px;">
-                            <div class="d-flex flex-column align-items-center">
-                                <canvas class="border rounded" data-barcode="${barcodeNumber}" style="width: 100px; height: 25px;"></canvas>
-                                <small class="text-muted font-monospace mt-1">${barcodeNumber}</small>
-                            </div>
-                        </td>
-                    ` : ''}
-                </tr>
-            `;
-        });
-
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-
-                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"></script>
-                <script>
-                    // 生成条形码
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const canvases = document.querySelectorAll('canvas[data-barcode]');
-                        canvases.forEach(canvas => {
-                            const barcodeNumber = canvas.getAttribute('data-barcode');
-                            if (barcodeNumber && typeof JsBarcode !== 'undefined') {
-                                JsBarcode(canvas, barcodeNumber, {
-                                    format: "CODE128",
-                                    width: 1.5,
-                                    height: 30,
-                                    displayValue: false,
-                                    background: "#ffffff",
-                                    lineColor: "#000000",
-                                    margin: 5
-                                });
-                            }
-                        });
-                    });
-                </script>
-            </body>
-            </html>
-        `;
-
-        return html;
-    }
 
     /**
      * 直接打印 - 使用隐藏iframe触发浏览器打印对话框
@@ -815,12 +657,6 @@ function printPreviewWithLaravel(selectedProducts) {
     PrintService.printPreviewWithLaravel(selectedProducts);
 }
 
-/**
- * 創建PDF內容 - 生成完整的HTML文檔
- */
-function createPDFContent(products, includeBarcode, includeImage) {
-    return PrintService.createPDFContent(products, includeBarcode, includeImage);
-}
 
 /**
  * 直接打印 - 使用隱藏iframe觸發瀏覽器打印對話框

@@ -261,7 +261,7 @@ class BrandDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="brand-checkbox" type="checkbox" value="${brand.id}" id="brand-${brand.id}" style="width: 20px; height: 20px;">
+                    <input class="brand-checkbox form-check-input" type="checkbox" value="${brand.id}" id="brand-${brand.id}">
                 </td>
                 <td>
                     ${brand.brand_image ? `

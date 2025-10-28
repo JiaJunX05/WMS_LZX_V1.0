@@ -1,0 +1,10 @@
+{{-- ==========================================
+    用户管理分页导航组件
+    功能：显示用户列表的分页导航和信息
+    ========================================== --}}
+
+@include('components.pagination-nav.templates.pagination-nav', [
+    'showInfo' => true,
+    'infoPrefix' => 'Showing',
+    'infoSuffix' => 'entries'
+])

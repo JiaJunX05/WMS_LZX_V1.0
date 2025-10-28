@@ -31,7 +31,7 @@ class StockHistoryExport implements FromCollection, WithHeadings, WithMapping, W
     public function collection()
     {
         $query = StockMovement::with([
-            'user:id,name,email',
+            'user',
             'user.account:id,user_id,username',
             'product:id,name,cover_image',
             'variant:id,product_id,sku_code,barcode_number'
@@ -122,7 +122,7 @@ class StockHistoryExport implements FromCollection, WithHeadings, WithMapping, W
             $row->current_stock,
             $row->reference_number ?? 'N/A',
             $row->user->account->username ?? 'N/A',
-            $row->user->email ?? 'N/A',
+            $row->user->email ?? ($row->user->first_name . ' ' . $row->user->last_name ?? 'N/A'),
         ];
     }
 

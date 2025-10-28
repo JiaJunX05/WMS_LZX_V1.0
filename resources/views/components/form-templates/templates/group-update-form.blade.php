@@ -33,9 +33,7 @@
 
 <div class="card shadow-sm border-0">
     <div class="row g-0">
-        {{-- ==========================================
-            左侧配置区域
-            ========================================== --}}
+        {{-- 左侧配置区域 --}}
         <div class="col-md-4">
             <div class="config-section d-flex flex-column h-100 bg-light p-4">
                 {{-- 配置标题 --}}
@@ -64,9 +62,7 @@
             </div>
         </div>
 
-        {{-- ==========================================
-            右侧编辑表单区域
-            ========================================== --}}
+        {{-- 右侧编辑表单区域 --}}
         <div class="col-md-8">
             <div class="size-values-section p-4">
                 {{-- 表单标题 --}}
@@ -125,49 +121,18 @@
 
                             {{-- 状态字段 --}}
                             @if(isset($statusField))
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold text-dark mb-3">{{ $statusField['label'] ?? $entityName . ' Status' }}</label>
-                                    <div class="row g-3">
-                                        @php
-                                            $currentStatus = $statusField['currentStatus'] ?? 'Available';
-                                        @endphp
-
-                                        <div class="col-md-6">
-                                            <div class="card h-100 border status-card {{ $currentStatus === 'Available' ? 'selected' : '' }}" data-status="Available">
-                                                <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="{{ $statusField['name'] ?? $entityNameLower . '_status' }}" value="Available" class="form-check-input me-3"
-                                                           {{ old($statusField['name'] ?? $entityNameLower . '_status', $currentStatus) === 'Available' ? 'checked' : '' }}>
-                                                    <div>
-                                                        <h6 class="card-title mb-1">
-                                                            <i class="bi bi-check-circle me-2 text-success"></i>Available
-                                                        </h6>
-                                                        <p class="card-text text-muted small mb-0">{{ $statusField['availableText'] ?? $entityName . ' is active and can be used' }}</p>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <div class="card h-100 border status-card {{ $currentStatus === 'Unavailable' ? 'selected' : '' }}" data-status="Unavailable">
-                                                <label class="card-body d-flex align-items-center" style="cursor: pointer;">
-                                                    <input type="radio" name="{{ $statusField['name'] ?? $entityNameLower . '_status' }}" value="Unavailable" class="form-check-input me-3"
-                                                           {{ old($statusField['name'] ?? $entityNameLower . '_status', $currentStatus) === 'Unavailable' ? 'checked' : '' }}>
-                                                    <div>
-                                                        <h6 class="card-title mb-1">
-                                                            <i class="bi bi-x-circle me-2 text-danger"></i>Unavailable
-                                                        </h6>
-                                                        <p class="card-text text-muted small mb-0">{{ $statusField['unavailableText'] ?? $entityName . ' is inactive and cannot be used' }}</p>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @if(isset($statusField['help']))
-                                        <div class="form-text">
-                                            <i class="bi bi-info-circle me-1"></i>{{ $statusField['help'] }}
-                                        </div>
-                                    @endif
-                                </div>
+                                @php
+                                    $currentStatus = $statusField['currentStatus'] ?? 'Available';
+                                    $fieldName = $statusField['name'] ?? $entityNameLower . '_status';
+                                    $label = $statusField['label'] ?? $entityName . ' Status';
+                                    $helpText = $statusField['help'] ?? null;
+                                @endphp
+                                @include('components.form-templates.templates.status-selector', [
+                                    'fieldName' => $fieldName,
+                                    'currentStatus' => $currentStatus,
+                                    'label' => $label,
+                                    'helpText' => $helpText
+                                ])
                             @endif
 
                             {{-- 提交按钮区域 --}}

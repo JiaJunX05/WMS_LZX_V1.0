@@ -226,6 +226,9 @@ class ZoneDashboard {
         // 重置勾選框狀態
         this.updateSelectAllCheckbox();
         this.updateExportButton();
+
+        // 隱藏空狀態
+        $('#empty-state').addClass('d-none');
     }
 
     createZoneRow(zone) {
@@ -261,7 +264,7 @@ class ZoneDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="zone-checkbox" type="checkbox" value="${zone.id}" id="zone-${zone.id}" style="width: 20px; height: 20px;">
+                    <input class="zone-checkbox form-check-input" type="checkbox" value="${zone.id}" id="zone-${zone.id}">
                 </td>
                 <td>
                     ${zone.zone_image ? `
@@ -299,17 +302,8 @@ class ZoneDashboard {
     }
 
     showNoResults() {
-        $('#table-body').html(`
-            <tr>
-                <td colspan="5" class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-search fs-1 d-block mb-3"></i>
-                        <h5>No zones found</h5>
-                        <p>Please try adjusting your search criteria</p>
-                    </div>
-                </td>
-            </tr>
-        `);
+        $('#table-body').empty();
+        $('#empty-state').removeClass('d-none');
         this.updatePaginationInfo({ pagination: { total: 0, from: 0, to: 0 } });
     }
 

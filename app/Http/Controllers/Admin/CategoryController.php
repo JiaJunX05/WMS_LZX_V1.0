@@ -150,7 +150,7 @@ class CategoryController extends Controller
         }
 
         $categories = Category::paginate(10);
-        return view('admin.category_dashboard', compact('categories'));
+        return view('admin.category.dashboard', compact('categories'));
     }
 
     /**
@@ -158,7 +158,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        return view('admin.category_create');
+        return view('admin.category.create');
     }
 
     /**
@@ -338,7 +338,7 @@ class CategoryController extends Controller
     public function edit($id)
     {
         $category = Category::findOrFail($id);
-        return view('admin.category_update', compact('category'));
+        return view('admin.category.update', compact('category'));
     }
 
     /**

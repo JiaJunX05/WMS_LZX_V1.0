@@ -135,12 +135,12 @@ class ZoneController extends Controller
             }
         }
 
-        return view('admin.zone_dashboard');
+        return view('admin.zone.dashboard');
     }
 
     public function create()
     {
-        return view('admin.zone_create');
+        return view('admin.zone.create');
     }
 
     /**
@@ -320,7 +320,7 @@ class ZoneController extends Controller
     public function edit($id)
     {
         $zone = Zone::findOrFail($id);
-        return view('admin.zone_update', compact('zone'));
+        return view('admin.zone.update', compact('zone'));
     }
 
     public function update(Request $request, $id)

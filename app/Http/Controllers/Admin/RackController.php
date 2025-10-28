@@ -134,12 +134,12 @@ class RackController extends Controller
             }
         }
 
-        return view('admin.rack_dashboard');
+        return view('admin.rack.dashboard');
     }
 
     public function create()
     {
-        return view('admin.rack_create');
+        return view('admin.rack.create');
     }
 
     /**
@@ -319,7 +319,7 @@ class RackController extends Controller
     public function edit($id)
     {
         $rack = Rack::findOrFail($id);
-        return view('admin.rack_update', compact('rack'));
+        return view('admin.rack.update', compact('rack'));
     }
 
     public function update(Request $request, $id)

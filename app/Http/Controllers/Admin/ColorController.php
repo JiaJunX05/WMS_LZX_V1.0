@@ -156,7 +156,7 @@ class ColorController extends Controller
         }
 
         $colors = Color::paginate(10);
-        return view('admin.color_dashboard', compact('colors'));
+        return view('admin.color.dashboard', compact('colors'));
     }
 
     /**
@@ -164,7 +164,7 @@ class ColorController extends Controller
      */
     public function create()
     {
-        return view('admin.color_create');
+        return view('admin.color.create');
     }
 
     /**
@@ -323,7 +323,7 @@ class ColorController extends Controller
     public function edit($id)
     {
         $color = Color::findOrFail($id);
-        return view('admin.color_update', compact('color'));
+        return view('admin.color.update', compact('color'));
     }
 
     /**

@@ -111,7 +111,7 @@ function initializeProductDashboard() {
 class ProductManagement {
     constructor() {
         this.currentPage = 1;
-        this.perPage = 16;
+        this.perPage = 10;
         this.products = [];
         this.filters = {
             search: '',
@@ -193,6 +193,15 @@ class ProductManagement {
             });
         }
 
+        // 清除搜索按钮
+        const clearSearchBtn = document.getElementById('clear-search');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.clearSearch();
+            });
+        }
+
         // 分页按钮事件
         this.bindPaginationEvents();
     }
@@ -250,6 +259,17 @@ class ProductManagement {
             status: ''
         };
 
+        this.currentPage = 1;
+        this.loadProducts();
+    }
+
+    clearSearch() {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        this.filters.search = '';
         this.currentPage = 1;
         this.loadProducts();
     }
@@ -332,17 +352,16 @@ class ProductManagement {
 
     renderProducts() {
         const container = document.getElementById('product-card-container');
-        const noResults = document.getElementById('no-results');
 
         if (!this.products || this.products.length === 0) {
             this.showNoResults();
             return;
         }
 
-        noResults.classList.add('d-none');
-        container.classList.remove('d-none');
-        container.classList.add('d-flex');
         container.innerHTML = this.products.map(product => this.createProductCard(product)).join('');
+
+        // 隱藏空狀態
+        $('#empty-state').addClass('d-none');
     }
 
     createProductCard(product) {
@@ -351,7 +370,7 @@ class ProductManagement {
                 <div class="product-card h-100">
                     <div class="image-container">
                         ${product.cover_image ?
-                            `<img src="/assets/images/products/${product.cover_image}"
+                            `<img src="/assets/images/${product.cover_image}"
                                   alt="Product Image"
                                   class="img-preview">` :
                             '<div class="img-placeholder w-100" style="height: 200px;"><i class="bi bi-image text-muted fs-1"></i></div>'
@@ -391,19 +410,8 @@ class ProductManagement {
 
     showNoResults() {
         const container = document.getElementById('product-card-container');
-        const noResults = document.getElementById('no-results');
-
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <div class="text-muted">
-                    <i class="bi bi-search display-4"></i>
-                    <h4 class="mt-3">No products found</h4>
-                    <p class="mb-0">Try adjusting your search or filter criteria</p>
-                </div>
-            </div>
-        `;
-        noResults.classList.remove('d-none');
-        container.classList.remove('d-none');
+        container.innerHTML = '';
+        $('#empty-state').removeClass('d-none');
     }
 
     generatePagination(data) {
@@ -466,8 +474,6 @@ class ProductManagement {
                 </div>
             </div>
         `;
-        container.classList.remove('d-none');
-        document.getElementById('no-results').classList.add('d-none');
     }
 }
 

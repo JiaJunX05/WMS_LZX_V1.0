@@ -324,7 +324,7 @@ class AuthDashboard {
         // SuperAdmin顯示勾選框，其他角色顯示ID
         const firstColumn = currentUserRole && currentUserRole.replace(/[_\s]/g, '').toLowerCase() === 'superadmin'
             ? `<td class="ps-4">
-                <input type="checkbox" class="user-checkbox" value="${user.id}" style="width: 20px; height: 20px;">
+                <input type="checkbox" class="user-checkbox form-check-input" value="${user.id}">
                </td>`
             : `<td class="ps-4"><span class="text-muted">#${user.id}</span></td>`;
 
@@ -917,18 +917,23 @@ function initializeUserRegistrationImageHandling() {
  * 初始化用戶註冊頁面的角色選擇
  */
 function initializeUserRegistrationRoleSelection() {
-    // 角色選擇處理
-    const roleCards = document.querySelectorAll('.role-card');
-    roleCards.forEach(card => {
-        card.addEventListener('click', function() {
-            // 移除所有選中狀態
-            roleCards.forEach(c => c.classList.remove('selected'));
-            // 添加選中狀態
-            this.classList.add('selected');
-            // 選中對應的單選按鈕
-            this.querySelector('input[type="radio"]').checked = true;
+    // 使用統一的角色系統
+    if (typeof window.initializeRoleCardSelection === 'function') {
+        window.initializeRoleCardSelection('account_role');
+    } else {
+        // 備用實現
+        const roleCards = document.querySelectorAll('.role-card');
+        roleCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // 移除所有選中狀態
+                roleCards.forEach(c => c.classList.remove('selected'));
+                // 添加選中狀態
+                this.classList.add('selected');
+                // 選中對應的單選按鈕
+                this.querySelector('input[type="radio"]').checked = true;
+            });
         });
-    });
+    }
 }
 
 /**
@@ -1256,26 +1261,32 @@ function bindStatusSelectionEvents() {
  * 綁定角色選擇事件
  */
 function bindRoleSelectionEvents() {
-    $('.role-card').on('click', function() {
-        // 移除所有卡片的選中狀態
-        $('.role-card').removeClass('selected');
+    // 使用統一的角色系統
+    if (typeof window.initializeRoleCardSelection === 'function') {
+        window.initializeRoleCardSelection('account_role');
+    } else {
+        // 備用實現
+        $('.role-card').on('click', function() {
+            // 移除所有卡片的選中狀態
+            $('.role-card').removeClass('selected');
 
-        // 添加當前卡片的選中狀態
-        $(this).addClass('selected');
+            // 添加當前卡片的選中狀態
+            $(this).addClass('selected');
 
-        // 選中對應的單選按鈕
-        $(this).find('input[type="radio"]').prop('checked', true);
-    });
+            // 選中對應的單選按鈕
+            $(this).find('input[type="radio"]').prop('checked', true);
+        });
 
-    // 為單選按鈕添加變化事件
-    $('input[name="account_role"]').on('change', function() {
-        // 移除所有卡片的選中狀態
-        $('.role-card').removeClass('selected');
+        // 為單選按鈕添加變化事件
+        $('input[name="account_role"]').on('change', function() {
+            // 移除所有卡片的選中狀態
+            $('.role-card').removeClass('selected');
 
-        // 添加對應卡片的選中狀態
-        const roleCard = $(this).closest('.role-card');
-        roleCard.addClass('selected');
-    });
+            // 添加對應卡片的選中狀態
+            const roleCard = $(this).closest('.role-card');
+            roleCard.addClass('selected');
+        });
+    }
 }
 
 /**

@@ -151,14 +151,14 @@ class MappingController extends Controller
         $categories = Category::where('category_status', 'Available')->get();
         $subcategories = Subcategory::where('subcategory_status', 'Available')->get();
         $mappings = Mapping::with(['category', 'subcategory'])->get();
-        return view('admin.mapping_dashboard', compact('categories', 'subcategories', 'mappings'));
+        return view('admin.mapping.dashboard', compact('categories', 'subcategories', 'mappings'));
     }
 
     public function create()
     {
         $categories = Category::where('category_status', 'Available')->get();
         $subcategories = Subcategory::where('subcategory_status', 'Available')->get();
-        return view('admin.mapping_create', compact('categories', 'subcategories'));
+        return view('admin.mapping.create', compact('categories', 'subcategories'));
     }
 
     /**
@@ -339,7 +339,7 @@ class MappingController extends Controller
                 $categories = Category::where('category_status', 'Available')->get();
                 $subcategories = Subcategory::where('subcategory_status', 'Available')->get();
 
-                return view('admin.mapping_view', compact('mappings', 'categories', 'subcategories', 'category'));
+                return view('admin.mapping.view', compact('mappings', 'categories', 'subcategories', 'category'));
             }
 
             // 如果不是categoryId，检查是否是mappingId
@@ -348,7 +348,7 @@ class MappingController extends Controller
             if ($mapping) {
                 $categories = Category::where('category_status', 'Available')->get();
                 $subcategories = Subcategory::where('subcategory_status', 'Available')->get();
-                return view('admin.mapping_view', compact('mapping', 'categories', 'subcategories'));
+                return view('admin.mapping.view', compact('mapping', 'categories', 'subcategories'));
             }
 
             // 如果既不是category也不是mapping，返回404
@@ -378,7 +378,7 @@ class MappingController extends Controller
             $categories = Category::where('category_status', 'Available')->get();
             $subcategories = Subcategory::where('subcategory_status', 'Available')->get();
 
-            return view('admin.mapping_update', compact('mapping', 'categories', 'subcategories'));
+            return view('admin.mapping.update', compact('mapping', 'categories', 'subcategories'));
         } catch (\Exception $e) {
             Log::error('Failed to load edit form: ' . $e->getMessage(), [
                 'id' => $id,

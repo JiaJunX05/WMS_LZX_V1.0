@@ -270,7 +270,7 @@ class ColorDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="color-checkbox" type="checkbox" value="${color.id}" id="color-${color.id}" style="width: 20px; height: 20px;">
+                    <input class="color-checkbox form-check-input" type="checkbox" value="${color.id}" id="color-${color.id}">
                 </td>
                 <td>
                     <div class="rounded border border-2 border-white shadow-sm" style="background-color: ${color.color_hex || '#cccccc'}; width: 2.5rem; height: 2.5rem;"></div>

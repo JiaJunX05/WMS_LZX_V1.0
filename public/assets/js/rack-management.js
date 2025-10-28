@@ -261,7 +261,7 @@ class RackDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="rack-checkbox" type="checkbox" value="${rack.id}" id="rack-${rack.id}" style="width: 20px; height: 20px;">
+                    <input class="rack-checkbox form-check-input" type="checkbox" value="${rack.id}" id="rack-${rack.id}">
                 </td>
                 <td>
                     ${rack.rack_image ? `

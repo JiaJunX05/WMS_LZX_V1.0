@@ -1,4 +1,4 @@
-{{-- ==========================================
+﻿{{-- ==========================================
     库存历史页面 - 查看库存变动记录
     ========================================== --}}
 
@@ -9,270 +9,48 @@
 
 
 {{-- CSS 文件引入 --}}
-<link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 
 {{-- 主容器 --}}
 <div class="container-fluid py-4">
     {{-- 页面标题区域 --}}
-    <div class="dashboard-header mb-4">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-lg-8">
-                        <div class="d-flex align-items-center">
-                            <div class="header-icon-wrapper me-4">
-                                <i class="bi bi-clock-history"></i>
-                            </div>
-                            <div>
-                                <h2 class="dashboard-title mb-1">Stock History</h2>
-                                <p class="dashboard-subtitle mb-0">
-                                    @if(Auth::user()->getAccountRole() === 'Staff')
-                                        View your stock movement records
-                                    @else
-                                        View all stock movement records
-                                    @endif
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 text-lg-end">
-                        @if(Auth::user()->getAccountRole() === 'Staff')
-                            <a href="{{ route('staff.stock_management') }}" class="btn btn-primary">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                Back to List
-                            </a>
-                        @elseif(in_array(Auth::user()->getAccountRole(), ['SuperAdmin']))
-                            <button type="button" class="btn btn-primary" onclick="exportStockHistory()">
-                                <i class="bi bi-download me-2"></i>
-                                Export Data
-                            </button>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.dashboard-header.stock-dashboard-header', ['type' => 'history'])
 
     {{-- 警告信息容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
     {{-- 统计卡片 - 仅对管理员和超级管理员可见 --}}
     @if(in_array(Auth::user()->getAccountRole(), ['Admin', 'SuperAdmin']))
-    <div class="statistics-section mb-4">
-        <div class="row g-4">
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="totalStockIn">0</div>
-                                <div class="stats-label">Total Stock In</div>
-                            </div>
-                            <div class="stats-icon bg-success">
-                                <i class="bi bi-arrow-up-circle-fill"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="totalStockOut">0</div>
-                                <div class="stats-label">Total Stock Out</div>
-                            </div>
-                            <div class="stats-icon bg-danger">
-                                <i class="bi bi-arrow-down-circle-fill"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="netChange">0</div>
-                                <div class="stats-label">Net Change</div>
-                            </div>
-                            <div class="stats-icon bg-primary">
-                                <i class="bi bi-graph-up"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="totalMovements">0</div>
-                                <div class="stats-label">Total Movements</div>
-                            </div>
-                            <div class="stats-icon bg-info">
-                                <i class="bi bi-activity"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="currentTotalStock">0</div>
-                                <div class="stats-label">Current Stock</div>
-                            </div>
-                            <div class="stats-icon bg-secondary">
-                                <i class="bi bi-box-seam"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stats-card">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="lowStockCount">0</div>
-                                <div class="stats-label">Low Stock Items</div>
-                            </div>
-                            <div class="stats-icon bg-warning">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        @include('components.metric-cards.stock-metric-cards')
     @endif
 
     {{-- 筛选表单 --}}
-    <form id="filter-form" method="GET" action="{{ route('stock_history') }}">
-        <div class="search-filter-section mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-lg-3">
-                            <label class="form-label fw-medium">Movement Type</label>
-                            <select class="form-select" id="movement-type-filter" name="movement_type">
-                                <option value="">All Types</option>
-                                <option value="stock_in" {{ request('movement_type') == 'stock_in' ? 'selected' : '' }}>Stock In</option>
-                                <option value="stock_out" {{ request('movement_type') == 'stock_out' ? 'selected' : '' }}>Stock Out</option>
-                                <option value="stock_return" {{ request('movement_type') == 'stock_return' ? 'selected' : '' }}>Stock Return</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-3">
-                            <label class="form-label fw-medium">Product</label>
-                            <input type="text" class="form-control" id="product-search" name="product_search"
-                                   value="{{ request('product_search') }}" placeholder="Search by product name or SKU...">
-                        </div>
-                        <div class="col-lg-2">
-                            <label class="form-label fw-medium">Start Date</label>
-                            <input type="date" class="form-control" id="start-date-filter" name="start_date"
-                                   value="{{ request('start_date') }}">
-                        </div>
-                        <div class="col-lg-2">
-                            <label class="form-label fw-medium">End Date</label>
-                            <input type="date" class="form-control" id="end-date-filter" name="end_date"
-                                   value="{{ request('end_date') }}">
-                        </div>
-                        <div class="col-lg-2">
-                            <button type="button" class="btn btn-outline-secondary w-100" id="clear-filters">
-                                <i class="bi bi-x-circle me-2"></i>
-                                Clear Filters
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
+    @include('components.search-filters.history-search-filters')
 
     {{-- 库存历史表格 --}}
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-transparent border-0 pb-3 mb-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-3">
-                    <h5 class="mb-0 fw-semibold">Stock Movement History</h5>
-                    <span class="badge bg-light text-dark" id="history-results-count">0 records</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">DATE</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">TYPE</div></th>
-                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">QUANTITY</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">BEFORE</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">AFTER</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">USER INFO</div></th>
-                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">REFERENCE</div></th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body">
-                        {{-- 动态加载内容 --}}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    @include('components.data-tables.history-data-tables')
+
+    {{-- 空状态显示 --}}
+    @include('components.empty-list.history-empty-list')
 
     {{-- 分页和结果统计 --}}
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <div class="pagination-info text-muted">
-            Showing <span class="fw-medium" id="history-showing-start">0</span>
-            to <span class="fw-medium" id="history-showing-end">0</span>
-            of <span class="fw-medium" id="history-total-count">0</span> entries
-        </div>
-        <nav aria-label="Page navigation">
-            <ul id="pagination" class="pagination pagination-sm mb-0">
-                <li class="page-item disabled" id="prev-page">
-                    <a class="page-link" href="#" aria-label="Previous">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-                <li class="page-item active" id="current-page">
-                    <span class="page-link" id="page-number">1</span>
-                </li>
-                <li class="page-item disabled" id="next-page">
-                    <a class="page-link" href="#" aria-label="Next">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+    @include('components.pagination-nav.stock-pagination-nav')
 </div>
 
 @endsection
 
 @section("scripts")
-{{-- ==========================================
-    页面脚本区域
-    ========================================== --}}
+{{-- 库存历史相关 URL --}}
 <script>
-    {{-- 设置库存历史相关 URL --}}
+    // 库存历史相关 URL
     window.stockHistoryApiRoute = "{{ route('api.stock_history') }}";
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
-    window.productImagePath = "{{ asset('assets/images/products') }}";
+    window.productImagePath = "{{ asset('assets/images') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
 </script>
 
-{{-- 通用 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
+{{-- 库存历史 JavaScript 文件 --}}
+<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

@@ -261,7 +261,7 @@ class CategoryDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="category-checkbox" type="checkbox" value="${category.id}" id="category-${category.id}" style="width: 20px; height: 20px;">
+                    <input class="category-checkbox form-check-input" type="checkbox" value="${category.id}" id="category-${category.id}">
                 </td>
                 <td>
                     ${category.category_image ? `

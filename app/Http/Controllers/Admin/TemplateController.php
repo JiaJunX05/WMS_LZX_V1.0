@@ -132,7 +132,7 @@ class TemplateController extends Controller
         $categories = Category::where('category_status', 'Available')->get();
         $genders = Gender::where('gender_status', 'Available')->get();
 
-        return view('admin.template_dashboard', compact('sizeTemplates', 'categories', 'genders'));
+        return view('admin.template.dashboard', compact('sizeTemplates', 'categories', 'genders'));
     }
 
     /**
@@ -145,7 +145,7 @@ class TemplateController extends Controller
         $genders = Gender::where('gender_status', 'Available')->get();
         $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-        return view('admin.template_create', compact('categories', 'genders', 'sizeLibraries'));
+        return view('admin.template.create', compact('categories', 'genders', 'sizeLibraries'));
     }
 
     /**
@@ -207,7 +207,7 @@ class TemplateController extends Controller
                 ->with('category')
                 ->get();
 
-            return view('admin.template_update', compact('sizeTemplate', 'categories', 'genders', 'sizeLibraries'));
+            return view('admin.template.update', compact('sizeTemplate', 'categories', 'genders', 'sizeLibraries'));
         } catch (\Exception $e) {
             Log::error('Failed to load edit form: ' . $e->getMessage(), [
                 'id' => $id,
@@ -673,7 +673,7 @@ class TemplateController extends Controller
                 $genders = Gender::where('gender_status', 'Available')->get();
                 $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-                return view('admin.template_view', compact('sizeTemplates', 'categories', 'genders', 'sizeLibraries', 'category', 'gender'));
+                return view('admin.template.view', compact('sizeTemplates', 'categories', 'genders', 'sizeLibraries', 'category', 'gender'));
             }
         }
 
@@ -691,7 +691,7 @@ class TemplateController extends Controller
         $genders = Gender::where('gender_status', 'Available')->get();
         $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-        return view('admin.template_view', compact('sizeTemplate', 'categories', 'genders', 'sizeLibraries'));
+        return view('admin.template.view', compact('sizeTemplate', 'categories', 'genders', 'sizeLibraries'));
     }
 
     /**

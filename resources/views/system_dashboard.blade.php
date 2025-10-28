@@ -1,9 +1,9 @@
-@extends("layouts.app")
+﻿@extends("layouts.app")
 
 @section("title", "Dashboard")
 @section("content")
 
-<link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-system.css') }}">
 
 

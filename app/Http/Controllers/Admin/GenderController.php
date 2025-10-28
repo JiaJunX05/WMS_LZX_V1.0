@@ -152,7 +152,7 @@ class GenderController extends Controller
         }
 
         $genders = Gender::paginate(10);
-        return view('admin.gender_dashboard', compact('genders'));
+        return view('admin.gender.dashboard', compact('genders'));
     }
 
     /**
@@ -160,7 +160,7 @@ class GenderController extends Controller
      */
     public function create()
     {
-        return view('admin.gender_create');
+        return view('admin.gender.create');
     }
 
     /**
@@ -315,7 +315,7 @@ class GenderController extends Controller
     public function edit($id)
     {
         $gender = Gender::findOrFail($id);
-        return view('admin.gender_update', compact('gender'));
+        return view('admin.gender.update', compact('gender'));
     }
 
     /**

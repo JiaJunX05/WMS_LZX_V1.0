@@ -131,7 +131,7 @@ class LibraryController extends Controller
             'is_ajax' => $request->ajax()
         ]);
 
-        return view('admin.library_dashboard', compact('sizeLibraries', 'categories'));
+        return view('admin.library.dashboard', compact('sizeLibraries', 'categories'));
     }
 
     /**
@@ -141,7 +141,7 @@ class LibraryController extends Controller
     {
         try {
             $categories = Category::where('category_status', 'Available')->get();
-            return view('admin.library_create', compact('categories'));
+            return view('admin.library.create', compact('categories'));
         } catch (\Exception $e) {
             Log::error('Failed to load create form: ' . $e->getMessage());
             return redirect()->route('admin.size_library.library.index')
@@ -207,14 +207,14 @@ class LibraryController extends Controller
                     ->get();
                 $categories = Category::where('category_status', 'Available')->get();
 
-                return view('admin.library_update', compact('sizeLibraries', 'categories', 'category'));
+                return view('admin.library.update', compact('sizeLibraries', 'categories', 'category'));
             }
 
             // 如果不是categoryId，检查是否是sizeLibraryId
             $sizeLibrary = SizeLibrary::with('category')->find($id);
             if ($sizeLibrary) {
                 $categories = Category::where('category_status', 'Available')->get();
-                return view('admin.library_update', compact('sizeLibrary', 'categories'));
+                return view('admin.library.update', compact('sizeLibrary', 'categories'));
             }
 
             // 如果既不是categoryId也不是sizeLibraryId，返回404
@@ -667,7 +667,7 @@ class LibraryController extends Controller
                 ->get();
             $categories = Category::where('category_status', 'Available')->get();
 
-            return view('admin.library_view', compact('sizeLibraries', 'categories', 'category'));
+            return view('admin.library.view', compact('sizeLibraries', 'categories', 'category'));
         }
 
         throw new \Exception('Invalid category ID');
@@ -681,7 +681,7 @@ class LibraryController extends Controller
     {
         $sizeLibrary = SizeLibrary::with('category')->findOrFail($id);
         $categories = Category::where('category_status', 'Available')->get();
-        return view('admin.library_view', compact('sizeLibrary', 'categories'));
+        return view('admin.library.view', compact('sizeLibrary', 'categories'));
     }
 
     /**

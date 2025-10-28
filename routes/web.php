@@ -135,6 +135,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/product-stock-history/{id}', [StockController::class, 'getProductStockHistory'])->name('api.product_stock_history');
     Route::get('/api/stock-statistics', [StockController::class, 'getStockStatistics'])->name('api.stock_statistics');
     Route::get('/stock-history/export', [StockController::class, 'exportStockHistory'])->name('stock_history.export');
+    Route::get('/staff/stock-management/export', [StockController::class, 'exportProducts'])->name('staff.stock_management.export');
 
     // 货架容量管理页面和API路由
     Route::get('/rack-capacity', function() {
@@ -172,6 +173,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('print')->name('print.')->group(function () {
             Route::get('/', [PrintController::class, 'index'])->name('index');
             Route::post('/get-products', [PrintController::class, 'getProducts'])->name('get-products');
+            Route::post('/render-labels', [PrintController::class, 'renderPrintLabels'])->name('render-labels');
         });
     });
 

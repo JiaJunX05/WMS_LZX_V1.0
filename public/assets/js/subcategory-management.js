@@ -261,7 +261,7 @@ class SubcategoryDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="subcategory-checkbox" type="checkbox" value="${subcategory.id}" id="subcategory-${subcategory.id}" style="width: 20px; height: 20px;">
+                    <input class="subcategory-checkbox form-check-input" type="checkbox" value="${subcategory.id}" id="subcategory-${subcategory.id}">
                 </td>
                 <td>
                     ${subcategory.subcategory_image ? `

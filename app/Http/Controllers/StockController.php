@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StockHistoryExport;
+use App\Exports\ProductExport;
 use Carbon\Carbon;
 
 class StockController extends Controller
@@ -1068,6 +1069,12 @@ class StockController extends Controller
     public function exportStockHistory(Request $request)
     {
         try {
+            Log::info('Export request received', [
+                'url' => $request->fullUrl(),
+                'params' => $request->all(),
+                'headers' => $request->headers->all()
+            ]);
+
             // 获取筛选条件
             $filters = [
                 'movement_type' => $request->get('movement_type'),
@@ -1080,11 +1087,53 @@ class StockController extends Controller
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
             $filename = "stock_history_export_{$timestamp}.xlsx";
 
+            Log::info('Exporting Excel', [
+                'filename' => $filename,
+                'filters' => $filters
+            ]);
+
             // 使用Laravel Excel导出
             return Excel::download(new StockHistoryExport($filters), $filename);
 
         } catch (\Exception $e) {
-            Log::error('Stock history export failed: ' . $e->getMessage());
+            Log::error('Stock history export failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Export failed: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Export failed. Please try again.');
+        }
+    }
+
+    /**
+     * 导出产品数据到Excel
+     */
+    public function exportProducts(Request $request)
+    {
+        try {
+            // 获取筛选条件
+            $filters = [
+                'ids' => $request->get('ids') ? explode(',', $request->get('ids')) : null,
+                'search' => $request->get('search'),
+            ];
+
+            // 生成文件名
+            $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
+            $filename = "products_export_{$timestamp}.xlsx";
+
+            // 使用Laravel Excel导出
+            return Excel::download(new ProductExport($filters), $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Products export failed: ' . $e->getMessage());
 
             if ($request->ajax()) {
                 return response()->json([

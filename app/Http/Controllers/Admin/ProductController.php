@@ -410,7 +410,7 @@ class ProductController extends Controller
             if ($request->hasFile('cover_image')) {
                 $image = $request->file('cover_image');
                 $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                $directory = public_path('assets/images/products/covers');
+                $directory = public_path('assets/images/covers');
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
@@ -486,7 +486,7 @@ class ProductController extends Controller
                 foreach ($detailImages as $index => $image) {
                     \Log::info("Processing detail image {$index}: " . $image->getClientOriginalName());
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $directory = public_path('assets/images/products/details');
+                    $directory = public_path('assets/images/details');
                     if (!file_exists($directory)) {
                         mkdir($directory, 0777, true);
                     }
@@ -504,7 +504,7 @@ class ProductController extends Controller
             \Log::info('=== DETAIL IMAGE DEBUG END ===');
 
             // 生成条形码图片（可选）
-            $this->generateBarcodeImage($barcodeNumber, $skuCode, $productVariant->id);
+            // $this->generateBarcodeImage($barcodeNumber, $skuCode, $productVariant->id);
 
             $this->logOperation('created', [
                 'product_id' => $product->id,
@@ -645,7 +645,7 @@ class ProductController extends Controller
             if ($request->hasFile('cover_image')) {
                 // 删除旧图片
                 if ($product->cover_image) {
-                    $oldImagePath = public_path('assets/images/products/' . $product->cover_image);
+                    $oldImagePath = public_path('assets/images/' . $product->cover_image);
                     if (file_exists($oldImagePath)) {
                         unlink($oldImagePath);
                     }
@@ -654,7 +654,7 @@ class ProductController extends Controller
                 // 上传新图片
                 $image = $request->file('cover_image');
                 $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                $directory = public_path('assets/images/products/covers');
+                $directory = public_path('assets/images/covers');
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
@@ -737,7 +737,7 @@ class ProductController extends Controller
                 foreach ($request->remove_image as $imageId) {
                     $image = Image::find($imageId);
                     if ($image && $image->product_id == $product->id) {  // 确保图片属于当前产品
-                        $imagePath = public_path('assets/images/products/' . $image->detail_image);
+                        $imagePath = public_path('assets/images/' . $image->detail_image);
                         if (file_exists($imagePath)) {
                             unlink($imagePath);
                         }
@@ -750,7 +750,7 @@ class ProductController extends Controller
             if ($request->hasFile('detail_image')) {
                 foreach ($request->file('detail_image') as $image) {
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $directory = public_path('assets/images/products/details');
+                    $directory = public_path('assets/images/details');
                     if (!file_exists($directory)) {
                         mkdir($directory, 0777, true);
                     }
@@ -779,7 +779,7 @@ class ProductController extends Controller
                 if ($originalBarcode !== $newBarcode) {
                     // barcode号码发生变化，重新生成barcode图片
                     Log::info('Updating barcode for variant', ['variant_id' => $variant->id]);
-                    $this->updateBarcodeImage($request->barcode_number, $request->sku_code, $variant->id);
+                    // $this->updateBarcodeImage($request->barcode_number, $request->sku_code, $variant->id);
                 } else {
                     Log::info('Barcode number unchanged, skipping update', ['variant_id' => $variant->id]);
                 }
@@ -838,7 +838,7 @@ class ProductController extends Controller
 
             // 删除封面图片
             if ($product->cover_image) {
-                $coverPath = public_path('assets/images/products/' . $product->cover_image);
+                $coverPath = public_path('assets/images/' . $product->cover_image);
                 if (file_exists($coverPath)) {
                     unlink($coverPath);
                 }
@@ -847,7 +847,7 @@ class ProductController extends Controller
             // 删除详情图片
             $images = Image::where('product_id', $product->id)->get();
             foreach ($images as $image) {
-                $detailPath = public_path('assets/images/products/' . $image->detail_image);
+                $detailPath = public_path('assets/images/' . $image->detail_image);
                 if (file_exists($detailPath)) {
                     unlink($detailPath);
                 }
@@ -1065,7 +1065,7 @@ class ProductController extends Controller
      */
     private function generateBarcodeImage($barcodeNumber, $skuCode, $variantId)
     {
-        $barcodeFolder = public_path('assets/images/products/barcodes');
+        $barcodeFolder = public_path('assets/images/barcodes');
         if (!file_exists($barcodeFolder)) {
             mkdir($barcodeFolder, 0777, true);
         }
@@ -1082,7 +1082,7 @@ class ProductController extends Controller
             // 目前条形码号码已经存储在 ProductVariant 表中
             Log::info('Barcode image generated', [
                 'variant_id' => $variantId,
-                'barcode_path' => 'barcodes/' . $barcodeImageName
+                'barcode_path' => 'assets/images/barcodes/' . $barcodeImageName
             ]);
         }
     }

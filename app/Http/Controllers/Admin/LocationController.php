@@ -151,7 +151,7 @@ class LocationController extends Controller
         $zones = Zone::where('zone_status', 'Available')->get();
         $racks = Rack::where('rack_status', 'Available')->get();
         $locations = Location::with(['zone', 'rack'])->get();
-        return view('admin.location_dashboard', compact('zones', 'racks', 'locations'));
+        return view('admin.location.dashboard', compact('zones', 'racks', 'locations'));
     }
 
     /**
@@ -163,7 +163,7 @@ class LocationController extends Controller
     {
         $zones = Zone::where('zone_status', 'Available')->get();
         $racks = Rack::where('rack_status', 'Available')->get();
-        return view('admin.location_create', compact('zones', 'racks'));
+        return view('admin.location.create', compact('zones', 'racks'));
     }
 
     /**
@@ -353,7 +353,7 @@ class LocationController extends Controller
                 $zones = Zone::where('zone_status', 'Available')->get();
                 $racks = Rack::where('rack_status', 'Available')->get();
 
-                return view('admin.location_view', compact('locations', 'zones', 'racks', 'zone'));
+                return view('admin.location.view', compact('locations', 'zones', 'racks', 'zone'));
             }
 
             // 如果不是zoneId，检查是否是locationId
@@ -362,7 +362,7 @@ class LocationController extends Controller
             if ($location) {
                 $zones = Zone::where('zone_status', 'Available')->get();
                 $racks = Rack::where('rack_status', 'Available')->get();
-                return view('admin.location_view', compact('location', 'zones', 'racks'));
+                return view('admin.location.view', compact('location', 'zones', 'racks'));
             }
 
             // 如果既不是zone也不是location，返回404
@@ -392,7 +392,7 @@ class LocationController extends Controller
             $zones = Zone::where('zone_status', 'Available')->get();
             $racks = Rack::where('rack_status', 'Available')->get();
 
-            return view('admin.location_update', compact('location', 'zones', 'racks'));
+            return view('admin.location.update', compact('location', 'zones', 'racks'));
         } catch (\Exception $e) {
             Log::error('Failed to load edit form: ' . $e->getMessage(), [
                 'id' => $id,

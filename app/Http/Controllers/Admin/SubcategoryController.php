@@ -137,12 +137,12 @@ class SubcategoryController extends Controller
         }
 
         $subcategories = Subcategory::paginate(10);
-        return view('admin.subcategory_dashboard', compact('subcategories'));
+        return view('admin.subcategory.dashboard', compact('subcategories'));
     }
 
     public function create()
     {
-        return view('admin.subcategory_create');
+        return view('admin.subcategory.create');
     }
 
     public function store(Request $request)
@@ -315,7 +315,7 @@ class SubcategoryController extends Controller
     public function edit($id)
     {
         $subcategory = Subcategory::findOrFail($id);
-        return view('admin.subcategory_update', compact('subcategory'));
+        return view('admin.subcategory.update', compact('subcategory'));
     }
 
     public function update(Request $request, $id)

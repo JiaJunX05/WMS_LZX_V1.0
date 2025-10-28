@@ -91,6 +91,46 @@ class PrintController extends Controller
     }
 
     /**
+     * 渲染打印标签模板
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function renderPrintLabels(Request $request)
+    {
+        try {
+            $productIds = $request->input('products', []);
+            $includeBarcode = $request->boolean('include_barcode', true);
+            $includeImage = $request->boolean('include_image', true);
+
+            if (empty($productIds)) {
+                return response()->json(['error' => 'No products selected'], 400);
+            }
+
+            // 获取选中的产品数据
+            $products = Product::with('barcode')
+                ->whereIn('id', $productIds)
+                ->get()
+                ->toArray();
+
+            if (empty($products)) {
+                return response()->json(['error' => 'No products found'], 404);
+            }
+
+            // 渲染Blade模板并返回HTML
+            return response()->make(view('print-labels', [
+                'products' => $products,
+                'includeBarcode' => $includeBarcode,
+                'includeImage' => $includeImage
+            ])->render(), 200, ['Content-Type' => 'text/html']);
+
+        } catch (\Exception $e) {
+            Log::error('Render print labels error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to render print labels'], 500);
+        }
+    }
+
+    /**
      * 获取分页产品数据（AJAX）
      *
      * @param Request $request

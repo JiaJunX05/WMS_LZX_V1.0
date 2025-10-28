@@ -118,6 +118,37 @@ class StockDashboard {
                 });
             }
         });
+
+        // 全选/取消全选功能
+        const selectAllCheckbox = document.getElementById('select-all');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', () => {
+                const isChecked = selectAllCheckbox.checked;
+                document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+                this.updateExportButton();
+            });
+        }
+
+        // 单个 checkbox 变化（使用事件委托）
+        const tbody = document.getElementById('products-table-body');
+        if (tbody) {
+            tbody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('product-checkbox')) {
+                    this.updateSelectAllCheckbox();
+                    this.updateExportButton();
+                }
+            });
+        }
+
+        // 导出按钮
+        const exportBtn = document.getElementById('export-products-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.exportSelectedProducts();
+            });
+        }
     }
 
     // =============================================================================
@@ -165,18 +196,19 @@ class StockDashboard {
         const tbody = document.getElementById('products-table-body');
         if (!tbody) return;
 
+        // 检查是否有 checkbox（Admin 和 SuperAdmin 有 checkbox，不显示 ID）
+        // Staff 没有 checkbox，显示 ID
+        const hasCheckbox = window.currentUserRole === 'SuperAdmin' || window.currentUserRole === 'Admin';
+        const colspan = '7'; // checkbox/ID + IMAGE + PRODUCT NAME + SKU CODE + STOCK + STATUS + ACTIONS = 7 columns
+
         if (products.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        <i class="bi bi-box display-1 text-muted mb-3"></i>
-                        <h5 class="text-muted mb-2">No Products Found</h5>
-                        <p class="text-muted mb-0">No products match your current search criteria</p>
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = '';
+            $('#empty-state').removeClass('d-none');
             return;
         }
+
+        // 隱藏空狀態
+        $('#empty-state').addClass('d-none');
 
         tbody.innerHTML = products.map(product => {
             const variant = product.variants && product.variants[0];
@@ -184,11 +216,22 @@ class StockDashboard {
             const barcode = variant?.barcode_number || 'N/A';
             const currentStock = product.quantity || 0;
 
-            return `
-                <tr class="product-row">
+            const checkboxCell = hasCheckbox ? `
+                    <td class="ps-4">
+                        <input type="checkbox" class="product-checkbox form-check-input" value="${product.id}">
+                    </td>
+                ` : '';
+
+            const idCell = !hasCheckbox ? `
                     <td class="ps-4">
                         <span class="fw-medium">#${product.id}</span>
                     </td>
+                ` : '';
+
+            return `
+                <tr class="product-row" data-product-id="${product.id}">
+                    ${checkboxCell}
+                    ${idCell}
                     <td>
                         <img src="${product.cover_image ? `${window.productImagePath}/${product.cover_image}` : window.defaultProductImage}"
                              alt="${product.name}"
@@ -235,12 +278,18 @@ class StockDashboard {
         this.totalItems = pagination.total;
 
         // 更新分頁統計
-        document.getElementById('dashboard-showing-start').textContent = pagination.from || 0;
-        document.getElementById('dashboard-showing-end').textContent = pagination.to || 0;
-        document.getElementById('dashboard-total-count').textContent = pagination.total || 0;
+        document.getElementById('showing-start').textContent = pagination.from || 0;
+        document.getElementById('showing-end').textContent = pagination.to || 0;
+        document.getElementById('total-count').textContent = pagination.total || 0;
+
+        // 更新产品数量显示
+        const resultsCountEl = document.getElementById('dashboard-results-count');
+        if (resultsCountEl) {
+            resultsCountEl.textContent = `${pagination.total} products`;
+        }
 
         // 更新頁碼
-        const pageNumber = document.getElementById('dashboard-page-number');
+        const pageNumber = document.getElementById('page-number');
         if (pageNumber) {
             pageNumber.textContent = pagination.current_page;
         }
@@ -328,6 +377,112 @@ class StockDashboard {
     // Dashboard 庫存歷史渲染由後端處理，不再需要前端渲染
 
     // Dashboard 歷史分頁渲染由後端處理，不再需要前端渲染
+
+    // =============================================================================
+    // Export 功能模塊 (Export Functions Module)
+    // =============================================================================
+
+    /**
+     * 更新全选 checkbox 状态
+     */
+    updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('.product-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
+
+        if (checkboxes.length === 0) {
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
+            return;
+        }
+
+        if (checkedCheckboxes.length === 0) {
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        } else if (checkedCheckboxes.length === checkboxes.length) {
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            }
+        } else {
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+    }
+
+    /**
+     * 更新导出按钮状态
+     */
+    updateExportButton() {
+        const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
+        const exportBtn = document.getElementById('export-products-btn');
+
+        if (exportBtn) {
+            if (checkedCount > 0) {
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = `<i class="bi bi-download me-2"></i>Export Data (${checkedCount})`;
+            } else {
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = `<i class="bi bi-download me-2"></i>Export Data`;
+            }
+        }
+    }
+
+    /**
+     * 导出选中的产品
+     */
+    exportSelectedProducts() {
+        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (selectedIds.length === 0) {
+            this.showAlert('Please select at least one product to export', 'warning');
+            return;
+        }
+
+        // 获取当前筛选条件
+        const search = this.searchTerm || '';
+
+        const params = new URLSearchParams({
+            ids: selectedIds.join(','),
+            search: search,
+        });
+
+        // 使用导出路由
+        const exportUrl = `${window.stockExportUrl}?${params}`;
+
+        // 显示加载提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 创建隐藏的链接来触发下载
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.classList.add('d-none');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延迟隐藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
+    }
+
+    /**
+     * 隱藏提示信息
+     */
+    hideAlert() {
+        const alertElement = document.querySelector('.alert');
+        if (alertElement) {
+            alertElement.remove();
+        }
+    }
 
     // =============================================================================
     // 模态框管理模块 (Modal Management Module)
@@ -430,6 +585,14 @@ class StockHistory {
             });
         }
 
+        // 导出按钮
+        const exportBtn = document.getElementById('export-history-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.exportHistory();
+            });
+        }
+
         // 分頁功能
         const prevBtn = document.getElementById('prev-page');
         const nextBtn = document.getElementById('next-page');
@@ -498,6 +661,44 @@ class StockHistory {
 
         this.loadStockHistory();
         this.loadStockStatistics(); // 重新加載統計數據
+    }
+
+    /**
+     * 导出库存历史数据
+     */
+    exportHistory() {
+        // 获取当前筛选条件
+        const movementType = document.getElementById('movement-type-filter')?.value || '';
+        const productSearch = document.getElementById('product-search')?.value || '';
+        const startDate = document.getElementById('start-date-filter')?.value || '';
+        const endDate = document.getElementById('end-date-filter')?.value || '';
+
+        const params = new URLSearchParams({
+            movement_type: movementType,
+            product_search: productSearch,
+            start_date: startDate,
+            end_date: endDate,
+        });
+
+        // 使用新的Excel导出路由
+        const exportUrl = `/stock-history/export?${params}`;
+
+        // 显示加载提示
+        this.showAlert('Generating Excel file, please wait...', 'info');
+
+        // 创建隐藏的链接来触发下载
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        link.classList.add('d-none');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 延迟隐藏提示
+        setTimeout(() => {
+            this.hideAlert();
+        }, 2000);
     }
 
     // =============================================================================
@@ -650,17 +851,13 @@ class StockHistory {
         const tbody = document.getElementById('history-table-body');
 
         if (movements.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="text-center py-4">
-                        <i class="bi bi-clock-history display-1 text-muted mb-3"></i>
-                        <h5 class="text-muted mb-2">No Stock Movements Found</h5>
-                        <p class="text-muted mb-0">No stock movement records match your current filters</p>
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = '';
+            $('#empty-state').removeClass('d-none');
             return;
         }
+
+        // 隱藏空狀態
+        $('#empty-state').addClass('d-none');
 
         tbody.innerHTML = movements.map(movement => `
             <tr>
@@ -770,10 +967,13 @@ class StockHistory {
      * @param {Object} pagination 分頁信息
      */
     updateResultsCount(pagination) {
-        document.getElementById('history-results-count').textContent = `${pagination.total} records`;
-        document.getElementById('history-showing-start').textContent = pagination.from || 0;
-        document.getElementById('history-showing-end').textContent = pagination.to || 0;
-        document.getElementById('history-total-count').textContent = pagination.total || 0;
+        const resultsCountEl = document.getElementById('history-results-count');
+        if (resultsCountEl) {
+            resultsCountEl.textContent = `${pagination.total} records`;
+        }
+        document.getElementById('showing-start').textContent = pagination.from || 0;
+        document.getElementById('showing-end').textContent = pagination.to || 0;
+        document.getElementById('total-count').textContent = pagination.total || 0;
     }
 
     /**
@@ -1080,7 +1280,7 @@ class StockIn {
                     </td>
                     <td>
                         ${product.cover_image
-                            ? `<img src="/assets/images/products/${product.cover_image}"
+                            ? `<img src="/assets/images/${product.cover_image}"
                                  alt="Product Image" class="rounded border border-2 border-white shadow-sm"
                                  style="width: 50px; height: 50px; object-fit: cover;">`
                         : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
@@ -1570,7 +1770,7 @@ class StockOut {
                     </td>
                     <td>
                         ${product.cover_image
-                            ? `<img src="/assets/images/products/${product.cover_image}"
+                            ? `<img src="/assets/images/${product.cover_image}"
                                  alt="Product Image" class="rounded border border-2 border-white shadow-sm"
                                  style="width: 50px; height: 50px; object-fit: cover;">`
                         : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
@@ -2060,7 +2260,7 @@ class StockReturn {
                     </td>
                     <td>
                         ${product.cover_image
-                            ? `<img src="/assets/images/products/${product.cover_image}"
+                            ? `<img src="/assets/images/${product.cover_image}"
                                  alt="Product Image" class="rounded border border-2 border-white shadow-sm"
                                  style="width: 50px; height: 50px; object-fit: cover;">`
                         : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
@@ -2298,8 +2498,32 @@ class StockDetail {
     // 初始化模塊 (Initialization Module)
     // =============================================================================
     init() {
+        // 从 URL 参数获取产品 ID（如果未从后端传递）
+        if (!window.currentProductId || !window.currentProductData) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+
+            if (productId) {
+                window.currentProductId = productId;
+                console.log('Product ID from URL:', productId);
+            } else {
+                console.error('No product ID found in URL');
+                // 如果没有 ID 则重定向回仪表板
+                window.location.href = window.stockManagementRoute;
+                return;
+            }
+        }
+
         this.bindEvents();
-        this.loadProductDetail();
+
+        // 如果产品数据已从后端传递，直接使用
+        if (window.currentProductData) {
+            console.log('Product data from backend:', window.currentProductData);
+            this.renderProductDetail(window.currentProductData);
+        } else {
+            this.loadProductDetail();
+        }
+
         this.loadStockHistory();
     }
 
@@ -2472,17 +2696,13 @@ class StockDetail {
         const tbody = document.getElementById('history-table-body');
 
         if (movements.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        <i class="bi bi-clock-history display-1 text-muted mb-3"></i>
-                        <h5 class="text-muted mb-2">No Stock Movements Found</h5>
-                        <p class="text-muted mb-0">No stock movement records for this product</p>
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = '';
+            $('#empty-state').removeClass('d-none');
             return;
         }
+
+        // 隱藏空狀態
+        $('#empty-state').addClass('d-none');
 
         tbody.innerHTML = movements.map(movement => `
             <tr>
@@ -2573,10 +2793,13 @@ class StockDetail {
      * @param {Object} pagination 分頁信息
      */
     updateResultsCount(pagination) {
-        document.getElementById('detail-history-count').textContent = `${pagination.total} records`;
-        document.getElementById('detail-showing-start').textContent = pagination.from || 0;
-        document.getElementById('detail-showing-end').textContent = pagination.to || 0;
-        document.getElementById('detail-total-count').textContent = pagination.total || 0;
+        const resultsCountEl = document.getElementById('detail-history-count');
+        if (resultsCountEl) {
+            resultsCountEl.textContent = `${pagination.total} records`;
+        }
+        document.getElementById('showing-start').textContent = pagination.from || 0;
+        document.getElementById('showing-end').textContent = pagination.to || 0;
+        document.getElementById('total-count').textContent = pagination.total || 0;
     }
 
     /**

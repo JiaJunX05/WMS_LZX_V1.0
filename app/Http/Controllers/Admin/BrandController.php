@@ -150,7 +150,7 @@ class BrandController extends Controller
         }
 
         $brands = Brand::paginate(10);
-        return view('admin.brand_dashboard', compact('brands'));
+        return view('admin.brand.dashboard', compact('brands'));
     }
 
     /**
@@ -158,7 +158,7 @@ class BrandController extends Controller
      */
     public function create()
     {
-        return view('admin.brand_create');
+        return view('admin.brand.create');
     }
 
     /**
@@ -339,7 +339,7 @@ class BrandController extends Controller
     public function edit($id)
     {
         $brand = Brand::findOrFail($id);
-        return view('admin.brand_update', compact('brand'));
+        return view('admin.brand.update', compact('brand'));
     }
 
     /**

@@ -1,4 +1,4 @@
-{{-- ==========================================
+﻿{{-- ==========================================
     用户管理仪表板页面
     功能：用户列表展示、搜索筛选、分页管理、用户操作
     ========================================== --}}
@@ -9,7 +9,7 @@
 @section("content")
 
 {{-- 页面样式文件引入 --}}
-<link rel="stylesheet" href="{{ asset('assets/css/common/variables.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/role-status.css') }}">
 
@@ -17,22 +17,25 @@
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.main-display.dashboard-header.auth-header', ['type' => 'dashboard'])
+    @include('components.dashboard-header.auth-dashboard-header', ['type' => 'dashboard'])
 
     {{-- 消息提示容器 --}}
     <div id="alertContainer" class="mb-4"></div>
 
     {{-- 用户统计卡片区域 --}}
-    @include('components.main-display.stats-cards.user-stats-cards')
+    @include('components.metric-cards.user-metric-cards')
 
     {{-- 搜索筛选区域 --}}
-    @include('components.main-display.search-filter.user-search-filter')
+    @include('components.search-filters.user-search-filters')
 
     {{-- 用户列表表格 --}}
-    @include('components.main-display.data-table.user-table')
+    @include('components.data-tables.user-data-tables')
+
+    {{-- 空状态显示 --}}
+    @include('components.empty-list.auth-empty-list')
 
     {{-- 分页导航区域 --}}
-    @include('components.main-display.pagination-nav.user-pagination-nav')
+    @include('components.pagination-nav.user-pagination-nav')
 </div>
 
 @endsection
@@ -82,7 +85,7 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/common/alert-system.js') }}"></script>
-<script src="{{ asset('assets/js/common/auth-common.js') }}"></script>
+<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
+<script src="{{ asset('assets/js/components/auth-common.js') }}"></script>
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 @endsection

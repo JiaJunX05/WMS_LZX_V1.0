@@ -270,7 +270,7 @@ class GenderDashboard {
         return `
             <tr>
                 <td class="ps-4">
-                    <input class="gender-checkbox" type="checkbox" value="${gender.id}" id="gender-${gender.id}" style="width: 20px; height: 20px;">
+                    <input class="gender-checkbox form-check-input" type="checkbox" value="${gender.id}" id="gender-${gender.id}">
                 </td>
                 <td>
                     <div class="d-flex align-items-center">

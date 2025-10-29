@@ -523,7 +523,7 @@ function generateCategoryCard(category, libraries) {
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
                             <div class="content-icon me-3">
-                                <i class="bi bi-tag-fill"></i>
+                                <i class="bi bi-tag-fill text-white fs-5"></i>
                             </div>
                             <div>
                                 <h5 class="card-title mb-0">${categoryName}</h5>
@@ -729,18 +729,17 @@ function updatePaginationButtons(categoryCount) {
     if (categoryCount <= 1) {
         prevBtn.classList.add('disabled');
         nextBtn.classList.add('disabled');
-        // 不要給當前頁面元素添加disabled類，保持active狀態
-        if (currentPageElement) {
-            currentPageElement.classList.remove('disabled');
-        }
     } else {
         // 這裡可以根據需要實現真正的分頁邏輯
         // 目前顯示所有類別，所以按鈕保持禁用狀態
         prevBtn.classList.add('disabled');
         nextBtn.classList.add('disabled');
-        if (currentPageElement) {
-            currentPageElement.classList.remove('disabled');
-        }
+    }
+
+    // 確保當前頁面始終顯示為活動狀態
+    if (currentPageElement) {
+        currentPageElement.classList.add('active');
+        currentPageElement.classList.remove('disabled');
     }
 }
 

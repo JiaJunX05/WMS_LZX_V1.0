@@ -30,10 +30,12 @@
             <div class="row align-items-center">
                 <div class="{{ $hasButtons ? 'col-lg-8' : 'col-12' }}">
                     <div class="d-flex align-items-center">
-                        <div class="header-icon-wrapper me-4"><i class="{{ $icon }}"></i></div>
+                        <div class="header-icon-wrapper d-flex align-items-center justify-content-center me-4">
+                            <i class="{{ $icon }} text-white display-6"></i>
+                        </div>
                         <div>
-                            <h2 class="dashboard-title mb-1">{{ $title }}</h2>
-                            <p class="dashboard-subtitle mb-0" id="{{ $subtitleId ?? 'dashboard-subtitle' }}">{{ $subtitle }}</p>
+                            <h2 class="h3 fw-bold mb-1">{{ $title }}</h2>
+                            <p class="text-muted mb-0" id="{{ $subtitleId ?? 'dashboard-subtitle' }}">{{ $subtitle }}</p>
                         </div>
                     </div>
                 </div>

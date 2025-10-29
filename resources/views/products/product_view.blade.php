@@ -9,7 +9,6 @@
 {{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-card.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/product-view.css') }}">
 

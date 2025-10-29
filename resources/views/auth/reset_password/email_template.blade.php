@@ -10,9 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - Warehouse Management System</title>
 
-    {{-- ==========================================
-        邮件样式（仅使用邮件客户端兼容的样式）
-        ========================================== --}}
+    {{-- 邮件样式（仅使用邮件客户端兼容的样式）--}}
     <style>
         /* 邮件兼容样式 */
         body {
@@ -76,23 +74,17 @@
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
 
-    {{-- ==========================================
-        邮件主体容器
-        ========================================== --}}
+    {{-- 邮件主体容器 --}}
     <div class="email-container">
 
-        {{-- ==========================================
-            邮件头部
-            ========================================== --}}
+        {{-- 邮件头部 --}}
         <div class="header-gradient" style="color: white; text-align: center; padding: 30px 20px;">
             <div class="logo-circle">📦</div>
             <h1 style="margin: 0; font-size: 28px; font-weight: 300;">Warehouse Management System</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">WMS Platform</p>
         </div>
 
-        {{-- ==========================================
-            邮件内容
-            ========================================== --}}
+        {{-- 邮件内容 --}}
         <div style="padding: 40px 30px;">
 
             {{-- 邮件标题 --}}
@@ -114,9 +106,7 @@
             {{-- 分隔线 --}}
             <hr style="border: none; height: 1px; background: linear-gradient(to right, transparent, #ddd, transparent); margin: 30px 0;">
 
-            {{-- ==========================================
-                安全提示区域
-                ========================================== --}}
+            {{-- 安全提示区域 --}}
             <div class="security-border" style="background-color: #f8f9fa; padding: 20px; margin: 30px 0; border-radius: 0 5px 5px 0;">
                 <h3 style="margin: 0 0 10px 0; color: #28a745; font-size: 18px;">🛡️ Security Notice</h3>
                 <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">⏰ This link will expire in 24 hours</p>
@@ -135,9 +125,7 @@
             </div>
         </div>
 
-        {{-- ==========================================
-            邮件底部
-            ========================================== --}}
+        {{-- 邮件底部 --}}
         <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
             <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">© 2025 Warehouse Management System. All rights reserved.</p>
             <p style="margin: 0; font-size: 14px; color: #666;">This email was sent automatically by the system. Please do not reply.</p>

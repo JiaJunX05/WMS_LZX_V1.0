@@ -34,16 +34,18 @@
     }
 @endphp
 
-<div class="search-filter-section mb-4">
+<div class="mb-4">
     <div class="card shadow-sm border-0">
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 {{-- 搜索输入框 --}}
                 <div class="{{ $searchColumnClass }}">
                     <label class="form-label fw-medium">{{ $searchLabel }}</label>
-                    <div class="search-input-wrapper">
-                        <i class="bi bi-search search-icon"></i>
-                        <input type="text" class="form-control search-input" id="search-input" placeholder="{{ $searchPlaceholder }}">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="search-input" placeholder="{{ $searchPlaceholder }}">
                     </div>
                 </div>
 

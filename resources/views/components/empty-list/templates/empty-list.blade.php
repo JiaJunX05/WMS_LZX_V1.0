@@ -22,17 +22,15 @@
     $showButton = isset($buttonText) && $buttonText !== null && $buttonText !== '';
 @endphp
 
-<div id="empty-state" class="text-center py-5 d-none">
-    <div class="empty-state-container">
-        <div class="empty-state-icon mb-4">
-            <i class="{{ $icon }}" style="font-size: 4rem; color: #6c757d;"></i>
-        </div>
-        <h4 class="empty-state-title mb-3">{{ $title }}</h4>
-        <p class="empty-state-description mb-4">{{ $description }}</p>
-        @if($showButton)
-            <a href="{{ $buttonUrl }}" class="btn btn-primary {{ $buttonSize }}">
-                <i class="{{ $buttonIcon }}"></i>{{ $buttonText }}
-            </a>
-        @endif
+<div id="empty-state" class="text-center p-5 d-none">
+    <div class="mb-4">
+        <i class="{{ $icon }} text-muted fs-1"></i>
     </div>
+    <h4 class="text-secondary fw-semibold mb-3">{{ $title }}</h4>
+    <p class="text-muted small mb-4">{{ $description }}</p>
+    @if($showButton)
+        <a href="{{ $buttonUrl }}" class="btn btn-primary {{ $buttonSize }}">
+            <i class="{{ $buttonIcon }}"></i>{{ $buttonText }}
+        </a>
+    @endif
 </div>

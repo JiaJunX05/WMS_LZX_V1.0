@@ -53,12 +53,12 @@
                     <p class="dashboard-card-subtitle">User management and roles</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-info">
                                 <i class="bi bi-person-check"></i>
                             </div>
-                            <span class="stat-label">Total Users</span>
+                            <span class="small text-muted fw-medium text-uppercase">Total Users</span>
                         </div>
                         <span class="stat-value" id="total-staff">{{ $stats['staff']['total'] ?? 0 }}</span>
                     </div>
@@ -68,7 +68,7 @@
                                 <div class="stat-icon bg-danger">
                                     <i class="bi bi-shield-check"></i>
                                 </div>
-                                <span class="stat-label">Admins</span>
+                                <span class="small text-muted fw-medium text-uppercase">Admins</span>
                             </div>
                             <span class="stat-value" id="admin-staff">{{ $stats['staff']['admin'] ?? 0 }}</span>
                         </div>
@@ -89,7 +89,7 @@
                                 </div>
                                 <span class="stat-label">Role Details</span>
                             </div>
-                            <span class="stat-value" style="color: var(--gray-500); font-size: 0.875rem;">Limited Access</span>
+                            <span class="stat-value stat-value-muted">Limited Access</span>
                         </div>
                     @endif
                 </div>
@@ -109,7 +109,7 @@
                     <p class="dashboard-card-subtitle">Product management and inventory</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-collection"></i>
@@ -162,7 +162,7 @@
                     <p class="dashboard-card-subtitle">Inventory tracking</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-info">
                                 <i class="bi bi-list-check"></i>
@@ -215,7 +215,7 @@
                     <p class="dashboard-card-subtitle">Product categorization</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-folder"></i>
@@ -259,7 +259,7 @@
                     <p class="dashboard-card-subtitle">Warehouse locations</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-building"></i>
@@ -303,7 +303,7 @@
                     <p class="dashboard-card-subtitle">Size management system</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-person-badge"></i>
@@ -338,7 +338,7 @@
                     <p class="dashboard-card-subtitle">Brand management</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-trophy"></i>
@@ -382,7 +382,7 @@
                     <p class="dashboard-card-subtitle">Color variants</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-palette-fill"></i>
@@ -426,7 +426,7 @@
                     <p class="dashboard-card-subtitle">Target demographics</p>
                 </div>
                 <div class="dashboard-card-body">
-                    <div class="stat-item">
+                    <div class="text-center">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary">
                                 <i class="bi bi-person"></i>

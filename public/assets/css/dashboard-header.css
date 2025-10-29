@@ -1,62 +1,29 @@
-/*
-||--------------------------------------------------------------------------
-|| 仪表板头部样式表 (Dashboard Header Styles)
-||--------------------------------------------------------------------------
-||
-|| 🎯 此CSS文件专门用于仪表板的头部区域样式
-||
-|| ✅ 包含的样式：
-|| - 基础布局样式
-|| - 仪表板标题样式
-|| - 统计卡片样式
-|| - 搜索筛选样式
-|| - 分页样式
-|| - 基础按钮样式
-|| - 表单控件样式
-|| - 文字样式
-|| - 响应式设计
-|| - 动画效果
-||
-|| 📁 其他相关样式文件：
-|| - dashboard-header.css → 仪表板头部样式
-||
-|| @author WMS Team
-|| @version 1.0.0
-*/
+/**
+ * 仪表板头部样式表
+ *
+ * 包含样式：
+ * - 仪表板标题图标样式
+ * - 统计卡片样式
+ * - 内容卡片样式
+ * - 列表样式
+ * - 按钮样式
+ * - 空状态样式
+ * - 滚动条样式
+ * - 响应式设计
+ *
+ * @author WMS Team
+ * @version 1.0.0
+ */
 
 /* =============================================================================
-   1. 基础布局样式 (Base Layout Styles) - 被所有管理模块共享
+   仪表板标题样式
    ============================================================================= */
 
-/* 🎴 通用卡片样式 - 用于所有管理模块的卡片容器 */
-.card {
-    border-radius: var(--border-radius);
-    transition: all var(--transition-normal);
-    border: 1px solid var(--card-border);
-    box-shadow: var(--card-shadow);
-    background-color: var(--card-bg);
-}
-
-/* ⚠️ 通用警告框样式 - 用于成功/错误消息显示 */
-.alert {
-    border: none;
-    border-radius: var(--border-radius-sm);
-    font-weight: var(--font-medium);
-}
-
-/* =============================================================================
-   2. 仪表板标题样式 (Dashboard Header Styles) - 所有管理模块的顶部区域
-   ============================================================================= */
-
-/* 🏠 仪表板标题区域样式 */
 .dashboard-header .header-icon-wrapper {
-    width: 60px;
-    height: 60px;
+    width: 3.75rem;
+    height: 3.75rem;
     border-radius: var(--border-radius-lg);
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     box-shadow: var(--shadow-lg);
     transition: all var(--transition-normal);
 }
@@ -66,34 +33,10 @@
     box-shadow: var(--shadow-xl);
 }
 
-/* 📍 标题图标样式 */
-.dashboard-header .header-icon-wrapper i {
-    font-size: 1.8rem;
-    color: white;
-}
-
-/* 📝 主标题样式 - 如 "Zone Management", "Category Management" */
-.dashboard-title {
-    font-size: var(--font-3xl);
-    font-weight: var(--font-bold);
-    color: var(--gray-800);
-    letter-spacing: -0.025em;
-    margin: 0;
-}
-
-/* 📋 副标题样式 - 描述性文字 */
-.dashboard-subtitle {
-    font-size: var(--font-base);
-    color: var(--gray-600);
-    font-weight: var(--font-normal);
-    margin: 0;
-}
-
 /* =============================================================================
-   3. 统计卡片样式 (Statistics Card Styles) - 显示各模块的统计信息
+   统计卡片样式
    ============================================================================= */
 
-/* 📊 统计卡片样式 */
 .statistics-section .stats-card {
     background: var(--card-bg);
     border: none;
@@ -104,29 +47,23 @@
     position: relative;
 }
 
-/* 🎨 统计卡片顶部装饰线条 */
 .statistics-section .stats-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    inset: 0 0 auto 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
 }
 
-/* ✨ 统计卡片悬停效果 - 向上浮起并增强阴影 */
 .statistics-section .stats-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-xl);
 }
 
-/* 📊 统计卡片内容区域 */
 .statistics-section .stats-card-body {
     padding: var(--spacing-lg);
 }
 
-/* 🔢 统计数字样式 */
 .statistics-section .stats-number {
     font-size: 2.5rem;
     font-weight: var(--font-bold);
@@ -135,343 +72,136 @@
     margin-bottom: var(--spacing-sm);
 }
 
-/* 🏷️ 统计标签样式 */
-.statistics-section .stats-label {
-    font-size: var(--font-sm);
-    color: var(--gray-600);
-    font-weight: var(--font-medium);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.icon-size-3rem {
+    width: 3rem;
+    height: 3rem;
 }
 
-/* 📍 统计图标样式 */
-.statistics-section .stats-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: var(--border-radius);
+/* =============================================================================
+   内容卡片样式
+   ============================================================================= */
+
+.content-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--gray-300);
+}
+
+.content-card .card-header {
+    background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+}
+
+.content-card .card-body {
+    padding: var(--spacing-md);
+}
+
+.content-card .card-footer {
+    background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+}
+
+.content-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--primary-color);
+    border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.statistics-section .stats-icon i {
-    font-size: 1.5rem;
-    color: white;
+    box-shadow: var(--shadow-sm);
 }
 
 /* =============================================================================
-   4. 搜索筛选样式 (Search & Filter Styles) - 搜索和筛选功能
+   列表样式
    ============================================================================= */
 
-/* 🔍 搜索筛选区域 */
-.search-filter-section .search-input-wrapper {
-    position: relative;
-}
-
-/* 🔍 搜索图标 */
-.search-filter-section .search-icon {
-    position: absolute;
-    left: var(--spacing-md);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--gray-500);
-    font-size: var(--font-base);
-    z-index: 2;
-}
-
-/* 🔍 搜索输入框 */
-.search-filter-section .search-input {
-    padding-left: 48px;
-    height: 48px;
-    border-radius: var(--border-radius);
-    border: 2px solid var(--border-color);
-    background-color: var(--gray-50);
-    font-size: var(--font-sm);
-    transition: all var(--transition-normal);
-}
-
-/* 🎯 搜索输入框聚焦效果 */
-.search-filter-section .search-input:focus {
-    background-color: var(--card-bg);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
-
-/* 📝 表单标签样式 */
-.search-filter-section .form-label {
-    color: var(--gray-700);
-    font-size: var(--font-sm);
-    margin-bottom: var(--spacing-sm);
-    font-weight: var(--font-semibold);
-}
-
-/* =============================================================================
-   5. 分页样式 (Pagination Styles) - 统一的分页导航
-   ============================================================================= */
-
-/* 📄 分页链接样式 */
-.pagination .page-link {
-    border: none;
-    padding: var(--spacing-sm) var(--spacing-md);
-    margin: 0 0.2rem;
+.list-container {
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    color: var(--primary-color);
+    padding: var(--spacing-sm);
+    background: var(--gray-50);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
     transition: all var(--transition-fast);
 }
 
-.pagination .page-link:hover {
-    background-color: var(--primary-light);
-    color: var(--primary-hover);
+.list-item:last-child {
+    border-bottom: none;
 }
 
-/* 📄 活动页面样式 */
-.pagination .page-item.active .page-link {
-    background: var(--primary-color);
-    color: white;
-}
-
-/* =============================================================================
-   6. 按钮样式 (Button Styles) - 统一的按钮设计
-   ============================================================================= */
-
-/* 🔘 基础按钮样式 */
-.btn {
-    font-weight: var(--font-medium);
-    transition: all var(--transition-normal);
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--btn-radius);
-    padding: var(--btn-padding);
-}
-
-/* ✨ 按钮光泽效果动画 */
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.btn:hover::before {
-    left: 100%;
-}
-
-/* 🔵 主要按钮样式 */
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: white;
-    box-shadow: var(--shadow-md);
-    border: 2px solid transparent;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    color: white;
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-    box-shadow: var(--shadow-md);
-}
-
-/* 🔘 边框按钮样式 */
-.btn-outline-primary {
-    background: transparent;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    transition: all var(--transition-normal);
-}
-
-.btn-outline-primary:hover {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-/* ⚪ 次要边框按钮 */
-.btn-outline-secondary {
-    background: transparent;
-    border: 2px solid var(--border-color);
-    color: var(--gray-500);
-    transition: all var(--transition-normal);
-}
-
-.btn-outline-secondary:hover {
-    background: var(--gray-50);
-    border-color: var(--gray-300);
-    color: var(--gray-600);
-    transform: translateY(-1px);
-}
-
-/* 🟢 成功按钮 */
-.btn-success {
-    background: linear-gradient(135deg, var(--success-color) 0%, var(--success-hover) 100%);
-    color: white;
-    box-shadow: var(--shadow-md);
-}
-
-.btn-success:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    color: white;
-}
-
-/* 🟡 警告按钮 */
-.btn-warning {
-    background: linear-gradient(135deg, var(--warning-color) 0%, var(--warning-hover) 100%);
-    color: white;
-    box-shadow: var(--shadow-md);
-}
-
-.btn-warning:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    color: white;
-}
-
-/* 🔴 危险按钮 */
-.btn-danger {
-    background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-hover) 100%);
-    color: white;
-    box-shadow: var(--shadow-md);
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    color: white;
-}
-
-/* 📏 按钮尺寸变体 */
-.btn-sm {
-    padding: var(--btn-padding-sm);
-    font-size: var(--font-sm);
-    border-radius: var(--border-radius-sm);
-}
-
-.btn-lg {
-    padding: var(--btn-padding-lg);
-    font-size: var(--font-lg);
-    border-radius: var(--border-radius);
-}
-
-/* =============================================================================
-   7. 表单控件样式 (Form Control Styles) - 输入框和选择器
-   ============================================================================= */
-
-/* 📝 下拉选择框样式 */
-.form-select {
-    height: 48px;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
+.list-item:hover {
     background-color: var(--gray-50);
+    border-radius: var(--border-radius-sm);
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+}
+
+.list-item .item-text {
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
     font-size: var(--font-sm);
-    padding-left: var(--spacing-md);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-}
-
-.form-select:focus {
-    background-color: var(--card-bg);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
-
-/* 📝 通用表单控件样式 */
-.input-group-text,
-.form-control {
-    border-color: var(--border-color);
-}
-
-.form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.1);
 }
 
 /* =============================================================================
-   8. 文字样式 (Text Styles) - 统一的文字设计
+   滚动条样式
    ============================================================================= */
 
-/* 🔤 静音文字样式 */
-.text-muted {
-    color: var(--gray-500) !important;
+.list-container::-webkit-scrollbar {
+    width: 6px;
 }
 
-/* 🔤 中等字重样式 */
-.fw-medium {
-    font-weight: var(--font-medium) !important;
-    color: var(--gray-800);
+.list-container::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 3px;
+}
+
+.list-container::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.list-container::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
 }
 
 /* =============================================================================
-   9. 响应式设计 (Responsive Design) - 移动端适配
+   动画效果
    ============================================================================= */
 
-/* 📱 平板端适配 (768px以下) */
-@media (max-width: 768px) {
-    .dashboard-title {
-        font-size: var(--font-2xl);
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
-
-    .statistics-section .stats-card-body {
-        padding: var(--spacing-md);
-    }
-
-    .statistics-section .stats-number {
-        font-size: 2rem;
-    }
-
-    .search-filter-section .row > div {
-        margin-bottom: var(--spacing-md);
-    }
-
-    .dashboard-header .d-flex {
-        flex-direction: column;
-        gap: var(--spacing-md);
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
-/* 📱 手机端适配 (576px以下) */
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: var(--spacing-md);
-        padding-right: var(--spacing-md);
-    }
-
-    .statistics-section .stats-number {
-        font-size: 1.75rem;
-    }
-
-    .btn-sm {
-        padding: 0.4rem 0.8rem;
-        font-size: var(--font-xs);
-    }
-
-    .btn-lg {
-        padding: 0.8rem 1.5rem;
-        font-size: var(--font-base);
-    }
-}
-
-/* =============================================================================
-   10. 动画效果 (Animation Effects) - 增强用户体验
-   ============================================================================= */
-
-/* ✨ 淡入动画 */
-@keyframes fadeInUp {
+@keyframes slideIn {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -482,17 +212,60 @@
     }
 }
 
-/* 🎯 卡片进入动画 */
-.card {
-    animation: fadeInUp 0.5s ease-out;
+.content-card {
+    animation: slideIn 0.3s ease;
 }
 
-/* 🔄 按钮点击动画 */
-.btn:active {
-    transform: translateY(0) scale(0.98);
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+
+/* 平板端 (≤768px) */
+@media (max-width: 768px) {
+    .statistics-section .stats-card-body {
+        padding: var(--spacing-md);
+    }
+
+    .statistics-section .stats-number {
+        font-size: 2rem;
+    }
+
+    .dashboard-header .d-flex {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .content-card .card-header,
+    .content-card .card-body,
+    .content-card .card-footer {
+        padding: var(--spacing-md);
+    }
+
+    .content-icon {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+    }
+
+    .list-container {
+        max-height: 150px !important;
+    }
 }
 
-/* 📝 输入框聚焦动画 */
-.form-control:focus {
-    transform: scale(1.02);
+/* 手机端 (≤576px) */
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+
+    .statistics-section .stats-number {
+        font-size: 1.75rem;
+    }
+
+    .content-card .card-header,
+    .content-card .card-body,
+    .content-card .card-footer {
+        padding: var(--spacing-sm);
+    }
 }

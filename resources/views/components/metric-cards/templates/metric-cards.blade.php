@@ -27,10 +27,10 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="stats-number" id="{{ $stat['id'] ?? 'stat-' . $loop->index }}">{{ $stat['value'] ?? $stat['number'] ?? 0 }}</div>
-                                <div class="stats-label">{{ $stat['label'] ?? 'Statistic' }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">{{ $stat['label'] ?? 'Statistic' }}</div>
                             </div>
-                            <div class="stats-icon {{ $stat['bg_class'] ?? $stat['bgClass'] ?? 'bg-primary' }}">
-                                <i class="{{ $stat['icon'] ?? 'bi bi-bar-chart' }}"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded {{ $stat['bg_class'] ?? $stat['bgClass'] ?? 'bg-primary' }} icon-size-3rem">
+                                <i class="{{ $stat['icon'] ?? 'bi bi-bar-chart' }} text-white fs-4"></i>
                             </div>
                         </div>
                     </div>

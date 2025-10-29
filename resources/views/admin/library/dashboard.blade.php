@@ -11,7 +11,6 @@
 {{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-card.css') }}">
 
 {{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
@@ -31,7 +30,7 @@
     </div>
 
     {{-- 空状态显示 --}}
-    @include('components.empty-list.library-empty-state')
+    @include('components.empty-list.library-empty-list')
 
     {{-- 分页导航区域 --}}
     @include('components.pagination-nav.library-pagination-nav')

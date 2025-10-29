@@ -281,6 +281,11 @@
     color: var(--gray-800);
 }
 
+.stat-value-muted {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
 .stat-icon {
     width: 2rem;
     height: 2rem;

@@ -25,7 +25,7 @@
                 </span>
             </div>
         </a>
-        <button class="sidebar-toggle d-xl-none">
+        <button class="sidebar-close-btn d-xl-none">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>

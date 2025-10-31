@@ -86,6 +86,5 @@
 
 {{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
-<script src="{{ asset('assets/js/components/auth-common.js') }}"></script>
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 @endsection

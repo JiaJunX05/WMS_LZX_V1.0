@@ -50,7 +50,6 @@
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/role-management.js') }}"></script>
-<script src="{{ asset('assets/js/components/auth-common.js') }}"></script>
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 
 {{-- 页面初始化脚本 --}}

@@ -16,8 +16,6 @@
     {{-- 页面标题区域 --}}
     @include('components.dashboard-header.stock-dashboard-header', ['type' => 'detail'])
 
-    {{-- 警告信息容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 产品基本信息卡片 --}}
     @include('components.information-section.stock-infomation-card')
@@ -60,7 +58,6 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

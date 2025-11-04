@@ -1116,17 +1116,20 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Gender updated successfully', 'success');
+            const message = data.message || 'Gender updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.genderManagementRoute || '/admin/genders/index';
             }, 2000);
         } else {
+            isGenderUpdating = false; // 錯誤時重置標誌
             showAlert(data.message || 'Failed to update gender', 'error');
         }
     })
     .catch(error => {
+        isGenderUpdating = false; // 錯誤時重置標誌
         if (error.message.includes('already been taken') || error.message.includes('gender_name')) {
             showAlert('This gender name already exists. Please choose a different name.', 'warning');
         } else {
@@ -1360,16 +1363,25 @@ function selectUpdateStatusCard(card) {
 /**
  * 初始化性別更新頁面
  */
+// 全局變量防止重複請求
+let isGenderUpdating = false;
+let genderUpdateFormBound = false;
+
 function initializeGenderUpdate() {
     bindGenderEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!genderUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isGenderUpdating) return false;
+                isGenderUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            genderUpdateFormBound = true;
+        }
     }
 
     // Update 頁面狀態卡片初始化
@@ -1415,13 +1427,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化性別事件
     bindGenderEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!genderUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isGenderUpdating) return false;
+                isGenderUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            genderUpdateFormBound = true;
+        }
     }
 
     // Update 頁面狀態卡片初始化（只在 Update 頁面調用）

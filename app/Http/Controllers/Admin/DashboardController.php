@@ -4,19 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\Product;
-use App\Models\StockMovement;
 use App\Models\User;
-use App\Models\Account;
 use App\Models\Category;
 use App\Models\Subcategory;
-use App\Models\Mapping;
 use App\Models\SizeLibrary;
 use App\Models\SizeTemplate;
 use App\Models\Zone;
-use App\Models\Rack;
-use App\Models\Location;
 use App\Models\Brand;
 use App\Models\Color;
 use App\Models\Gender;
@@ -47,70 +41,50 @@ class DashboardController extends Controller
     {
         // 产品统计
         $productStats = [
-            'total' => Product::count(),
-            'active' => Product::where('product_status', 'Available')->count(),
-            'inactive' => Product::where('product_status', 'Unavailable')->count(),
+            'total' => Product::where('product_status', 'Available')->count(),
         ];
 
-        // 库存统计 - 使用Eloquent模型
-        $stockStats = [
-            'total_items' => StockMovement::count(),
-            'in_stock' => StockMovement::where('movement_type', 'stock_in')->sum('quantity') ?? 0,
-            'out_stock' => StockMovement::where('movement_type', 'stock_out')->sum('quantity') ?? 0,
-            'return_stock' => StockMovement::where('movement_type', 'stock_return')->sum('quantity') ?? 0,
-        ];
-
-        // 员工统计 - 使用Eloquent模型
+        // 员工统计 - 通过 User 关联 Account 进行 inner join 查询
         $staffStats = [
-            'total' => User::count(),
-            'admin' => Account::whereIn('account_role', ['Admin', 'SuperAdmin'])->count(),
-            'staff' => Account::where('account_role', 'Staff')->count(),
+            'total' => User::whereHas('account', function($query) {
+                $query->where('account_status', 'Available');
+            })->count(),
         ];
 
         // 分类统计
         $categoryStats = [
-            'categories' => Category::count(),
-            'subcategories' => Subcategory::count(),
-            'mappings' => Mapping::distinct('category_id')->count(),
+            'categories' => Category::where('category_status', 'Available')->count(),
+            'subcategories' => Subcategory::where('subcategory_status', 'Available')->count(),
         ];
 
-        // 尺码统计 - 使用Eloquent模型，按类别分组
+        // 尺码统计
         $sizeStats = [
             'size_libraries' => SizeLibrary::selectRaw('category_id, count(*) as count')->groupBy('category_id')->get()->count(),
             'size_templates' => SizeTemplate::selectRaw('category_id, count(*) as count')->groupBy('category_id')->get()->count(),
         ];
 
-        // 存储位置统计 - 使用Eloquent模型
+        // 存储位置统计
         $locationStats = [
-            'zones' => Zone::count(),
-            'racks' => Rack::count(),
-            'locations' => Location::distinct('zone_id')->count(),
+            'zones' => Zone::where('zone_status', 'Available')->count(),
         ];
 
         // 品牌统计
         $brandStats = [
-            'total' => Brand::count(),
-            'active' => Brand::where('brand_status', 'Available')->count(),
-            'inactive' => Brand::where('brand_status', 'Unavailable')->count(),
+            'total' => Brand::where('brand_status', 'Available')->count(),
         ];
 
         // 颜色统计
         $colorStats = [
-            'total' => Color::count(),
-            'active' => Color::where('color_status', 'Available')->count(),
-            'inactive' => Color::where('color_status', 'Unavailable')->count(),
+            'total' => Color::where('color_status', 'Available')->count(),
         ];
 
         // 性别统计
         $genderStats = [
-            'total' => Gender::count(),
-            'active' => Gender::where('gender_status', 'Available')->count(),
-            'inactive' => Gender::where('gender_status', 'Unavailable')->count(),
+            'total' => Gender::where('gender_status', 'Available')->count(),
         ];
 
         return [
             'products' => $productStats,
-            'stock' => $stockStats,
             'staff' => $staffStats,
             'categories' => $categoryStats,
             'sizes' => $sizeStats,
@@ -132,7 +106,6 @@ class DashboardController extends Controller
             'categories' => $stats['categories'],
             'sizes' => $stats['sizes'],
             'locations' => $stats['locations'],
-            'stock' => $stats['stock'],
             'brands' => $stats['brands'],
             'colors' => $stats['colors'],
             'gender' => $stats['gender'],

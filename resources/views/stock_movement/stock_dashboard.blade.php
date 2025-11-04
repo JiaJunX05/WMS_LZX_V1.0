@@ -15,8 +15,6 @@
     {{-- 页面标题和操作按钮区域 --}}
     @include('components.dashboard-header.stock-dashboard-header', ['type' => 'dashboard'])
 
-    {{-- 警告信息容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 产品搜索和筛选区域 --}}
     @include('components.search-filters.stock-search-filters')
@@ -48,7 +46,6 @@
 </script>
 
 {{-- 库存管理 JavaScript --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

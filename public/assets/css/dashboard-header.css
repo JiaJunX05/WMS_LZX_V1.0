@@ -19,6 +19,10 @@
    仪表板标题样式
    ============================================================================= */
 
+.dashboard-header {
+    margin-bottom: var(--spacing-xl);
+}
+
 .dashboard-header .header-icon-wrapper {
     width: 3.75rem;
     height: 3.75rem;
@@ -31,6 +35,142 @@
 .dashboard-header .header-icon-wrapper:hover {
     transform: scale(1.05);
     box-shadow: var(--shadow-xl);
+}
+
+/* =============================================================================
+   欢迎横幅样式 (Welcome Banner Styles)
+   ============================================================================= */
+
+.welcome-banner {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xl);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(100, 116, 139, 0.2);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.welcome-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.welcome-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+}
+
+.welcome-text {
+    flex: 1;
+    color: white;
+}
+
+.welcome-title {
+    font-size: 2.25rem;
+    font-weight: var(--font-bold);
+    margin-bottom: var(--spacing-sm);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+}
+
+.welcome-subtitle {
+    font-size: var(--font-lg);
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.5;
+}
+
+.user-role-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-sm);
+    font-weight: var(--font-semibold);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: var(--transition-normal);
+}
+
+.user-role-badge:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.welcome-illustration {
+    flex: 0 0 auto;
+    margin-left: var(--spacing-xl);
+}
+
+.illustration-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.illustration-icon {
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.9);
+    z-index: 2;
+    position: relative;
+}
+
+.floating-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.shape-1 {
+    width: 20px;
+    height: 20px;
+    top: 10%;
+    left: 20%;
+}
+
+.shape-2 {
+    width: 15px;
+    height: 15px;
+    top: 60%;
+    right: 15%;
+}
+
+.shape-3 {
+    width: 25px;
+    height: 25px;
+    bottom: 20%;
+    left: 10%;
 }
 
 /* =============================================================================
@@ -75,6 +215,66 @@
 .icon-size-3rem {
     width: 3rem;
     height: 3rem;
+}
+
+/* =============================================================================
+   统计卡片主题颜色 (Stats Card Theme Colors)
+   ============================================================================= */
+
+/* 统一所有卡片的顶部边框颜色为蓝色 */
+.statistics-section .stats-card::before {
+    background: linear-gradient(90deg, #3b82f6, #2563eb) !important;
+}
+
+/* 图标背景颜色 - 每个卡片使用不同的颜色 */
+/* Staff - 绿色 */
+.statistics-section .stats-card:has(#total-staff) .icon-size-3rem {
+    background-color: #10b981 !important;
+}
+
+/* Products - 蓝色 */
+.statistics-section .stats-card:has(#total-products) .icon-size-3rem {
+    background-color: #3b82f6 !important;
+}
+
+/* Categories - 青色 */
+.statistics-section .stats-card:has(#main-categories) .icon-size-3rem {
+    background-color: #06b6d4 !important;
+}
+
+/* Subcategories - 青绿色 */
+.statistics-section .stats-card:has(#subcategories) .icon-size-3rem {
+    background-color: #14b8a6 !important;
+}
+
+/* Zones - 紫色 */
+.statistics-section .stats-card:has(#zones) .icon-size-3rem {
+    background-color: #8b5cf6 !important;
+}
+
+/* Size Libraries - 橙色 */
+.statistics-section .stats-card:has(#size-libraries) .icon-size-3rem {
+    background-color: #f59e0b !important;
+}
+
+/* Size Templates - 红色 */
+.statistics-section .stats-card:has(#size-templates) .icon-size-3rem {
+    background-color: #ef4444 !important;
+}
+
+/* Brands - 靛蓝色 */
+.statistics-section .stats-card:has(#total-brands) .icon-size-3rem {
+    background-color: #6366f1 !important;
+}
+
+/* Colors - 粉色 */
+.statistics-section .stats-card:has(#total-colors) .icon-size-3rem {
+    background-color: #ec4899 !important;
+}
+
+/* Gender - 黄色 */
+.statistics-section .stats-card:has(#total-gender) .icon-size-3rem {
+    background-color: #eab308 !important;
 }
 
 /* =============================================================================
@@ -235,6 +435,36 @@
         gap: var(--spacing-md);
     }
 
+    .welcome-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .welcome-text {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .welcome-title {
+        font-size: 1.875rem;
+    }
+
+    .welcome-subtitle {
+        font-size: var(--font-base);
+    }
+
+    .welcome-illustration {
+        margin-left: 0;
+    }
+
+    .illustration-container {
+        width: 80px;
+        height: 80px;
+    }
+
+    .illustration-icon {
+        font-size: 3rem;
+    }
+
     .content-card .card-header,
     .content-card .card-body,
     .content-card .card-footer {
@@ -261,6 +491,28 @@
 
     .statistics-section .stats-number {
         font-size: 1.75rem;
+    }
+
+    .welcome-title {
+        font-size: 1.5rem;
+    }
+
+    .welcome-subtitle {
+        font-size: var(--font-sm);
+    }
+
+    .user-role-badge {
+        font-size: var(--font-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .illustration-container {
+        width: 60px;
+        height: 60px;
+    }
+
+    .illustration-icon {
+        font-size: 2.5rem;
     }
 
     .content-card .card-header,

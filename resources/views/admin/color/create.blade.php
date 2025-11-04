@@ -18,8 +18,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.color-dashboard-header', ['type' => 'create'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 颜色创建表单 --}}
     @include('components.form-templates.color-create-form')
@@ -37,6 +35,5 @@
 
 {{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('node_modules/colorjs.io/dist/color.js') }}"></script>
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/color-management.js') }}"></script>
 @endsection

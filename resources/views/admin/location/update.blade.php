@@ -19,8 +19,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.location-dashboard-header', ['type' => 'update'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 位置更新表单 --}}
     @include('components.form-templates.location-update-form')
@@ -40,7 +38,6 @@
 </script>
 
 {{-- 引入位置管理JavaScript文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/location-management.js') }}"></script>
 @endsection

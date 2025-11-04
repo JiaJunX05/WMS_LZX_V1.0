@@ -19,8 +19,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.product-dashboard-header', ['type' => 'view'])
 
-    {{-- 警告信息容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 产品详情显示区域 --}}
     @include('components.form-templates.product-view-form')
@@ -56,7 +54,6 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/product-management.js') }}"></script>

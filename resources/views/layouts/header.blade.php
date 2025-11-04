@@ -18,3 +18,8 @@
         </button>
     </div>
 </nav>
+
+<!-- 全局提示信息区域 -->
+<div class="global-alert-container position-fixed top-0 start-50 translate-middle-x mt-5" style="z-index: 9999; width: 90%; max-width: 600px;" id="globalAlertContainer">
+    <!-- Alert 将通过 JavaScript 动态添加 -->
+</div>

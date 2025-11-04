@@ -16,8 +16,6 @@
     {{-- 页面标题区域 --}}
     @include('components.dashboard-header.stock-dashboard-header', ['type' => 'stock_in'])
 
-    {{-- 警告信息容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 扫描器区域 --}}
     @include('components.information-section.stock-scanner-header', ['type' => 'stock_in'])
@@ -28,7 +26,17 @@
 
 @endsection
 @section("scripts")
-{{-- 使用脚本组件 --}}
-<x-form-templates.stock-scanner-form type="stock_in" />
+{{-- 库存入库相关 URL --}}
+<script>
+    // 库存入库相关 URL
+    window.stockInRoute = "{{ route('staff.stock_in') }}";
+    window.stockManagementRoute = "{{ route('staff.stock_management') }}";
+    window.productImagePath = "{{ asset('assets/images') }}";
+    window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
+</script>
+
+{{-- 库存管理 JavaScript 文件 --}}
+<script src="{{ asset('assets/js/components/image-management.js') }}"></script>
+<script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection
 

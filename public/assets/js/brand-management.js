@@ -1128,17 +1128,20 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Brand updated successfully', 'success');
+            const message = data.message || 'Brand updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.brandManagementRoute || '/admin/management-tool/brand/index';
             }, 2000);
         } else {
+            isBrandUpdating = false; // 錯誤時重置標誌
             showAlert(data.message || 'Failed to update brand', 'error');
         }
     })
     .catch(error => {
+        isBrandUpdating = false; // 錯誤時重置標誌
         showAlert('Failed to update brand', 'error');
     })
     .finally(() => {
@@ -1390,19 +1393,28 @@ function selectUpdateStatusCard(card) {
     }
 }
 
+// 全局變量防止重複請求
+let isBrandUpdating = false;
+let brandUpdateFormBound = false;
+
 /**
  * 初始化品牌更新頁面
  */
 function initializeBrandUpdate() {
     bindBrandEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!brandUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isBrandUpdating) return false;
+                isBrandUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            brandUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽
@@ -1676,13 +1688,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化品牌事件（包括圖片上傳功能）
     bindBrandEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!brandUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isBrandUpdating) return false;
+                isBrandUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            brandUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽

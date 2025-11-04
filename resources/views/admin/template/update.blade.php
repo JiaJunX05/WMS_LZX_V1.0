@@ -19,8 +19,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.template-dashboard-header', ['type' => 'update'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 尺码模板更新表单 --}}
     @include('components.form-templates.template-update-form')
@@ -41,7 +39,6 @@
 </script>
 
 {{-- 引入尺码模板管理JavaScript文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/template-management.js') }}"></script>
 @endsection

@@ -19,8 +19,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.mapping-dashboard-header', ['type' => 'update'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 分类映射更新表单 --}}
     @include('components.form-templates.mapping-update-form')
@@ -40,7 +38,6 @@
 </script>
 
 {{-- 引入分类映射管理JavaScript文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/mapping-management.js') }}"></script>
 @endsection

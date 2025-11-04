@@ -19,8 +19,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.library-dashboard-header', ['type' => 'update'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 尺码库更新表单 --}}
     @include('components.form-templates.library-update-form')
@@ -40,7 +38,6 @@
 </script>
 
 {{-- 引入尺码库管理JavaScript文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/library-management.js') }}"></script>
 @endsection

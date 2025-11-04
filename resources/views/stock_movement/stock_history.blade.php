@@ -17,8 +17,6 @@
     {{-- 页面标题区域 --}}
     @include('components.dashboard-header.stock-dashboard-header', ['type' => 'history'])
 
-    {{-- 警告信息容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 统计卡片 - 仅对管理员和超级管理员可见 --}}
     @if(in_array(Auth::user()->getAccountRole(), ['Admin', 'SuperAdmin']))
@@ -51,6 +49,5 @@
 </script>
 
 {{-- 库存历史 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/stock-management.js') }}"></script>
 @endsection

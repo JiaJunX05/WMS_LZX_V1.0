@@ -14,10 +14,11 @@
  */
 function showAlert(message, type = 'info', options = {}) {
     const defaultOptions = {
-        container: 'alertContainer',
-        duration: 3000,
+        container: 'globalAlertContainer', // 默认使用全局容器
+        duration: 4000,
         dismissible: true,
-        animation: true
+        animation: true,
+        position: 'header' // 默认在header位置显示
     };
 
     const config = { ...defaultOptions, ...options };
@@ -25,8 +26,13 @@ function showAlert(message, type = 'info', options = {}) {
     // 创建 alert 元素
     const alertElement = createAlertElement(message, type, config);
 
-    // 显示内联 alert
-    showInlineAlert(alertElement, config.container);
+    // 根据位置选择显示方式
+    if (config.position === 'header' || config.container === 'globalAlertContainer') {
+        showGlobalAlert(alertElement);
+    } else {
+        // 显示内联 alert（兼容旧代码）
+        showInlineAlert(alertElement, config.container);
+    }
 
     // 自动隐藏
     if (config.duration > 0) {
@@ -44,16 +50,26 @@ function createAlertElement(message, type, config) {
     const iconClass = getIconClass(type);
     const dismissButton = config.dismissible ? `<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` : '';
 
+    // 使用卡片样式让alert更美观
     const alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="bi ${iconClass} me-2"></i>
-            ${message}
-            ${dismissButton}
+        <div class="alert ${alertClass} alert-dismissible fade shadow-sm border-0 mb-2" role="alert" style="border-radius: 0.75rem;">
+            <div class="d-flex align-items-center">
+                <i class="bi ${iconClass} me-3 fs-5"></i>
+                <div class="flex-grow-1">${message}</div>
+                ${dismissButton}
+            </div>
         </div>
     `;
     const div = document.createElement('div');
     div.innerHTML = alertHtml.trim();
-    return div.firstChild;
+    const alertElement = div.firstChild;
+    
+    // 添加动画类
+    alertElement.style.opacity = '0';
+    alertElement.style.transform = 'translateY(-20px)';
+    alertElement.style.transition = 'all 0.3s ease';
+    
+    return alertElement;
 }
 
 /**
@@ -85,6 +101,44 @@ function getIconClass(type) {
 }
 
 /**
+ * 显示全局 alert（在header位置）
+ */
+function showGlobalAlert(alertElement) {
+    const container = document.getElementById('globalAlertContainer');
+
+    if (!container) {
+        // 如果全局容器不存在，回退到页面内联显示
+        console.warn('Global alert container not found. Falling back to inline alert.');
+        const fallbackContainer = document.getElementById('alertContainer');
+        if (fallbackContainer) {
+            showInlineAlert(alertElement, 'alertContainer');
+        } else {
+            console.error('No alert container found.');
+        }
+        return;
+    }
+
+    // 清除现有 alert
+    const existingAlerts = container.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => {
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-20px)';
+        setTimeout(() => alert.remove(), 300);
+    });
+
+    // 添加新 alert（延迟添加以确保动画效果）
+    setTimeout(() => {
+        container.appendChild(alertElement);
+        // 触发显示动画
+        setTimeout(() => {
+            alertElement.classList.add('show');
+            alertElement.style.opacity = '1';
+            alertElement.style.transform = 'translateY(0)';
+        }, 10);
+    }, existingAlerts.length > 0 ? 300 : 0);
+}
+
+/**
  * 显示内联 alert
  */
 function showInlineAlert(alertElement, containerId) {
@@ -109,12 +163,16 @@ function showInlineAlert(alertElement, containerId) {
  */
 function hideAlert(alertElement, animation = true) {
     if (animation) {
-        // 使用与 size template 相同的方式
+        // 触发淡出动画
+        alertElement.style.opacity = '0';
+        alertElement.style.transform = 'translateY(-20px)';
+        
+        // 等待动画完成后移除
         setTimeout(() => {
             if (alertElement.parentNode) {
                 alertElement.parentNode.removeChild(alertElement);
             }
-        }, 150);
+        }, 300);
     } else {
         if (alertElement.parentNode) {
             alertElement.parentNode.removeChild(alertElement);
@@ -126,9 +184,16 @@ function hideAlert(alertElement, animation = true) {
  * 清除所有 alert
  */
 function clearAllAlerts() {
-    const container = document.getElementById('alertContainer');
-    if (container) {
-        container.innerHTML = '';
+    // 清除全局容器
+    const globalContainer = document.getElementById('globalAlertContainer');
+    if (globalContainer) {
+        globalContainer.innerHTML = '';
+    }
+    
+    // 清除页面内联容器（兼容旧代码）
+    const inlineContainer = document.getElementById('alertContainer');
+    if (inlineContainer) {
+        inlineContainer.innerHTML = '';
     }
 }
 

@@ -64,6 +64,9 @@
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
 
+    <!-- 全局 Alert 管理系统 -->
+    <script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
+
     <!-- Custom Page Scripts -->
     @yield("scripts")
 </body>

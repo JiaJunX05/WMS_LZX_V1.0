@@ -1067,13 +1067,15 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Zone updated successfully', 'success');
+            const message = data.message || 'Zone updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.zoneManagementRoute || '/admin/storage-locations/zone/index';
             }, 2000);
         } else {
+            isZoneUpdating = false; // 錯誤時重置標誌
             // 简化错误信息，类似 mapping 页面
             if (data.message && data.message.includes('Some zones failed to create')) {
                 showAlert('Some zones failed to create', 'error');
@@ -1083,6 +1085,7 @@ function handleUpdateFormSubmit(form) {
         }
     })
     .catch(error => {
+        isZoneUpdating = false; // 錯誤時重置標誌
         if (error.message.includes('already been taken') || error.message.includes('zone_name')) {
             showAlert('This zone name already exists. Please choose a different name.', 'warning');
         } else {
@@ -1349,16 +1352,25 @@ function bindZoneCreateEvents() {
 /**
  * 初始化區域更新頁面
  */
+// 全局變量防止重複請求
+let isZoneUpdating = false;
+let zoneUpdateFormBound = false;
+
 function initializeZoneUpdate() {
     bindZoneEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!zoneUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isZoneUpdating) return false;
+                isZoneUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            zoneUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽
@@ -1437,13 +1449,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化區域事件（包括圖片上傳功能）
     bindZoneEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!zoneUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isZoneUpdating) return false;
+                isZoneUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            zoneUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽

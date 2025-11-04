@@ -20,8 +20,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.gender-dashboard-header', ['type' => 'update'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 性别更新表单 --}}
     @include('components.form-templates.gender-update-form')
@@ -38,7 +36,6 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/gender-management.js') }}"></script>

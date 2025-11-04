@@ -28,8 +28,6 @@
             {{-- 页面头部 --}}
             @include('components.dashboard-header.product-dashboard-header', ['type' => 'dashboard'])
 
-            {{-- 消息提示容器 --}}
-            <div id="alertContainer" class="mb-4"></div>
 
             {{-- 搜索区域 --}}
             @include('components.search-filters.product-search-filters')
@@ -59,7 +57,6 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/product-management.js') }}"></script>

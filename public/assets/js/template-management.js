@@ -25,6 +25,8 @@ let isAscending = true; // 默認升序
 
 // 全局變量防止重複請求
 let isDeleting = false;
+let isUpdating = false; // 防止重複提交更新表單
+let updateFormBound = false; // 標記更新表單事件是否已綁定
 
 // =============================================================================
 // 通用功能模塊 (Common Functions Module)
@@ -1200,22 +1202,27 @@ function initializeTemplateUpdate() {
  * 綁定更新頁面事件
  */
 function bindUpdateEvents() {
-    // 表單提交
-    const form = document.getElementById('updateTemplateForm');
-    if (form) {
-        form.addEventListener('submit', handleUpdateFormSubmit);
+    // 表單提交 - 確保只綁定一次
+    if (!updateFormBound) {
+        const form = document.getElementById('updateTemplateForm');
+        if (form) {
+            form.addEventListener('submit', handleUpdateFormSubmit);
+            updateFormBound = true; // 標記已綁定
+        }
     }
 
     // 類別變化時更新尺碼庫選項（如果有的話）
     const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
+    if (categorySelect && !categorySelect.hasAttribute('data-change-bound')) {
         categorySelect.addEventListener('change', updateSizeLibraryOptions);
+        categorySelect.setAttribute('data-change-bound', 'true');
     }
 
     // 性別變化時更新尺碼庫選項（如果有的話）
     const genderSelect = document.getElementById('gender_id');
-    if (genderSelect) {
+    if (genderSelect && !genderSelect.hasAttribute('data-change-bound')) {
         genderSelect.addEventListener('change', updateSizeLibraryOptions);
+        genderSelect.setAttribute('data-change-bound', 'true');
     }
 }
 
@@ -1230,6 +1237,14 @@ function bindUpdateEvents() {
 function handleUpdateFormSubmit(e) {
     e.preventDefault();
 
+    // 防止重複提交
+    if (isUpdating) {
+        return false;
+    }
+
+    // 設置提交標誌
+    isUpdating = true;
+
     // 獲取表單數據
     const formData = new FormData(e.target);
 
@@ -1242,12 +1257,15 @@ function handleUpdateFormSubmit(e) {
         'POST',
         formData,
         function(data) {
-            window.showAlert('Template updated successfully', 'success');
+            // 使用後端返回的消息，如果沒有則使用默認消息
+            const message = data.message || 'Template updated successfully';
+            window.showAlert(message, 'success');
             setTimeout(() => {
                 window.location.href = window.templateManagementRoute;
             }, 1500);
         },
         function(error) {
+            isUpdating = false; // 錯誤時重置標誌
             window.showAlert(error || 'Failed to update template', 'error');
         }
     );

@@ -18,8 +18,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.template-dashboard-header', ['type' => 'view'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     @include('components.form-templates.template-view-form')
 </div>
@@ -38,6 +36,5 @@
 </script>
 
 {{-- 引入尺码模板管理JavaScript文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/template-management.js') }}"></script>
 @endsection

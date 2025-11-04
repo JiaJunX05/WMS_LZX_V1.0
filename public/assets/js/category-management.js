@@ -1053,17 +1053,20 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Category updated successfully', 'success');
+            const message = data.message || 'Category updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.categoryManagementRoute || '/admin/category-mapping/category/index';
             }, 2000);
         } else {
+            isCategoryUpdating = false; // 錯誤時重置標誌
             showAlert(data.message || 'Failed to update category', 'error');
         }
     })
     .catch(error => {
+        isCategoryUpdating = false; // 錯誤時重置標誌
         showAlert('Failed to update category', 'error');
     })
     .finally(() => {
@@ -1102,16 +1105,25 @@ function validateUpdateForm() {
 /**
  * 初始化分類更新頁面
  */
+// 全局變量防止重複請求
+let isCategoryUpdating = false;
+let categoryUpdateFormBound = false;
+
 function initializeCategoryUpdate() {
     bindCategoryEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!categoryUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isCategoryUpdating) return false;
+                isCategoryUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            categoryUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽
@@ -1572,13 +1584,18 @@ document.addEventListener('DOMContentLoaded', function() {
         window.categoryDashboard = new CategoryDashboard();
     }
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!categoryUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isCategoryUpdating) return false;
+                isCategoryUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            categoryUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽

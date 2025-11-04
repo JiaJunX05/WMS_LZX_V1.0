@@ -18,8 +18,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.library-dashboard-header', ['type' => 'create'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 尺码库创建表单 --}}
     @include('components.form-templates.library-create-form')
@@ -36,6 +34,5 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/library-management.js') }}"></script>
 @endsection

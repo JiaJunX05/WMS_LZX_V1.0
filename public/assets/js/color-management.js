@@ -1328,17 +1328,20 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Color updated successfully', 'success');
+            const message = data.message || 'Color updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.colorManagementRoute || '/admin/colors/index';
             }, 2000);
         } else {
+            isColorUpdating = false; // 錯誤時重置標誌
             showAlert(data.message || 'Failed to update color', 'error');
         }
     })
     .catch(error => {
+        isColorUpdating = false; // 錯誤時重置標誌
         console.error('Update error:', error);
 
         if (error.message.includes('already been taken') || error.message.includes('color_name')) {
@@ -1673,19 +1676,28 @@ function selectUpdateStatusCard(card) {
     }
 }
 
+// 全局變量防止重複請求
+let isColorUpdating = false;
+let colorUpdateFormBound = false;
+
 /**
  * 初始化顏色更新頁面
  */
 function initializeColorUpdate() {
     bindColorEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!colorUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isColorUpdating) return false;
+                isColorUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            colorUpdateFormBound = true;
+        }
     }
 
     // Update 頁面狀態卡片初始化
@@ -1734,13 +1746,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化顏色事件
     bindColorEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!colorUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isColorUpdating) return false;
+                isColorUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            colorUpdateFormBound = true;
+        }
     }
 
     // Update 頁面狀態卡片初始化

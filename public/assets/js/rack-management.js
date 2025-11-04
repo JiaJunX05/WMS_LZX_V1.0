@@ -1114,13 +1114,15 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Rack updated successfully', 'success');
+            const message = data.message || 'Rack updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.rackManagementRoute || '/admin/storage-locations/rack/index';
             }, 2000);
         } else {
+            isRackUpdating = false; // 錯誤時重置標誌
             // 简化错误信息，类似 mapping 页面
             if (data.message && data.message.includes('Some racks failed to create')) {
                 showAlert('Some racks failed to create', 'error');
@@ -1130,6 +1132,7 @@ function handleUpdateFormSubmit(form) {
         }
     })
     .catch(error => {
+        isRackUpdating = false; // 錯誤時重置標誌
         if (error.message.includes('already been taken') || error.message.includes('rack_number')) {
             showAlert('This rack number already exists. Please choose a different number.', 'warning');
         } else {
@@ -1396,16 +1399,25 @@ function bindRackCreateEvents() {
 /**
  * 初始化貨架更新頁面
  */
+// 全局變量防止重複請求
+let isRackUpdating = false;
+let rackUpdateFormBound = false;
+
 function initializeRackUpdate() {
     bindRackEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!rackUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isRackUpdating) return false;
+                isRackUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            rackUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽
@@ -1484,13 +1496,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化貨架事件（包括圖片上傳功能）
     bindRackEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!rackUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isRackUpdating) return false;
+                isRackUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            rackUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽

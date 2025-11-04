@@ -127,3 +127,63 @@
         display: none; /* 在小屏幕上只显示图标 */
     }
 }
+
+/* ======================
+   10. 全局提示信息容器样式
+====================== */
+.global-alert-container {
+    pointer-events: none;
+}
+
+.global-alert-container .alert {
+    pointer-events: all;
+    animation: slideDown 0.3s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.global-alert-container .alert-success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-left: 4px solid #10b981;
+    color: #065f46;
+}
+
+.global-alert-container .alert-info {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-left: 4px solid #3b82f6;
+    color: #1e40af;
+}
+
+.global-alert-container .alert-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    color: #92400e;
+}
+
+.global-alert-container .alert-danger {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+}
+
+.global-alert-container .btn-close {
+    filter: brightness(0) saturate(100%);
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .global-alert-container {
+        width: 95% !important;
+        margin-top: 0.5rem !important;
+    }
+}

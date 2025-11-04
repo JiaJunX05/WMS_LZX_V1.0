@@ -19,8 +19,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.auth-dashboard-header', ['type' => 'dashboard'])
 
-    {{-- 消息提示容器 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 用户统计卡片区域 --}}
     @include('components.metric-cards.user-metric-cards')
@@ -85,6 +83,5 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>
 @endsection

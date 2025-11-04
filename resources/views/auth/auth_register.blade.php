@@ -20,8 +20,6 @@
     {{-- 页面头部导航 --}}
     @include('components.dashboard-header.auth-dashboard-header', ['type' => 'register'])
 
-    {{-- 提示信息区域 --}}
-    <div id="alertContainer" class="mb-4"></div>
 
     {{-- 用户创建表单 --}}
     @include('components.form-templates.auth-create-form')
@@ -38,7 +36,6 @@
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}
-<script src="{{ asset('assets/js/components/alert-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
 <script src="{{ asset('assets/js/components/role-management.js') }}"></script>
 <script src="{{ asset('assets/js/auth-management.js') }}"></script>

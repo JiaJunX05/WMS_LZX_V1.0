@@ -4,7 +4,22 @@
 @section("content")
 
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/dashboard-system.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+
+<style>
+    /* 5列布局样式 - 每行显示5个卡片 */
+    @media (min-width: 1200px) {
+        .statistics-section .row {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .statistics-section .row > [class*="col-xl-2"] {
+            flex: 0 0 20%;
+            max-width: 20%;
+        }
+    }
+</style>
 
 
 <div class="container-fluid py-4">
@@ -38,420 +53,175 @@
         </div>
     </header>
 
-    <!-- Dashboard Grid -->
-    <main class="row g-4" role="main" aria-label="Dashboard statistics">
-        <!-- Staff Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-success">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-people"></i>
-                        </div>
-                        Staff
-                    </div>
-                    <p class="dashboard-card-subtitle">User management and roles</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-info">
-                                <i class="bi bi-person-check"></i>
+    <!-- Dashboard Grid - 10 cards, 5 per row -->
+    <main class="statistics-section" role="main" aria-label="Dashboard statistics">
+        <div class="row g-4" style="--bs-gutter-y: 1rem;">
+            <!-- Staff Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-success">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="total-staff">{{ $stats['staff']['total'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Total Staff</div>
                             </div>
-                            <span class="small text-muted fw-medium text-uppercase">Total Users</span>
-                        </div>
-                        <span class="stat-value" id="total-staff">{{ $stats['staff']['total'] ?? 0 }}</span>
-                    </div>
-                    @if($userRole === 'SuperAdmin')
-                        <div class="stat-item">
-                            <div class="d-flex align-items-center">
-                                <div class="stat-icon bg-danger">
-                                    <i class="bi bi-shield-check"></i>
-                                </div>
-                                <span class="small text-muted fw-medium text-uppercase">Admins</span>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-people text-white fs-4"></i>
                             </div>
-                            <span class="stat-value" id="admin-staff">{{ $stats['staff']['admin'] ?? 0 }}</span>
-                        </div>
-                        <div class="stat-item">
-                            <div class="d-flex align-items-center">
-                                <div class="stat-icon bg-primary">
-                                    <i class="bi bi-person"></i>
-                                </div>
-                                <span class="stat-label">Staff Members</span>
-                            </div>
-                            <span class="stat-value" id="staff-members">{{ $stats['staff']['staff'] ?? 0 }}</span>
-                        </div>
-                    @else
-                        <div class="stat-item">
-                            <div class="d-flex align-items-center">
-                                <div class="stat-icon bg-info">
-                                    <i class="bi bi-info-circle"></i>
-                                </div>
-                                <span class="stat-label">Role Details</span>
-                            </div>
-                            <span class="stat-value stat-value-muted">Limited Access</span>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Products Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-primary">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-box-seam"></i>
-                        </div>
-                        Products
-                    </div>
-                    <p class="dashboard-card-subtitle">Product management and inventory</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-collection"></i>
-                            </div>
-                            <span class="stat-label">Total Products</span>
-                        </div>
-                        <span class="stat-value" id="total-products">{{ $stats['products']['total'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-success">
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                            <span class="stat-label">Active</span>
-                        </div>
-                        <span class="stat-value" id="active-products">{{ $stats['products']['active'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-secondary">
-                                <i class="bi bi-pause-circle"></i>
-                            </div>
-                            <span class="stat-label">Inactive</span>
-                        </div>
-                        <span class="stat-value" id="inactive-products">{{ $stats['products']['inactive'] ?? 0 }}</span>
-                    </div>
-                    <div class="progress-container">
-                        <div class="progress-label">
-                            <span>Active Rate</span>
-                            <span id="active-rate">{{ $stats['products']['total'] > 0 ? round(($stats['products']['active'] / $stats['products']['total']) * 100, 1) : 0 }}%</span>
-                        </div>
-                        <div class="progress-bar-custom">
-                            <div class="progress-fill" style="width: {{ $stats['products']['total'] > 0 ? ($stats['products']['active'] / $stats['products']['total']) * 100 : 0 }}%"></div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Stock Movement Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-danger">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-arrow-left-right"></i>
-                        </div>
-                        Stock Movement
-                    </div>
-                    <p class="dashboard-card-subtitle">Inventory tracking</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-info">
-                                <i class="bi bi-list-check"></i>
+            <!-- Products Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-primary">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="total-products">{{ $stats['products']['total'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Available Products</div>
                             </div>
-                            <span class="stat-label">Total Movements</span>
-                        </div>
-                        <span class="stat-value" id="total-movements">{{ $stats['stock']['total_items'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-success">
-                                <i class="bi bi-arrow-down-circle"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-box-seam text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Stock In</span>
                         </div>
-                        <span class="stat-value" id="stock-in">{{ $stats['stock']['in_stock'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-danger">
-                                <i class="bi bi-arrow-up-circle"></i>
-                            </div>
-                            <span class="stat-label">Stock Out</span>
-                        </div>
-                        <span class="stat-value" id="stock-out">{{ $stats['stock']['out_stock'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-warning">
-                                <i class="bi bi-arrow-up-circle"></i>
-                            </div>
-                            <span class="stat-label">Stock Return</span>
-                        </div>
-                        <span class="stat-value" id="stock-return">{{ $stats['stock']['return_stock'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Categories Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-info">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-tags"></i>
-                        </div>
-                        Categories
-                    </div>
-                    <p class="dashboard-card-subtitle">Product categorization</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-folder"></i>
+            <!-- Category Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-info">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="main-categories">{{ $stats['categories']['categories'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Categories</div>
                             </div>
-                            <span class="stat-label">Main Categories</span>
-                        </div>
-                        <span class="stat-value" id="main-categories">{{ $stats['categories']['categories'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-info">
-                                <i class="bi bi-folder2-open"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-tags text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Subcategories</span>
                         </div>
-                        <span class="stat-value" id="subcategories">{{ $stats['categories']['subcategories'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-warning">
-                                <i class="bi bi-diagram-2"></i>
-                            </div>
-                            <span class="stat-label">Mappings</span>
-                        </div>
-                        <span class="stat-value" id="mappings">{{ $stats['categories']['mappings'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Storage Locations Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-purple">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-geo-alt"></i>
-                        </div>
-                        Storage
-                    </div>
-                    <p class="dashboard-card-subtitle">Warehouse locations</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-building"></i>
+            <!-- Subcategory Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-info">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="subcategories">{{ $stats['categories']['subcategories'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Subcategories</div>
                             </div>
-                            <span class="stat-label">Zones</span>
-                        </div>
-                        <span class="stat-value" id="zones">{{ $stats['locations']['zones'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-info">
-                                <i class="bi bi-grid-3x3"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-tag text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Racks</span>
                         </div>
-                        <span class="stat-value" id="racks">{{ $stats['locations']['racks'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-success">
-                                <i class="bi bi-pin-map"></i>
-                            </div>
-                            <span class="stat-label">Locations</span>
-                        </div>
-                        <span class="stat-value" id="locations">{{ $stats['locations']['locations'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Sizes Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-warning">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-rulers"></i>
-                        </div>
-                        Sizes
-                    </div>
-                    <p class="dashboard-card-subtitle">Size management system</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-person-badge"></i>
+            <!-- Storage Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-purple">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="zones">{{ $stats['locations']['zones'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Available Zones</div>
                             </div>
-                            <span class="stat-label">Size Libraries</span>
-                        </div>
-                        <span class="stat-value" id="size-libraries">{{ $stats['sizes']['size_libraries'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-info">
-                                <i class="bi bi-shoe-prints"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-geo-alt text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Size Templates</span>
                         </div>
-                        <span class="stat-value" id="size-templates">{{ $stats['sizes']['size_templates'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Brand Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-indigo">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-award"></i>
-                        </div>
-                        Brands
-                    </div>
-                    <p class="dashboard-card-subtitle">Brand management</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-trophy"></i>
+            <!-- Size Libraries Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-warning">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="size-libraries">{{ $stats['sizes']['size_libraries'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Size Libraries</div>
                             </div>
-                            <span class="stat-label">Total Brands</span>
-                        </div>
-                        <span class="stat-value" id="total-brands">{{ $stats['brands']['total'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-success">
-                                <i class="bi bi-check-circle"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-rulers text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Active</span>
                         </div>
-                        <span class="stat-value" id="active-brands">{{ $stats['brands']['active'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-secondary">
-                                <i class="bi bi-pause-circle"></i>
-                            </div>
-                            <span class="stat-label">Inactive</span>
-                        </div>
-                        <span class="stat-value" id="inactive-brands">{{ $stats['brands']['inactive'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Color Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-purple">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-palette"></i>
-                        </div>
-                        Colors
-                    </div>
-                    <p class="dashboard-card-subtitle">Color variants</p>
-                </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-palette-fill"></i>
+            <!-- Size Templates Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-warning">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="size-templates">{{ $stats['sizes']['size_templates'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Size Templates</div>
                             </div>
-                            <span class="stat-label">Total Colors</span>
-                        </div>
-                        <span class="stat-value" id="total-colors">{{ $stats['colors']['total'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-success">
-                                <i class="bi bi-check-circle"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-file-earmark-text text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Active</span>
                         </div>
-                        <span class="stat-value" id="active-colors">{{ $stats['colors']['active'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-secondary">
-                                <i class="bi bi-pause-circle"></i>
-                            </div>
-                            <span class="stat-label">Inactive</span>
-                        </div>
-                        <span class="stat-value" id="inactive-colors">{{ $stats['colors']['inactive'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Gender Card -->
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12">
-            <div class="dashboard-card theme-warning">
-                <div class="dashboard-card-header">
-                    <div class="dashboard-card-title">
-                        <div class="dashboard-card-icon">
-                            <i class="bi bi-person-heart"></i>
+            <!-- Brand Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-purple">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="total-brands">{{ $stats['brands']['total'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Available Brands</div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-award text-white fs-4"></i>
+                            </div>
                         </div>
-                        Gender
                     </div>
-                    <p class="dashboard-card-subtitle">Target demographics</p>
                 </div>
-                <div class="dashboard-card-body">
-                    <div class="text-center">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary">
-                                <i class="bi bi-person"></i>
+            </div>
+
+            <!-- Color Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-purple">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="total-colors">{{ $stats['colors']['total'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Available Colors</div>
                             </div>
-                            <span class="stat-label">Total Gender</span>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-palette-fill text-white fs-4"></i>
+                            </div>
                         </div>
-                        <span class="stat-value" id="total-gender">{{ $stats['gender']['total'] ?? 0 }}</span>
                     </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-success">
-                                <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+
+            <!-- Gender Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-warning">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="total-gender">{{ $stats['gender']['total'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Available Gender</div>
                             </div>
-                            <span class="stat-label">Active</span>
-                        </div>
-                        <span class="stat-value" id="active-gender">{{ $stats['gender']['active'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-secondary">
-                                <i class="bi bi-pause-circle"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-gender-ambiguous text-white fs-4"></i>
                             </div>
-                            <span class="stat-label">Inactive</span>
                         </div>
-                        <span class="stat-value" id="inactive-gender">{{ $stats['gender']['inactive'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>

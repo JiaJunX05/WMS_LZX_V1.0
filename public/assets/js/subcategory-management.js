@@ -1095,18 +1095,21 @@ function handleUpdateFormSubmit(form) {
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Subcategory updated successfully', 'success');
+            const message = data.message || 'Subcategory updated successfully';
+            showAlert(message, 'success');
 
             // 延遲重定向到列表頁面
             setTimeout(() => {
                 window.location.href = window.subcategoryManagementRoute || '/admin/category-mapping/subcategory/index';
             }, 2000);
         } else {
+            isSubcategoryUpdating = false; // 錯誤時重置標誌
             showAlert(data.message || 'Failed to update subcategory', 'error');
         }
     })
     .catch(error => {
-            showAlert('Failed to update subcategory', 'error');
+        isSubcategoryUpdating = false; // 錯誤時重置標誌
+        showAlert('Failed to update subcategory', 'error');
     })
     .finally(() => {
         // 恢復按鈕狀態
@@ -1330,16 +1333,25 @@ function bindSubcategoryCreateEvents() {
 /**
  * 初始化子分類更新頁面
  */
+// 全局變量防止重複請求
+let isSubcategoryUpdating = false;
+let subcategoryUpdateFormBound = false;
+
 function initializeSubcategoryUpdate() {
     bindSubcategoryEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!subcategoryUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isSubcategoryUpdating) return false;
+                isSubcategoryUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            subcategoryUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽
@@ -1418,13 +1430,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化子分類事件（包括圖片上傳功能）
     bindSubcategoryEvents();
 
-    // Update 頁面表單提交
-    const updateForm = document.querySelector('form[action*="update"]');
-    if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleUpdateFormSubmit(this);
-        });
+    // Update 頁面表單提交 - 確保只綁定一次
+    if (!subcategoryUpdateFormBound) {
+        const updateForm = document.querySelector('form[action*="update"]');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (isSubcategoryUpdating) return false;
+                isSubcategoryUpdating = true;
+                handleUpdateFormSubmit(this);
+            });
+            subcategoryUpdateFormBound = true;
+        }
     }
 
     // Update 頁面圖片預覽

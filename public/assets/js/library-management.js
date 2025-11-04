@@ -274,7 +274,7 @@ function updateCategoryInfo() {
  */
 function updateSizeLibraryOptions() {
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id') ? document.getElementById('gender_id').value : null;
+    const gender = document.getElementById('gender') ? document.getElementById('gender').value : null;
     const sizeLibrarySelect = document.getElementById('size_library_id');
 
     if (!sizeLibrarySelect) return;
@@ -292,8 +292,8 @@ function updateSizeLibraryOptions() {
 
     // 構建請求URL
     let url = window.availableSizeLibrariesUrl;
-    if (genderId) {
-        url += `?category_id=${categoryId}&gender_id=${genderId}`;
+    if (gender) {
+        url += `?category_id=${categoryId}&gender=${gender}`;
     } else {
         url += `?category_id=${categoryId}`;
     }
@@ -352,7 +352,7 @@ function bindLibraryEvents() {
     }
 
     // 性別選擇變化（如果有）
-    const genderSelect = document.getElementById('gender_id');
+    const genderSelect = document.getElementById('gender');
     if (genderSelect) {
         genderSelect.addEventListener('change', updateSizeLibraryOptions);
     }

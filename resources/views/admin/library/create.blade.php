@@ -29,8 +29,9 @@
 {{-- 尺码库管理路由配置 --}}
 <script>
     // 设置尺码库管理相关路由
-    window.createLibraryUrl = "{{ route('admin.library.store') }}";
-    window.libraryManagementRoute = "{{ route('admin.library.index') }}";
+    window.createSizeLibraryUrl = "{{ route('admin.library.store') }}";
+    window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
+    window.viewSizeLibraryUrl = "{{ route('admin.library.view', ['id' => ':id']) }}";
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}

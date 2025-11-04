@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ColorController;
-use App\Http\Controllers\Admin\GenderController;
 use App\Http\Controllers\Admin\LibraryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -313,19 +312,6 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/{id}/unavailable', [ColorController::class, 'setUnavailable'])->name('unavailable');
             Route::delete('/{id}/delete', [ColorController::class, 'destroy'])->name('destroy');
             Route::get('/export', [ColorController::class, 'exportColors'])->name('export');
-        });
-
-        // 性别管理
-        Route::prefix('gender')->name('gender.')->group(function () {
-            Route::get('/index', [GenderController::class, 'index'])->name('index');
-            Route::get('/create', [GenderController::class, 'create'])->name('create');
-            Route::post('/store', [GenderController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [GenderController::class, 'edit'])->name('edit');
-            Route::put('/{id}/update', [GenderController::class, 'update'])->name('update');
-            Route::patch('/{id}/available', [GenderController::class, 'setAvailable'])->name('available');
-            Route::patch('/{id}/unavailable', [GenderController::class, 'setUnavailable'])->name('unavailable');
-            Route::delete('/{id}/delete', [GenderController::class, 'destroy'])->name('destroy');
-            Route::get('/export', [GenderController::class, 'exportGenders'])->name('export');
         });
 
         // =============================================================================

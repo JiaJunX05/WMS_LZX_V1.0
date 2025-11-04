@@ -65,7 +65,7 @@
                             </div>
                             <div class="mb-1">
                                 <i class="bi bi-person me-2 text-muted"></i>
-                                <span>Gender: <strong>{{ $gender->gender_name }}</strong></span>
+                                <span>Gender: <strong>{{ $gender }}</strong></span>
                             </div>
                             <div class="mb-1">
                                 <i class="bi bi-rulers me-2 text-muted"></i>

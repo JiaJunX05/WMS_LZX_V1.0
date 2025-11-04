@@ -14,10 +14,19 @@
  */
 class DashboardManager {
     constructor() {
+        this.isLoading = false;
+        this.isInitialized = false;
         this.init();
     }
 
     init() {
+        // 防止重复初始化
+        if (this.isInitialized) {
+            console.warn('DashboardManager already initialized');
+            return;
+        }
+        this.isInitialized = true;
+
         // 先将所有数字显示为 0
         this.resetStatsToZero();
         // 延迟一点再加载实际统计数据，让用户能看到从 0 变成目标值的过程
@@ -37,6 +46,13 @@ class DashboardManager {
      * 加载统计数据
      */
     loadStats() {
+        // 防止重复请求
+        if (this.isLoading) {
+            console.warn('Stats already loading, skipping duplicate request');
+            return;
+        }
+
+        this.isLoading = true;
         const userRole = window.userRole || 'Admin';
         const apiRoute = userRole === 'SuperAdmin'
             ? '/superadmin/dashboard/data'
@@ -50,6 +66,9 @@ class DashboardManager {
             })
             .fail(() => {
                 console.error('Failed to load dashboard statistics');
+            })
+            .always(() => {
+                this.isLoading = false;
             });
     }
 
@@ -67,14 +86,15 @@ class DashboardManager {
         $('#zones').text(data.locations?.zones || 0);
         $('#total-brands').text(data.brands?.total || 0);
         $('#total-colors').text(data.colors?.total || 0);
-        $('#total-gender').text(data.gender?.total || 0);
+        $('#total-stock-movements').text(data.stock?.total || 0);
     }
 }
 
 // 初始化仪表板
 $(document).ready(function() {
     // 检查当前页面是否是dashboard页面（有stats-number元素）
-    if ($('.stats-number').length > 0) {
+    // 防止重复初始化
+    if ($('.stats-number').length > 0 && !window.dashboardManager) {
         window.dashboardManager = new DashboardManager();
     }
 });

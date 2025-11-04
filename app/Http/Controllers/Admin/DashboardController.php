@@ -13,7 +13,7 @@ use App\Models\SizeTemplate;
 use App\Models\Zone;
 use App\Models\Brand;
 use App\Models\Color;
-use App\Models\Gender;
+use App\Models\StockMovement;
 
 class DashboardController extends Controller
 {
@@ -31,7 +31,10 @@ class DashboardController extends Controller
         // 根据角色决定显示的数据
         $dashboardData = $this->getRoleBasedData($userRole, $stats);
 
-        return view('system_dashboard', compact('stats', 'dashboardData', 'userRole'));
+        // 获取最近的库存历史记录（最近10条）
+        $recentStockHistory = $this->getRecentStockHistory();
+
+        return view('system_dashboard', compact('stats', 'dashboardData', 'userRole', 'recentStockHistory'));
     }
 
     /**
@@ -78,9 +81,20 @@ class DashboardController extends Controller
             'total' => Color::where('color_status', 'Available')->count(),
         ];
 
-        // 性别统计
-        $genderStats = [
-            'total' => Gender::where('gender_status', 'Available')->count(),
+        // 库存统计
+        $userRole = auth()->user()->getAccountRole();
+        $stockQuery = StockMovement::query();
+
+        // 权限控制：Staff 只能看到自己的记录
+        if ($userRole === 'Staff') {
+            $stockQuery->where('user_id', auth()->id());
+        }
+
+        $stockStats = [
+            'total' => (int) $stockQuery->count(),
+            'stock_in' => (int) (clone $stockQuery)->where('movement_type', 'stock_in')->count(),
+            'stock_out' => (int) (clone $stockQuery)->where('movement_type', 'stock_out')->count(),
+            'stock_return' => (int) (clone $stockQuery)->where('movement_type', 'stock_return')->count(),
         ];
 
         return [
@@ -91,7 +105,7 @@ class DashboardController extends Controller
             'locations' => $locationStats,
             'brands' => $brandStats,
             'colors' => $colorStats,
-            'gender' => $genderStats,
+            'stock' => $stockStats,
         ];
     }
 
@@ -108,7 +122,7 @@ class DashboardController extends Controller
             'locations' => $stats['locations'],
             'brands' => $stats['brands'],
             'colors' => $stats['colors'],
-            'gender' => $stats['gender'],
+            'stock' => $stats['stock'],
         ];
 
         // SuperAdmin 可以看到所有数据包括员工管理
@@ -153,5 +167,44 @@ class DashboardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get recent stock history for dashboard.
+     */
+    private function getRecentStockHistory()
+    {
+        $userRole = auth()->user()->getAccountRole();
+
+        $query = StockMovement::with([
+            'user:id,first_name,last_name,email',
+            'user.account:id,user_id,username',
+            'product:id,name,cover_image',
+            'variant:id,product_id,sku_code,barcode_number'
+        ])
+        ->orderBy('movement_date', 'desc')
+        ->limit(10);
+
+        // 权限控制：Staff 只能看到自己的记录
+        if ($userRole === 'Staff') {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query->get()->map(function ($movement) {
+            return [
+                'id' => $movement->id,
+                'date' => $movement->movement_date->format('Y-m-d H:i:s'),
+                'movement_type' => $movement->movement_type,
+                'product_name' => $movement->product->name ?? 'N/A',
+                'product_image' => $movement->product->cover_image ?? null,
+                'sku_code' => $movement->variant->sku_code ?? 'N/A',
+                'quantity' => $movement->quantity,
+                'previous_stock' => $movement->previous_stock,
+                'current_stock' => $movement->current_stock,
+                'reference_number' => $movement->reference_number,
+                'user_name' => $movement->user->account->username ?? ($movement->user->first_name . ' ' . $movement->user->last_name) ?? 'Unknown User',
+                'user_email' => $movement->user->email ?? '',
+            ];
+        });
     }
 }

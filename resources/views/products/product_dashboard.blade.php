@@ -28,7 +28,6 @@
             {{-- 页面头部 --}}
             @include('components.dashboard-header.product-dashboard-header', ['type' => 'dashboard'])
 
-
             {{-- 搜索区域 --}}
             @include('components.search-filters.product-search-filters')
 

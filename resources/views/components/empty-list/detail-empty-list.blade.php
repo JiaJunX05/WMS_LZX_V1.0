@@ -7,9 +7,6 @@
     'icon' => 'bi bi-box-seam',
     'title' => 'No Stock Details',
     'description' => 'No stock movement details available for this product',
-    'buttonText' => 'Go to Stock Management',
-    'buttonUrl' => route('staff.stock_management'),
-    'buttonIcon' => 'bi bi-arrow-left me-2',
-    'buttonSize' => 'btn-lg'
+    'hideButton' => true
 ])
 

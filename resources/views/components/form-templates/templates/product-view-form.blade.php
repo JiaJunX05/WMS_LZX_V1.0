@@ -116,7 +116,7 @@
                             <i class="bi bi-upc-scan text-primary fs-5"></i>
                             <span>Product Barcode</span>
                         </div>
-                        <button class="btn btn-outline-primary btn-sm" onclick="copyBarcode('{{ $variant->barcode_number }}')" title="Copy Barcode">
+                        <button class="btn btn-outline-primary btn-sm" onclick="copyBarcode('{{ $variant->barcode_number }}', event)" title="Copy Barcode">
                             <i class="bi bi-copy"></i>
                         </button>
                     </div>
@@ -334,7 +334,7 @@
                             </div>
                             <div class="d-flex flex-column gap-1 flex-fill">
                                 <span class="small text-muted fw-medium text-uppercase" style="letter-spacing: 0.5px;">Gender</span>
-                                <span class="fw-semibold lh-sm">{{ $gender ? $gender->gender_name : 'N/A' }}</span>
+                                <span class="fw-semibold lh-sm">{{ $gender ? $gender : 'N/A' }}</span>
                             </div>
                         </div>
                     </div>

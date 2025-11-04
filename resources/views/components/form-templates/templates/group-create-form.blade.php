@@ -17,7 +17,7 @@
         $submitSectionId - 提交区域ID
     ========================================== --}}
 
-<form action="{{ $formAction }}" method="post" id="{{ $formId }}" class="form-templates-wrapper">
+<form action="{{ $formAction }}" method="post" id="{{ $formId }}" class="form-templates-wrapper" novalidate>
     @csrf
 
     <div class="card shadow-sm border-0">

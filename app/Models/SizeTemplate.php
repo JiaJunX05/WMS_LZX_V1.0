@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\SizeLibrary;
 use App\Models\Category;
-use App\Models\Gender;
 
 class SizeTemplate extends Model
 {
@@ -18,7 +17,7 @@ class SizeTemplate extends Model
 
     protected $fillable = [
         'category_id',
-        'gender_id',
+        'gender',
         'size_library_id',
         'template_status',
     ];
@@ -26,11 +25,6 @@ class SizeTemplate extends Model
     public function category(): BelongsTo {
         return $this->belongsTo(Category::class, 'category_id', 'id');
     }
-
-    public function gender(): BelongsTo {
-        return $this->belongsTo(Gender::class, 'gender_id', 'id');
-    }
-
 
     public function sizeLibrary(): BelongsTo {
         return $this->belongsTo(SizeLibrary::class, 'size_library_id', 'id');

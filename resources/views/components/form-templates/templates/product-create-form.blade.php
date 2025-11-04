@@ -237,11 +237,12 @@
                                     <label class="form-label fw-bold text-dark mb-2">
                                         <i class="bi bi-gender-ambiguous me-2 text-primary"></i>Gender
                                     </label>
-                                    <select class="form-select" name="gender_id" required>
+                                    <select class="form-select" name="gender" required>
                                         <option value="">Select Gender</option>
-                                        @foreach($genders as $gender)
-                                            <option value="{{ $gender->id }}">{{ $gender->gender_name }}</option>
-                                        @endforeach
+                                        <option value="Men">Men</option>
+                                        <option value="Women">Women</option>
+                                        <option value="Kids">Kids</option>
+                                        <option value="Unisex">Unisex</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">

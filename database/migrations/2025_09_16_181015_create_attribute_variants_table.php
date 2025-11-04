@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('brand_id')->nullable()->constrained('brands')->onDelete('set null');
             $table->foreignId('color_id')->nullable()->constrained('colors')->onDelete('set null');
             $table->foreignId('size_id')->nullable()->constrained('size_libraries')->onDelete('set null');
-            $table->foreignId('gender_id')->nullable()->constrained('genders')->onDelete('set null');
+            $table->enum('gender', ['Men', 'Women', 'Kids', 'Unisex'])->nullable();
             $table->timestamps();
 
             $table->unique(['variant_id']);     // 确保每个变体只有一个属性组合

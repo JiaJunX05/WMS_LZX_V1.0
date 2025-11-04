@@ -235,6 +235,9 @@ class ColorDashboard {
         // 重置勾選框狀態
         this.updateSelectAllCheckbox();
         this.updateExportButton();
+
+        // 隱藏空狀態（有數據時）
+        $('#empty-state').addClass('d-none');
     }
 
     createColorRow(color) {
@@ -301,17 +304,12 @@ class ColorDashboard {
     }
 
     showNoResults() {
-        $('#table-body').html(`
-            <tr>
-                <td colspan="7" class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-search fs-1 d-block mb-3"></i>
-                        <h5>No colors found</h5>
-                        <p>Please try adjusting your search criteria</p>
-                    </div>
-                </td>
-            </tr>
-        `);
+        // 清空表格體
+        $('#table-body').empty();
+
+        // 顯示空狀態組件（包含創建按鈕）
+        $('#empty-state').removeClass('d-none');
+
         this.updatePaginationInfo({ pagination: { total: 0, from: 0, to: 0 } });
     }
 

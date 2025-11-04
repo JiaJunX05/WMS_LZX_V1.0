@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('size_templates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');                     // 关联类别
-            $table->foreignId('gender_id')->constrained('genders')->onDelete('cascade');                         // 关联性别                  // 关联尺码类型
+            $table->enum('gender', ['Men', 'Women', 'Kids', 'Unisex'])->nullable();                                // 关联性别
             $table->foreignId('size_library_id')->constrained('size_libraries')->onDelete('cascade');            // 关联尺码系统
             $table->enum('template_status', ['Available', 'Unavailable'])->default('Available');               // 模板状态
             $table->timestamps();
 
             // 确保每个类别下的尺码组合唯一
-            $table->unique(['category_id', 'gender_id', 'size_library_id'], 'size_templates_unique');
+            $table->unique(['category_id', 'gender', 'size_library_id'], 'size_templates_unique');
         });
     }
 

@@ -6,6 +6,6 @@
 @include('components.form-templates.templates.template-create-form', [
     'formAction' => route('admin.template.store'),
     'formId' => 'templateForm',
-    'categories' => $categories,
-    'genders' => $genders
+    'categories' => $categories
+    // genders 现在是硬编码选项，不再从数据库传递
 ])

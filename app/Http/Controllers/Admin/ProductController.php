@@ -12,7 +12,6 @@ use App\Models\Image;
 use App\Models\AttributeVariant;
 use App\Models\Brand;
 use App\Models\Color;
-use App\Models\Gender;
 use App\Models\SizeLibrary;
 use App\Models\Category;
 use App\Models\Subcategory;
@@ -52,7 +51,7 @@ class ProductController extends Controller
         'brand_id' => 'required|exists:brands,id',
         'color_id' => 'required|exists:colors,id',
         'size_id' => 'required|exists:size_libraries,id',
-        'gender_id' => 'required|exists:genders,id',
+        'gender' => 'required|in:Men,Women,Kids,Unisex',
         'zone_id' => 'required|exists:zones,id',
         'rack_id' => 'nullable|exists:racks,id',
         'product_status' => 'nullable|in:Available,Unavailable',
@@ -96,8 +95,11 @@ class ProductController extends Controller
         if (isset($productData['sizeId']) && !isset($productData['size_id'])) {
             $productData['size_id'] = $productData['sizeId'];
         }
-        if (isset($productData['genderId']) && !isset($productData['gender_id'])) {
-            $productData['gender_id'] = $productData['genderId'];
+        if (isset($productData['genderId']) && !isset($productData['gender'])) {
+            $productData['gender'] = $productData['genderId'];
+        }
+        if (isset($productData['gender_id']) && !isset($productData['gender'])) {
+            $productData['gender'] = $productData['gender_id'];
         }
         if (isset($productData['zoneId']) && !isset($productData['zone_id'])) {
             $productData['zone_id'] = $productData['zoneId'];
@@ -188,8 +190,8 @@ class ProductController extends Controller
                     'variants.attributeVariant.brand',
                     'variants.attributeVariant.color',
                     'variants.attributeVariant.size',
-                    'variants.attributeVariant.size.category',
-                    'variants.attributeVariant.gender'
+                    'variants.attributeVariant.size.category'
+                    // gender 现在是 attribute_variants 表的直接字段，不再是关系
                 ]);
 
                 // 搜索条件：产品名称、SKU代码或条形码
@@ -261,7 +263,7 @@ class ProductController extends Controller
                             'brand_name' => $attributeVariant && $attributeVariant->brand ? $attributeVariant->brand->brand_name : 'N/A',
                             'color_name' => $attributeVariant && $attributeVariant->color ? $attributeVariant->color->color_name : 'N/A',
                             'size_name' => $attributeVariant && $attributeVariant->size ? $attributeVariant->size->size_value : 'N/A',
-                            'gender_name' => 'N/A', // SizeLibrary 不包含性别信息
+                            'gender_name' => $attributeVariant && $attributeVariant->gender ? $attributeVariant->gender : 'N/A',
                             'zone_name' => $product->zone->zone_name ?? 'N/A',
                             'rack_name' => $product->rack->rack_number ?? 'N/A',
                             'product_status' => $product->product_status,
@@ -327,7 +329,7 @@ class ProductController extends Controller
         $subcategories = Subcategory::all();
         $brands = Brand::all();
         $colors = Color::all();
-        $genders = Gender::all();
+        // Gender 现在是硬编码选项，不再从数据库获取
         $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
         $zones = Zone::all();
         $racks = Rack::all();
@@ -350,7 +352,7 @@ class ProductController extends Controller
         $suggestedBarcode = $this->generateBarcodeNumber($suggestedSKU);
 
         return view('products.product_create', compact(
-            'categories', 'subcategories', 'brands', 'colors', 'genders', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
+            'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
         ));
     }
 
@@ -461,7 +463,7 @@ class ProductController extends Controller
                 'brand_id' => $request->brand_id,
                 'color_id' => $request->color_id,
                 'size_id' => $request->size_id,
-                'gender_id' => $request->gender_id,
+                'gender' => $request->gender,
             ]);
 
             \Log::info('Attribute variant created for variant ID: ' . $productVariant->id);
@@ -552,7 +554,7 @@ class ProductController extends Controller
                 'variants.attributeVariant.brand',
                 'variants.attributeVariant.color',
                 'variants.attributeVariant.size',
-                'variants.attributeVariant.gender'
+                // gender 现在是 attribute_variants 表的直接字段，不再是关系
             ])->findOrFail($id);
 
             return view('products.product_view', compact('product'));
@@ -581,7 +583,7 @@ class ProductController extends Controller
         $subcategories = Subcategory::all();
         $brands = Brand::all();
         $colors = Color::all();
-        $genders = Gender::all();
+        // Gender 现在是硬编码选项，不再从数据库获取
         $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
         $zones = Zone::all();
         $racks = Rack::all();
@@ -602,7 +604,7 @@ class ProductController extends Controller
         }
 
         return view('products.product_update', compact(
-            'product', 'categories', 'subcategories', 'brands', 'colors', 'genders', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
+            'product', 'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
         ));
     }
 
@@ -718,7 +720,7 @@ class ProductController extends Controller
                     $variant->attributeVariant->brand_id = $request->brand_id;
                     $variant->attributeVariant->color_id = $request->color_id;
                     $variant->attributeVariant->size_id = $request->size_id;
-                    $variant->attributeVariant->gender_id = $request->gender_id;
+                    $variant->attributeVariant->gender = $request->gender;
                     $variant->attributeVariant->save();
                 } else {
                     // 如果不存在属性变体，创建一个新的
@@ -727,7 +729,7 @@ class ProductController extends Controller
                         'brand_id' => $request->brand_id,
                         'color_id' => $request->color_id,
                         'size_id' => $request->size_id,
-                        'gender_id' => $request->gender_id,
+                        'gender' => $request->gender,
                     ]);
                 }
             }

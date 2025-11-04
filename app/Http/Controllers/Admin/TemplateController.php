@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Log;
 use App\Models\SizeTemplate;
 use App\Models\SizeLibrary;
 use App\Models\Category;
-use App\Models\Gender;
 
 /**
  * Size Template Management Controller
@@ -33,7 +32,7 @@ class TemplateController extends Controller
     // Validation rules
     private const TEMPLATE_RULES = [
         'category_id' => 'required|exists:categories,id',
-        'gender_id' => 'required|exists:genders,id',
+        'gender' => 'required|in:Men,Women,Kids,Unisex',
         'size_library_id' => 'required|exists:size_libraries,id',
     ];
 
@@ -46,8 +45,11 @@ class TemplateController extends Controller
         if (isset($templateData['categoryId']) && !isset($templateData['category_id'])) {
             $templateData['category_id'] = $templateData['categoryId'];
         }
-        if (isset($templateData['genderId']) && !isset($templateData['gender_id'])) {
-            $templateData['gender_id'] = $templateData['genderId'];
+        if (isset($templateData['genderId']) && !isset($templateData['gender'])) {
+            $templateData['gender'] = $templateData['genderId'];
+        }
+        if (isset($templateData['gender_id']) && !isset($templateData['gender'])) {
+            $templateData['gender'] = $templateData['gender_id'];
         }
         if (isset($templateData['sizeLibraryId']) && !isset($templateData['size_library_id'])) {
             $templateData['size_library_id'] = $templateData['sizeLibraryId'];
@@ -124,15 +126,15 @@ class TemplateController extends Controller
             return $this->getTemplatesData();
         }
 
-        $sizeTemplates = SizeTemplate::with(['category', 'gender', 'sizeLibrary'])
+        $sizeTemplates = SizeTemplate::with(['category', 'sizeLibrary'])
             ->join('size_libraries', 'size_templates.size_library_id', '=', 'size_libraries.id')
             ->orderBy('size_libraries.size_value', 'asc')
             ->select('size_templates.*')
             ->get();
         $categories = Category::where('category_status', 'Available')->get();
-        $genders = Gender::where('gender_status', 'Available')->get();
+        // Gender 现在是硬编码选项，不再从数据库获取
 
-        return view('admin.template.dashboard', compact('sizeTemplates', 'categories', 'genders'));
+        return view('admin.template.dashboard', compact('sizeTemplates', 'categories'));
     }
 
     /**
@@ -142,10 +144,10 @@ class TemplateController extends Controller
     public function create()
     {
         $categories = Category::where('category_status', 'Available')->get();
-        $genders = Gender::where('gender_status', 'Available')->get();
+        // Gender 现在是硬编码选项，不再从数据库获取
         $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-        return view('admin.template.create', compact('categories', 'genders', 'sizeLibraries'));
+        return view('admin.template.create', compact('categories', 'sizeLibraries'));
     }
 
     /**
@@ -198,16 +200,16 @@ class TemplateController extends Controller
     public function edit($id)
     {
         try {
-            $sizeTemplate = SizeTemplate::with(['category', 'gender', 'sizeLibrary'])->findOrFail($id);
+            $sizeTemplate = SizeTemplate::with(['category', 'sizeLibrary'])->findOrFail($id);
             $categories = Category::where('category_status', 'Available')->get();
-            $genders = Gender::where('gender_status', 'Available')->get();
+            // Gender 现在是硬编码选项，不再从数据库获取
             // 根據當前模板的 category 過濾 size libraries
             $sizeLibraries = SizeLibrary::where('size_status', 'Available')
                 ->where('category_id', $sizeTemplate->category_id)
                 ->with('category')
                 ->get();
 
-            return view('admin.template.update', compact('sizeTemplate', 'categories', 'genders', 'sizeLibraries'));
+            return view('admin.template.update', compact('sizeTemplate', 'categories', 'sizeLibraries'));
         } catch (\Exception $e) {
             Log::error('Failed to load edit form: ' . $e->getMessage(), [
                 'id' => $id,
@@ -242,7 +244,7 @@ class TemplateController extends Controller
 
             // 检查模板组合是否已存在（排除当前记录）
             $existingTemplate = SizeTemplate::where('category_id', $validatedData['category_id'])
-                ->where('gender_id', $validatedData['gender_id'])
+                ->where('gender', $validatedData['gender'])
                 ->where('size_library_id', $validatedData['size_library_id'])
                 ->where('id', '!=', $id)
                 ->first();
@@ -266,7 +268,7 @@ class TemplateController extends Controller
             // 更新尺码模板记录
             $sizeTemplate->update([
                 'category_id' => $validatedData['category_id'],
-                'gender_id' => $validatedData['gender_id'],
+                'gender' => $validatedData['gender'],
                 'size_library_id' => $validatedData['size_library_id'],
                 'template_status' => $validatedData['template_status'],
             ]);
@@ -274,7 +276,7 @@ class TemplateController extends Controller
             $this->logOperation('updated', [
                 'size_template_id' => $id,
                 'category_id' => $validatedData['category_id'],
-                'gender_id' => $validatedData['gender_id'],
+                'gender' => $validatedData['gender'],
                 'size_library_id' => $validatedData['size_library_id'],
                 'template_status' => $validatedData['template_status']
             ]);
@@ -283,7 +285,7 @@ class TemplateController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Template updated successfully!',
-                    'data' => $sizeTemplate->load(['category', 'gender', 'sizeLibrary'])
+                    'data' => $sizeTemplate->load(['category', 'sizeLibrary'])
                 ]);
             }
 
@@ -331,15 +333,15 @@ class TemplateController extends Controller
     {
         try {
             $categoryId = $request->input('category_id');
-            $genderId = $request->input('gender_id');
+            $gender = $request->input('gender');
 
             Log::info('getAvailableSizeLibraries called', [
                 'category_id' => $categoryId,
-                'gender_id' => $genderId
+                'gender' => $gender
             ]);
 
-            // 如果 category_id 或 gender_id 为 0，获取所有可用的尺码库
-            if ($categoryId == 0 || $genderId == 0) {
+            // 如果 category_id 为 0 或 gender 为空，获取所有可用的尺码库
+            if ($categoryId == 0 || empty($gender)) {
                 $sizeLibraries = SizeLibrary::where('size_status', 'Available')
                     ->with('category')
                     ->orderBy('category_id')
@@ -442,7 +444,7 @@ class TemplateController extends Controller
     private function getTemplatesData()
     {
         try {
-            $sizeTemplates = SizeTemplate::with(['category', 'gender', 'sizeLibrary'])
+            $sizeTemplates = SizeTemplate::with(['category', 'sizeLibrary'])
                 ->join('size_libraries', 'size_templates.size_library_id', '=', 'size_libraries.id')
                 ->orderBy('size_libraries.size_value', 'asc')
                 ->select('size_templates.*')
@@ -450,7 +452,7 @@ class TemplateController extends Controller
 
             // 按 category + gender 组合分组
             $groupedTemplates = $sizeTemplates->groupBy(function ($template) {
-                return $template->category_id . '_' . $template->gender_id;
+                return $template->category_id . '_' . $template->gender;
             })->map(function ($templates, $key) {
                 $firstTemplate = $templates->first();
                 return [
@@ -504,10 +506,10 @@ class TemplateController extends Controller
         $combinationsToCheck = [];
         foreach ($templates as $index => $templateData) {
             $templateData = $this->normalizeTemplateData($templateData);
-            if (isset($templateData['category_id']) && isset($templateData['gender_id']) && isset($templateData['size_library_id'])) {
+            if (isset($templateData['category_id']) && isset($templateData['gender']) && isset($templateData['size_library_id'])) {
                 $combinationsToCheck[] = [
                     'category_id' => $templateData['category_id'],
-                    'gender_id' => $templateData['gender_id'],
+                    'gender' => $templateData['gender'],
                     'size_library_id' => $templateData['size_library_id']
                 ];
             }
@@ -517,12 +519,12 @@ class TemplateController extends Controller
             foreach ($combinationsToCheck as $combination) {
                 $query->orWhere(function($q) use ($combination) {
                     $q->where('category_id', $combination['category_id'])
-                      ->where('gender_id', $combination['gender_id'])
+                      ->where('gender', $combination['gender'])
                       ->where('size_library_id', $combination['size_library_id']);
                 });
             }
-        })->get(['category_id', 'gender_id', 'size_library_id'])->map(function($item) {
-            return $item->category_id . '_' . $item->gender_id . '_' . $item->size_library_id;
+        })->get(['category_id', 'gender', 'size_library_id'])->map(function($item) {
+            return $item->category_id . '_' . $item->gender . '_' . $item->size_library_id;
         })->toArray();
 
         foreach ($templates as $index => $templateData) {
@@ -536,7 +538,7 @@ class TemplateController extends Controller
             }
 
             // 检查模板组合是否已存在
-            $combinationKey = $templateData['category_id'] . '_' . $templateData['gender_id'] . '_' . $templateData['size_library_id'];
+            $combinationKey = $templateData['category_id'] . '_' . $templateData['gender'] . '_' . $templateData['size_library_id'];
             if (in_array($combinationKey, $existingCombinations)) {
                 $errors[] = "Template " . ($index + 1) . ": This template combination already exists";
                 continue;
@@ -545,7 +547,7 @@ class TemplateController extends Controller
             try {
                 $template = SizeTemplate::create([
                     'category_id' => $templateData['category_id'],
-                    'gender_id' => $templateData['gender_id'],
+                    'gender' => $templateData['gender'],
                     'size_library_id' => $templateData['size_library_id'],
                     'template_status' => 'Available', // 默認為 Available
                 ]);
@@ -554,7 +556,7 @@ class TemplateController extends Controller
                 $this->logOperation('created (batch)', [
                     'template_id' => $template->id,
                     'category_id' => $templateData['category_id'],
-                    'gender_id' => $templateData['gender_id'],
+                    'gender' => $templateData['gender'],
                     'size_library_id' => $templateData['size_library_id']
                 ]);
             } catch (\Exception $e) {
@@ -600,7 +602,7 @@ class TemplateController extends Controller
 
         // 检查模板组合是否已存在
         $existingTemplate = SizeTemplate::where('category_id', $request->category_id)
-            ->where('gender_id', $request->gender_id)
+            ->where('gender', $request->gender)
             ->where('size_library_id', $request->size_library_id)
             ->first();
 
@@ -618,7 +620,7 @@ class TemplateController extends Controller
         try {
             $template = SizeTemplate::create([
                 'category_id' => $request->category_id,
-                'gender_id' => $request->gender_id,
+                'gender' => $request->gender,
                 'size_library_id' => $request->size_library_id,
                 'template_status' => 'Available', // 默認為 Available
             ]);
@@ -626,7 +628,7 @@ class TemplateController extends Controller
             $this->logOperation('created (single)', [
                 'template_id' => $template->id,
                 'category_id' => $request->category_id,
-                'gender_id' => $request->gender_id,
+                'gender' => $request->gender,
                 'size_library_id' => $request->size_library_id
             ]);
 
@@ -634,7 +636,7 @@ class TemplateController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Template created successfully',
-                    'data' => $template->load(['category', 'gender', 'sizeLibrary'])
+                    'data' => $template->load(['category', 'sizeLibrary'])
                 ]);
             }
 
@@ -654,26 +656,25 @@ class TemplateController extends Controller
         $parts = explode('_', $id);
         if (count($parts) === 2) {
             $categoryId = $parts[0];
-            $genderId = $parts[1];
+            $gender = $parts[1]; // 现在 gender 是字符串值，不是 ID
 
             $category = Category::find($categoryId);
-            $gender = Gender::find($genderId);
 
-            if ($category && $gender) {
+            if ($category && in_array($gender, ['Men', 'Women', 'Kids', 'Unisex'])) {
                 // 获取该category+gender组合下的所有templates，按size_value排序
                 $sizeTemplates = SizeTemplate::where('size_templates.category_id', $categoryId)
-                    ->where('size_templates.gender_id', $genderId)
-                    ->with(['category', 'gender', 'sizeLibrary'])
+                    ->where('size_templates.gender', $gender)
+                    ->with(['category', 'sizeLibrary'])
                     ->join('size_libraries', 'size_templates.size_library_id', '=', 'size_libraries.id')
                     ->orderBy('size_libraries.size_value', 'asc')
                     ->select('size_templates.*')
                     ->get();
 
                 $categories = Category::where('category_status', 'Available')->get();
-                $genders = Gender::where('gender_status', 'Available')->get();
+                // Gender 现在是硬编码选项，不再从数据库获取
                 $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-                return view('admin.template.view', compact('sizeTemplates', 'categories', 'genders', 'sizeLibraries', 'category', 'gender'));
+                return view('admin.template.view', compact('sizeTemplates', 'categories', 'sizeLibraries', 'category', 'gender'));
             }
         }
 
@@ -686,12 +687,12 @@ class TemplateController extends Controller
      */
     private function viewSingleTemplate($id)
     {
-        $sizeTemplate = SizeTemplate::with(['category', 'gender', 'sizeLibrary'])->findOrFail($id);
+        $sizeTemplate = SizeTemplate::with(['category', 'sizeLibrary'])->findOrFail($id);
         $categories = Category::where('category_status', 'Available')->get();
-        $genders = Gender::where('gender_status', 'Available')->get();
+        // Gender 现在是硬编码选项，不再从数据库获取
         $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-        return view('admin.template.view', compact('sizeTemplate', 'categories', 'genders', 'sizeLibraries'));
+        return view('admin.template.view', compact('sizeTemplate', 'categories', 'sizeLibraries'));
     }
 
     /**

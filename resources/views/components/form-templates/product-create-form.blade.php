@@ -10,7 +10,6 @@
     'categories' => $categories,
     'brands' => $brands,
     'colors' => $colors,
-    'genders' => $genders,
     'sizes' => $sizes,
     'mappings' => $mappings,
     'locations' => $locations,

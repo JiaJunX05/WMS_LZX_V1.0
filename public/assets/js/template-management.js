@@ -37,7 +37,7 @@ let updateFormBound = false; // 標記更新表單事件是否已綁定
  */
 function validateTemplateForm() {
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id').value;
+    const gender = document.getElementById('gender').value;
     const sizeLibraryId = document.getElementById('size_library_id') ? document.getElementById('size_library_id').value : '';
 
     if (!categoryId) {
@@ -45,7 +45,7 @@ function validateTemplateForm() {
         return false;
     }
 
-    if (!genderId) {
+    if (!gender) {
         window.showAlert('Please select a gender', 'warning');
         return false;
     }
@@ -78,18 +78,30 @@ function handleTemplateRequest(url, method, data, onSuccess, onError) {
         headers: headers
     })
     .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.message || 'Server error');
-            });
-        }
-        return response.json();
+        return response.json().then(data => {
+            if (!response.ok) {
+                // 只显示主要错误信息，不显示详细列表
+                let errorMessage = data.message || 'Server error';
+                // 如果有多个错误，添加一个简短提示
+                if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+                    errorMessage = data.message || 'Some templates failed to create';
+                }
+                throw new Error(errorMessage);
+            }
+            return data;
+        });
     })
     .then(data => {
         if (data.success) {
             if (onSuccess) onSuccess(data);
         } else {
-            if (onError) onError(data.message || 'Operation failed');
+            // 只显示主要错误信息，不显示详细列表
+            let errorMessage = data.message || 'Operation failed';
+            // 如果有多个错误，使用简短提示
+            if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+                errorMessage = data.message || 'Some templates failed to create';
+            }
+            if (onError) onError(errorMessage);
         }
     })
     .catch(error => {
@@ -109,13 +121,13 @@ function createTemplate(templateData, onSuccess, onError) {
     if (templateData.templates && Array.isArray(templateData.templates)) {
         templateData.templates.forEach((template, index) => {
             formData.append(`templates[${index}][category_id]`, template.categoryId);
-            formData.append(`templates[${index}][gender_id]`, template.genderId);
+            formData.append(`templates[${index}][gender]`, template.gender);
             formData.append(`templates[${index}][size_library_id]`, template.sizeLibraryId);
             formData.append(`templates[${index}][template_status]`, template.templateStatus || 'Available');
         });
     } else {
         formData.append('category_id', templateData.categoryId);
-        formData.append('gender_id', templateData.genderId);
+        formData.append('gender', templateData.gender);
         formData.append('size_library_id', templateData.sizeLibraryId);
         formData.append('template_status', templateData.templateStatus || 'Available');
     }
@@ -233,7 +245,7 @@ function updateCategoryInfo() {
  * 更新性別信息
  */
 function updateGenderInfo() {
-    const genderSelect = document.getElementById('gender_id');
+    const genderSelect = document.getElementById('gender');
     if (genderSelect) {
         const selectedOption = genderSelect.options[genderSelect.selectedIndex];
         const genderName = selectedOption.text;
@@ -250,13 +262,13 @@ function updateGenderInfo() {
  */
 function updateSizeLibraryOptions() {
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id').value;
+    const gender = document.getElementById('gender').value;
     const sizeLibrarySelect = document.getElementById('size_library_id');
 
     if (!sizeLibrarySelect) return;
 
     // 如果類別或性別沒有選擇，清空尺碼庫選項
-    if (!categoryId || !genderId) {
+    if (!categoryId || !gender) {
         sizeLibrarySelect.innerHTML = '<option value="">Please select both category and gender first</option>';
         sizeLibrarySelect.disabled = true;
         return;
@@ -278,7 +290,7 @@ function updateSizeLibraryOptions() {
         },
         body: JSON.stringify({
             category_id: categoryId,
-            gender_id: genderId
+            gender: gender
         })
     })
     .then(response => response.json())
@@ -309,9 +321,9 @@ function updateSizeLibraryOptions() {
  */
 function loadAvailableSizeLibraries() {
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id').value;
+    const gender = document.getElementById('gender').value;
 
-    if (!categoryId || !genderId) {
+    if (!categoryId || !gender) {
         hideSizeLibraryCards();
         return;
     }
@@ -331,7 +343,7 @@ function loadAvailableSizeLibraries() {
         },
         body: JSON.stringify({
             category_id: categoryId,
-            gender_id: genderId
+            gender: gender
         })
     })
     .then(response => response.json())
@@ -547,7 +559,7 @@ function bindTemplateEvents() {
     }
 
     // 性別選擇變化
-    const genderSelect = document.getElementById('gender_id');
+    const genderSelect = document.getElementById('gender');
     if (genderSelect) {
         genderSelect.addEventListener('change', handleGenderChange);
     }
@@ -678,7 +690,7 @@ function renderCategoryCards(groupedData) {
         const templates = group.templates;
 
         // 確保category和gender數據存在
-        if (category && category.category_name && gender && gender.gender_name) {
+        if (category && category.category_name && gender) {
             cardsHTML += generateCategoryCard(category, gender, templates);
         } else {
             console.warn(`Category or gender data missing:`, category, gender);
@@ -708,7 +720,8 @@ function generateCategoryCard(category, gender, templates) {
     // 確保category和gender數據存在
     const categoryName = category ? category.category_name : 'Unknown Category';
     const categoryId = category ? category.id : 'unknown';
-    const genderName = gender ? gender.gender_name : 'Unknown Gender';
+    // gender 现在是字符串值，不是对象
+    const genderName = typeof gender === 'string' ? gender : (gender && gender.gender_name ? gender.gender_name : 'Unknown Gender');
     const displayTitle = `${categoryName} (${genderName})`;
 
     // 生成模板值列表
@@ -748,7 +761,7 @@ function generateCategoryCard(category, gender, templates) {
                                 <small class="text-muted">${totalCount} template values</small>
                             </div>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewCategoryDetails(${categoryId}, ${gender.id})">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewCategoryDetails(${categoryId}, '${gender}')">
                             <i class="bi bi-eye me-2"></i>View Details
                         </button>
                     </div>
@@ -969,9 +982,9 @@ function updatePaginationButtons(categoryCount) {
 /**
  * 查看分類詳情
  */
-function viewCategoryDetails(categoryId, genderId) {
-    // 跳轉到view頁面，傳遞category+gender組合ID
-    const combinedId = `${categoryId}_${genderId}`;
+function viewCategoryDetails(categoryId, gender) {
+    // 跳轉到view頁面，傳遞category+gender組合ID (gender 现在是字符串值)
+    const combinedId = `${categoryId}_${gender}`;
     const url = window.viewTemplateUrl.replace(':id', combinedId);
     window.location.href = url;
 }
@@ -1047,11 +1060,11 @@ function updateConfigSummary() {
 function clearForm() {
     // 檢查是否有數據需要清除
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id').value;
+    const gender = document.getElementById('gender').value;
     const selectedCheckboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked');
 
     // 如果沒有任何選擇，顯示提示
-    if (!categoryId && !genderId && selectedCheckboxes.length === 0) {
+    if (!categoryId && !gender && selectedCheckboxes.length === 0) {
         window.showAlert('No data to clear', 'info');
         return;
     }
@@ -1063,7 +1076,7 @@ function clearForm() {
 
     // 清空選擇
     document.getElementById('category_id').value = '';
-    document.getElementById('gender_id').value = '';
+    document.getElementById('gender').value = '';
 
     // 清空所有複選框
     const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
@@ -1107,7 +1120,7 @@ function selectAllLibraries() {
  */
 function updateUI() {
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id').value;
+    const gender = document.getElementById('gender').value;
 
     // 顯示/隱藏區域
     const initialMessage = document.getElementById('initial-message');
@@ -1157,13 +1170,13 @@ function handleFormSubmit(e) {
 
     // 獲取當前選擇的 category 和 gender
     const categoryId = document.getElementById('category_id').value;
-    const genderId = document.getElementById('gender_id').value;
+    const gender = document.getElementById('gender').value;
     const templateStatus = 'Available'; // 默認為 Available
 
     // 準備提交數據
     const templates = Array.from(selectedCheckboxes).map((checkbox, index) => ({
         categoryId: categoryId,
-        genderId: genderId,
+        gender: gender,
         sizeLibraryId: checkbox.value,
         templateStatus: templateStatus
     }));
@@ -1219,7 +1232,7 @@ function bindUpdateEvents() {
     }
 
     // 性別變化時更新尺碼庫選項（如果有的話）
-    const genderSelect = document.getElementById('gender_id');
+    const genderSelect = document.getElementById('gender');
     if (genderSelect && !genderSelect.hasAttribute('data-change-bound')) {
         genderSelect.addEventListener('change', updateSizeLibraryOptions);
         genderSelect.setAttribute('data-change-bound', 'true');

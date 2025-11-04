@@ -26,8 +26,8 @@
         ],
         'view' => [
             'icon' => 'bi bi-layout-text-window-reverse',
-            'title' => isset($category) && isset($gender) ? "View {$category->category_name} ({$gender->gender_name}) Size Template" : 'View Size Template',
-            'subtitle' => isset($category) && isset($gender) ? "View size templates for {$category->category_name} category and {$gender->gender_name} gender" : 'View template configuration and size values',
+            'title' => isset($category) && isset($gender) ? "View {$category->category_name} ({$gender}) Size Template" : 'View Size Template',
+            'subtitle' => isset($category) && isset($gender) ? "View size templates for {$category->category_name} category and {$gender} gender" : 'View template configuration and size values',
             'actionButtonText' => 'Back to List',
             'actionButtonUrl' => route('admin.template.index'),
             'actionButtonIcon' => 'bi bi-arrow-left'

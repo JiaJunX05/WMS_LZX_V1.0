@@ -860,35 +860,23 @@ function generateBarcode() {
 /**
  * 复制条形码
  */
-function copyBarcode(barcodeNumber) {
-    if (!navigator.clipboard) {
-        fallbackCopyTextToClipboard(barcodeNumber);
-        return;
-    }
+function copyBarcode(barcodeNumber, event) {
+    // 防止重复触发
+    let isCopied = false;
 
-    navigator.permissions.query({name: 'clipboard-write'}).then(function(result) {
-        if (result.state === 'granted' || result.state === 'prompt') {
-            navigator.clipboard.writeText(barcodeNumber).then(function() {
-                showSuccessMessage();
-            }).catch(function(err) {
-                console.error('Clipboard API failed:', err);
-                fallbackCopyTextToClipboard(barcodeNumber);
-            });
-        } else {
-            fallbackCopyTextToClipboard(barcodeNumber);
-        }
-    }).catch(function(err) {
-        fallbackCopyTextToClipboard(barcodeNumber);
-    });
+    // 获取触发按钮
+    const btn = event ? event.target.closest('.btn') : null;
 
     function showSuccessMessage() {
+        if (isCopied) return; // 防止重复显示
+        isCopied = true;
+
         if (typeof showAlert === 'function') {
             showAlert('Barcode copied to clipboard!', 'success');
         } else {
             alert('Barcode copied to clipboard!');
         }
 
-        const btn = event.target.closest('.btn');
         if (btn) {
             const originalIcon = btn.innerHTML;
             btn.innerHTML = '<i class="bi bi-check"></i>';
@@ -901,7 +889,17 @@ function copyBarcode(barcodeNumber) {
         }
     }
 
+    function showErrorMessage(message) {
+        if (typeof showAlert === 'function') {
+            showAlert(message, 'error');
+        } else {
+            alert(message);
+        }
+    }
+
     function fallbackCopyTextToClipboard(text) {
+        if (isCopied) return; // 如果已经复制成功，不再执行 fallback
+
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.top = "0";
@@ -929,13 +927,31 @@ function copyBarcode(barcodeNumber) {
         }
     }
 
-    function showErrorMessage(message) {
-        if (typeof showAlert === 'function') {
-            showAlert(message, 'error');
-        } else {
-            alert(message);
-        }
+    if (!navigator.clipboard) {
+        fallbackCopyTextToClipboard(barcodeNumber);
+        return;
     }
+
+    navigator.permissions.query({name: 'clipboard-write'}).then(function(result) {
+        if (result.state === 'granted' || result.state === 'prompt') {
+            navigator.clipboard.writeText(barcodeNumber).then(function() {
+                showSuccessMessage();
+            }).catch(function(err) {
+                console.error('Clipboard API failed:', err);
+                if (!isCopied) {
+                    fallbackCopyTextToClipboard(barcodeNumber);
+                }
+            });
+        } else {
+            if (!isCopied) {
+                fallbackCopyTextToClipboard(barcodeNumber);
+            }
+        }
+    }).catch(function(err) {
+        if (!isCopied) {
+            fallbackCopyTextToClipboard(barcodeNumber);
+        }
+    });
 }
 
 // =============================================================================

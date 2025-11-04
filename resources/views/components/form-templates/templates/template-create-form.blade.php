@@ -45,11 +45,12 @@
                                 <span class="input-group-text bg-white border-end-0">
                                     <i class="bi bi-person text-primary"></i>
                                 </span>
-                                <select class="form-select border-start-0" id="gender_id" name="gender_id" required>
+                                <select class="form-select border-start-0" id="gender" name="gender" required>
                                     <option value="">Select gender</option>
-                                    @foreach($genders as $gender)
-                                        <option value="{{ $gender->id }}">{{ $gender->gender_name }}</option>
-                                    @endforeach
+                                    <option value="Men">Men</option>
+                                    <option value="Women">Women</option>
+                                    <option value="Kids">Kids</option>
+                                    <option value="Unisex">Unisex</option>
                                 </select>
                             </div>
                         </div>

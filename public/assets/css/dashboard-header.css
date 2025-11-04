@@ -272,9 +272,9 @@
     background-color: #ec4899 !important;
 }
 
-/* Gender - 黄色 */
-.statistics-section .stats-card:has(#total-gender) .icon-size-3rem {
-    background-color: #eab308 !important;
+/* Stock Movements - 绿色 */
+.statistics-section .stats-card:has(#total-stock-movements) .icon-size-3rem {
+    background-color: #10b981 !important;
 }
 
 /* =============================================================================

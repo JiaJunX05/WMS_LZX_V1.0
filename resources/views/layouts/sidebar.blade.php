@@ -162,13 +162,13 @@
 
                 <!-- Management Tools -->
                 <li class="nav-item">
-                    <button class="nav-link {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                    <button class="nav-link {{ request()->routeIs(['admin.brand.*', 'admin.color.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                             type="button" data-bs-toggle="collapse" data-bs-target="#attributeCollapse">
                         <i class="bi bi-tools menu-icon me-2"></i>
                         <span>Management Tools</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['admin.brand.*', 'admin.color.*']) ? 'show' : '' }}"
                         id="attributeCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
@@ -181,12 +181,6 @@
                                 <a href="{{ route('admin.color.index') }}" class="nav-link {{ request()->routeIs('admin.color.*') ? 'active' : '' }}">
                                     <i class="bi bi-droplet-fill me-2"></i>
                                     <span>Color Management</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('admin.gender.index') }}" class="nav-link {{ request()->routeIs('admin.gender.*') ? 'active' : '' }}">
-                                    <i class="bi bi-person-fill me-2"></i>
-                                    <span>Gender Management</span>
                                 </a>
                             </li>
                         </ul>
@@ -451,13 +445,13 @@
 
                     <!-- Management Tools -->
                     <li class="nav-item">
-                        <button class="nav-link {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                        <button class="nav-link {{ request()->routeIs(['admin.brand.*', 'admin.color.*']) ? 'active' : '' }} has-dropdown w-100 text-start"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#mobileAttributeCollapse">
                             <i class="bi bi-tools menu-icon me-2"></i>
                             <span>Management Tools</span>
                             <i class="bi bi-chevron-down ms-auto"></i>
                         </button>
-                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.brand.*', 'admin.color.*', 'admin.gender.*']) ? 'show' : '' }}"
+                        <div class="collapse nav-collapse {{ request()->routeIs(['admin.brand.*', 'admin.color.*']) ? 'show' : '' }}"
                             id="mobileAttributeCollapse">
                             <ul class="nav-list sub-nav">
                                 <li>
@@ -470,12 +464,6 @@
                                     <a href="{{ route('admin.color.index') }}" class="nav-link {{ request()->routeIs('admin.color.*') ? 'active' : '' }}">
                                         <i class="bi bi-droplet-fill me-2"></i>
                                         <span>Color Management</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{{ route('admin.gender.index') }}" class="nav-link {{ request()->routeIs('admin.gender.*') ? 'active' : '' }}">
-                                        <i class="bi bi-person-fill me-2"></i>
-                                        <span>Gender Management</span>
                                     </a>
                                 </li>
                             </ul>

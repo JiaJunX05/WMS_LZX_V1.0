@@ -28,7 +28,6 @@
     'subcategories' => $subcategories,
     'brands' => $brands,
     'colors' => $colors,
-    'genders' => $genders,
     'sizes' => $sizes,
     'mappings' => $mappings,
     'locations' => $locations,

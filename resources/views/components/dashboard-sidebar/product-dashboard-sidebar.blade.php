@@ -6,7 +6,6 @@
     - $subcategories: 子分類數據
     - $brands: 品牌數據
     - $colors: 顏色數據 (可選)
-    - $genders: 性別數據 (可選)
     ========================================== --}}
 
 @php
@@ -80,23 +79,6 @@
         ];
     }
 
-    // 如果提供了性別數據，添加性別篩選
-    if(isset($genders) && $genders->isNotEmpty()) {
-        $filters[] = [
-            'id' => 'gender',
-            'title' => 'Genders',
-            'icon' => 'bi-gender-ambiguous',
-            'type' => 'checkbox',
-            'expanded' => false,
-            'options' => $genders->map(function($gender) {
-                return [
-                    'id' => $gender->id,
-                    'text' => $gender->gender_name,
-                    'count' => $gender->products_count ?? '0'
-                ];
-            })->toArray()
-        ];
-    }
 @endphp
 
 @include('components.dashboard-sidebar.templates.dashboard-sidebar', [

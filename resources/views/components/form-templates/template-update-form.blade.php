@@ -24,7 +24,7 @@
         [
             'icon' => 'bi-person',
             'label' => 'Gender',
-            'value' => $sizeTemplate->gender->gender_name ?? 'N/A'
+            'value' => $sizeTemplate->gender ?? 'N/A'
         ],
         [
             'icon' => 'bi-rulers',
@@ -56,18 +56,17 @@
         ],
         [
             'type' => 'select',
-            'name' => 'gender_id',
+            'name' => 'gender',
             'label' => 'Gender',
             'icon' => 'bi-person',
             'placeholder' => 'Select gender',
             'required' => true,
-            'options' => collect($genders)->map(function($gender) use ($sizeTemplate) {
-                return [
-                    'value' => $gender->id,
-                    'text' => $gender->gender_name,
-                    'selected' => $sizeTemplate->gender_id == $gender->id
-                ];
-            })->toArray(),
+            'options' => [
+                ['value' => 'Men', 'text' => 'Men', 'selected' => $sizeTemplate->gender == 'Men'],
+                ['value' => 'Women', 'text' => 'Women', 'selected' => $sizeTemplate->gender == 'Women'],
+                ['value' => 'Kids', 'text' => 'Kids', 'selected' => $sizeTemplate->gender == 'Kids'],
+                ['value' => 'Unisex', 'text' => 'Unisex', 'selected' => $sizeTemplate->gender == 'Unisex']
+            ],
             'help' => 'Choose the gender for this template'
         ],
         [

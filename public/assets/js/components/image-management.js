@@ -11,7 +11,7 @@
  * - 標準HTML結構生成
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
@@ -154,17 +154,22 @@ function validateImageFile(file) {
 // =============================================================================
 
 /**
- * 圖片預覽處理 - 用於 Create 頁面
+ * 統一的圖片預覽處理函數（支持 Create 和 Update 模式）
  * @param {Event} event 文件選擇事件
  * @param {Object} options 配置選項
  */
-function handleCreateImagePreview(event, options = {}) {
+function handleImagePreview(event, options = {}) {
     const {
+        // Create 模式配置
         imageInputId = 'image_input',
         previewImageId = 'img-preview',
         previewIconId = 'preview-icon',
         imageUploadAreaId = 'imageUploadArea',
-        imageUploadContentId = 'imageUploadContent'
+        imageUploadContentId = 'imageUploadContent',
+        // Update 模式配置
+        previewContainerId = null,
+        // 模式判斷：如果提供了 previewContainerId，則為 Update 模式
+        mode = previewContainerId ? 'update' : 'create'
     } = options;
 
     const file = event.target.files[0];
@@ -183,27 +188,211 @@ function handleCreateImagePreview(event, options = {}) {
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        const previewImage = document.getElementById(previewImageId);
-        const previewIcon = document.getElementById(previewIconId);
-        const imageUploadArea = document.getElementById(imageUploadAreaId);
-        const imageUploadContent = document.getElementById(imageUploadContentId);
+        if (mode === 'update' && previewContainerId) {
+            // Update 模式：使用 previewContainer
+            const previewContainer = document.getElementById(previewContainerId);
+            const removeImageBtn = document.getElementById('removeImage');
 
-        if (previewImage && previewIcon && imageUploadArea && imageUploadContent) {
-            previewImage.src = e.target.result;
-            previewImage.classList.remove('d-none');
-            previewIcon.classList.add('d-none');
-            imageUploadArea.classList.add('has-image');
+            if (previewContainer) {
+                // 保存原始内容（如果有）
+                const originalContent = previewContainer.getAttribute('data-original-content') || previewContainer.innerHTML;
+                if (!previewContainer.getAttribute('data-original-content')) {
+                    previewContainer.setAttribute('data-original-content', originalContent);
+                }
 
-            // 添加刪除按鈕
-            addImageRemoveButton(imageUploadAreaId, {
-                imageInputId: imageInputId,
-                previewImageId: previewImageId,
-                previewIconId: previewIconId,
-                imageUploadContentId: imageUploadContentId
-            });
+                // 检查是否在 updateZoneModal 中，使用正确的图片 ID
+                const isInUpdateModal = previewContainer.closest('#updateZoneModal');
+                const previewImageId = isInUpdateModal ? 'preview-image' : 'img-preview';
+
+                // 先保存 imageUploadContent 和 removeImageBtn 的引用（如果存在）
+                const imageUploadContent = isInUpdateModal ? document.getElementById('imageUploadContent') : null;
+                const staticRemoveBtn = isInUpdateModal ? document.getElementById('removeImage') : null;
+
+                // 保存原始 HTML 结构（如果还没有保存）
+                if (!previewContainer.getAttribute('data-original-content')) {
+                    const originalHTML = previewContainer.innerHTML;
+                    previewContainer.setAttribute('data-original-content', originalHTML);
+                }
+
+                // 替换 previewContainer 的内容为图片（但保留 removeImage 按钮在容器外部）
+                // 注意：removeImage 按钮在 previewContainer 内部，所以会被删除
+                // 我们需要在替换后重新添加按钮
+                previewContainer.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" id="${previewImageId}"
+                         class="img-preview w-100"
+                         style="height: auto; max-height: 200px; object-fit: contain;">
+                `;
+
+                // 隐藏 imageUploadContent（如果存在且没有被删除）
+                if (imageUploadContent && isInUpdateModal && document.body.contains(imageUploadContent)) {
+                    imageUploadContent.classList.add('d-none');
+                    imageUploadContent.style.display = 'none';
+                }
+
+                // 在 Update Zone Modal 中，显示静态移除按钮并绑定事件
+                if (isInUpdateModal) {
+                    // 重新获取 removeImage 按钮（可能被 innerHTML 替换了）
+                    let removeBtn = previewContainer.querySelector('#removeImage');
+
+                    // 如果按钮不存在，创建一个新的
+                    if (!removeBtn) {
+                        removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'img-remove-btn';
+                        removeBtn.id = 'removeImage';
+                        removeBtn.title = 'Remove image';
+                        removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                        previewContainer.appendChild(removeBtn);
+                    }
+
+                    // 重新绑定事件（因为按钮可能被 innerHTML 替换导致事件丢失）
+                    // 先克隆按钮移除旧事件
+                    const newRemoveBtn = removeBtn.cloneNode(true);
+                    removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
+                    removeBtn = newRemoveBtn;
+
+                    // 绑定新事件
+                    removeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        if (!confirm('Are you sure you want to remove this image?')) {
+                            return;
+                        }
+
+                        const modal = document.getElementById('updateZoneModal');
+                        const imageInput = modal?.querySelector('#input_image');
+                        const previewContainer = modal?.querySelector('#image-preview');
+                        const removeImageInput = modal?.querySelector('#remove_image');
+
+                        if (imageInput && previewContainer) {
+                            // 重置文件输入
+                            imageInput.value = '';
+
+                            // 设置 remove_image 标记
+                            if (removeImageInput) {
+                                removeImageInput.value = '1';
+                            }
+
+                            // 恢复占位符（显示 imageUploadContent，隐藏图片）
+                            const originalContent = previewContainer.getAttribute('data-original-content');
+                            if (originalContent) {
+                                previewContainer.innerHTML = originalContent;
+                            }
+
+                            // 隐藏 remove 按钮
+                            const btn = previewContainer.querySelector('#removeImage');
+                            if (btn) {
+                                btn.classList.add('d-none');
+                            }
+
+                            // 显示成功提示
+                            if (typeof window.showAlert === 'function') {
+                                window.showAlert('Image removed successfully', 'success');
+                            }
+                        }
+                    });
+
+                    // 显示按钮
+                    removeBtn.classList.remove('d-none');
+                    removeBtn.style.display = 'block';
+                } else if (!isInUpdateModal) {
+                    // 在普通 Update 页面中，创建动态移除按钮
+                    const removeBtn = document.createElement('div');
+                    removeBtn.className = 'img-remove-btn';
+                    removeBtn.title = 'Remove image';
+                    removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    removeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        removeImage(previewContainerId, { mode: 'update', imageInputId: imageInputId || 'input_image' });
+                    });
+                    previewContainer.appendChild(removeBtn);
+                }
+
+                // 顯示成功提示
+                if (typeof showAlert === 'function') {
+                    showAlert('Image uploaded successfully', 'success');
+                }
+            } else {
+                console.warn('Update modal image preview: previewContainer not found', previewContainerId);
+            }
+        } else {
+            // Create 模式：使用 imageUploadArea
+            const imageUploadArea = document.getElementById(imageUploadAreaId);
+            if (!imageUploadArea) return;
+
+            // 在 imageUploadArea 的父容器（可能是 modal）內查找其他元素
+            const container = imageUploadArea.closest('.modal') || imageUploadArea.closest('form') || document;
+
+            // 先查找 previewImage（在 imageUploadArea 内部，与 imageUploadContent 同级）
+            let previewImage = imageUploadArea.querySelector(`#${previewImageId}`);
+            if (!previewImage) {
+                previewImage = container.querySelector(`#${previewImageId}`);
+            }
+
+            // 查找 imageUploadContent（在 imageUploadArea 内部）
+            let imageUploadContent = imageUploadArea.querySelector(`#${imageUploadContentId}`);
+            if (!imageUploadContent) {
+                imageUploadContent = container.querySelector(`#${imageUploadContentId}`);
+            }
+
+            // 查找 previewIcon（在 imageUploadContent 内部）
+            let previewIcon = null;
+            if (imageUploadContent) {
+                previewIcon = imageUploadContent.querySelector(`#${previewIconId}`);
+            }
+            if (!previewIcon) {
+                previewIcon = container.querySelector(`#${previewIconId}`);
+            }
+
+            if (previewImage && imageUploadArea && imageUploadContent) {
+                // 显示图片
+                previewImage.src = e.target.result;
+                previewImage.classList.remove('d-none');
+                previewImage.style.display = 'block';
+
+                // 隐藏占位符
+                imageUploadContent.style.display = 'none';
+                imageUploadContent.classList.add('d-none');
+
+                imageUploadArea.classList.add('has-image');
+
+                // 添加删除按钮（如果还没有）
+                addImageRemoveButton(imageUploadAreaId, {
+                    imageInputId: imageInputId,
+                    previewImageId: previewImageId,
+                    previewIconId: previewIconId,
+                    imageUploadContentId: imageUploadContentId,
+                    mode: 'create'
+                });
+
+                // 显示成功提示
+                if (typeof showAlert === 'function') {
+                    showAlert('Image uploaded successfully', 'success');
+                }
+            }
         }
     };
     reader.readAsDataURL(file);
+}
+
+/**
+ * 圖片預覽處理 - 用於 Create 頁面（向後兼容）
+ * @param {Event} event 文件選擇事件
+ * @param {Object} options 配置選項
+ */
+function handleCreateImagePreview(event, options = {}) {
+    handleImagePreview(event, { ...options, mode: 'create' });
+}
+
+/**
+ * 圖片預覽處理 - 用於 Update 頁面（向後兼容）
+ * @param {Event} event 文件選擇事件
+ * @param {Object} options 配置選項
+ */
+function handleUpdateImagePreview(event, options = {}) {
+    handleImagePreview(event, { ...options, mode: 'update' });
 }
 
 
@@ -245,16 +434,22 @@ function addImageRemoveButton(imageUploadAreaId = 'imageUploadArea', options = {
 }
 
 /**
- * 移除圖片
- * @param {string} imageUploadAreaId 上傳區域ID
+ * 統一的圖片移除函數（支持 Create 和 Update 模式）
+ * @param {string} containerId 容器ID（Create: imageUploadAreaId, Update: previewContainerId）
  * @param {Object} options 配置選項
  */
-function removeImage(imageUploadAreaId = 'imageUploadArea', options = {}) {
+function removeImage(containerId = 'imageUploadArea', options = {}) {
+    // 先提取 mode，因為它可能影響其他默認值
+    const mode = options.mode || (options.previewContainerId ? 'update' : 'create');
+
     const {
+        // Create 模式配置
         imageInputId = 'image_input',
         previewImageId = 'img-preview',
         previewIconId = 'preview-icon',
         imageUploadContentId = 'imageUploadContent',
+        // Update 模式配置
+        previewContainerId = null,
         showMessage = true,
         confirmRemove = true
     } = options;
@@ -264,35 +459,131 @@ function removeImage(imageUploadAreaId = 'imageUploadArea', options = {}) {
         return;
     }
 
-    const imageInput = document.getElementById(imageInputId);
-    const previewImage = document.getElementById(previewImageId);
-    const previewIcon = document.getElementById(previewIconId);
-    const imageUploadArea = document.getElementById(imageUploadAreaId);
-    const imageUploadContent = document.getElementById(imageUploadContentId);
-    const removeBtn = imageUploadArea?.querySelector('.img-remove-btn');
+    if (mode === 'update') {
+        // Update 模式處理
+        const previewContainer = document.getElementById(previewContainerId || containerId);
+        const imageInput = document.getElementById(imageInputId || 'input_image');
+        const removeImageBtn = document.getElementById('removeImage');
 
-    if (imageInput && previewImage && previewIcon && imageUploadArea && imageUploadContent) {
-        // 重置文件輸入
-        imageInput.value = '';
+        // 檢查是否在 modal 中
+        const isInModal = previewContainer && previewContainer.closest('#updateZoneModal');
+        const form = isInModal
+            ? document.getElementById('updateZoneModalForm')
+            : document.querySelector('form[action*="update"]');
 
-        // 隱藏預覽圖片，顯示上傳圖標
-        previewImage.classList.add('d-none');
-        previewIcon.classList.remove('d-none');
-        imageUploadArea.classList.remove('has-image');
+        if (imageInput && previewContainer) {
+            // 重置文件輸入
+            imageInput.value = '';
 
-        // 移除刪除按鈕
-        if (removeBtn) {
-            removeBtn.remove();
-        }
+            // 添加隱藏的 remove_image 參數到表單
+            let removeImageInput = null;
+            if (form) {
+                removeImageInput = form.querySelector('input[name="remove_image"]');
+                if (!removeImageInput) {
+                    removeImageInput = document.createElement('input');
+                    removeImageInput.type = 'hidden';
+                    removeImageInput.name = 'remove_image';
+                    form.appendChild(removeImageInput);
+                }
+                removeImageInput.value = '1';
+            } else if (isInModal) {
+                // 如果在 modal 中但找不到 form，直接查找 remove_image input
+                removeImageInput = document.getElementById('remove_image');
+                if (removeImageInput) {
+                    removeImageInput.value = '1';
+                }
+            }
 
-        if (showMessage) {
-            if (typeof showAlert === 'function') {
-                showAlert('Image removed successfully', 'success');
+            // 恢復原始內容
+            const originalContent = previewContainer.getAttribute('data-original-content');
+            if (originalContent) {
+                previewContainer.innerHTML = originalContent;
             } else {
-                alert('Image removed successfully');
+                // 如果沒有原始內容，顯示默認狀態
+                const imageUploadContent = document.getElementById('imageUploadContent');
+                if (imageUploadContent) {
+                    previewContainer.innerHTML = `
+                        <div class="upload-placeholder" id="imageUploadContent">
+                            <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                            <h5 class="mt-3">Click to upload image</h5>
+                            <p class="text-muted">Supports JPG, PNG, GIF formats</p>
+                        </div>
+                        <img id="preview-image" class="img-preview d-none" alt="Preview">
+                        <button type="button" class="img-remove-btn d-none" id="removeImage" title="Remove image">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    `;
+                } else {
+                    previewContainer.innerHTML = `
+                        <div class="text-center text-muted">
+                            <i class="bi bi-image fs-1 mb-3 d-block"></i>
+                            <p class="mb-0">No image uploaded</p>
+                            <small>Upload an image to see preview</small>
+                        </div>
+                    `;
+                }
+            }
+
+            // 隱藏移除圖片按鈕
+            if (removeImageBtn) {
+                removeImageBtn.classList.add('d-none');
+            }
+
+            if (showMessage) {
+                if (typeof showAlert === 'function') {
+                    showAlert('Image removed successfully', 'success');
+                } else {
+                    alert('Image removed successfully');
+                }
+            }
+        }
+    } else {
+        // Create 模式處理
+        const imageUploadArea = document.getElementById(containerId);
+        if (!imageUploadArea) return;
+
+        // 在 imageUploadArea 的父容器（可能是 modal）內查找其他元素
+        const container = imageUploadArea.closest('.modal') || imageUploadArea.closest('form') || document;
+        const imageInput = container.querySelector(`#${imageInputId}`);
+        const previewImage = container.querySelector(`#${previewImageId}`);
+        const previewIcon = container.querySelector(`#${previewIconId}`);
+        const imageUploadContent = container.querySelector(`#${imageUploadContentId}`);
+        const removeBtn = imageUploadArea.querySelector('.img-remove-btn');
+
+        if (imageInput && previewImage && imageUploadArea && imageUploadContent) {
+            // 重置文件輸入
+            imageInput.value = '';
+
+            // 隐藏图片，显示占位符
+            previewImage.classList.add('d-none');
+            previewImage.style.display = 'none';
+            imageUploadContent.classList.remove('d-none');
+            imageUploadContent.style.display = '';
+            imageUploadArea.classList.remove('has-image');
+
+            // 移除删除按钮
+            if (removeBtn) {
+                removeBtn.remove();
+            }
+
+            if (showMessage) {
+                if (typeof showAlert === 'function') {
+                    showAlert('Image removed successfully', 'success');
+                } else {
+                    alert('Image removed successfully');
+                }
             }
         }
     }
+}
+
+/**
+ * 更新頁面圖片移除（向後兼容）
+ */
+function removeUpdateImage() {
+    const previewContainer = document.getElementById('image-preview');
+    const containerId = previewContainer ? 'image-preview' : 'imageUploadArea';
+    removeImage(containerId, { mode: 'update', imageInputId: 'input_image' });
 }
 
 /**
@@ -358,14 +649,17 @@ function bindImageUploadEvents(options = {}) {
         // Create 頁面配置
         createImageInputId = 'image_input',
         createImageUploadAreaId = 'imageUploadArea',
+        createPreviewImageId = 'img-preview',
+        createPreviewIconId = 'preview-icon',
+        createImageUploadContentId = 'imageUploadContent',
 
         // Update 頁面配置
         updateImageInputId = 'input_image',
         updatePreviewContainerId = 'image-preview',
 
-        // 預覽處理函數
-        onCreatePreview = handleCreateImagePreview,
-        onUpdatePreview = handleUpdateImagePreview
+    // 預覽處理函數（統一使用 handleImagePreview）
+    onCreatePreview = handleImagePreview,
+    onUpdatePreview = handleImagePreview
     } = options;
 
     // Create 頁面事件綁定
@@ -373,30 +667,105 @@ function bindImageUploadEvents(options = {}) {
     const createImageUploadArea = document.getElementById(createImageUploadAreaId);
 
     if (createImageInput && createImageUploadArea) {
-        createImageInput.addEventListener('change', (e) => onCreatePreview(e, {
-            imageInputId: createImageInputId,
-            imageUploadAreaId: createImageUploadAreaId
-        }));
+        // 檢查是否已經綁定過（通過數據屬性標記）
+        const bindKey = `image-events-bound-${createImageInputId}`;
+        if (createImageInput.getAttribute(`data-${bindKey}`)) {
+            // 已經綁定過，先移除舊的事件監聽器
+            // 通過克隆元素來移除所有事件（這是最可靠的方法）
+            const areaContent = createImageUploadArea.innerHTML;
+            const newArea = createImageUploadArea.cloneNode(true);
+            createImageUploadArea.parentNode.replaceChild(newArea, createImageUploadArea);
+            newArea.innerHTML = areaContent;
 
-        // 點擊上傳區域觸發文件選擇
-        createImageUploadArea.addEventListener('click', function(e) {
-            // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.img-remove-btn')) {
-                return; // 不觸發文件選擇
-            }
-            createImageInput.click();
-        });
+            // 重新獲取元素引用
+            const freshImageInput = document.getElementById(createImageInputId);
+            const freshImageUploadArea = document.getElementById(createImageUploadAreaId);
 
-        // 設置拖拽上傳
-        setupDragAndDrop(createImageUploadAreaId, createImageInputId, onCreatePreview);
+            // 綁定新的事件監聽器（使用統一的 handleImagePreview）
+            freshImageInput.addEventListener('change', (e) => onCreatePreview(e, {
+                imageInputId: createImageInputId,
+                imageUploadAreaId: createImageUploadAreaId,
+                previewImageId: createPreviewImageId,
+                previewIconId: createPreviewIconId,
+                imageUploadContentId: createImageUploadContentId,
+                mode: 'create'
+            }));
+
+            // 點擊上傳區域觸發文件選擇
+            freshImageUploadArea.addEventListener('click', function(e) {
+                // 只檢查是否點擊了移除按鈕
+                if (e.target.closest('.img-remove-btn')) {
+                    return; // 不觸發文件選擇
+                }
+                freshImageInput.click();
+            });
+
+            // 設置拖拽上傳
+            setupDragAndDrop(createImageUploadAreaId, createImageInputId, onCreatePreview);
+
+            // 標記已綁定
+            freshImageInput.setAttribute(`data-${bindKey}`, 'true');
+        } else {
+            // 首次綁定（使用統一的 handleImagePreview）
+            createImageInput.addEventListener('change', (e) => onCreatePreview(e, {
+                imageInputId: createImageInputId,
+                imageUploadAreaId: createImageUploadAreaId,
+                previewImageId: createPreviewImageId,
+                previewIconId: createPreviewIconId,
+                imageUploadContentId: createImageUploadContentId,
+                mode: 'create'
+            }));
+
+            // 點擊上傳區域觸發文件選擇
+            createImageUploadArea.addEventListener('click', function(e) {
+                // 只檢查是否點擊了移除按鈕
+                if (e.target.closest('.img-remove-btn')) {
+                    return; // 不觸發文件選擇
+                }
+                createImageInput.click();
+            });
+
+            // 設置拖拽上傳
+            setupDragAndDrop(createImageUploadAreaId, createImageInputId, onCreatePreview);
+
+            // 標記已綁定
+            createImageInput.setAttribute(`data-${bindKey}`, 'true');
+        }
     }
 
     // Update 頁面事件綁定
     const updateImageInput = document.getElementById(updateImageInputId);
     if (updateImageInput) {
-        updateImageInput.addEventListener('change', (e) => onUpdatePreview(e, {
-            previewContainerId: updatePreviewContainerId
-        }));
+        // 檢查是否已經綁定過（通過數據屬性標記）
+        const bindKey = `image-events-bound-${updateImageInputId}`;
+        if (updateImageInput.getAttribute(`data-${bindKey}`)) {
+            // 已經綁定過，先移除舊的事件監聽器
+            // 通過克隆元素來移除所有事件
+            const newInput = updateImageInput.cloneNode(true);
+            updateImageInput.parentNode.replaceChild(newInput, updateImageInput);
+
+            // 重新獲取元素引用
+            const freshUpdateInput = document.getElementById(updateImageInputId);
+
+            freshUpdateInput.addEventListener('change', (e) => onUpdatePreview(e, {
+                previewContainerId: updatePreviewContainerId,
+                imageInputId: updateImageInputId,
+                mode: 'update'
+            }));
+
+            // 標記已綁定
+            freshUpdateInput.setAttribute(`data-${bindKey}`, 'true');
+        } else {
+            // 首次綁定（使用統一的 handleImagePreview）
+            updateImageInput.addEventListener('change', (e) => onUpdatePreview(e, {
+                previewContainerId: updatePreviewContainerId,
+                imageInputId: updateImageInputId,
+                mode: 'update'
+            }));
+
+            // 標記已綁定
+            updateImageInput.setAttribute(`data-${bindKey}`, 'true');
+        }
     }
 }
 
@@ -966,114 +1335,6 @@ function setupUserDragAndDrop() {
 // 核心圖片處理功能 (Core Image Processing Functions)
 // =============================================================================
 
-/**
- * 處理更新頁面圖片預覽（統一版本）
- * @param {Event} event 文件選擇事件
- * @param {Object} options 配置選項
- */
-function handleUpdateImagePreview(event, options = {}) {
-    const {
-        previewContainerId = 'image-preview'
-    } = options;
-
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // 驗證文件
-    const validation = validateImageFile(file);
-    if (!validation.isValid) {
-        if (typeof showAlert === 'function') {
-            showAlert(validation.errors.join(', '), 'warning');
-        } else {
-            alert(validation.errors.join(', '));
-        }
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const previewContainer = document.getElementById(previewContainerId);
-        const removeImageBtn = document.getElementById('removeImage');
-
-        if (previewContainer) {
-            previewContainer.innerHTML = `
-                <img src="${e.target.result}" alt="Preview" id="img-preview"
-                     class="img-preview w-100"
-                     style="height: auto; max-height: 200px; object-fit: contain;">
-                <div class="img-remove-btn" title="Remove image">
-                    <i class="bi bi-trash"></i>
-                </div>
-            `;
-
-            // 添加刪除按鈕事件
-            const removeBtn = previewContainer.querySelector('.img-remove-btn');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    removeUpdateImage();
-                });
-            }
-
-            // 顯示移除圖片按鈕
-            if (removeImageBtn) {
-                removeImageBtn.classList.remove('d-none');
-            }
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-/**
- * 更新页面图片移除
- */
-function removeUpdateImage() {
-    // 确认是否要移除图片
-    if (!confirm('Are you sure you want to remove this image?')) {
-        return;
-    }
-
-    const imageInput = document.getElementById('input_image');
-    const previewContainer = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('removeImage');
-    const form = document.querySelector('form[action*="update"]');
-
-    if (imageInput && previewContainer && form) {
-        // 重置文件输入
-        imageInput.value = '';
-
-        // 添加隐藏的 remove_image 参数到表单
-        let removeImageInput = form.querySelector('input[name="remove_image"]');
-        if (!removeImageInput) {
-            removeImageInput = document.createElement('input');
-            removeImageInput.type = 'hidden';
-            removeImageInput.name = 'remove_image';
-            form.appendChild(removeImageInput);
-        }
-        removeImageInput.value = '1';
-
-        // 恢复原始内容
-        const originalContent = previewContainer.getAttribute('data-original-content');
-        if (originalContent) {
-            previewContainer.innerHTML = originalContent;
-        } else {
-            // 如果没有原始内容，显示默认状态
-            previewContainer.innerHTML = `
-                <div class="text-center text-muted">
-                    <i class="bi bi-image fs-1 mb-3 d-block"></i>
-                    <p class="mb-0">No image uploaded</p>
-                    <small>Upload an image to see preview</small>
-                </div>
-            `;
-        }
-
-        // 隐藏移除图片按钮
-        if (removeImageBtn) {
-            removeImageBtn.classList.add('d-none');
-        }
-
-        showAlert('Image removed successfully', 'success');
-    }
-}
 
 /**
  * 更新页面移除图片按钮处理
@@ -1158,9 +1419,10 @@ window.ImageSystem = {
     // 驗證
     validateImageFile,
 
-    // 預覽
-    handleCreateImagePreview,
-    handleUpdateImagePreview,
+    // 預覽（統一函數）
+    handleImagePreview,
+    handleCreateImagePreview, // 向後兼容
+    handleUpdateImagePreview, // 向後兼容
     showImagePreview,
 
     // 管理
@@ -1180,7 +1442,13 @@ window.ImageSystem = {
 
     // 工具
     generateImagePreviewHTML,
-    generateNoImageHTML
+    generateNoImageHTML,
+
+    // 通用更新頁面圖片處理函數
+    handleUpdateImagePreview,
+    removeUpdateImage,
+    handleRemoveImageButton,
+    resetImageWithoutMessage
 };
 
 // 向後兼容的函數別名
@@ -1203,13 +1471,8 @@ window.removeUserImage = removeUserImage;
 window.bindUserImageEvents = bindUserImageEvents;
 window.setupUserDragAndDrop = setupUserDragAndDrop;
 
-// 通用更新頁面圖片處理函數
-window.handleUpdateImagePreview = handleUpdateImagePreview;
-window.removeUpdateImage = removeUpdateImage;
-window.handleRemoveImageButton = handleRemoveImageButton;
-window.resetImageWithoutMessage = resetImageWithoutMessage;
-
 // 向後兼容的函數別名
 window.previewImage = showImagePreview;
-window.handleImagePreview = handleCreateImagePreview;
+// 注意：不要覆盖 handleImagePreview，因为它会被其他代码调用
+// window.handleImagePreview = handleCreateImagePreview; // 已移除，避免递归调用
 window.previewUploadedImage = handleUpdateImagePreview;

@@ -10,8 +10,8 @@ use App\Models\SizeLibrary;
 use App\Models\Category;
 
 /**
- * Size Template Management Controller
  * 尺码模板管理控制器
+ * Size Template Management Controller
  *
  * 功能模块：
  * - 模板列表展示：搜索、筛选、分页
@@ -21,23 +21,43 @@ use App\Models\Category;
  * - 动态数据：根据类别和性别获取可用尺码库
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class TemplateController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_TEMPLATES = 20;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 批量创建最大数量
+     */
+    private const MAX_BULK_TEMPLATES = 100; // 增加到 100，如果需要移除限制可以设置为 PHP_INT_MAX
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 模板验证规则
+     */
     private const TEMPLATE_RULES = [
         'category_id' => 'required|exists:categories,id',
         'gender' => 'required|in:Men,Women,Kids,Unisex',
         'size_library_id' => 'required|exists:size_libraries,id',
     ];
 
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
+
     /**
+     * 标准化模板数据
      * Normalize template data from frontend
+     *
+     * @param array $templateData
+     * @return array
      */
     private function normalizeTemplateData(array $templateData): array
     {
@@ -62,19 +82,23 @@ class TemplateController extends Controller
     }
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -89,7 +113,11 @@ class TemplateController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -103,11 +131,16 @@ class TemplateController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -116,9 +149,17 @@ class TemplateController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
     /**
      * 显示尺码模板列表页面
      * Display size template list page
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -132,27 +173,32 @@ class TemplateController extends Controller
             ->select('size_templates.*')
             ->get();
         $categories = Category::where('category_status', 'Available')->get();
-        // Gender 现在是硬编码选项，不再从数据库获取
 
         return view('admin.template.dashboard', compact('sizeTemplates', 'categories'));
     }
 
     /**
-     * 显示创建尺码模板表单
-     * Show create size template form
+     * 获取创建模板数据（现在通过 modal，只返回 JSON）
+     * Get create template data (now through modal, returns JSON only)
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function create()
     {
         $categories = Category::where('category_status', 'Available')->get();
-        // Gender 现在是硬编码选项，不再从数据库获取
-        $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
-        return view('admin.template.create', compact('categories', 'sizeLibraries'));
+        return response()->json([
+            'success' => true,
+            'categories' => $categories
+        ]);
     }
 
     /**
      * 存储新尺码模板
      * Store new size template
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -169,18 +215,21 @@ class TemplateController extends Controller
      * Show size template details
      *
      * 支持两种模式：
-     * 1. 传入category_id_gender_id格式 - 显示该组合下的所有templates
-     * 2. 传入template_id - 显示单个template
+     * 1. 传入 category_id_gender 格式 - 显示该组合下的所有 templates
+     * 2. 传入 template_id - 显示单个 template
+     *
+     * @param int|string $id
+     * @return \Illuminate\View\View
      */
     public function view($id)
     {
         try {
-            // 检查是否是category_gender组合格式 (例如: "1_2" 表示category_id=1, gender_id=2)
+            // 检查是否是 category_gender 组合格式 (例如: "1_Men" 表示 category_id=1, gender=Men)
             if (strpos($id, '_') !== false) {
                 return $this->viewTemplateGroup($id);
             }
 
-            // 如果不是组合格式，尝试作为单个template ID处理
+            // 如果不是组合格式，尝试作为单个 template ID 处理
             return $this->viewSingleTemplate($id);
         } catch (\Exception $e) {
             Log::error('Failed to load view form: ' . $e->getMessage(), [
@@ -196,14 +245,17 @@ class TemplateController extends Controller
     /**
      * 显示编辑尺码模板表单
      * Show edit size template form
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
         try {
             $sizeTemplate = SizeTemplate::with(['category', 'sizeLibrary'])->findOrFail($id);
             $categories = Category::where('category_status', 'Available')->get();
-            // Gender 现在是硬编码选项，不再从数据库获取
-            // 根據當前模板的 category 過濾 size libraries
+
+            // 根据当前模板的 category 过滤 size libraries
             $sizeLibraries = SizeLibrary::where('size_status', 'Available')
                 ->where('category_id', $sizeTemplate->category_id)
                 ->with('category')
@@ -222,8 +274,56 @@ class TemplateController extends Controller
     }
 
     /**
+     * 显示尺码模板编辑表单（用于 Modal）
+     * Show size template edit form (for Modal)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function showEditForm(Request $request, $id)
+    {
+        try {
+            $template = SizeTemplate::with(['category', 'sizeLibrary'])->findOrFail($id);
+
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Size template data fetched successfully',
+                    'data' => [
+                        'id' => $template->id,
+                        'category_id' => $template->category_id,
+                        'gender' => $template->gender,
+                        'size_library_id' => $template->size_library_id,
+                        'template_status' => $template->template_status,
+                        'category_name' => $template->category->category_name ?? '',
+                        'size_value' => $template->sizeLibrary->size_value ?? ''
+                    ]
+                ]);
+            }
+
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.size_library.template.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load size template data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('admin.size_library.template.index')
+                ->with('error', 'Size template not found');
+        }
+    }
+
+    /**
      * 更新尺码模板信息
      * Update size template information
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -281,16 +381,43 @@ class TemplateController extends Controller
                 'template_status' => $validatedData['template_status']
             ]);
 
+            $message = 'Template updated successfully!';
+
             if ($request->ajax()) {
+                $freshTemplate = $sizeTemplate->fresh(['category', 'sizeLibrary']);
+
+                Log::info('AJAX response data', [
+                    'success' => true,
+                    'message' => $message,
+                    'data' => $freshTemplate
+                ]);
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'Template updated successfully!',
-                    'data' => $sizeTemplate->load(['category', 'sizeLibrary'])
+                    'message' => $message,
+                    'data' => $freshTemplate
                 ]);
             }
 
             return redirect()->route('admin.size_library.template.index')
-                ->with('success', 'SizeTemplate updated successfully!');
+                ->with('success', $message);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Template update validation failed', [
+                'id' => $id,
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+
+            throw $e;
 
         } catch (\Exception $e) {
             return $this->handleError($request, 'Failed to update template: ' . $e->getMessage(), $e);
@@ -300,6 +427,9 @@ class TemplateController extends Controller
     /**
      * 删除尺码模板
      * Delete size template
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
@@ -309,16 +439,15 @@ class TemplateController extends Controller
 
             $this->logOperation('deleted', ['size_template_id' => $id]);
 
-            // 检查是否是 AJAX 请求
-            if (request()->ajax() || request()->wantsJson()) {
+            if (request()->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'SizeTemplate deleted successfully!'
-                ])->header('Content-Type', 'application/json');
+                    'message' => 'Template deleted successfully!'
+                ]);
             }
 
             return redirect()->route('admin.size_library.template.index')
-                ->with('success', 'SizeTemplate deleted successfully!');
+                ->with('success', 'Template deleted successfully!');
 
         } catch (\Exception $e) {
             return $this->handleError(request(), 'Failed to delete size template: ' . $e->getMessage(), $e);
@@ -326,8 +455,11 @@ class TemplateController extends Controller
     }
 
     /**
-     * 根据类别、性别和尺码类型获取可用的尺码库
-     * Get available size libraries based on category, gender and size type
+     * 根据类别和性别获取可用的尺码库
+     * Get available size libraries based on category and gender
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getAvailableSizeLibraries(Request $request)
     {
@@ -348,7 +480,7 @@ class TemplateController extends Controller
                     ->orderBy('id')
                     ->get();
             } else {
-                // 只獲取該類別下的所有可用尺碼庫
+                // 只获取该类别下的所有可用尺码库
                 $sizeLibraries = SizeLibrary::where('category_id', $categoryId)
                     ->where('size_status', 'Available')
                     ->orderBy('id')
@@ -382,54 +514,70 @@ class TemplateController extends Controller
     /**
      * 设置模板为可用状态
      * Set template to available status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function setAvailable(Request $request, $id)
+    public function setAvailable($id)
     {
         try {
+            Log::info('setAvailable called', ['id' => $id, 'is_ajax' => request()->ajax()]);
+
             $template = SizeTemplate::findOrFail($id);
-            $template->template_status = 'Available';
-            $template->save();
+            $template->update(['template_status' => 'Available']);
 
             $this->logOperation('set to available', ['template_id' => $id]);
 
-            if ($request->ajax()) {
+            $message = 'Template has been set to available status';
+
+            if (request()->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Template status updated to available successfully!'
+                    'message' => $message,
+                    'data' => $template->fresh()
                 ]);
             }
 
-            return redirect()->back()->with('success', 'Template status updated to available successfully!');
+            return redirect()->route('admin.size_library.template.index')
+                ->with('success', $message);
 
         } catch (\Exception $e) {
-            return $this->handleError($request, 'Failed to update template status: ' . $e->getMessage(), $e);
+            return $this->handleError(request(), 'Failed to set template available: ' . $e->getMessage(), $e);
         }
     }
 
     /**
      * 设置模板为不可用状态
      * Set template to unavailable status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function setUnavailable(Request $request, $id)
+    public function setUnavailable($id)
     {
         try {
+            Log::info('setUnavailable called', ['id' => $id, 'is_ajax' => request()->ajax()]);
+
             $template = SizeTemplate::findOrFail($id);
-            $template->template_status = 'Unavailable';
-            $template->save();
+            $template->update(['template_status' => 'Unavailable']);
 
             $this->logOperation('set to unavailable', ['template_id' => $id]);
 
-            if ($request->ajax()) {
+            $message = 'Template has been set to unavailable status';
+
+            if (request()->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Template status updated to unavailable successfully!'
+                    'message' => $message,
+                    'data' => $template->fresh()
                 ]);
             }
 
-            return redirect()->back()->with('success', 'Template status updated to unavailable successfully!');
+            return redirect()->route('admin.size_library.template.index')
+                ->with('success', $message);
 
         } catch (\Exception $e) {
-            return $this->handleError($request, 'Failed to update template status: ' . $e->getMessage(), $e);
+            return $this->handleError(request(), 'Failed to set template unavailable: ' . $e->getMessage(), $e);
         }
     }
 
@@ -440,6 +588,8 @@ class TemplateController extends Controller
     /**
      * 获取模板数据（AJAX）
      * Get templates data for AJAX requests
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     private function getTemplatesData()
     {
@@ -466,13 +616,13 @@ class TemplateController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $groupedTemplates,
-                'total_templates' => $sizeTemplates->count(), // 添加模板總數
-                'total_groups' => $groupedTemplates->count(), // 添加分組總數
+                'total_templates' => $sizeTemplates->count(),
+                'total_groups' => $groupedTemplates->count(),
                 'pagination' => [
                     'current_page' => 1,
                     'last_page' => 1,
-                    'per_page' => $sizeTemplates->count(), // 使用模板總數
-                    'total' => $sizeTemplates->count(), // 使用模板總數
+                    'per_page' => $sizeTemplates->count(),
+                    'total' => $sizeTemplates->count(),
                     'from' => 1,
                     'to' => $sizeTemplates->count(),
                 ]
@@ -489,6 +639,9 @@ class TemplateController extends Controller
     /**
      * 批量创建模板
      * Store multiple templates
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function storeMultipleTemplates(Request $request)
     {
@@ -549,7 +702,7 @@ class TemplateController extends Controller
                     'category_id' => $templateData['category_id'],
                     'gender' => $templateData['gender'],
                     'size_library_id' => $templateData['size_library_id'],
-                    'template_status' => 'Available', // 默認為 Available
+                    'template_status' => 'Available',
                 ]);
                 $createdTemplates[] = $template;
 
@@ -595,6 +748,9 @@ class TemplateController extends Controller
     /**
      * 单个创建模板
      * Store single template
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function storeSingleTemplate(Request $request)
     {
@@ -622,7 +778,7 @@ class TemplateController extends Controller
                 'category_id' => $request->category_id,
                 'gender' => $request->gender,
                 'size_library_id' => $request->size_library_id,
-                'template_status' => 'Available', // 默認為 Available
+                'template_status' => 'Available',
             ]);
 
             $this->logOperation('created (single)', [
@@ -650,6 +806,9 @@ class TemplateController extends Controller
     /**
      * 查看模板组（category + gender 组合）
      * View template group (category + gender combination)
+     *
+     * @param string $id
+     * @return \Illuminate\View\View
      */
     private function viewTemplateGroup($id)
     {
@@ -661,7 +820,7 @@ class TemplateController extends Controller
             $category = Category::find($categoryId);
 
             if ($category && in_array($gender, ['Men', 'Women', 'Kids', 'Unisex'])) {
-                // 获取该category+gender组合下的所有templates，按size_value排序
+                // 获取该 category+gender 组合下的所有 templates，按 size_value 排序
                 $sizeTemplates = SizeTemplate::where('size_templates.category_id', $categoryId)
                     ->where('size_templates.gender', $gender)
                     ->with(['category', 'sizeLibrary'])
@@ -671,7 +830,6 @@ class TemplateController extends Controller
                     ->get();
 
                 $categories = Category::where('category_status', 'Available')->get();
-                // Gender 现在是硬编码选项，不再从数据库获取
                 $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
                 return view('admin.template.view', compact('sizeTemplates', 'categories', 'sizeLibraries', 'category', 'gender'));
@@ -684,34 +842,16 @@ class TemplateController extends Controller
     /**
      * 查看单个模板
      * View single template
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
      */
     private function viewSingleTemplate($id)
     {
         $sizeTemplate = SizeTemplate::with(['category', 'sizeLibrary'])->findOrFail($id);
         $categories = Category::where('category_status', 'Available')->get();
-        // Gender 现在是硬编码选项，不再从数据库获取
         $sizeLibraries = SizeLibrary::where('size_status', 'Available')->get();
 
         return view('admin.template.view', compact('sizeTemplate', 'categories', 'sizeLibraries'));
     }
-
-    /**
-     * 处理重复模板错误
-     * Handle duplicate template error
-     */
-    private function handleDuplicateTemplate(Request $request, $message)
-    {
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => $message,
-                'errors' => [
-                    'template_combination' => [$message]
-                ]
-            ], 422);
-        }
-
-        return back()->withErrors(['template_combination' => $message])->withInput();
-    }
-
 }

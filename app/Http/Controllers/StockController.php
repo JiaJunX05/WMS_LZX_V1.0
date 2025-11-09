@@ -13,6 +13,19 @@ use App\Exports\StockHistoryExport;
 use App\Exports\ProductExport;
 use Carbon\Carbon;
 
+/**
+ * 库存管理控制器
+ * Stock Management Controller
+ *
+ * 功能模块：
+ * - 库存操作：入库、出库、退货
+ * - 库存历史：历史记录查询和展示
+ * - 库存统计：库存数据统计和分析
+ * - 数据导出：Excel 导出功能
+ *
+ * @author WMS Team
+ * @version 3.0.0
+ */
 class StockController extends Controller
 {
     // =============================================================================
@@ -416,75 +429,6 @@ class StockController extends Controller
         return view('stock_movement.stock_dashboard');
     }
 
-    /**
-     * 显示库存入库页面
-     */
-    public function stockInPage(Request $request) {
-        if ($request->ajax()) {
-            $query = $this->buildBaseProductQuery();
-            $query = $this->applySearchFilter($query, $request->search);
-
-            $perPage = $request->get('per_page', self::DEFAULT_PER_PAGE);
-            $products = $query->paginate($perPage);
-
-            return $this->buildPaginatedResponse($products);
-        }
-
-        $products = $this->buildBaseProductQuery()->paginate(self::DEFAULT_PER_PAGE);
-        $selectedProductId = $request->get('product_id');
-
-        Log::info('Stock In Page - Selected Product ID: ' . $selectedProductId);
-
-        return view('stock_movement.stock_in', compact('products', 'selectedProductId'));
-    }
-
-    /**
-     * 显示库存出库页面
-     */
-    public function stockOutPage(Request $request) {
-        if ($request->ajax()) {
-            $query = $this->buildBaseProductQuery()->where('quantity', '>', 0);
-            $query = $this->applySearchFilter($query, $request->search);
-
-            $perPage = $request->get('per_page', self::DEFAULT_PER_PAGE);
-            $products = $query->paginate($perPage);
-
-            return $this->buildPaginatedResponse($products);
-        }
-
-        $products = $this->buildBaseProductQuery()
-            ->where('quantity', '>', 0)
-            ->paginate(self::DEFAULT_PER_PAGE);
-        $selectedProductId = $request->get('product_id');
-
-        Log::info('Stock Out Page - Selected Product ID: ' . $selectedProductId);
-
-        return view('stock_movement.stock_out', compact('products', 'selectedProductId'));
-    }
-
-    /**
-     * 库存退货页面
-     */
-    public function stockReturnPage(Request $request) {
-        if ($request->ajax()) {
-            $query = $this->buildBaseProductQuery()->where('quantity', '>', 0);
-            $query = $this->applySearchFilter($query, $request->search);
-
-            $perPage = $request->get('per_page', self::DEFAULT_PER_PAGE);
-            $products = $query->paginate($perPage);
-
-            return $this->buildPaginatedResponse($products);
-        }
-
-        $products = $this->buildBaseProductQuery()
-            ->where('quantity', '>', 0)
-            ->paginate(self::DEFAULT_PER_PAGE);
-        $selectedProductId = $request->get('product_id');
-
-        Log::info('Stock Return Page - Selected Product ID: ' . $selectedProductId);
-
-        return view('stock_movement.stock_return', compact('products', 'selectedProductId'));
-    }
 
     /**
      * 库存入库 - 支持单个和批量提交
@@ -888,36 +832,6 @@ class StockController extends Controller
         }
 
         return response()->json(['error' => 'Invalid request'], 400);
-    }
-
-    /**
-     * 显示产品库存详情页面
-     */
-    public function stockDetail(Request $request)
-    {
-        $productId = $request->get('id');
-
-        if (!$productId) {
-            return redirect()->route('staff.stock_management')
-                ->with('error', 'Product ID is required');
-        }
-
-        // 验证产品是否存在
-        $product = Product::with([
-            'category',
-            'subcategory',
-            'variants.attributeVariant.brand',
-            'variants.attributeVariant.color',
-            'variants.attributeVariant.size',
-            'variants.attributeVariant.size.category'
-        ])->find($productId);
-
-        if (!$product) {
-            return redirect()->route('staff.stock_management')
-                ->with('error', 'Product not found');
-        }
-
-        return view('stock_movement.stock_detail', compact('product'));
     }
 
     /**

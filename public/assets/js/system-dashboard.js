@@ -5,7 +5,7 @@
  * 与 auth-management.js 保持相同的简单处理方式
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 /**

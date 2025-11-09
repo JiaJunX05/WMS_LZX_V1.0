@@ -12,60 +12,64 @@ use Carbon\Carbon;
 
 /**
  * 品牌管理控制器
+ * Brand Management Controller
  *
  * 功能模块：
  * - 品牌列表展示：搜索、筛选、分页
  * - 品牌操作：创建、编辑、删除、状态管理
  * - 图片管理：上传、更新、删除
+ * - 数据导出：Excel 导出功能
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class BrandController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_BRANDS = 10;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 品牌验证规则
+     */
     private const BRAND_RULES = [
         'brand_name' => 'required|string|max:255',
     ];
 
+    /**
+     * 品牌图片验证规则
+     */
     private const BRAND_IMAGE_RULES = [
         'brand_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ];
 
-    /**
-     * Normalize brand data from frontend
-     */
-    private function normalizeBrandData(array $brandData): array
-    {
-        // Convert camelCase to snake_case
-        if (isset($brandData['brandName']) && !isset($brandData['brand_name'])) {
-            $brandData['brand_name'] = $brandData['brandName'];
-        }
-        if (isset($brandData['brandStatus']) && !isset($brandData['brand_status'])) {
-            $brandData['brand_status'] = $brandData['brandStatus'];
-        }
-
-        return $brandData;
-    }
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -80,7 +84,11 @@ class BrandController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -94,11 +102,16 @@ class BrandController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -107,8 +120,17 @@ class BrandController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
     /**
      * 显示品牌列表页面
+     * Display brand list page
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -154,32 +176,14 @@ class BrandController extends Controller
     }
 
     /**
-     * 显示创建品牌表单
-     */
-    public function create()
-    {
-        return view('admin.brand.create');
-    }
-
-    /**
      * 存储新品牌
+     * Store new brand
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        // 与 CategoryController 的实现保持一致：有数组走批量，否则走单个
-        if ($request->has('brands') && is_array($request->input('brands'))) {
-            return $this->storeMultipleBrands($request);
-        }
-
-        return $this->storeSingleBrand($request);
-    }
-
-    /**
-     * 单个存储品牌
-     */
-    private function storeSingleBrand(Request $request)
-    {
-        // 校验
         $rules = array_merge(self::BRAND_RULES, self::BRAND_IMAGE_RULES);
         $rules['brand_name'] .= '|unique:brands,brand_name';
 
@@ -188,25 +192,26 @@ class BrandController extends Controller
         try {
             $brandData = [
                 'brand_name' => $request->input('brand_name') ?? $request->input('brandName'),
-                'brand_status' => 'Available', // 默认为 Available
+                'brand_status' => 'Available',
             ];
 
             // 处理文件上传
             if ($request->hasFile('brand_image')) {
-                // 文件上传（确保目录存在）
                 $image = $request->file('brand_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/brands');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $brandData['brand_image'] = 'brands/' . $imageName;
             }
 
             $brand = Brand::create($brandData);
 
-            $this->logOperation('created (single)', [
+            $this->logOperation('created', [
                 'brand_id' => $brand->id,
                 'brand_name' => $brandData['brand_name']
             ]);
@@ -230,120 +235,53 @@ class BrandController extends Controller
     }
 
     /**
-     * 批量存储品牌（统一入口）
+     * 显示品牌编辑表单（用于 Modal）
+     * Show brand edit form (for Modal)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    private function storeMultipleBrands(Request $request)
+    public function showEditForm(Request $request, $id)
     {
-        // 仅处理批量数组
-        $brands = $request->input('brands', []);
+        try {
+            $brand = Brand::findOrFail($id);
 
-        // 限制批量创建数量
-        if (count($brands) > self::MAX_BULK_BRANDS) {
-            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_BRANDS . ' brands at once');
-        }
-
-        $createdBrands = [];
-        $errors = [];
-
-        // 预处理：收集所有品牌名称进行批量检查
-        $brandNamesToCheck = [];
-        foreach ($brands as $index => $brandData) {
-            $brandData = $this->normalizeBrandData($brandData);
-            if (isset($brandData['brand_name'])) {
-                $brandNamesToCheck[] = $brandData['brand_name'];
-            }
-        }
-
-        $existingBrandNames = Brand::whereIn('brand_name', $brandNamesToCheck)
-            ->pluck('brand_name')
-            ->toArray();
-
-        foreach ($brands as $index => $brandData) {
-            $brandData = $this->normalizeBrandData($brandData);
-
-            $validator = \Validator::make($brandData, self::BRAND_RULES);
-
-            if ($validator->fails()) {
-                $errors[] = "Brand " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
-                continue;
-            }
-
-            // 检查品牌名称是否已存在
-            if (in_array($brandData['brand_name'], $existingBrandNames)) {
-                $errors[] = "Brand " . ($index + 1) . ": Brand name '{$brandData['brand_name']}' already exists";
-                continue;
-            }
-
-            try {
-                $brandRecord = [
-                    'brand_name' => $brandData['brand_name'],
-                    'brand_status' => 'Available', // 默认为 Available
-                ];
-
-                // 处理图片上传 - 使用文件数组
-                $files = $request->file('images');
-                if (is_array($files) && isset($files[$index]) && $files[$index] && $files[$index]->isValid()) {
-                    $image = $files[$index];
-                    $directory = public_path('assets/images/brands');
-                    if (!file_exists($directory)) {
-                        mkdir($directory, 0777, true);
-                    }
-                    $imageName = time() . '_' . $index . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move($directory, $imageName);
-                    $brandRecord['brand_image'] = 'brands/' . $imageName;
-                }
-
-                $brand = Brand::create($brandRecord);
-                $createdBrands[] = $brand;
-
-                $this->logOperation('created (batch)', [
-                    'brand_id' => $brand->id,
-                    'brand_name' => $brandData['brand_name']
-                ]);
-            } catch (\Exception $e) {
-                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
-                $errorMessage = $simplifiedError ?: $e->getMessage();
-                $errors[] = "Brand " . ($index + 1) . ": " . $errorMessage;
-            }
-        }
-
-        if ($request->ajax()) {
-            if (count($errors) > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some brands failed to create',
-                    'errors' => $errors,
-                    'created_count' => count($createdBrands)
-                ], 422);
-            } else {
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => count($createdBrands) . ' brands created successfully',
-                    'data' => $createdBrands
+                    'message' => 'Brand data fetched successfully',
+                    'data' => [
+                        'id' => $brand->id,
+                        'brand_name' => $brand->brand_name,
+                        'brand_status' => $brand->brand_status,
+                        'brand_image' => $brand->brand_image
+                    ]
                 ]);
             }
+
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.management_tool.brand.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load brand data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('admin.management_tool.brand.index')
+                ->with('error', 'Brand not found');
         }
-
-        if (count($errors) > 0) {
-            return back()->withErrors(['error' => implode('; ', $errors)])
-                ->withInput();
-        }
-
-        return redirect()->route('admin.management_tool.brand.index')
-            ->with('success', count($createdBrands) . ' brands created successfully');
-    }
-
-    /**
-     * 显示编辑品牌表单
-     */
-    public function edit($id)
-    {
-        $brand = Brand::findOrFail($id);
-        return view('admin.brand.update', compact('brand'));
     }
 
     /**
      * 更新品牌信息
+     * Update brand information
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -400,9 +338,11 @@ class BrandController extends Controller
                 $image = $request->file('brand_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/brands');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $brandData['brand_image'] = 'brands/' . $imageName;
             } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
@@ -425,6 +365,7 @@ class BrandController extends Controller
 
             if ($request->ajax()) {
                 $freshBrand = $brand->fresh();
+
                 Log::info('AJAX response data', [
                     'success' => true,
                     'message' => $message,
@@ -465,6 +406,10 @@ class BrandController extends Controller
 
     /**
      * 设置品牌为可用状态
+     * Set brand to available status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function setAvailable($id)
     {
@@ -474,7 +419,6 @@ class BrandController extends Controller
 
             $this->logOperation('set to available', ['brand_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -493,6 +437,10 @@ class BrandController extends Controller
 
     /**
      * 设置品牌为不可用状态
+     * Set brand to unavailable status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function setUnavailable($id)
     {
@@ -502,7 +450,6 @@ class BrandController extends Controller
 
             $this->logOperation('set to unavailable', ['brand_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -521,6 +468,10 @@ class BrandController extends Controller
 
     /**
      * 删除品牌
+     * Delete brand
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
@@ -536,7 +487,6 @@ class BrandController extends Controller
 
             $this->logOperation('deleted', ['brand_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -557,12 +507,16 @@ class BrandController extends Controller
     }
 
     /**
-     * 導出品牌數據到Excel
+     * 导出品牌数据到 Excel
+     * Export brands data to Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function exportBrands(Request $request)
     {
         try {
-            // 獲取篩選條件
+            // 获取筛选条件
             $filters = [
                 'search' => $request->get('search'),
                 'status_filter' => $request->get('status_filter'),
@@ -573,7 +527,7 @@ class BrandController extends Controller
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
             $filename = "brands_export_{$timestamp}.xlsx";
 
-            // 使用Laravel Excel導出
+            // 使用 Laravel Excel 导出
             return Excel::download(new BrandExport($filters), $filename);
 
         } catch (\Exception $e) {

@@ -3,54 +3,26 @@
  * 尺碼庫管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、表單提交
- * - View 頁面：查看詳情、刪除操作
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - View 頁面：查看詳情、刪除操作、Update Modal
+ * - Create Modal：批量創建、表單驗證、狀態管理、單個創建
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
 // 全局變量和狀態管理 (Global Variables and State Management)
 // =============================================================================
 
-// 尺碼值列表數組（用於 Create 頁面）
-let sizeList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = false; // 默認降序（最新的在上面）
-
 // 全局變量防止重複請求
 let isDeleting = false;
-let isUpdating = false; // 防止重複提交更新表單
-let updateFormBound = false; // 標記更新表單事件是否已綁定
 
 // =============================================================================
-// 通用功能模塊 (Common Functions Module)
+// API 請求函數 (API Request Functions)
 // =============================================================================
-
-/**
- * 驗證尺碼庫表單
- */
-function validateLibraryForm() {
-    const categoryId = document.getElementById('category_id').value;
-    const sizeValue = document.getElementById('size_value') ? document.getElementById('size_value').value.trim() : '';
-
-    if (!categoryId) {
-        window.showAlert('Please select a category', 'warning');
-        return false;
-    }
-
-    if (!sizeValue) {
-        window.showAlert('Please enter size value', 'warning');
-        return false;
-    }
-
-    return true;
-}
 
 /**
  * 處理尺碼庫請求
@@ -98,20 +70,24 @@ function handleLibraryRequest(url, method, data, onSuccess, onError) {
 function createLibrary(libraryData, onSuccess, onError) {
     const formData = new FormData();
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-    formData.append('category_id', libraryData.categoryId);
 
-    // 添加尺碼值
-    if (libraryData.sizeValues && Array.isArray(libraryData.sizeValues)) {
-        libraryData.sizeValues.forEach(sizeValue => {
-            formData.append('size_values[]', sizeValue);
+    // 添加尺碼庫數據
+    if (libraryData.libraries && Array.isArray(libraryData.libraries)) {
+        libraryData.libraries.forEach((library, index) => {
+            formData.append(`libraries[${index}][category_id]`, library.categoryId);
+            formData.append(`libraries[${index}][size_value]`, library.sizeValue);
+            if (library.status) {
+                formData.append(`libraries[${index}][size_status]`, library.status);
+            }
         });
-    } else if (libraryData.sizeValue) {
-        formData.append('size_value', libraryData.sizeValue);
-    }
-
-    // 添加狀態
-    if (libraryData.status) {
-        formData.append('size_status', libraryData.status);
+    } else {
+        formData.append('category_id', libraryData.categoryId);
+        if (libraryData.sizeValue) {
+            formData.append('size_value', libraryData.sizeValue);
+        }
+        if (libraryData.status) {
+            formData.append('size_status', libraryData.status);
+        }
     }
 
     handleLibraryRequest(
@@ -177,203 +153,6 @@ function setLibraryUnavailable(libraryId, onSuccess, onError) {
     );
 }
 
-/**
- * 獲取尺碼庫狀態類別
- */
-function getLibraryStatusClass(status) {
-    return status === 'Available' ? 'text-success' : 'text-danger';
-}
-
-/**
- * 檢查尺碼值是否存在
- */
-function isSizeValueExists(sizeValue) {
-    return sizeList.some(item => item.sizeValue.toLowerCase() === sizeValue.toLowerCase());
-}
-
-/**
- * 高亮顯示已存在的尺碼值
- */
-function highlightExistingSizeValue(element) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const valueElement = item.querySelector('.size-combination div');
-        if (valueElement) {
-            const value = valueElement.textContent.trim();
-            if (value.toLowerCase() === element.value.toLowerCase()) {
-                // 添加高亮樣式
-                item.classList.add('border-warning');
-
-                // 滾動到該元素
-                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                // 3秒後移除高亮
-                setTimeout(() => {
-                    item.classList.remove('border-warning');
-                }, 3000);
-                break;
-            }
-        }
-    }
-}
-
-/**
- * 更新配置摘要
- */
-function updateConfigSummary() {
-    const categorySelect = document.getElementById('category_id');
-    const configSummary = document.getElementById('configSummary');
-
-    if (categorySelect && configSummary) {
-        if (categorySelect.value) {
-            configSummary.classList.remove('d-none');
-        } else {
-            configSummary.classList.add('d-none');
-        }
-    }
-
-    // 更新尺碼值顯示
-    updateSizeRangeDisplay();
-}
-
-/**
- * 處理分類選擇變化
- */
-function handleCategoryChange() {
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        const selectedCategory = categorySelect.options[categorySelect.selectedIndex];
-        const selectedCategoryDisplay = document.getElementById('selectedCategory');
-
-        if (selectedCategoryDisplay) {
-            selectedCategoryDisplay.textContent = selectedCategory.value ? selectedCategory.text : 'None';
-        }
-
-        updateUI();
-    }
-}
-
-/**
- * 更新分類信息
- */
-function updateCategoryInfo() {
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-        const categoryName = selectedOption.text;
-        const categoryDisplay = document.querySelector('#selectedCategory');
-
-        if (categoryDisplay) {
-            categoryDisplay.textContent = categoryName;
-        }
-    }
-}
-
-/**
- * 更新尺碼庫選項
- */
-function updateSizeLibraryOptions() {
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender') ? document.getElementById('gender').value : null;
-    const sizeLibrarySelect = document.getElementById('size_library_id');
-
-    if (!sizeLibrarySelect) return;
-
-    // 如果類別沒有選擇，清空尺碼庫選項
-    if (!categoryId) {
-        sizeLibrarySelect.innerHTML = '<option value="">Please select category first</option>';
-        sizeLibrarySelect.disabled = true;
-        return;
-    }
-
-    // 顯示加載狀態
-    sizeLibrarySelect.innerHTML = '<option value="">Loading...</option>';
-    sizeLibrarySelect.disabled = true;
-
-    // 構建請求URL
-    let url = window.availableSizeLibrariesUrl;
-    if (gender) {
-        url += `?category_id=${categoryId}&gender=${gender}`;
-    } else {
-        url += `?category_id=${categoryId}`;
-    }
-
-    fetch(url, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.data) {
-            sizeLibrarySelect.innerHTML = '<option value="">Select size library</option>';
-            data.data.forEach(library => {
-                const option = document.createElement('option');
-                option.value = library.id;
-                option.textContent = library.size_value;
-                sizeLibrarySelect.appendChild(option);
-            });
-            sizeLibrarySelect.disabled = false;
-        } else {
-            sizeLibrarySelect.innerHTML = '<option value="">No size libraries available</option>';
-            sizeLibrarySelect.disabled = true;
-        }
-    })
-    .catch(error => {
-        console.error('Error loading size libraries:', error);
-        sizeLibrarySelect.innerHTML = '<option value="">Error loading size libraries</option>';
-        sizeLibrarySelect.disabled = true;
-    });
-}
-
-/**
- * 設置狀態卡片選擇
- */
-function setupStatusCardSelection() {
-    // 調用統一的狀態卡片初始化函數
-    if (typeof window.initializeLibraryStatusCardSelection === 'function') {
-        window.initializeLibraryStatusCardSelection();
-    }
-}
-
-/**
- * 綁定尺碼庫事件
- */
-function bindLibraryEvents() {
-    // 狀態卡片選擇
-    setupStatusCardSelection();
-
-    // 分類選擇變化
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', handleCategoryChange);
-    }
-
-    // 性別選擇變化（如果有）
-    const genderSelect = document.getElementById('gender');
-    if (genderSelect) {
-        genderSelect.addEventListener('change', updateSizeLibraryOptions);
-    }
-}
-
-/**
- * 初始化尺碼庫頁面
- */
-function initializeLibraryPage(config) {
-    // 綁定事件監聽器
-    bindLibraryEvents();
-
-    // 初始化狀態
-    updateUI();
-
-    // 執行初始化回調函數（如果有）
-    if (config && config.initializationCallback && typeof config.initializationCallback === 'function') {
-        config.initializationCallback();
-    }
-}
-
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
 // =============================================================================
@@ -387,21 +166,27 @@ function initializeLibraryDashboard() {
 
     // 加載尺碼庫數據
     loadLibraries();
-
-    // 綁定搜索功能
-    bindSearchEvents();
-
-    // 綁定篩選功能
-    bindFilterEvents();
 }
 
+/**
+ * 檢查URL參數
+ */
 function checkUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const error = urlParams.get('error');
 
     if (success) {
-        window.showAlert(decodeURIComponent(success), 'success');
+        const successMessage = decodeURIComponent(success);
+        if (successMessage && successMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(successMessage, 'success');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(successMessage);
+            } else {
+                alert(successMessage);
+            }
+        }
         // 清除URL參數
         const url = new URL(window.location);
         url.searchParams.delete('success');
@@ -409,7 +194,16 @@ function checkUrlParams() {
     }
 
     if (error) {
-        window.showAlert(decodeURIComponent(error), 'danger');
+        const errorMessage = decodeURIComponent(error);
+        if (errorMessage && errorMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'danger');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+        }
         // 清除URL參數
         const url = new URL(window.location);
         url.searchParams.delete('error');
@@ -417,38 +211,51 @@ function checkUrlParams() {
     }
 }
 
+/**
+ * 加載尺碼庫數據
+ */
 function loadLibraries() {
     const url = window.sizeLibraryManagementRoute;
-    console.log('Loading libraries from:', url);
 
     fetch(url, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
         }
     })
     .then(response => {
-        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         return response.json();
     })
     .then(data => {
-        console.log('Received data:', data);
         if (data.success) {
-            console.log('Data groups:', data.data);
             renderCategoryCards(data.data);
-            updateStatistics(data.data);
+            updateStatistics(data);
             updatePaginationInfoByCategory(data.data, data.pagination);
         } else {
-            console.error('API returned success: false', data);
-            showError('Failed to load libraries');
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Failed to load libraries', 'error');
+            } else {
+                alert(data.message || 'Failed to load libraries');
+            }
         }
     })
     .catch(error => {
         console.error('Error loading libraries:', error);
-        showError('Error loading libraries');
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to load libraries', 'error');
+        } else {
+            alert('Failed to load libraries');
+        }
     });
 }
 
+/**
+ * 渲染分類卡片
+ */
 function renderCategoryCards(groupedData) {
     const container = document.getElementById('dashboard-cards-container');
     const emptyState = document.getElementById('empty-state');
@@ -461,27 +268,66 @@ function renderCategoryCards(groupedData) {
 
     emptyState.classList.add('d-none');
 
+    // 按分類分組
+    const groupedByCategory = groupByCategory(groupedData);
+
     // 生成卡片HTML
     let cardsHTML = '';
 
-    groupedData.forEach(group => {
-        const category = group.category;
-        const libraries = group.libraries;
+    Object.keys(groupedByCategory).forEach(categoryId => {
+        const categoryData = groupedByCategory[categoryId];
+        const category = categoryData.category;
+        const libraries = categoryData.libraries;
 
         // 確保category數據存在
         if (category && category.category_name) {
             cardsHTML += generateCategoryCard(category, libraries);
         } else {
-            console.warn(`Category data missing:`, category);
+            console.warn(`Category data missing for category ID ${categoryId}:`, category);
         }
     });
 
     container.innerHTML = cardsHTML;
-
-    // 綁定卡片內的事件
-    bindCardEvents();
 }
 
+/**
+ * 按分類分組
+ */
+function groupByCategory(groupedData) {
+    const grouped = {};
+
+    groupedData.forEach(group => {
+        const category = group.category;
+        if (category && category.id) {
+            const categoryId = category.id;
+
+            if (!grouped[categoryId]) {
+                grouped[categoryId] = {
+                    category: category,
+                    libraries: []
+                };
+            }
+
+            // 添加 libraries 數據
+            if (group.libraries && Array.isArray(group.libraries)) {
+                group.libraries.forEach(library => {
+                    grouped[categoryId].libraries.push({
+                        ...library,
+                        id: library.id,
+                        size_value: library.size_value,
+                        size_status: library.size_status || 'Available'
+                    });
+                });
+            }
+        }
+    });
+
+    return grouped;
+}
+
+/**
+ * 生成分類卡片
+ */
 function generateCategoryCard(category, libraries) {
     const availableCount = libraries.filter(library => {
         const status = library.size_status || 'Unavailable';
@@ -503,7 +349,7 @@ function generateCategoryCard(category, libraries) {
 
         return `
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                <span class="fw-medium">${library.size_value}</span>
+                <span class="fw-medium" style="cursor: pointer;" onclick="editLibrary(${library.id})" title="Click to edit library">${library.size_value}</span>
                 <div class="d-flex align-items-center gap-4">
                     <span class="badge ${status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
                         <i class="bi ${status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${status}
@@ -562,146 +408,62 @@ function generateCategoryCard(category, libraries) {
     `;
 }
 
-function bindCardEvents() {
-    // 卡片內的事件綁定
-    console.log('Card events bound');
-}
+/**
+ * 更新統計信息
+ */
+function updateStatistics(data) {
+    // 更新頁面頂部的統計信息
+    const totalLibrariesElement = document.getElementById('total-libraries');
+    const activeLibrariesElement = document.getElementById('active-libraries');
+    const inactiveLibrariesElement = document.getElementById('inactive-libraries');
+    const libraryGroupsElement = document.getElementById('library-groups');
 
-// 尺碼庫狀態操作函數
-
-function toggleLibraryStatus(id, currentStatus) {
-    // 切換尺碼庫狀態
-    const newStatus = currentStatus === 'Available' ? 'Unavailable' : 'Available';
-    updateLibraryStatus(id, newStatus);
-}
-
-function setLibraryAvailable(id) {
-    // 設置尺碼庫為可用
-    updateLibraryStatus(id, 'Available');
-}
-
-function setLibraryUnavailable(id) {
-    // 設置尺碼庫為不可用
-    updateLibraryStatus(id, 'Unavailable');
-}
-
-function updateLibraryStatus(id, status) {
-    const url = status === 'Available' ?
-        window.availableSizeLibraryUrl.replace(':id', id) :
-        window.unavailableSizeLibraryUrl.replace(':id', id);
-
-    console.log('Updating library status:', { id, status, url });
-
-    // 顯示加載提示
-    if (typeof window.showAlert === 'function') {
-        window.showAlert('Updating library status...', 'info');
+    if (totalLibrariesElement) {
+        totalLibrariesElement.textContent = data.pagination?.total || data.total_libraries || data.total || 0;
     }
 
-    fetch(url, {
-        method: 'PATCH',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        }
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Response data:', data);
-        if (data.success) {
-            if (typeof window.showAlert === 'function') {
-                window.showAlert(`Library status updated to ${status.toLowerCase()} successfully!`, 'success');
-            } else {
-                alert(`Library status updated to ${status.toLowerCase()} successfully!`);
-            }
-            loadLibraries(); // 重新加載數據
-        } else {
-            if (typeof window.showAlert === 'function') {
-                window.showAlert(`Failed to update library status to ${status.toLowerCase()}`, 'error');
-            } else {
-                alert(`Failed to update library status to ${status.toLowerCase()}`);
-            }
-        }
-    })
-        .catch(error => {
-            console.error(`Error setting library to ${status.toLowerCase()}:`, error);
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('Failed to update library status', 'error');
-            } else {
-                alert('Failed to update library status');
+    // 計算可用和不可用的尺碼庫數量
+    if (data.data && Array.isArray(data.data)) {
+        let availableLibraries = 0;
+        let unavailableLibraries = 0;
+
+        data.data.forEach(group => {
+            if (group.libraries && Array.isArray(group.libraries)) {
+                group.libraries.forEach(library => {
+                    const status = library.size_status || 'Unavailable';
+                    if (status === 'Available') {
+                        availableLibraries++;
+                    } else {
+                        unavailableLibraries++;
+                    }
+                });
             }
         });
-}
 
-function bindSearchEvents() {
-    // 搜索功能綁定
-    console.log('Search events bound');
-}
+        if (activeLibrariesElement) {
+            activeLibrariesElement.textContent = availableLibraries;
+        }
 
-function bindFilterEvents() {
-    // 篩選功能綁定
-    console.log('Filter events bound');
-}
+        if (inactiveLibrariesElement) {
+            inactiveLibrariesElement.textContent = unavailableLibraries;
+        }
+    }
 
-function updateStatistics(groupedData) {
-    console.log('updateStatistics called with:', groupedData);
-
-    // 計算統計數據
-    let totalLibraries = 0;
-    let availableLibraries = 0;
-    let unavailableLibraries = 0;
-    let categoryCount = groupedData.length;
-
-    groupedData.forEach(group => {
-        const libraries = group.libraries;
-        totalLibraries += libraries.length;
-
-        libraries.forEach(library => {
-            const status = library.size_status || 'Unavailable';
-            if (status === 'Available') {
-                availableLibraries++;
-            } else {
-                unavailableLibraries++;
-            }
-        });
-    });
-
-    console.log('Calculated statistics:', {
-        totalLibraries,
-        availableLibraries,
-        unavailableLibraries,
-        categoryCount
-    });
-
-    // 更新統計數據 - 添加 DOM 元素存在性檢查
-    const totalLibrariesEl = document.getElementById('total-libraries');
-    const activeLibrariesEl = document.getElementById('active-libraries');
-    const inactiveLibrariesEl = document.getElementById('inactive-libraries');
-    const libraryGroupsEl = document.getElementById('library-groups');
-
-    if (totalLibrariesEl) totalLibrariesEl.textContent = totalLibraries;
-    if (activeLibrariesEl) activeLibrariesEl.textContent = availableLibraries;
-    if (inactiveLibrariesEl) inactiveLibrariesEl.textContent = unavailableLibraries;
-    if (libraryGroupsEl) libraryGroupsEl.textContent = categoryCount;
-}
-
-function updatePaginationInfo(pagination) {
-    if (pagination) {
-        const showingStartEl = document.getElementById('showing-start');
-        const showingEndEl = document.getElementById('showing-end');
-        const totalCountEl = document.getElementById('total-count');
-
-        if (showingStartEl) showingStartEl.textContent = pagination.from || 0;
-        if (showingEndEl) showingEndEl.textContent = pagination.to || 0;
-        if (totalCountEl) totalCountEl.textContent = pagination.total || 0;
+    if (libraryGroupsElement) {
+        // 按分類分組計算
+        const groupedByCategory = groupByCategory(data.data || []);
+        const categoryCount = Object.keys(groupedByCategory).length;
+        libraryGroupsElement.textContent = categoryCount;
     }
 }
 
+/**
+ * 按分類更新分頁信息
+ */
 function updatePaginationInfoByCategory(groupedData, pagination) {
-    const categoryCount = groupedData.length;
+    // 按分類分組計算
+    const groupedByCategory = groupByCategory(groupedData || []);
+    const categoryCount = Object.keys(groupedByCategory).length;
 
     // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
     const showingStartEl = document.getElementById('showing-start');
@@ -716,6 +478,9 @@ function updatePaginationInfoByCategory(groupedData, pagination) {
     updatePaginationButtons(categoryCount);
 }
 
+/**
+ * 更新分頁按鈕狀態
+ */
 function updatePaginationButtons(categoryCount) {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
@@ -729,13 +494,13 @@ function updatePaginationButtons(categoryCount) {
 
     // 如果只有一個類別或沒有類別，禁用分頁按鈕
     if (categoryCount <= 1) {
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
     } else {
         // 這裡可以根據需要實現真正的分頁邏輯
         // 目前顯示所有類別，所以按鈕保持禁用狀態
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
+        if (prevBtn) prevBtn.classList.add('disabled');
+        if (nextBtn) nextBtn.classList.add('disabled');
     }
 
     // 確保當前頁面始終顯示為活動狀態
@@ -743,679 +508,6 @@ function updatePaginationButtons(categoryCount) {
         currentPageElement.classList.add('active');
         currentPageElement.classList.remove('disabled');
     }
-}
-
-function viewCategoryDetails(categoryId) {
-    // 跳轉到view頁面
-    const url = window.viewSizeLibraryUrl.replace(':id', categoryId);
-    window.location.href = url;
-}
-
-function showError(message) {
-    window.showAlert(message, 'danger');
-}
-
-function showSuccess(message) {
-    // 顯示成功消息
-    window.showAlert(message, 'success');
-    console.log('Success:', message);
-}
-
-// =============================================================================
-// Create 頁面功能 (Create Page Functions)
-// =============================================================================
-
-/**
- * 初始化尺碼庫創建頁面
- */
-function initializeLibraryCreate() {
-    // 使用通用初始化函數
-    initializeLibraryPage({
-        initializationCallback: function() {
-            bindCreateEvents();
-            updateUI();
-        }
-    });
-}
-
-/**
- * 綁定創建頁面事件
- */
-function bindCreateEvents() {
-    // 尺碼值輸入框回車事件
-    const sizeValueInput = document.getElementById('size_value');
-    if (sizeValueInput) {
-        sizeValueInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addSizeValue();
-            }
-        });
-    }
-
-    // 添加尺碼值按鈕
-    const addSizeValueBtn = document.getElementById('addSizeValue');
-    if (addSizeValueBtn) {
-        addSizeValueBtn.addEventListener('click', addSizeValue);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 刪除尺碼值按鈕事件委託
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-
-            if (!isNaN(index)) {
-                removeSizeValue(index);
-            }
-        }
-    });
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortSizes');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 自動添加按鈕
-    const addClothingSizesBtn = document.getElementById('addClothingSizes');
-    if (addClothingSizesBtn) {
-        addClothingSizesBtn.addEventListener('click', addClothingSizes);
-    }
-
-    const addShoeSizesBtn = document.getElementById('addShoeSizes');
-    if (addShoeSizesBtn) {
-        addShoeSizesBtn.addEventListener('click', addShoeSizes);
-    }
-
-    // 表單提交處理
-    const form = document.getElementById('sizeLibraryForm');
-    if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-    }
-}
-
-// 添加尺碼值
-function addSizeValue() {
-    if (!validateLibraryForm()) {
-        return;
-    }
-
-    const sizeValueInput = document.getElementById('size_value');
-    const categorySelect = document.getElementById('category_id');
-
-    const sizeValue = sizeValueInput.value.trim();
-    const categoryId = categorySelect.value;
-
-    // 檢查是否已存在
-    if (isSizeValueExists(sizeValue)) {
-        window.showAlert(`Size value "${sizeValue}" already exists in the list`, 'error');
-        highlightExistingSizeValue(sizeValueInput);
-        sizeValueInput.focus();
-        return;
-    }
-
-    // 添加尺碼值到數組
-    sizeList.push({
-        sizeValue: sizeValue,
-        categoryId: categoryId
-    });
-
-    // 更新UI
-    updateSizeList();
-    updateUI();
-
-
-    // 顯示右邊的尺碼值表格
-    showSizeValuesArea();
-
-    // 清空輸入框
-    sizeValueInput.value = '';
-    sizeValueInput.focus();
-
-    // 顯示成功提示
-    window.showAlert('Size value added successfully', 'success');
-}
-
-// 從列表中移除尺碼值
-function removeSizeValue(index) {
-    if (index >= 0 && index < sizeList.length) {
-        // 獲取要刪除的尺碼值信息
-        const sizeToRemove = sizeList[index];
-
-        // 確認刪除
-        if (!confirm(`Are you sure you want to remove size value "${sizeToRemove.sizeValue}"?`)) {
-            return;
-        }
-
-        sizeList.splice(index, 1);
-        updateSizeList();
-
-        // 如果沒有尺碼值了，隱藏區域
-        if (sizeList.length === 0) {
-            hideAllAreas();
-        }
-
-        updateUI();
-        window.showAlert('Size value removed successfully', 'success');
-    } else {
-        window.showAlert('Failed to remove size value', 'error');
-    }
-}
-
-// 更新尺碼值列表顯示
-function updateSizeList() {
-    const container = document.getElementById('sizeValuesList');
-    if (!container) return;
-
-    if (sizeList.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-
-    let html = '';
-    sizeList.forEach((item, index) => {
-        // 獲取該尺碼值對應的分類名稱
-        const categorySelect = document.getElementById('category_id');
-        let categoryName = 'Unknown Category';
-
-        if (categorySelect) {
-            // 查找對應的分類選項
-            for (let option of categorySelect.options) {
-                if (option.value === item.categoryId) {
-                    categoryName = option.text;
-                    break;
-                }
-            }
-        }
-
-        // 檢查是否為重複項
-        const isDuplicate = isSizeValueExists(item.sizeValue) &&
-            sizeList.filter(i => i.sizeValue.toLowerCase() === item.sizeValue.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        html += `
-            <div class="${baseClasses} ${duplicateClasses}" data-size-value="${item.sizeValue}">
-                <div class="d-flex align-items-center">
-                    <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">${isDuplicate ? '⚠️' : (index + 1)}</span>
-                    <i class="bi bi-rulers text-primary me-2"></i>
-                    <div class="size-combination">
-                        <div class="fw-bold text-dark">${item.sizeValue}</div>
-                        <small class="text-muted">${categoryName}</small>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
-/**
- * 排序尺碼值列表
- */
-function sortSizeValuesList() {
-    const sizeValuesList = document.getElementById('sizeValuesList');
-    const items = Array.from(sizeValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取尺碼值並排序
-    const sizeValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.size-combination div').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    sizeValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    sizeValues.forEach(({ element }) => {
-        sizeValuesList.appendChild(element);
-    });
-}
-
-// 顯示尺碼值區域
-function showSizeValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const sizeInputPrompt = document.getElementById('sizeInputPrompt');
-    if (sizeInputPrompt) {
-        sizeInputPrompt.classList.add('d-none');
-    }
-
-    // 顯示尺碼值區域
-    const sizeValuesArea = document.getElementById('sizeValuesArea');
-    if (sizeValuesArea) {
-        sizeValuesArea.classList.remove('d-none');
-    }
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-// 清除表單
-function clearForm() {
-    // 檢查是否有數據需要清除
-    if (sizeList.length === 0) {
-        window.showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 確認清除
-    if (!confirm('Are you sure you want to clear all size values?')) {
-        return;
-    }
-
-    // 清空數組
-    sizeList = [];
-
-    // 清空輸入框
-    const sizeValueInput = document.getElementById('size_value');
-    if (sizeValueInput) {
-        sizeValueInput.value = '';
-    }
-
-    // 重置分類選擇
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        categorySelect.value = '';
-    }
-
-    // 隱藏所有區域
-    hideAllAreas();
-
-    // 更新UI（只調用一次）
-    updateSizeList();
-    updateUI();
-
-    // 顯示成功提示
-    window.showAlert('All size values cleared successfully', 'success');
-}
-
-// 隱藏所有區域
-function hideAllAreas() {
-    // 隱藏尺碼值區域
-    const sizeValuesArea = document.getElementById('sizeValuesArea');
-    if (sizeValuesArea) {
-        sizeValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏輸入提示
-    const sizeInputPrompt = document.getElementById('sizeInputPrompt');
-    if (sizeInputPrompt) {
-        sizeInputPrompt.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-// 更新UI狀態
-function updateUI() {
-    // 更新尺碼值計數
-    updateSizeValuesCount();
-}
-
-// 更新尺碼值計數
-function updateSizeValuesCount() {
-    const count = sizeList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('sizeValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} values`;
-    }
-
-    // 更新左側計數文本
-    const countText = document.getElementById('sizeCountText');
-    if (countText) {
-        if (count === 0) {
-            countText.textContent = 'No size values added yet';
-        } else if (count === 1) {
-            countText.textContent = '1 size value added';
-        } else {
-            countText.textContent = `${count} size values added`;
-        }
-    }
-}
-
-// 更新尺碼範圍顯示
-function updateSizeRangeDisplay() {
-    const sizeValues = sizeList.map(item => item.sizeValue);
-
-    const selectedSizeSpan = document.getElementById('selectedSize');
-    if (selectedSizeSpan) {
-        if (sizeValues.length === 0) {
-            selectedSizeSpan.textContent = 'None';
-        } else if (sizeValues.length === 1) {
-            selectedSizeSpan.textContent = sizeValues[0];
-        } else {
-            // 嘗試按數字排序
-            const numericValues = sizeValues.filter(val => !isNaN(val)).map(val => parseFloat(val)).sort((a, b) => a - b);
-            const textValues = sizeValues.filter(val => isNaN(val));
-
-            if (numericValues.length > 0) {
-                const min = Math.min(...numericValues);
-                const max = Math.max(...numericValues);
-                selectedSizeSpan.textContent = `${min} - ${max}`;
-            } else {
-                // 如果都是文本，按字母順序排序
-                const sortedTextValues = textValues.sort();
-                const minSize = sortedTextValues[0];
-                const maxSize = sortedTextValues[sortedTextValues.length - 1];
-
-                // 特殊處理：如果包含 FREE SIZE 等，顯示更合理的範圍
-                if (minSize === 'FREE SIZE' || minSize === 'ONE SIZE' || minSize === 'OS') {
-                    selectedSizeSpan.textContent = minSize;
-                } else {
-                    selectedSizeSpan.textContent = `${minSize} - ${maxSize}`;
-                }
-            }
-        }
-    }
-}
-
-// 切換排序順序
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortSizes');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortSizeValuesList();
-}
-
-// 排序尺碼值列表
-function sortSizeValuesList() {
-    const sizeValuesList = document.getElementById('sizeValuesList');
-    const items = Array.from(sizeValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取尺碼值並排序
-    const sizeValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.size-combination div').textContent.trim()
-    }));
-
-    // 按字母順序排序（簡單排序）
-    sizeValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    sizeValues.forEach(({ element }) => {
-        sizeValuesList.appendChild(element);
-    });
-}
-
-// 添加服裝尺碼
-function addClothingSizes() {
-    const categorySelect = document.getElementById('category_id');
-    const selectedCategory = categorySelect.value;
-
-    if (!selectedCategory) {
-        window.showAlert('Please select a category first', 'warning');
-        categorySelect.focus();
-        return;
-    }
-
-    // 服裝尺碼：XXS 到 8XL + FREE SIZE
-    const clothingSizes = [
-        'FREE SIZE',
-        'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL',
-        '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'
-    ];
-
-    addMultipleSizes(clothingSizes);
-}
-
-// 添加鞋子尺碼
-function addShoeSizes() {
-    const categorySelect = document.getElementById('category_id');
-    const selectedCategory = categorySelect.value;
-
-    if (!selectedCategory) {
-        window.showAlert('Please select a category first', 'warning');
-        categorySelect.focus();
-        return;
-    }
-
-    // 鞋子尺碼：4-14 整碼和半碼 + FREE SIZE
-    const shoeSizes = [
-        'FREE SIZE',
-        '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5',
-        '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5',
-        '12', '12.5', '13', '13.5', '14'
-    ];
-
-    addMultipleSizes(shoeSizes);
-}
-
-// 添加多個尺碼
-function addMultipleSizes(sizes) {
-    let addedCount = 0;
-    let skippedCount = 0;
-
-    sizes.forEach(size => {
-        if (!isSizeValueExists(size)) {
-            addSizeValueToList(size);
-            addedCount++;
-        } else {
-            skippedCount++;
-        }
-    });
-
-    // 顯示結果
-    if (addedCount > 0 && skippedCount === 0) {
-        window.showAlert(`Successfully added ${addedCount} size values`, 'success');
-    } else if (addedCount > 0 && skippedCount > 0) {
-        window.showAlert(`Added ${addedCount} size values, ${skippedCount} already existed`, 'info');
-    } else if (skippedCount > 0) {
-        window.showAlert('All size values already exist in the list', 'warning');
-    }
-
-    // 更新UI
-    updateUI();
-
-    // 如果有添加尺碼值，顯示右邊的表格
-    if (addedCount > 0) {
-        showSizeValuesArea();
-    }
-}
-
-// 添加尺碼值到列表
-function addSizeValueToList(sizeValue) {
-    const categorySelect = document.getElementById('category_id');
-    const categoryId = categorySelect.value;
-
-    // 檢查是否為重複項
-    if (isSizeValueExists(sizeValue)) {
-        return; // 跳過重複項，不添加到列表
-    }
-
-    // 添加到 sizeList 數組
-    sizeList.push({
-        sizeValue: sizeValue,
-        categoryId: categoryId
-    });
-
-    // 重新渲染整個列表
-    updateSizeList();
-    updateUI();
-
-    // 顯示尺碼值區域
-    showSizeValuesArea();
-}
-
-// 表單提交處理
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    // 檢查是否有尺碼值
-    if (sizeList.length === 0) {
-        window.showAlert('Please add at least one size value', 'warning');
-        return;
-    }
-
-    // 預提交重複檢查
-    const duplicates = [];
-    const seen = new Set();
-    for (const item of sizeList) {
-        const combination = item.sizeValue.toLowerCase();
-        if (seen.has(combination)) {
-            duplicates.push(item.sizeValue);
-        } else {
-            seen.add(combination);
-        }
-    }
-
-    if (duplicates.length > 0) {
-        window.showAlert('Duplicate size values found. Please remove duplicates before submitting.', 'error');
-        return;
-    }
-
-    // 準備提交數據
-    const libraryData = {
-        categoryId: document.getElementById('category_id').value,
-        sizeValues: sizeList.map(item => item.sizeValue),
-        status: 'Available' // 默認為 Available
-    };
-
-    // 使用通用創建函數
-    createLibrary(libraryData,
-        function(data) {
-            window.showAlert(data.message || 'Size library created successfully', 'success');
-            setTimeout(() => {
-                window.location.href = window.sizeLibraryManagementRoute || '/admin/sizes/library';
-            }, 2000);
-        },
-        function(error) {
-            window.showAlert(error || 'Some size libraries failed to create', 'error');
-        }
-    );
-}
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * 初始化尺碼庫更新頁面
- */
-function initializeLibraryUpdate() {
-    // 綁定事件
-    bindEvents();
-
-    // 初始化狀態卡片
-    if (typeof window.initializeLibraryStatusCardSelection === 'function') {
-        window.initializeLibraryStatusCardSelection();
-    }
-}
-
-function bindEvents() {
-    // 表單提交事件 - 確保只綁定一次
-    if (!updateFormBound) {
-        const form = document.getElementById('updateSizeLibraryForm');
-        if (form) {
-            form.addEventListener('submit', handleUpdateFormSubmit);
-            updateFormBound = true; // 標記已綁定
-        }
-    }
-}
-
-
-
-function handleUpdateFormSubmit(e) {
-    e.preventDefault();
-
-    // 防止重複提交
-    if (isUpdating) {
-        return false;
-    }
-
-    // 設置提交標誌
-    isUpdating = true;
-
-    // 獲取表單數據
-    const formData = new FormData(e.target);
-
-    // 添加 _method: 'PUT' 用於 Laravel 路由識別
-    formData.append('_method', 'PUT');
-
-    // 獲取當前尺碼庫ID
-    const libraryId = window.location.pathname.split('/').pop();
-
-    // 使用通用函數提交
-    handleLibraryRequest(
-        window.updateSizeLibraryUrl,
-        'POST',
-        formData,
-        function(data) {
-            // 使用後端返回的消息，如果沒有則使用默認消息
-            const message = data.message || 'Library updated successfully';
-            window.showAlert(message, 'success');
-            setTimeout(() => {
-                window.location.href = window.sizeLibraryManagementRoute;
-            }, 1500);
-        },
-        function(error) {
-            isUpdating = false; // 錯誤時重置標誌
-            window.showAlert(error || 'Failed to update library', 'error');
-        }
-    );
-
-    return false; // 防止表單默認提交
 }
 
 // =============================================================================
@@ -1429,22 +521,31 @@ function initializeLibraryView() {
     // 綁定事件監聽器
     bindViewEvents();
 
+    // 綁定 Update Modal 事件
+    bindUpdateLibraryModalEvents();
+
     // 初始化狀態
-    updateUI();
+    updateViewUI();
 }
 
+/**
+ * 綁定查看頁面事件
+ */
 function bindViewEvents() {
-    // 刪除按鈕事件 - 使用事件委託避免重複綁定
+    // 刪除按鈕事件 - 使用事件委託，只監聽 Delete 按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-library-id]')) {
-            const button = e.target.closest('button[data-library-id]');
-            const libraryId = button.getAttribute('data-library-id');
+        const deleteButton = e.target.closest('button[data-size-library-id][data-action="delete"]');
+        if (deleteButton) {
+            const libraryId = deleteButton.getAttribute('data-size-library-id');
             deleteLibraryFromView(libraryId);
-        }
-    });
-}
+            }
+        });
+    }
 
-function updateUI() {
+/**
+ * 更新查看頁面UI
+ */
+function updateViewUI() {
     // 更新統計信息
     updateViewStatistics();
 
@@ -1452,6 +553,9 @@ function updateUI() {
     updateTableStatus();
 }
 
+/**
+ * 更新查看頁面統計信息
+ */
 function updateViewStatistics() {
     // 獲取可用和不可用的數量
     const availableCount = document.querySelectorAll('.badge.bg-success').length;
@@ -1470,9 +574,22 @@ function updateViewStatistics() {
     }
 }
 
+/**
+ * 更新表格狀態
+ */
 function updateTableStatus() {
-    // 更新表格狀態顯示
-    console.log('Table status updated');
+    // 更新表格行的狀態
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach((row, index) => {
+        // 添加懸停效果
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f9fafb';
+        });
+
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
 }
 
 /**
@@ -1510,7 +627,7 @@ function deleteLibraryFromView(libraryId) {
             }
 
             // 刪除成功後，從頁面中移除該行
-            const deletedRow = document.querySelector(`[data-library-id="${libraryId}"]`).closest('tr');
+            const deletedRow = document.querySelector(`[data-size-library-id="${libraryId}"]`).closest('tr');
             if (deletedRow) {
                 deletedRow.remove();
             }
@@ -1553,104 +670,1165 @@ function checkAndRedirectIfEmpty() {
         return !row.querySelector('td[colspan]');
     });
 
-    // 如果沒有資料行了，跳轉回 index
+    // 如果沒有資料行了，直接跳轉回 index
     if (dataRows.length === 0) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert('All size libraries have been deleted. Redirecting to library list...', 'info');
-        } else {
-            alert('All size libraries have been deleted. Redirecting to library list...');
-        }
-
-        // 延遲跳轉，讓用戶看到提示信息
         setTimeout(() => {
             window.location.href = window.sizeLibraryManagementRoute;
-        }, 1500);
+        }, 1000);
     }
 }
 
 // =============================================================================
-// 工具函數 (Utility Functions)
+// 尺碼庫操作函數 (Library Operations)
 // =============================================================================
 
 /**
- * 工具函數：防抖
+ * 切換尺碼庫狀態
  */
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            timeout = null;
-            if (!immediate) func.apply(this, args);
-        };
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func.apply(this, args);
-    };
+function toggleLibraryStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'Available' ? 'Unavailable' : 'Available';
+    updateLibraryStatus(id, newStatus);
 }
 
 /**
- * 工具函數：節流
+ * 設置尺碼庫為可用
  */
-function throttle(func, limit) {
-    let inThrottle;
-    return function executedFunction(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+function setLibraryAvailable(id) {
+    updateLibraryStatus(id, 'Available');
+}
+
+/**
+ * 設置尺碼庫為不可用
+ */
+function setLibraryUnavailable(id) {
+    updateLibraryStatus(id, 'Unavailable');
+}
+
+/**
+ * 更新單個尺碼庫狀態顯示（不重新加載所有數據）
+ */
+function updateSingleLibraryStatusUI(libraryId, newStatus) {
+    // 找到包含該 library 的行（通過查找包含 libraryId 的按鈕）
+    const libraryRows = document.querySelectorAll('.list-container > div');
+    let targetRow = null;
+    let categoryCard = null;
+
+    libraryRows.forEach(row => {
+        const button = row.querySelector('button');
+        if (button && button.getAttribute('onclick')) {
+            const onclickAttr = button.getAttribute('onclick');
+            // 檢查 onclick 是否包含該 libraryId
+            if (onclickAttr.includes(`(${libraryId})`)) {
+                targetRow = row;
+                categoryCard = row.closest('.content-card');
+            }
         }
-    };
-}
+    });
 
-/**
- * 工具函數：轉義HTML
- */
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, (s) => map[s]);
-}
+    if (!targetRow || !categoryCard) {
+        // 如果找不到，則重新加載所有數據
+        console.warn('Could not find library row, reloading all data');
+        loadLibraries();
+        return;
+    }
 
-/**
- * 工具函數：格式化日期
- */
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+    // 更新 badge
+    const badge = targetRow.querySelector('.badge');
+    if (badge) {
+        if (newStatus === 'Available') {
+            badge.className = 'badge bg-success px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Available';
+        } else {
+            badge.className = 'badge bg-danger px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-x-circle me-1"></i>Unavailable';
+        }
+    }
 
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        return 'N/A';
+    // 更新按鈕
+    const toggleButton = targetRow.querySelector('button');
+    if (toggleButton) {
+        if (newStatus === 'Available') {
+            toggleButton.className = 'btn btn-sm btn-outline-warning';
+            toggleButton.title = 'Deactivate';
+            toggleButton.innerHTML = '<i class="bi bi-slash-circle"></i>';
+            toggleButton.setAttribute('onclick', `setLibraryUnavailable(${libraryId})`);
+        } else {
+            toggleButton.className = 'btn btn-sm btn-outline-success';
+            toggleButton.title = 'Activate';
+            toggleButton.innerHTML = '<i class="bi bi-check-circle"></i>';
+            toggleButton.setAttribute('onclick', `setLibraryAvailable(${libraryId})`);
+        }
+    }
+
+    // 更新分類卡片中的統計數字
+    const availableCountEl = categoryCard.querySelector('.col-6:first-child .h4');
+    const unavailableCountEl = categoryCard.querySelector('.col-6:last-child .h4');
+
+    if (availableCountEl && unavailableCountEl) {
+        let availableCount = parseInt(availableCountEl.textContent) || 0;
+        let unavailableCount = parseInt(unavailableCountEl.textContent) || 0;
+
+        if (newStatus === 'Available') {
+            availableCount++;
+            unavailableCount--;
+        } else {
+            availableCount--;
+            unavailableCount++;
+        }
+
+        availableCountEl.textContent = availableCount;
+        unavailableCountEl.textContent = unavailableCount;
     }
 }
 
 /**
- * 工具函數：格式化狀態
+ * 更新尺碼庫狀態
  */
-function formatStatus(status) {
-    const statusMap = {
-        'Available': { class: 'bg-success', icon: 'bi-check-circle' },
-        'Unavailable': { class: 'bg-danger', icon: 'bi-x-circle' }
-    };
+function updateLibraryStatus(id, status) {
+    const url = status === 'Available' ?
+        window.availableSizeLibraryUrl.replace(':id', id) :
+        window.unavailableSizeLibraryUrl.replace(':id', id);
 
-    const statusInfo = statusMap[status] || { class: 'bg-secondary', icon: 'bi-question-circle' };
+    fetch(url, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(`Library status updated to ${status.toLowerCase()} successfully!`, 'success');
+        } else {
+                alert(`Library status updated to ${status.toLowerCase()} successfully!`);
+            }
+            // 只更新單個尺碼庫狀態，不重新加載所有數據
+            updateSingleLibraryStatusUI(id, status);
+        } else {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to update library status', 'error');
+            } else {
+                alert('Failed to update library status');
+            }
+        }
+    })
+    .catch(error => {
+        console.error(`Error setting library to ${status.toLowerCase()}:`, error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to update library status', 'error');
+        } else {
+            alert('Failed to update library status');
+        }
+    });
+}
 
-    return `<span class="badge ${statusInfo.class} px-3 py-2">
-        <i class="bi ${statusInfo.icon} me-1"></i>${status}
-    </span>`;
+/**
+ * 查看分類詳情
+ */
+function viewCategoryDetails(categoryId) {
+    // 跳轉到view頁面
+    const url = window.viewSizeLibraryUrl.replace(':id', categoryId);
+    window.location.href = url;
+}
+
+/**
+ * 編輯尺碼庫（跳轉到 view 頁面）
+ */
+function editLibrary(libraryId) {
+    const url = window.viewSizeLibraryUrl.replace(':id', libraryId);
+    window.location.href = url;
+}
+
+// =============================================================================
+// Create Modal 功能 (Create Modal Functions)
+// =============================================================================
+
+/**
+ * 初始化 Library Create Modal
+ */
+function initializeLibraryCreateModal() {
+    // 綁定 modal 事件
+    bindLibraryModalEvents();
+    // 加載 Categories
+    loadCategoriesForModal();
+}
+
+/**
+ * 綁定 Library Modal 事件
+ */
+function bindLibraryModalEvents() {
+    const modal = document.getElementById('createLibraryModal');
+    if (!modal) return;
+
+    // Modal 打開時重置
+    modal.addEventListener('show.bs.modal', function() {
+        resetLibraryModal();
+        loadCategoriesForModal();
+    });
+
+    // Category 選擇變化
+    const categorySelect = document.getElementById('create_category_id');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', handleCategorySelectChangeForModal);
+    }
+
+    // Size Type 選擇變化
+    const sizeTypeSelect = document.getElementById('create_size_type');
+    if (sizeTypeSelect) {
+        sizeTypeSelect.addEventListener('change', handleSizeTypeSelectChange);
+    }
+
+    // Select All 按鈕
+    const selectAllBtn = document.getElementById('selectAllSizesBtn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', selectAllSizes);
+    }
+
+    // Clear All 按鈕
+    const clearAllBtn = document.getElementById('clearAllSizesBtn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', clearAllSizes);
+    }
+
+    // Size Value 輸入框回車事件（直接創建）
+    const sizeValueInput = document.getElementById('create_size_value');
+    if (sizeValueInput) {
+        sizeValueInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createSingleSizeFromInput();
+            }
+        });
+    }
+
+    // 手動創建按鈕
+    const createSingleSizeBtn = document.getElementById('createSingleSizeBtn');
+    if (createSingleSizeBtn) {
+        createSingleSizeBtn.addEventListener('click', createSingleSizeFromInput);
+    }
+
+    // 提交按鈕
+    const submitBtn = document.getElementById('submitCreateLibraryModal');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitLibraryModal);
+    }
+}
+
+/**
+ * 加載 Categories 到 Modal
+ */
+function loadCategoriesForModal() {
+    const categorySelect = document.getElementById('create_category_id');
+    if (!categorySelect) return;
+
+    // 從 API 獲取 categories
+    fetch(window.createSizeLibraryUrl, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.categories) {
+            categorySelect.innerHTML = '<option value="">Select category</option>';
+            data.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.category_name;
+                categorySelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading categories:', error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to load categories', 'error');
+        } else {
+            alert('Failed to load categories');
+        }
+    });
+}
+
+/**
+ * 處理 Category 選擇變化
+ */
+function handleCategorySelectChangeForModal() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const sizeType = document.getElementById('create_size_type').value;
+
+    if (categoryId && sizeType) {
+        displaySizeCardsByType(sizeType);
+        // 更新當前 category 的尺碼卡片選擇狀態
+        updateSizeCardsSelection(categoryId);
+    } else {
+        hideSizeCards();
+    }
+}
+
+/**
+ * 處理 Size Type 選擇變化
+ */
+function handleSizeTypeSelectChange() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const sizeType = document.getElementById('create_size_type').value;
+
+    if (!categoryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a category first', 'warning');
+                } else {
+            alert('Please select a category first');
+        }
+        // 重置 size type 選擇
+        document.getElementById('create_size_type').value = '';
+        return;
+    }
+
+    if (sizeType) {
+        displaySizeCardsByType(sizeType);
+        // 更新當前 category 的尺碼卡片選擇狀態
+        updateSizeCardsSelection(categoryId);
+    } else {
+        hideSizeCards();
+    }
+}
+
+/**
+ * 更新尺碼卡片選擇狀態（根據當前 category）
+ * 注意：此函數在卡片生成後調用，確保所有卡片都有正確的 categoryId
+ */
+function updateSizeCardsSelection(categoryId) {
+    if (!categoryId) return;
+
+    // 只更新當前顯示的卡片（在 clothingSizesContainer 或 shoeSizesContainer 中）
+    const clothingContainer = document.getElementById('clothingSizesContainer');
+    const shoeContainer = document.getElementById('shoeSizesContainer');
+
+    [clothingContainer, shoeContainer].forEach(container => {
+        if (container) {
+            container.querySelectorAll('.size-card').forEach(card => {
+                // 更新 data-category-id 屬性
+                card.dataset.categoryId = categoryId;
+            });
+        }
+    });
+}
+
+/**
+ * 根據類型顯示尺碼卡片
+ */
+function displaySizeCardsByType(sizeType) {
+    const sizeSelection = document.getElementById('sizeSelection');
+    const initialMessage = document.getElementById('initial-size-message');
+    const clothingSection = document.getElementById('clothingSizesSection');
+    const shoeSection = document.getElementById('shoeSizesSection');
+
+    if (sizeSelection) {
+        sizeSelection.classList.remove('d-none');
+    }
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    // 根據類型顯示對應的尺碼
+    if (sizeType === 'clothing') {
+        // 顯示服裝尺碼
+        if (clothingSection) {
+            clothingSection.classList.remove('d-none');
+        }
+        if (shoeSection) {
+            shoeSection.classList.add('d-none');
+        }
+        displayClothingSizes();
+    } else if (sizeType === 'shoe') {
+        // 顯示靴子尺碼
+        if (clothingSection) {
+            clothingSection.classList.add('d-none');
+        }
+        if (shoeSection) {
+            shoeSection.classList.remove('d-none');
+        }
+        displayShoeSizes();
+    }
+}
+
+/**
+ * 顯示服裝尺碼卡片
+ */
+function displayClothingSizes() {
+    const container = document.getElementById('clothingSizesContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const clothingSizes = [
+        'FREE SIZE',
+        'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL',
+        '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'
+    ];
+
+    clothingSizes.forEach(size => {
+        const card = createSizeCard(size, 'clothing');
+        container.appendChild(card);
+    });
+}
+
+/**
+ * 顯示靴子尺碼卡片
+ */
+function displayShoeSizes() {
+    const container = document.getElementById('shoeSizesContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const shoeSizes = [
+        'FREE SIZE',
+        '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5',
+        '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5',
+        '12', '12.5', '13', '13.5', '14'
+    ];
+
+    shoeSizes.forEach(size => {
+        const card = createSizeCard(size, 'shoe');
+        container.appendChild(card);
+    });
+}
+
+/**
+ * 創建尺碼卡片
+ */
+function createSizeCard(size, type) {
+    const categoryId = document.getElementById('create_category_id').value;
+    const col = document.createElement('div');
+    col.className = 'col-md-3 col-sm-4 col-6';
+
+    const card = document.createElement('div');
+    card.className = 'card h-100 border size-card border-light';
+    card.dataset.size = size;
+    card.dataset.type = type;
+    if (categoryId) {
+        card.dataset.categoryId = categoryId;
+    }
+    card.style.cursor = 'pointer';
+    card.style.transition = 'all 0.3s ease';
+
+    card.innerHTML = `
+        <div class="card-body text-center p-3">
+            <h6 class="card-title mb-0">${size}</h6>
+        </div>
+    `;
+
+    // 點擊事件
+    card.addEventListener('click', function() {
+        toggleSizeCardSelection(card, size);
+    });
+
+    col.appendChild(card);
+    return col;
+}
+
+/**
+ * 切換尺碼卡片選擇狀態
+ */
+function toggleSizeCardSelection(card, size) {
+    const categoryId = document.getElementById('create_category_id').value;
+    if (!categoryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a category first', 'warning');
+        } else {
+            alert('Please select a category first');
+        }
+        return;
+    }
+
+    // 更新 data-category-id 屬性
+    card.dataset.categoryId = categoryId;
+
+    // 使用 DOM 狀態判斷是否已選擇（檢查是否有 border-success 類）
+    // 注意：clothing 和 shoe 的尺碼可以同時選擇，因為它們都屬於同一個 category
+    const isSelected = card.classList.contains('border-success');
+
+    if (isSelected) {
+        // 取消選擇
+        card.classList.remove('border-success', 'bg-success-subtle');
+        card.classList.add('border-light');
+        card.style.transform = 'scale(1)';
+        card.style.boxShadow = '';
+    } else {
+        // 選擇
+        card.classList.remove('border-light');
+        card.classList.add('border-success', 'bg-success-subtle');
+        card.style.transform = 'scale(1.05)';
+        card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+    }
+
+    // 強制更新 UI
+    updateSizeSelectionCounter();
+    updateSubmitButton();
+}
+
+/**
+ * 隱藏尺碼卡片
+ */
+function hideSizeCards() {
+    const sizeSelection = document.getElementById('sizeSelection');
+    const initialMessage = document.getElementById('initial-size-message');
+    const clothingSection = document.getElementById('clothingSizesSection');
+    const shoeSection = document.getElementById('shoeSizesSection');
+
+    if (sizeSelection) {
+        sizeSelection.classList.add('d-none');
+    }
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
+    }
+    if (clothingSection) {
+        clothingSection.classList.add('d-none');
+    }
+    if (shoeSection) {
+        shoeSection.classList.add('d-none');
+    }
+}
+
+/**
+ * 獲取選中的尺碼（從 DOM 查詢）
+ */
+function getSelectedSizes() {
+    const selectedCards = document.querySelectorAll('.size-card.border-success');
+    const selectedSizes = [];
+
+    selectedCards.forEach(card => {
+        const size = card.dataset.size;
+        const categoryId = card.dataset.categoryId;
+        if (size && categoryId) {
+            selectedSizes.push({
+                sizeValue: size,
+                categoryId: categoryId
+            });
+        }
+    });
+
+    return selectedSizes;
+}
+
+/**
+ * 更新尺碼選擇計數器
+ */
+function updateSizeSelectionCounter() {
+    const counter = document.getElementById('sizeSelectionCounter');
+    if (counter) {
+        const count = getSelectedSizes().length;
+        counter.textContent = `${count} selected`;
+        counter.className = count > 0 ? 'badge bg-success' : 'badge bg-primary';
+    }
+}
+
+/**
+ * 更新提交按鈕狀態
+ */
+function updateSubmitButton() {
+    const submitBtn = document.getElementById('submitCreateLibraryModal');
+    if (submitBtn) {
+        const selectedCount = getSelectedSizes().length;
+        submitBtn.disabled = selectedCount === 0;
+    }
+}
+
+/**
+ * 從輸入框直接創建單個尺碼
+ */
+function createSingleSizeFromInput() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const sizeValue = document.getElementById('create_size_value').value.trim();
+
+    // 驗證 Category（手動輸入時必需）
+    if (!categoryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a category first', 'warning');
+        } else {
+            alert('Please select a category first');
+        }
+        const categorySelect = document.getElementById('create_category_id');
+        if (categorySelect) {
+            categorySelect.focus();
+            categorySelect.classList.add('is-invalid');
+            setTimeout(() => {
+                categorySelect.classList.remove('is-invalid');
+            }, 3000);
+        }
+        return;
+    }
+
+    // 驗證 Size Value（手動輸入時必需，不需要 Size Type）
+    if (!sizeValue) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please enter a size value before creating', 'warning');
+        } else {
+            alert('Please enter a size value before creating');
+        }
+        // 聚焦到輸入框
+        const sizeValueInput = document.getElementById('create_size_value');
+        if (sizeValueInput) {
+            sizeValueInput.focus();
+            sizeValueInput.classList.add('is-invalid');
+            setTimeout(() => {
+                sizeValueInput.classList.remove('is-invalid');
+            }, 3000);
+        }
+        return;
+    }
+
+    // 直接創建單個尺碼（不使用列表）
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    formData.append('category_id', categoryId);
+    formData.append('size_value', sizeValue);
+
+    // 顯示加載狀態
+    const sizeValueInput = document.getElementById('create_size_value');
+    sizeValueInput.disabled = true;
+
+    // 提交創建請求
+    const storeUrl = window.storeSizeLibraryUrl || window.sizeLibraryManagementRoute.replace('/index', '/store');
+    fetch(storeUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Size library created successfully', 'success');
+            } else {
+                alert(data.message || 'Size library created successfully');
+            }
+
+            // 清空輸入框
+            document.getElementById('create_size_value').value = '';
+            sizeValueInput.disabled = false;
+            sizeValueInput.focus();
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            throw new Error(data.message || 'Failed to create size library');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(error.message || 'Failed to create size library', 'error');
+        } else {
+            alert(error.message || 'Failed to create size library');
+        }
+        sizeValueInput.disabled = false;
+    });
+}
+
+/**
+ * 選擇所有尺碼卡片
+ */
+function selectAllSizes() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const sizeType = document.getElementById('create_size_type').value;
+
+    if (!categoryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a category first', 'warning');
+        } else {
+            alert('Please select a category first');
+        }
+        return;
+    }
+
+    if (!sizeType) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a size type first', 'warning');
+        } else {
+            alert('Please select a size type first');
+        }
+        return;
+    }
+
+    // 只選擇當前顯示的尺碼卡片（根據 sizeType）
+    const containerId = sizeType === 'clothing' ? 'clothingSizesContainer' : 'shoeSizesContainer';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const allSizeCards = container.querySelectorAll('.size-card');
+    let addedCount = 0;
+
+    allSizeCards.forEach(card => {
+        // 更新 data-category-id 屬性
+        card.dataset.categoryId = categoryId;
+
+        // 使用 DOM 狀態判斷是否已選擇
+        const isSelected = card.classList.contains('border-success');
+
+        if (!isSelected) {
+            // 選擇卡片
+            card.classList.remove('border-light');
+            card.classList.add('border-success', 'bg-success-subtle');
+            card.style.transform = 'scale(1.05)';
+            card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) {
+        updateSizeSelectionCounter();
+        updateSubmitButton();
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(`Added ${addedCount} size(s) to selection`, 'success');
+        } else {
+            alert(`Added ${addedCount} size(s) to selection`);
+        }
+    } else {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('All sizes are already selected', 'info');
+        } else {
+            alert('All sizes are already selected');
+        }
+    }
+}
+
+/**
+ * 清除所有尺碼選擇
+ */
+function clearAllSizes() {
+    const categoryId = document.getElementById('create_category_id').value;
+
+    if (categoryId) {
+        // 只清除當前 category 的選擇
+        const beforeCount = getSelectedSizes().length;
+
+        // 只更新當前 category 的卡片視覺狀態
+        document.querySelectorAll('.size-card').forEach(card => {
+            if (card.dataset.categoryId === categoryId) {
+                card.classList.remove('border-success', 'bg-success-subtle');
+                card.classList.add('border-light');
+                card.style.transform = 'scale(1)';
+                card.style.boxShadow = '';
+            }
+        });
+
+        const afterCount = getSelectedSizes().length;
+        const removedCount = beforeCount - afterCount;
+
+        updateSizeSelectionCounter();
+        updateSubmitButton();
+
+        if (removedCount > 0) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(`Cleared ${removedCount} size(s) from selection`, 'info');
+            } else {
+                alert(`Cleared ${removedCount} size(s) from selection`);
+            }
+        } else {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('No sizes to clear', 'info');
+            } else {
+                alert('No sizes to clear');
+            }
+        }
+    } else {
+        // 如果沒有選擇 category，清除所有
+        document.querySelectorAll('.size-card').forEach(card => {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+        });
+        updateSizeSelectionCounter();
+        updateSubmitButton();
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('All selections cleared', 'info');
+        } else {
+            alert('All selections cleared');
+        }
+    }
+}
+
+/**
+ * 清除 Modal 表單
+ */
+function clearLibraryModalForm() {
+    document.getElementById('create_category_id').value = '';
+    document.getElementById('create_size_type').value = '';
+    document.getElementById('create_size_value').value = '';
+
+    // 清除所有卡片選擇
+    document.querySelectorAll('.size-card').forEach(card => {
+        card.classList.remove('border-success', 'bg-success-subtle');
+        card.classList.add('border-light');
+        card.style.transform = 'scale(1)';
+        card.style.boxShadow = '';
+        card.dataset.categoryId = '';
+    });
+
+    updateSizeSelectionCounter();
+    updateSubmitButton();
+    hideSizeCards();
+}
+
+/**
+ * 重置 Library Modal
+ */
+function resetLibraryModal() {
+    clearLibraryModalForm();
+    // 確保按鈕初始狀態正確
+    updateSubmitButton();
+}
+
+/**
+ * 提交 Library Modal
+ */
+function submitLibraryModal() {
+    const selectedSizes = getSelectedSizes();
+
+    if (selectedSizes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please add at least one size value', 'warning');
+        } else {
+            alert('Please add at least one size value');
+        }
+        return;
+    }
+
+    // 按 category 分組
+    const groupedByCategory = {};
+    selectedSizes.forEach(item => {
+        if (!groupedByCategory[item.categoryId]) {
+            groupedByCategory[item.categoryId] = [];
+        }
+        groupedByCategory[item.categoryId].push(item.sizeValue);
+    });
+
+    // 準備數據 - 使用 libraries 格式（支持多個 category）
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+    let index = 0;
+    Object.keys(groupedByCategory).forEach(categoryId => {
+        groupedByCategory[categoryId].forEach(sizeValue => {
+            formData.append(`libraries[${index}][category_id]`, categoryId);
+            formData.append(`libraries[${index}][size_value]`, sizeValue);
+            index++;
+        });
+    });
+
+    // 顯示加載狀態
+    const submitBtn = document.getElementById('submitCreateLibraryModal');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creating...';
+    submitBtn.disabled = true;
+
+    // 提交創建請求
+    const storeUrl = window.storeSizeLibraryUrl || window.sizeLibraryManagementRoute.replace('/index', '/store');
+    fetch(storeUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Size libraries created successfully', 'success');
+            } else {
+                alert(data.message || 'Size libraries created successfully');
+            }
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createLibraryModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            throw new Error(data.message || 'Failed to create size libraries');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(error.message || 'Failed to create size libraries', 'error');
+        } else {
+            alert(error.message || 'Failed to create size libraries');
+        }
+
+        // 恢復按鈕狀態
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// =============================================================================
+// Update Modal 功能 (Update Modal Functions)
+// =============================================================================
+
+/**
+ * 綁定 Library Update Modal 事件
+ */
+function bindUpdateLibraryModalEvents() {
+    const modal = document.getElementById('updateLibraryModal');
+    if (!modal) return;
+
+    // 提交按鈕
+    const submitBtn = document.getElementById('submitUpdateLibraryModal');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitUpdateLibraryModal);
+    }
+
+    // Modal 關閉時清理
+    modal.addEventListener('hidden.bs.modal', function() {
+        const form = document.getElementById('updateLibraryModalForm');
+        if (form) {
+            form.reset();
+            form.removeAttribute('data-size-library-id');
+        }
+    });
+}
+
+/**
+ * 打開更新尺碼庫彈窗
+ */
+function openUpdateLibraryModal(libraryId) {
+    const url = window.editSizeLibraryUrl.replace(':id', libraryId);
+
+    // 从按钮或表格行获取library数据（如果可用，用于快速填充）
+    let updateButton = document.querySelector(`button[onclick*="openUpdateLibraryModal(${libraryId})"]`);
+    if (!updateButton) {
+        updateButton = document.querySelector(`button[data-size-library-id="${libraryId}"]`);
+    }
+
+    let libraryData = null;
+
+    if (updateButton) {
+        // 快速填充基本数据
+        libraryData = {
+            id: libraryId,
+            category_id: updateButton.getAttribute('data-category-id') || '',
+            size_value: updateButton.getAttribute('data-size-value') || '',
+            size_status: updateButton.getAttribute('data-size-status') || 'Available',
+            category_name: updateButton.getAttribute('data-category-name') || ''
+        };
+        populateLibraryModal(libraryData);
+    } else {
+        // 如果找不到按钮，尝试从表格行获取
+        const libraryRow = document.querySelector(`tr[data-size-library-id="${libraryId}"]`);
+        if (libraryRow) {
+            libraryData = {
+                id: libraryId,
+                category_id: libraryRow.getAttribute('data-category-id') || '',
+                size_value: libraryRow.getAttribute('data-size-value') || '',
+                size_status: libraryRow.getAttribute('data-size-status') || 'Available',
+                category_name: libraryRow.getAttribute('data-category-name') || ''
+            };
+            populateLibraryModal(libraryData);
+        }
+    }
+
+    // 从 API 获取完整library数据
+    $.ajax({
+        url: url,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        success: (response) => {
+            if (response.success && response.data) {
+                populateLibraryModal(response.data);
+            } else {
+                if (typeof window.showAlert === 'function') {
+                    window.showAlert(response.message || 'Failed to load size library data', 'error');
+                } else {
+                    alert(response.message || 'Failed to load size library data');
+                }
+            }
+        },
+        error: (xhr) => {
+            let errorMessage = 'Failed to load size library data';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
+        }
+    });
+}
+
+/**
+ * 填充 Library Update Modal 的數據
+ */
+function populateLibraryModal(libraryData) {
+    const form = document.getElementById('updateLibraryModalForm');
+    if (!form) return;
+
+    // 設置隱藏的 library ID（用於提交）
+    form.setAttribute('data-size-library-id', libraryData.id);
+
+    // 填充當前信息
+    const currentInfo = document.getElementById('currentLibraryInfo');
+    if (currentInfo) {
+        currentInfo.innerHTML = `
+            <div class="mb-1">
+                <i class="bi bi-tag me-2 text-muted"></i>
+                <span>Category: <strong>${libraryData.category_name || 'N/A'}</strong></span>
+            </div>
+            <div class="mb-1">
+                <i class="bi bi-rulers me-2 text-muted"></i>
+                <span>Size Value: <strong>${libraryData.size_value || 'N/A'}</strong></span>
+            </div>
+            <div>
+                <i class="bi bi-shield-check me-2 text-muted"></i>
+                <span>Status: <strong>${libraryData.size_status || 'N/A'}</strong></span>
+            </div>
+        `;
+    }
+
+    // 填充 Category 選擇
+    const categorySelect = document.getElementById('update_category_id');
+    if (categorySelect && window.availableCategories) {
+        categorySelect.innerHTML = '<option value="">Select category</option>';
+        window.availableCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.category_name;
+            if (category.id == libraryData.category_id) {
+                option.selected = true;
+            }
+            categorySelect.appendChild(option);
+        });
+    }
+
+    // 填充 Size Value
+    const sizeValueInput = document.getElementById('update_size_value');
+    if (sizeValueInput) {
+        sizeValueInput.value = libraryData.size_value || '';
+    }
+
+    // 設置 Status
+    const targetStatus = libraryData.size_status === 'Unavailable' ? 'Unavailable' : 'Available';
+    const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+    const statusRadio = document.querySelector(radioSelector);
+    if (statusRadio) {
+        statusRadio.checked = true;
+    }
+
+    // 初始化状态卡片
+    if (typeof window.initializeStatusCardSelection === 'function') {
+        window.initializeStatusCardSelection('size_status');
+    }
+
+    // 打開彈窗
+    const modalElement = document.getElementById('updateLibraryModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+}
+
+/**
+ * 提交更新尺碼庫彈窗
+ */
+function submitUpdateLibraryModal() {
+    const form = document.getElementById('updateLibraryModalForm');
+    if (!form) return;
+
+    const libraryId = form.getAttribute('data-size-library-id');
+    if (!libraryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Size library ID not found', 'error');
+        } else {
+            alert('Size library ID not found');
+        }
+        return;
+    }
+
+    // 驗證表單
+    const categoryId = document.getElementById('update_category_id').value;
+    const sizeValue = document.getElementById('update_size_value').value.trim();
+    const status = document.querySelector('input[name="size_status"]:checked')?.value;
+
+    if (!categoryId || !sizeValue || !status) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please fill in all required fields', 'warning');
+        } else {
+            alert('Please fill in all required fields');
+        }
+        return;
+    }
+
+    // 準備表單數據
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    formData.append('_method', 'PUT');
+    formData.append('category_id', categoryId);
+    formData.append('size_value', sizeValue);
+    formData.append('size_status', status);
+
+    // 顯示加載狀態
+    const submitBtn = document.getElementById('submitUpdateLibraryModal');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
+    submitBtn.disabled = true;
+
+    // 提交更新請求
+    updateLibrary(libraryId, formData,
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Size library updated successfully', 'success');
+            } else {
+                alert(data.message || 'Size library updated successfully');
+            }
+
+            // 關閉 modal
+            const modalElement = document.getElementById('updateLibraryModal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to update size library', 'error');
+            } else {
+                alert(error || 'Failed to update size library');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    );
 }
 
 // =============================================================================
@@ -1660,19 +1838,17 @@ function formatStatus(status) {
 document.addEventListener('DOMContentLoaded', function() {
     // 檢查當前頁面類型並初始化相應功能
     const dashboardCardsContainer = document.getElementById('dashboard-cards-container');
-    const libraryForm = document.getElementById('sizeLibraryForm');
-    const updateLibraryForm = document.getElementById('updateSizeLibraryForm');
     const viewTable = document.querySelector('table tbody');
+    const createLibraryModal = document.getElementById('createLibraryModal');
 
     if (dashboardCardsContainer) {
         // Dashboard 頁面
         initializeLibraryDashboard();
-    } else if (libraryForm) {
-        // Create 頁面
-        initializeLibraryCreate();
-    } else if (updateLibraryForm) {
-        // Update 頁面
-        initializeLibraryUpdate();
+
+        // 初始化 Create Modal（如果存在）
+        if (createLibraryModal) {
+            initializeLibraryCreateModal();
+        }
     } else if (viewTable) {
         // View 頁面
         initializeLibraryView();
@@ -1683,16 +1859,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // 全局函數導出 (Global Function Exports)
 // =============================================================================
 
-// 導出主要函數到全局作用域
-window.toggleLibraryStatus = toggleLibraryStatus;
+// 導出主要函數到全局作用域（用於 HTML onclick 屬性）
+window.editLibrary = editLibrary;
 window.setLibraryAvailable = setLibraryAvailable;
 window.setLibraryUnavailable = setLibraryUnavailable;
-window.updateLibraryStatus = updateLibraryStatus;
 window.viewCategoryDetails = viewCategoryDetails;
-window.addSizeValue = addSizeValue;
-window.removeSizeValue = removeSizeValue;
-window.clearForm = clearForm;
-window.toggleSortOrder = toggleSortOrder;
-window.addClothingSizes = addClothingSizes;
-window.addShoeSizes = addShoeSizes;
-window.deleteLibraryFromView = deleteLibraryFromView;
+window.openUpdateLibraryModal = openUpdateLibraryModal;
+window.submitUpdateLibraryModal = submitUpdateLibraryModal;

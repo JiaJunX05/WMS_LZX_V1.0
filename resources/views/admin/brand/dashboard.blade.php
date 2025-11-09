@@ -11,29 +11,33 @@
 {{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 {{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.brand-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.brand.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.brand-metric-cards')
+    @include('admin.brand.components.metric-cards')
 
     {{-- 搜索筛选区域 --}}
-    @include('components.search-filters.brand-search-filters')
+    @include('admin.brand.components.search-filters')
 
     {{-- 品牌列表表格 --}}
-    @include('components.data-tables.brand-data-tables')
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.brand-empty-list')
+    @include('admin.brand.components.data-table')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.brand-pagination-nav')
+    @include('admin.brand.components.pagination-nav')
 </div>
+
+    {{-- Create Brand 弹窗模态框 --}}
+    @include('admin.brand.create-model')
+
+    {{-- Update Brand 弹窗模态框 --}}
+    @include('admin.brand.update-model')
 
 @endsection
 
@@ -42,7 +46,9 @@
 <script>
     // 设置品牌管理相关URL
     window.brandManagementRoute = "{{ route('admin.brand.index') }}";
-    window.editBrandUrl = "{{ route('admin.brand.edit', ['id' => ':id']) }}";
+    window.createBrandUrl = "{{ route('admin.brand.store') }}";
+    window.updateBrandUrl = "{{ route('admin.brand.update', ['id' => ':id']) }}";
+    window.editBrandUrl = "{{ route('admin.brand.edit', ':id') }}";
     window.deleteBrandUrl = "{{ route('admin.brand.destroy', ['id' => ':id']) }}";
     window.availableBrandUrl = "{{ route('admin.brand.available', ['id' => ':id']) }}";
     window.unavailableBrandUrl = "{{ route('admin.brand.unavailable', ['id' => ':id']) }}";
@@ -54,5 +60,6 @@
 
 {{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
+<script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/brand-management.js') }}"></script>
 @endsection

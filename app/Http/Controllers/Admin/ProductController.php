@@ -32,7 +32,7 @@ use App\Models\User;
  * - 条形码管理：生成、更新条形码
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class ProductController extends Controller
 {
@@ -315,15 +315,17 @@ class ProductController extends Controller
             return $color;
         });
 
-        return view('products.product_dashboard', compact('categories', 'subcategories', 'brands', 'colors'));
+        return view('products.dashboard', compact('categories', 'subcategories', 'brands', 'colors'));
     }
 
     /**
-     * 显示创建产品表单
+     * 获取创建产品所需的数据（用于 Modal）
+     * 主要用于 AJAX 请求返回 JSON 数据
      *
-     * @return \Illuminate\View\View
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function create()
+    public function create(Request $request)
     {
         $categories = Category::all();
         $subcategories = Subcategory::all();
@@ -351,9 +353,74 @@ class ProductController extends Controller
         $suggestedSKU = $this->generateSuggestedSKU();
         $suggestedBarcode = $this->generateBarcodeNumber($suggestedSKU);
 
-        return view('products.product_create', compact(
-            'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities', 'suggestedSKU', 'suggestedBarcode'
-        ));
+        // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'categories' => $categories->map(function($cat) {
+                        return ['id' => $cat->id, 'category_name' => $cat->category_name];
+                    }),
+                    'subcategories' => $subcategories->map(function($sub) {
+                        return ['id' => $sub->id, 'subcategory_name' => $sub->subcategory_name, 'category_id' => $sub->category_id];
+                    }),
+                    'brands' => $brands->map(function($brand) {
+                        return ['id' => $brand->id, 'brand_name' => $brand->brand_name];
+                    }),
+                    'colors' => $colors->map(function($color) {
+                        return ['id' => $color->id, 'color_name' => $color->color_name];
+                    }),
+                    'sizes' => $sizes->map(function($size) {
+                        return [
+                            'id' => $size->id,
+                            'size_value' => $size->size_value,
+                            'size_name' => $size->size_name ?? $size->size_value,
+                            'category_id' => $size->category ? $size->category->id : null,
+                            'size_status' => $size->size_status
+                        ];
+                    }),
+                    'zones' => $zones->map(function($zone) {
+                        return ['id' => $zone->id, 'zone_name' => $zone->zone_name];
+                    }),
+                    'racks' => $racks->map(function($rack) {
+                        return ['id' => $rack->id, 'rack_number' => $rack->rack_number, 'zone_id' => $rack->zone_id];
+                    }),
+                    'locations' => $locations->map(function($location) {
+                        return [
+                            'id' => $location->id,
+                            'zone_id' => $location->zone_id,
+                            'rack_id' => $location->rack_id,
+                            'location_status' => $location->location_status,
+                            'rack' => $location->rack ? [
+                                'id' => $location->rack->id,
+                                'rack_number' => $location->rack->rack_number
+                            ] : null
+                        ];
+                    }),
+                    'mappings' => $mappings->map(function($mapping) {
+                        return [
+                            'id' => $mapping->id,
+                            'category_id' => $mapping->category_id,
+                            'subcategory_id' => $mapping->subcategory_id,
+                            'category' => $mapping->category ? [
+                                'id' => $mapping->category->id,
+                                'category_name' => $mapping->category->category_name
+                            ] : null,
+                            'subcategory' => $mapping->subcategory ? [
+                                'id' => $mapping->subcategory->id,
+                                'subcategory_name' => $mapping->subcategory->subcategory_name
+                            ] : null
+                        ];
+                    }),
+                    'rackCapacities' => $rackCapacities,
+                    'suggestedSKU' => $suggestedSKU,
+                    'suggestedBarcode' => $suggestedBarcode
+                ]
+            ]);
+        }
+
+        // 非 AJAX 请求，重定向到管理页面
+        return redirect()->route('product.index');
     }
 
     /**
@@ -557,56 +624,115 @@ class ProductController extends Controller
                 // gender 现在是 attribute_variants 表的直接字段，不再是关系
             ])->findOrFail($id);
 
-            return view('products.product_view', compact('product'));
+            // 预加载 Update Modal 所需的数据（用于级联选择）
+            $categories = Category::all();
+            $zones = Zone::all();
+            $brands = Brand::all();
+            $colors = Color::all();
+            $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
+            $locations = Location::with('zone', 'rack')->get();
+            $mappings = Mapping::with('category', 'subcategory')->get();
+            $racks = Rack::all();
+
+            // 计算每个rack的可用容量
+            $rackCapacities = [];
+            foreach ($racks as $rack) {
+                $currentUsage = Product::where('rack_id', $rack->id)->count();
+                $rackCapacities[$rack->id] = [
+                    'capacity' => $rack->capacity,
+                    'used' => $currentUsage,
+                    'available' => $rack->capacity - $currentUsage
+                ];
+            }
+
+            return view('products.view', compact(
+                'product',
+                'categories',
+                'zones',
+                'brands',
+                'colors',
+                'sizes',
+                'locations',
+                'mappings',
+                'rackCapacities'
+            ));
         } catch (\Exception $e) {
             return $this->handleError(request(), 'Product not found or failed to load: ' . $e->getMessage(), $e);
         }
     }
 
     /**
-     * 显示编辑产品表单
+     * 获取产品编辑数据（用于 Modal）
+     * 主要用于 AJAX 请求返回 JSON 数据
      *
+     * @param Request $request
      * @param int $id 产品ID
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function edit($id)
+    public function showUpdateForm(Request $request, $id)
     {
-        $product = Product::with([
-            'images',
-            'zone',
-            'rack',
-            'variants.attributeVariant.brand',
-            'variants.attributeVariant.color',
-            'variants.attributeVariant.size'
-        ])->findOrFail($id);
-        $categories = Category::all();
-        $subcategories = Subcategory::all();
-        $brands = Brand::all();
-        $colors = Color::all();
-        // Gender 现在是硬编码选项，不再从数据库获取
-        $sizes = SizeLibrary::with('category')->where('size_status', 'Available')->get();
-        $zones = Zone::all();
-        $racks = Rack::all();
-        $locations = Location::with('zone', 'rack')->get();
-        $mappings = Mapping::with('category', 'subcategory')->get();
+        try {
+            $product = Product::with([
+                'images',
+                'zone',
+                'rack',
+                'category',
+                'subcategory',
+                'variants.attributeVariant.brand',
+                'variants.attributeVariant.color',
+                'variants.attributeVariant.size'
+            ])->findOrFail($id);
 
-        // 计算每个rack的可用容量（按产品数量计算）
-        $rackCapacities = [];
-        foreach ($racks as $rack) {
-            $currentUsage = Product::where('rack_id', $rack->id)
-                ->where('id', '!=', $id) // 排除当前产品
-                ->count(); // 按产品数量计算
-            $rackCapacities[$rack->id] = [
-                'capacity' => $rack->capacity,
-                'used' => $currentUsage,
-                'available' => $rack->capacity - $currentUsage
-            ];
+            $variant = $product->variants->first();
+            $attributeVariant = $variant ? $variant->attributeVariant : null;
+
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product data fetched successfully',
+                    'data' => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                        'price' => $product->price,
+                        'quantity' => $product->quantity,
+                        'product_status' => $product->product_status,
+                        'cover_image' => $product->cover_image,
+                        'zone_id' => $product->zone_id,
+                        'rack_id' => $product->rack_id,
+                        'category_id' => $product->category_id,
+                        'subcategory_id' => $product->subcategory_id,
+                        'sku_code' => $variant ? $variant->sku_code : '',
+                        'barcode_number' => $variant ? $variant->barcode_number : '',
+                        'brand_id' => $attributeVariant ? $attributeVariant->brand_id : '',
+                        'color_id' => $attributeVariant ? $attributeVariant->color_id : '',
+                        'gender' => $attributeVariant ? $attributeVariant->gender : '',
+                        'size_id' => $attributeVariant ? $attributeVariant->size_id : '',
+                        'images' => $product->images->map(function($image) {
+                            return [
+                                'id' => $image->id,
+                                'detail_image' => $image->detail_image
+                            ];
+                        })->toArray()
+                    ]
+                ]);
+            }
+
+            // 非 AJAX 请求，重定向到管理页面
+            return redirect()->route('product.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load product data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('product.index')
+                ->with('error', 'Product not found');
         }
-
-        return view('products.product_update', compact(
-            'product', 'categories', 'subcategories', 'brands', 'colors', 'sizes', 'zones', 'racks', 'locations', 'mappings', 'rackCapacities'
-        ));
     }
+
 
     /**
      * 更新产品信息

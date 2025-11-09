@@ -12,22 +12,24 @@
 
 {{-- 主容器 --}}
 <div class="container-fluid py-4">
-    {{-- 页面标题和操作按钮区域 --}}
-    @include('components.dashboard-header.stock-dashboard-header', ['type' => 'dashboard'])
+    @include('stock_movement.components.dashboard-header')
 
 
-    {{-- 产品搜索和筛选区域 --}}
-    @include('components.search-filters.stock-search-filters')
+    @include('stock_movement.components.search-filter')
 
     {{-- 产品列表表格 --}}
-    @include('components.data-tables.stock-data-tables')
+    @include('stock_movement.components.data-table')
 
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.stock-empty-list')
-
-    {{-- 分页和结果统计 --}}
-    @include('components.pagination-nav.stock-pagination-nav')
+    @include('stock_movement.components.pagination-nav')
 </div>
+
+    {{-- 库存详情模态框 --}}
+    @include('stock_movement.detail-model')
+
+    {{-- 库存操作模态框 --}}
+    @include('stock_movement.stock-in-model')
+    @include('stock_movement.stock-out-model')
+    @include('stock_movement.stock-return-model')
 
 @endsection
 

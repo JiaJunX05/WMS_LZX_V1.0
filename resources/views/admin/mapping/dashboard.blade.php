@@ -16,22 +16,19 @@
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.mapping-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.mapping.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.mapping-metric-cards')
+    @include('admin.mapping.components.metric-cards')
 
     {{-- 主要内容区域 --}}
-    <div class="row g-4" id="dashboard-cards-container">
-        {{-- 分类映射卡片将通过JavaScript动态加载 --}}
-    </div>
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.mapping-empty-list')
+    @include('admin.mapping.components.data-cards')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.mapping-pagination-nav')
+    @include('admin.mapping.components.pagination-nav')
+
+    {{-- Mapping Create Modal --}}
+    @include('admin.mapping.create-model')
 </div>
 
 @endsection
@@ -41,12 +38,14 @@
 <script>
     // 设置分类映射管理相关路由
     window.categoryMappingManagementRoute = "{{ route('admin.mapping.index') }}";
+    window.createMappingUrl = "{{ route('admin.mapping.store') }}";
     window.viewCategoryMappingUrl = "{{ route('admin.mapping.view', ['id' => ':id']) }}";
-    window.editCategoryMappingUrl = "{{ route('admin.mapping.edit', ['id' => ':id']) }}";
-    window.editMappingUrl = "{{ route('admin.mapping.edit', ['id' => ':id']) }}";
     window.deleteMappingUrl = "{{ route('admin.mapping.destroy', ['id' => ':id']) }}";
     window.availableMappingUrl = "{{ route('admin.mapping.available', ['id' => ':id']) }}";
     window.unavailableMappingUrl = "{{ route('admin.mapping.unavailable', ['id' => ':id']) }}";
+
+    // 设置可用的 subcategories 数据（从后端传递）
+    window.availableSubcategories = @json($subcategories);
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}

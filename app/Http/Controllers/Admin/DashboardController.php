@@ -15,6 +15,18 @@ use App\Models\Brand;
 use App\Models\Color;
 use App\Models\StockMovement;
 
+/**
+ * 系统仪表板控制器
+ * System Dashboard Controller
+ *
+ * 功能模块：
+ * - 系统统计数据显示
+ * - 各模块数据汇总
+ * - 仪表板数据接口
+ *
+ * @author WMS Team
+ * @version 3.0.0
+ */
 class DashboardController extends Controller
 {
     /**
@@ -63,7 +75,7 @@ class DashboardController extends Controller
         // 尺码统计
         $sizeStats = [
             'size_libraries' => SizeLibrary::selectRaw('category_id, count(*) as count')->groupBy('category_id')->get()->count(),
-            'size_templates' => SizeTemplate::selectRaw('category_id, count(*) as count')->groupBy('category_id')->get()->count(),
+            'size_templates' => SizeTemplate::selectRaw('category_id, gender, count(*) as count')->groupBy('category_id', 'gender')->get()->count(),
         ];
 
         // 存储位置统计

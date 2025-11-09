@@ -3,56 +3,26 @@
  * 位置管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、表單提交
- * - View 頁面：查看詳情、刪除操作
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - View 頁面：查看詳情、刪除操作、Update Modal
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
 // 全局變量和狀態管理 (Global Variables and State Management)
 // =============================================================================
 
-// 位置列表數組（用於 Create 頁面）
-let locationList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = false; // 默認降序（最新的在上面）
-
 // 全局變量防止重複請求
 let isDeleting = false;
-let isUpdating = false; // 防止重複提交更新表單
-let updateFormBound = false; // 標記更新表單事件是否已綁定
 
 // =============================================================================
-// 通用功能模塊 (Common Functions Module)
+// API 請求函數 (API Request Functions)
 // =============================================================================
-
-/**
- * 驗證位置表單
- */
-function validateLocationForm() {
-    const zoneSelect = document.getElementById('zone_id');
-    const rackSelect = document.getElementById('rack_id');
-
-    if (!zoneSelect || !zoneSelect.value) {
-        window.showAlert('Please select a zone first', 'warning');
-        if (zoneSelect) zoneSelect.focus();
-        return false;
-    }
-
-    if (!rackSelect || !rackSelect.value) {
-        window.showAlert('Please select a rack first', 'warning');
-        if (rackSelect) rackSelect.focus();
-        return false;
-    }
-
-    return true;
-}
 
 /**
  * 處理位置請求
@@ -177,243 +147,6 @@ function setLocationUnavailable(locationId, onSuccess, onError) {
     );
 }
 
-/**
- * 獲取位置狀態類別
- */
-function getLocationStatusClass(status) {
-    return status === 'Available' ? 'available' : 'unavailable';
-}
-
-/**
- * 檢查位置組合是否已存在
- */
-function isLocationExists(zoneId, rackId) {
-    return locationList.some(location =>
-        location.zoneId === zoneId && location.rackId === rackId
-    );
-}
-
-/**
- * 高亮顯示列表中已存在的位置組合
- */
-function highlightExistingLocation(zoneId, rackId) {
-    // 高亮輸入框
-    const zoneSelect = document.getElementById('zone_id');
-    const rackSelect = document.getElementById('rack_id');
-
-    if (zoneSelect) {
-        const zoneGroup = zoneSelect.closest('.input-group');
-        if (zoneGroup) {
-            zoneGroup.classList.add('duplicate-highlight');
-            setTimeout(() => {
-                zoneGroup.classList.remove('duplicate-highlight');
-            }, 3000);
-        }
-    }
-
-    if (rackSelect) {
-        const rackGroup = rackSelect.closest('.input-group');
-        if (rackGroup) {
-            rackGroup.classList.add('duplicate-highlight');
-            setTimeout(() => {
-                rackGroup.classList.remove('duplicate-highlight');
-            }, 3000);
-        }
-    }
-
-    // 高亮列表中的重複項
-    const existingLocations = document.querySelectorAll('.value-item');
-    for (let item of existingLocations) {
-        const itemZoneId = item.getAttribute('data-zone-id');
-        const itemRackId = item.getAttribute('data-rack-id');
-        if (itemZoneId === zoneId.toString() && itemRackId === rackId.toString()) {
-            // 添加高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 更新配置摘要
- */
-function updateConfigSummary() {
-    const zoneSelect = document.getElementById('zone_id');
-    const rackSelect = document.getElementById('rack_id');
-    const selectedZone = zoneSelect.value;
-    const selectedRack = rackSelect.value;
-
-    if (selectedZone && selectedRack) {
-        const zoneText = zoneSelect.options[zoneSelect.selectedIndex].text;
-        const rackText = rackSelect.options[rackSelect.selectedIndex].text;
-
-        // 更新配置摘要
-        const selectedZoneSpan = document.getElementById('selectedZone');
-        const selectedRackSpan = document.getElementById('selectedRack');
-        if (selectedZoneSpan) {
-            selectedZoneSpan.textContent = zoneText;
-        }
-        if (selectedRackSpan) {
-            selectedRackSpan.textContent = rackText;
-        }
-
-        // 顯示配置摘要
-        const configSummary = document.getElementById('configSummary');
-        if (configSummary) {
-            configSummary.classList.remove('d-none');
-        }
-    }
-}
-
-/**
- * 更新位置計數
- */
-function updateLocationValuesCount() {
-    const count = locationList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('locationValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} locations`;
-    }
-}
-
-/**
- * 更新UI（通用）
- */
-function updateUI(locationList = []) {
-    updateLocationValuesCount();
-}
-
-/**
- * 顯示位置區域
- */
-function showLocationValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 顯示位置值區域
-    const locationValuesArea = document.getElementById('locationValuesArea');
-    if (locationValuesArea) {
-        locationValuesArea.classList.remove('d-none');
-    }
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏位置值區域
-    const locationValuesArea = document.getElementById('locationValuesArea');
-    if (locationValuesArea) {
-        locationValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-/**
- * 設置狀態卡片選擇
- */
-function setupStatusCardSelection() {
-    // 調用統一的狀態卡片初始化函數
-    if (typeof window.initializeLocationStatusCardSelection === 'function') {
-        window.initializeLocationStatusCardSelection();
-    }
-}
-
-/**
- * 綁定位置事件
- */
-function bindLocationEvents() {
-    // 狀態卡片選擇
-    setupStatusCardSelection();
-
-    // 區域選擇變化
-    const zoneSelect = document.getElementById('zone_id');
-    if (zoneSelect) {
-        zoneSelect.addEventListener('change', handleZoneChange);
-    }
-
-    // 貨架選擇變化
-    const rackSelect = document.getElementById('rack_id');
-    if (rackSelect) {
-        rackSelect.addEventListener('change', handleRackChange);
-    }
-}
-
-/**
- * 處理區域變化
- */
-function handleZoneChange() {
-    // 只更新UI状态，不改变右侧面板
-    updateUI();
-}
-
-/**
- * 處理貨架變化
- */
-function handleRackChange() {
-    // 只更新UI状态，不改变右侧面板
-    updateUI();
-}
-
-/**
- * 顯示位置輸入提示
- */
-function showLocationInputPrompt() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-}
-
-/**
- * 初始化位置頁面
- */
-function initializeLocationPage(config) {
-    // 綁定事件監聽器
-    bindLocationEvents();
-
-    // 初始化狀態
-    if (config.locationList) {
-        updateUI(config.locationList);
-    }
-
-    // 執行初始化回調函數（如果有）
-    if (config && config.initializationCallback && typeof config.initializationCallback === 'function') {
-        config.initializationCallback();
-    }
-}
-
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
 // =============================================================================
@@ -427,12 +160,6 @@ function initializeLocationDashboard() {
 
     // 加載位置數據
     loadLocations();
-
-    // 綁定搜索功能
-    bindSearchEvents();
-
-    // 綁定篩選功能
-    bindFilterEvents();
 }
 
 /**
@@ -444,7 +171,16 @@ function checkUrlParams() {
     const error = urlParams.get('error');
 
     if (success) {
-        window.showAlert(decodeURIComponent(success), 'success');
+        const successMessage = decodeURIComponent(success);
+        if (successMessage && successMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(successMessage, 'success');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(successMessage);
+            } else {
+                alert(successMessage);
+            }
+        }
         // 清除URL參數
         const url = new URL(window.location);
         url.searchParams.delete('success');
@@ -452,7 +188,16 @@ function checkUrlParams() {
     }
 
     if (error) {
-        window.showAlert(decodeURIComponent(error), 'danger');
+        const errorMessage = decodeURIComponent(error);
+        if (errorMessage && errorMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'danger');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+        }
         // 清除URL參數
         const url = new URL(window.location);
         url.searchParams.delete('error');
@@ -465,7 +210,6 @@ function checkUrlParams() {
  */
 function loadLocations() {
     const url = window.locationManagementRoute;
-    console.log('Loading locations from:', url);
 
     fetch(url, {
         method: 'GET',
@@ -474,19 +218,32 @@ function loadLocations() {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             renderZoneCards(data.data);
             updateStatistics(data);
             updatePaginationInfoByZone(data.data, data.pagination);
         } else {
-            window.showAlert(data.message || 'Failed to load locations', 'error');
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Failed to load locations', 'error');
+            } else {
+                alert(data.message || 'Failed to load locations');
+            }
         }
     })
     .catch(error => {
         console.error('Error loading locations:', error);
-        showAlert('Failed to load locations', 'error');
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to load locations', 'error');
+        } else {
+            alert('Failed to load locations');
+        }
     });
 }
 
@@ -496,8 +253,6 @@ function loadLocations() {
 function renderZoneCards(locations) {
     const container = document.getElementById('dashboard-cards-container');
     const emptyState = document.getElementById('empty-state');
-
-    console.log('Locations Data:', locations);
 
     if (!locations || locations.length === 0) {
         container.innerHTML = '';
@@ -509,7 +264,6 @@ function renderZoneCards(locations) {
 
     // 按區域分組
     const groupedByZone = groupByZone(locations);
-    console.log('Grouped by Zone:', groupedByZone);
 
     // 生成卡片HTML
     let cardsHTML = '';
@@ -518,8 +272,6 @@ function renderZoneCards(locations) {
         const zoneData = groupedByZone[zoneId];
         const zone = zoneData.zone;
         const racks = zoneData.racks;
-
-        console.log(`Zone ${zoneId}:`, zone, racks);
 
         // 確保zone數據存在
         if (zone && zone.zone_name) {
@@ -530,9 +282,6 @@ function renderZoneCards(locations) {
     });
 
     container.innerHTML = cardsHTML;
-
-    // 綁定卡片內的事件
-    bindCardEvents();
 }
 
 /**
@@ -580,8 +329,6 @@ function groupByZone(locations) {
  * 生成區域卡片
  */
 function generateZoneCard(zone, racks) {
-    console.log('Generating card for zone:', zone, 'racks:', racks);
-
     const availableCount = racks.filter(rack => {
         const status = rack.location_status || 'Unavailable';
         return status === 'Available';
@@ -597,13 +344,8 @@ function generateZoneCard(zone, racks) {
     const zoneId = zone ? zone.id : 'unknown';
 
     // 生成貨架值列表
-    console.log(`Generating rack values for zone ${zoneName}, total racks: ${racks.length}`);
-
-    // 直接使用原始數據，不進行排序
     const rackValuesHTML = racks.map((rack, index) => {
         const status = rack.location_status || 'Unavailable';
-
-        console.log(`Rack ${index + 1}: ${rack.rack_number}, Status: ${status}`);
 
         return `
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
@@ -614,7 +356,7 @@ function generateZoneCard(zone, racks) {
                     </span>
                     <button class="btn btn-sm ${status === 'Available' ? 'btn-outline-warning' : 'btn-outline-success'}"
                             title="${status === 'Available' ? 'Deactivate' : 'Activate'}"
-                            onclick="console.log('Button clicked, location.id:', ${rack.location_id}, 'status:', '${status}'); ${status === 'Available' ? 'setLocationUnavailable' : 'setLocationAvailable'}(${rack.location_id})">
+                            onclick="${status === 'Available' ? 'setLocationUnavailable' : 'setLocationAvailable'}(${rack.location_id})">
                         <i class="bi ${status === 'Available' ? 'bi-slash-circle' : 'bi-check-circle'}"></i>
                     </button>
                 </div>
@@ -749,541 +491,6 @@ function updatePaginationButtons(zoneCount) {
     }
 }
 
-/**
- * 綁定搜索事件
- */
-function bindSearchEvents() {
-    // 如果有搜索框，綁定搜索事件
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(function() {
-            const searchTerm = this.value;
-            filterLocations(searchTerm);
-        }, 300));
-    }
-}
-
-/**
- * 綁定篩選事件
- */
-function bindFilterEvents() {
-    // 如果有篩選器，綁定篩選事件
-    const filterSelects = document.querySelectorAll('.filter-select');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            applyFilters();
-        });
-    });
-}
-
-/**
- * 篩選位置
- */
-function filterLocations(searchTerm) {
-    // 實現搜索功能
-    console.log('Searching for:', searchTerm);
-    const cards = document.querySelectorAll('.content-card');
-    cards.forEach(card => {
-        const zoneName = card.querySelector('.card-title').textContent.toLowerCase();
-        const shouldShow = zoneName.includes(searchTerm.toLowerCase());
-        card.classList.toggle('d-none', !shouldShow);
-    });
-}
-
-/**
- * 應用篩選器
- */
-function applyFilters() {
-    // 實現篩選功能
-    console.log('Applying filters');
-    const filterValue = document.getElementById('filter-select').value;
-    // 這裡可以添加具體的篩選邏輯
-}
-
-/**
- * 綁定卡片事件
- */
-function bindCardEvents() {
-    // 綁定狀態切換按鈕事件
-    document.querySelectorAll('.status-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-}
-
-// =============================================================================
-// Create 頁面功能 (Create Page Functions)
-// =============================================================================
-
-/**
- * 初始化位置創建頁面
- */
-function initializeLocationCreate() {
-    // 使用通用初始化函數
-    initializeLocationPage({
-        locationList: locationList,
-        initializationCallback: function() {
-            bindCreateEvents();
-            updateUI(locationList);
-        }
-    });
-}
-
-/**
- * 綁定創建頁面事件
- */
-function bindCreateEvents() {
-    // 添加位置按鈕
-    const addLocationBtn = document.getElementById('addLocation');
-    if (addLocationBtn) {
-        addLocationBtn.addEventListener('click', addLocation);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortLocations');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 事件委托：刪除位置按鈕
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            if (!isNaN(index)) {
-                removeLocation(index);
-            }
-        }
-    });
-
-    // 表單提交處理
-    const form = document.getElementById('locationForm');
-    if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-    }
-}
-
-/**
- * 添加位置
- */
-function addLocation() {
-    if (!validateLocationForm()) {
-        return;
-    }
-
-    const zoneSelect = document.getElementById('zone_id');
-    const rackSelect = document.getElementById('rack_id');
-
-    const zoneId = zoneSelect.value;
-    const rackId = rackSelect.value;
-
-    // 檢查是否已存在
-    if (isLocationExists(zoneId, rackId)) {
-        window.showAlert('This location combination already exists in the list', 'error');
-        highlightExistingLocation(zoneId, rackId);
-        return;
-    }
-
-    // 添加位置到列表
-    addLocationToList(zoneId, rackId);
-
-    // 清空選擇
-    zoneSelect.value = '';
-    rackSelect.value = '';
-    zoneSelect.focus();
-
-    // 顯示成功添加的alert
-    window.showAlert('Location added successfully', 'success');
-}
-
-/**
- * 添加位置到列表
- */
-function addLocationToList(zoneId, rackId) {
-    // 獲取區域和貨架信息
-    const zoneSelect = document.getElementById('zone_id');
-    const rackSelect = document.getElementById('rack_id');
-    const zoneName = zoneSelect.options[zoneSelect.selectedIndex].text;
-    const rackName = rackSelect.options[rackSelect.selectedIndex].text;
-
-    // 添加到數組
-    const location = {
-        zoneId: zoneId,
-        rackId: rackId,
-        zoneName: zoneName,
-        rackName: rackName
-    };
-
-    locationList.push(location);
-
-    // 更新列表顯示
-    updateLocationList();
-    updateUI(locationList);
-
-    // 顯示位置區域（第一次添加時）
-    if (locationList.length === 1) {
-        showLocationValuesArea();
-    }
-}
-
-/**
- * 從列表中移除位置
- */
-function removeLocation(index) {
-    if (index >= 0 && index < locationList.length) {
-        // 獲取要刪除的位置信息
-        const locationToRemove = locationList[index];
-
-        // 確認刪除
-        if (!confirm(`Are you sure you want to remove location "${locationToRemove.zoneName} - ${locationToRemove.rackName}"?`)) {
-            return;
-        }
-
-        locationList.splice(index, 1);
-        updateLocationList();
-
-        // 如果沒有位置了，隱藏區域
-        if (locationList.length === 0) {
-            hideAllAreas();
-        }
-
-        updateUI(locationList);
-        window.showAlert('Location removed successfully', 'success');
-    } else {
-        window.showAlert('Failed to remove location', 'error');
-    }
-}
-
-/**
- * 更新位置列表顯示
- */
-function updateLocationList() {
-    const locationListContainer = document.getElementById('locationValuesList');
-
-    if (locationList.length === 0) {
-        locationListContainer.innerHTML = '';
-        return;
-    }
-
-    let html = '';
-    locationList.forEach((location, index) => {
-        const locationId = `location-${location.zoneId}-${location.rackId}`;
-
-        // 檢查是否為重複項
-        const isDuplicate = isLocationExists(location.zoneId, location.rackId) &&
-            locationList.filter(i => i.zoneId === location.zoneId && i.rackId === location.rackId).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        html += `
-            <div class="${baseClasses} ${duplicateClasses}" data-zone-id="${location.zoneId}" data-rack-id="${location.rackId}" data-location-id="${locationId}">
-                <div class="d-flex align-items-center">
-                    <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">${isDuplicate ? '⚠️' : (index + 1)}</span>
-                    <i class="bi bi-geo-alt text-primary me-2"></i>
-                    <div class="location-combination">
-                        <span class="zone-badge fw-bold text-dark">${location.zoneName}</span>
-                        <span class="text-muted mx-2">-</span>
-                        <span class="rack-badge fw-bold text-dark">${location.rackName}</span>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </div>
-        `;
-    });
-
-    locationListContainer.innerHTML = html;
-}
-
-/**
- * 排序位置值列表
- */
-function sortLocationValuesList() {
-    const locationValuesList = document.getElementById('locationValuesList');
-    const items = Array.from(locationValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取位置組合並排序
-    const locationValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.location-combination').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    locationValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    locationValues.forEach(({ element }) => {
-        locationValuesList.appendChild(element);
-    });
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    if (locationList.length === 0) {
-        window.showAlert('No locations to clear', 'info');
-        return;
-    }
-
-    if (confirm('Are you sure you want to clear all locations?')) {
-        // 清空選擇
-        const zoneSelect = document.getElementById('zone_id');
-        const rackSelect = document.getElementById('rack_id');
-        if (zoneSelect) {
-            zoneSelect.value = '';
-        }
-        if (rackSelect) {
-            rackSelect.value = '';
-        }
-
-        // 清空位置列表
-        locationList = [];
-        const locationListElement = document.getElementById('locationValuesList');
-        if (locationListElement) {
-            locationListElement.innerHTML = '';
-        }
-
-        // 隱藏所有區域
-        hideAllAreas();
-
-        // 更新UI
-        updateUI(locationList);
-        window.showAlert('All locations cleared', 'info');
-    }
-}
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortLocations');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortLocationList();
-}
-
-/**
- * 排序位置列表
- */
-function sortLocationList() {
-    const locationListContainer = document.getElementById('locationValuesList');
-    const items = Array.from(locationListContainer.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取位置信息並排序
-    const locations = items.map(item => ({
-        element: item,
-        zoneName: item.querySelector('.zone-badge').textContent.trim(),
-        rackName: item.querySelector('.rack-badge').textContent.trim()
-    }));
-
-    // 按區域和貨架名稱排序
-    locations.sort((a, b) => {
-        const aText = a.zoneName + ' - ' + a.rackName;
-        const bText = b.zoneName + ' - ' + b.rackName;
-
-        if (isAscending) {
-            return aText.localeCompare(bText);
-        } else {
-            return bText.localeCompare(aText);
-        }
-    });
-
-    // 重新排列DOM元素
-    locations.forEach(({ element }) => {
-        locationListContainer.appendChild(element);
-    });
-}
-
-/**
- * 表單提交處理
- */
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    if (locationList.length === 0) {
-        window.showAlert('Please add at least one location', 'warning');
-        return;
-    }
-
-    // 獲取狀態
-    const statusRadio = document.querySelector('input[name="location_status"]:checked');
-    const status = statusRadio ? statusRadio.value : 'Available';
-
-    // 提交前再次檢查重複組合
-    const duplicates = [];
-    const seen = new Set();
-
-    for (let i = 0; i < locationList.length; i++) {
-        const location = locationList[i];
-        const combination = `${location.zoneId}-${location.rackId}`;
-
-        if (seen.has(combination)) {
-            duplicates.push(`${location.zoneName} - ${location.rackName}`);
-        } else {
-            seen.add(combination);
-        }
-    }
-
-    if (duplicates.length > 0) {
-        window.showAlert('Duplicate combinations found. Please remove duplicates before submitting.', 'error');
-        return;
-    }
-
-    // 準備提交數據
-    const locations = locationList.map(item => ({
-        zoneId: item.zoneId,
-        rackId: item.rackId,
-        locationStatus: status
-    }));
-
-    // 使用通用創建函數
-    createLocation({ locations },
-        function(data) {
-            window.showAlert(data.message || 'Locations created successfully', 'success');
-            setTimeout(() => {
-                window.location.href = window.locationManagementRoute || '/admin/storage-locations/location';
-            }, 2000);
-        },
-        function(error) {
-            // 简化错误信息，类似 mapping 页面
-            if (error && error.includes('Some locations failed to create')) {
-                window.showAlert('Some locations failed to create', 'error');
-            } else {
-                window.showAlert(error || 'Failed to create locations', 'error');
-            }
-        }
-    );
-}
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * 初始化位置更新頁面
- */
-function initializeLocationUpdate() {
-    // 綁定事件
-    bindEvents();
-}
-
-/**
- * 綁定更新頁面事件
- */
-function bindEvents() {
-    // 表單提交事件 - 確保只綁定一次
-    if (!updateFormBound) {
-        const form = document.getElementById('updateLocationForm');
-        if (form) {
-            form.addEventListener('submit', handleUpdateFormSubmit);
-            updateFormBound = true; // 標記已綁定
-        }
-    }
-
-    // 區域選擇變化事件 - 使用 once 選項確保只觸發一次，或檢查是否已綁定
-    const zoneSelect = document.getElementById('zone_id');
-    if (zoneSelect && !zoneSelect.hasAttribute('data-change-bound')) {
-        zoneSelect.addEventListener('change', updateZoneInfo);
-        zoneSelect.setAttribute('data-change-bound', 'true');
-    }
-
-    // 綁定狀態卡片事件
-    setupStatusCardSelection();
-}
-
-/**
- * 更新頁面表單提交處理
- */
-function handleUpdateFormSubmit(e) {
-    e.preventDefault();
-
-    // 防止重複提交
-    if (isUpdating) {
-        return false;
-    }
-
-    // 設置提交標誌
-    isUpdating = true;
-
-    // 獲取表單數據
-    const formData = new FormData(e.target);
-
-    // 獲取當前位置ID
-    const locationId = window.location.pathname.split('/').pop();
-
-    // 使用通用函數提交
-    handleLocationRequest(
-        window.updateLocationUrl,
-        'POST',
-        formData,
-        function(data) {
-            // 使用後端返回的消息，如果沒有則使用默認消息
-            const message = data.message || 'Location updated successfully';
-            window.showAlert(message, 'success');
-            setTimeout(() => {
-                window.location.href = window.locationManagementRoute;
-            }, 1500);
-        },
-        function(error) {
-            isUpdating = false; // 錯誤時重置標誌
-            showAlert('Failed to update location', 'error');
-        }
-    );
-
-    return false; // 防止表單默認提交
-}
-
-/**
- * 更新區域信息
- */
-function updateZoneInfo() {
-    // 更新區域信息顯示
-    const zoneSelect = document.getElementById('zone_id');
-    if (zoneSelect) {
-        const selectedOption = zoneSelect.options[zoneSelect.selectedIndex];
-        const zoneName = selectedOption.text;
-
-        // 更新顯示
-        const zoneDisplay = document.querySelector('#selectedZone');
-        if (zoneDisplay) {
-            zoneDisplay.textContent = zoneName;
-        }
-    }
-}
-
 // =============================================================================
 // View 頁面功能 (View Page Functions)
 // =============================================================================
@@ -1295,6 +502,9 @@ function initializeLocationView() {
     // 綁定事件監聽器
     bindViewEvents();
 
+    // 綁定 Update Modal 事件
+    bindUpdateLocationModalEvents();
+
     // 初始化狀態
     updateViewUI();
 }
@@ -1303,11 +513,11 @@ function initializeLocationView() {
  * 綁定查看頁面事件
  */
 function bindViewEvents() {
-    // 刪除按鈕事件 - 使用事件委託避免重複綁定
+    // 刪除按鈕事件 - 使用事件委託，只監聽 Delete 按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-location-id]')) {
-            const button = e.target.closest('button[data-location-id]');
-            const locationId = button.getAttribute('data-location-id');
+        const deleteButton = e.target.closest('button.btn-outline-danger[data-location-id][data-action="delete"]');
+        if (deleteButton) {
+            const locationId = deleteButton.getAttribute('data-location-id');
             deleteLocationFromView(locationId);
         }
     });
@@ -1391,7 +601,11 @@ function deleteLocationFromView(locationId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.showAlert('Location deleted successfully', 'success');
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Location deleted successfully', 'success');
+            } else {
+                alert('Location deleted successfully');
+            }
 
             // 刪除成功後，從頁面中移除該行
             const deletedRow = document.querySelector(`[data-location-id="${locationId}"]`).closest('tr');
@@ -1405,12 +619,20 @@ function deleteLocationFromView(locationId) {
             // 檢查是否還有資料，如果沒有就跳轉回 index
             checkAndRedirectIfEmpty();
         } else {
-            showAlert('Failed to delete location', 'error');
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to delete location', 'error');
+            } else {
+                alert('Failed to delete location');
+            }
         }
     })
     .catch(error => {
         console.error('Delete error:', error);
-        showAlert('Failed to delete location', 'error');
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to delete location', 'error');
+        } else {
+            alert('Failed to delete location');
+        }
     })
     .finally(() => {
         // 重置刪除狀態
@@ -1429,14 +651,11 @@ function checkAndRedirectIfEmpty() {
         return !row.querySelector('td[colspan]');
     });
 
-    // 如果沒有資料行了，跳轉回 index
+    // 如果沒有資料行了，直接跳轉回 index
     if (dataRows.length === 0) {
-        window.showAlert('All locations have been deleted. Redirecting to location list...', 'info');
-
-        // 延遲跳轉，讓用戶看到提示信息
         setTimeout(() => {
             window.location.href = window.locationManagementRoute;
-        }, 1500);
+        }, 1000);
     }
 }
 
@@ -1448,7 +667,6 @@ function checkAndRedirectIfEmpty() {
  * 切換位置狀態
  */
 function toggleLocationStatus(id, currentStatus) {
-    // 切換位置狀態
     const newStatus = currentStatus === 'Available' ? 'Unavailable' : 'Available';
     updateLocationStatus(id, newStatus);
 }
@@ -1457,7 +675,6 @@ function toggleLocationStatus(id, currentStatus) {
  * 設置位置為可用
  */
 function setLocationAvailable(id) {
-    // 設置位置為可用
     updateLocationStatus(id, 'Available');
 }
 
@@ -1465,8 +682,84 @@ function setLocationAvailable(id) {
  * 設置位置為不可用
  */
 function setLocationUnavailable(id) {
-    // 設置位置為不可用
     updateLocationStatus(id, 'Unavailable');
+}
+
+/**
+ * 更新單個位置狀態顯示（不重新加載所有數據）
+ */
+function updateSingleLocationStatusUI(locationId, newStatus) {
+    // 找到包含該 location 的行（通過查找包含 locationId 的按鈕）
+    const locationRows = document.querySelectorAll('.list-container > div');
+    let targetRow = null;
+    let zoneCard = null;
+
+    locationRows.forEach(row => {
+        const button = row.querySelector('button');
+        if (button && button.getAttribute('onclick')) {
+            const onclickAttr = button.getAttribute('onclick');
+            // 檢查 onclick 是否包含該 locationId
+            if (onclickAttr.includes(`(${locationId})`)) {
+                targetRow = row;
+                zoneCard = row.closest('.content-card');
+            }
+        }
+    });
+
+    if (!targetRow || !zoneCard) {
+        // 如果找不到，則重新加載所有數據
+        console.warn('Could not find location row, reloading all data');
+        loadLocations();
+        return;
+    }
+
+    // 更新 badge
+    const badge = targetRow.querySelector('.badge');
+    if (badge) {
+        if (newStatus === 'Available') {
+            badge.className = 'badge bg-success px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Available';
+        } else {
+            badge.className = 'badge bg-danger px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-x-circle me-1"></i>Unavailable';
+        }
+    }
+
+    // 更新按鈕
+    const toggleButton = targetRow.querySelector('button');
+    if (toggleButton) {
+        if (newStatus === 'Available') {
+            toggleButton.className = 'btn btn-sm btn-outline-warning';
+            toggleButton.title = 'Deactivate';
+            toggleButton.innerHTML = '<i class="bi bi-slash-circle"></i>';
+            toggleButton.setAttribute('onclick', `setLocationUnavailable(${locationId})`);
+        } else {
+            toggleButton.className = 'btn btn-sm btn-outline-success';
+            toggleButton.title = 'Activate';
+            toggleButton.innerHTML = '<i class="bi bi-check-circle"></i>';
+            toggleButton.setAttribute('onclick', `setLocationAvailable(${locationId})`);
+        }
+    }
+
+    // 更新區域卡片中的統計數字
+    const availableCountEl = zoneCard.querySelector('.col-6:first-child .h4');
+    const unavailableCountEl = zoneCard.querySelector('.col-6:last-child .h4');
+
+    if (availableCountEl && unavailableCountEl) {
+        let availableCount = parseInt(availableCountEl.textContent) || 0;
+        let unavailableCount = parseInt(unavailableCountEl.textContent) || 0;
+
+        if (newStatus === 'Available') {
+            availableCount++;
+            unavailableCount--;
+        } else {
+            availableCount--;
+            unavailableCount++;
+        }
+
+        availableCountEl.textContent = availableCount;
+        unavailableCountEl.textContent = unavailableCount;
+    }
 }
 
 /**
@@ -1477,11 +770,6 @@ function updateLocationStatus(id, status) {
         window.availableLocationUrl.replace(':id', id) :
         window.unavailableLocationUrl.replace(':id', id);
 
-    console.log('Updating location status:', { id, status, url });
-
-    // 顯示加載提示
-    window.showAlert('Updating location status...', 'info');
-
     fetch(url, {
         method: 'PATCH',
         headers: {
@@ -1490,22 +778,27 @@ function updateLocationStatus(id, status) {
             'X-Requested-With': 'XMLHttpRequest',
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
             window.showAlert(`Location status updated to ${status.toLowerCase()} successfully!`, 'success');
-            loadLocations(); // 重新加載數據
+            // 只更新單個位置狀態，不重新加載所有數據
+            updateSingleLocationStatusUI(id, status);
         } else {
-            showAlert('Failed to update location status', 'error');
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to update location status', 'error');
+            } else {
+                alert('Failed to update location status');
+            }
         }
     })
     .catch(error => {
         console.error(`Error setting location to ${status.toLowerCase()}:`, error);
-        showAlert('Failed to update location status', 'error');
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to update location status', 'error');
+        } else {
+            alert('Failed to update location status');
+        }
     });
 }
 
@@ -1519,97 +812,756 @@ function viewZoneDetails(zoneId) {
 }
 
 /**
- * 編輯位置
+ * 編輯位置（跳轉到 view 頁面）
  */
 function editLocation(locationId) {
-    // 跳轉到單個位置的edit頁面
-    const url = window.editLocationUrl.replace(':id', locationId);
+    const url = window.viewLocationUrl.replace(':id', locationId);
     window.location.href = url;
 }
 
 // =============================================================================
-// 工具函數 (Utility Functions)
+// Create Location Modal 功能 (Create Location Modal Functions)
 // =============================================================================
 
 /**
- * 工具函數：防抖
+ * 初始化 Location Create Modal
  */
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            timeout = null;
-            if (!immediate) func.apply(this, args);
-        };
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func.apply(this, args);
-    };
+function initializeLocationCreateModal() {
+    // 綁定 modal 事件
+    bindLocationModalEvents();
 }
 
 /**
- * 工具函數：節流
+ * 綁定 Location Modal 事件
  */
-function throttle(func, limit) {
-    let inThrottle;
-    return function executedFunction(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
-    };
-}
+function bindLocationModalEvents() {
+    const modal = document.getElementById('createLocationModal');
+    if (!modal) return;
 
-/**
- * 工具函數：轉義HTML
- */
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, (s) => map[s]);
-}
+    // Modal 打開時重置
+    modal.addEventListener('show.bs.modal', function() {
+        resetLocationModal();
+    });
 
-/**
- * 工具函數：格式化日期
- */
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+    // Zone 選擇變化
+    const zoneSelect = document.getElementById('zone_id');
+    if (zoneSelect) {
+        zoneSelect.addEventListener('change', handleZoneSelectChange);
+    }
 
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        return 'N/A';
+    // Select All 按鈕
+    const selectAllBtn = document.getElementById('selectAllRacksBtn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', selectAllRacks);
+    }
+
+    // Clear All 按鈕
+    const clearAllBtn = document.getElementById('clearAllRacksBtn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', clearAllRacks);
+    }
+
+    // 提交按鈕
+    const submitBtn = document.getElementById('submitCreateLocationModal');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitLocationModal);
     }
 }
 
 /**
- * 工具函數：格式化狀態
+ * 處理 Zone 選擇變化
  */
-function formatStatus(status) {
-    const statusMap = {
-        'Available': { class: 'bg-success', icon: 'bi-check-circle' },
-        'Unavailable': { class: 'bg-danger', icon: 'bi-x-circle' }
-    };
+function handleZoneSelectChange() {
+    const zoneId = document.getElementById('zone_id').value;
 
-    const statusInfo = statusMap[status] || { class: 'bg-secondary', icon: 'bi-question-circle' };
+    if (zoneId) {
+        loadAvailableRacks();
+    } else {
+        hideRackCards();
+    }
+}
 
-    return `<span class="badge ${statusInfo.class} px-3 py-2">
-        <i class="bi ${statusInfo.icon} me-1"></i>${status}
-    </span>`;
+/**
+ * 加載可用的 Racks
+ */
+function loadAvailableRacks() {
+    // 顯示加載狀態
+    showRackLoading();
+
+    // 從全局變量獲取可用的 racks
+    const racks = window.availableRacks || [];
+
+    if (racks && racks.length > 0) {
+        displayRackCards(racks);
+    } else {
+        hideRackCards();
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No available racks found', 'warning');
+        } else {
+            alert('No available racks found');
+        }
+    }
+}
+
+/**
+ * 顯示 Rack 加載狀態
+ */
+function showRackLoading() {
+    const selectionArea = document.getElementById('rackSelection');
+    const container = document.getElementById('rackCardsContainer');
+
+    if (selectionArea) {
+        selectionArea.classList.remove('d-none');
+    }
+
+    if (container) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading available racks...</p>
+            </div>
+        `;
+    }
+
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-rack-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+}
+
+/**
+ * 顯示 Rack 卡片
+ */
+function displayRackCards(racks) {
+    const selectionArea = document.getElementById('rackSelection');
+    const container = document.getElementById('rackCardsContainer');
+    if (!selectionArea || !container) return;
+
+    // 顯示選擇區域
+    selectionArea.classList.remove('d-none');
+
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-rack-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    if (racks.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-circle fs-1 text-muted mb-3"></i>
+                <h6 class="text-muted">No Available Racks</h6>
+                <p class="text-muted small">No racks found for the selected zone.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = racks.map(rack => `
+        <div class="col-6 col-md-4 col-lg-3 mb-3">
+            <div class="card rack-card h-100 border-2 border-light shadow-sm position-relative overflow-hidden"
+                 data-rack-id="${rack.id}"
+                 data-rack-number="${rack.rack_number}"
+                 data-status="${rack.rack_status}"
+                 style="cursor: pointer; transition: all 0.3s ease; border-radius: 12px;">
+                <input type="checkbox" name="rack_ids[]" value="${rack.id}"
+                       class="rack-checkbox position-absolute opacity-0"
+                       id="rack_${rack.id}"
+                       style="pointer-events: none;">
+                <label for="rack_${rack.id}" class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
+                       style="cursor: pointer; min-height: 120px; position: relative;">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <i class="bi bi-check-circle-fill text-success fs-5 d-none rack-check-icon" style="text-shadow: 0 0 4px rgba(0,0,0,0.2);"></i>
+                    </div>
+                    <div class="rack-number fw-bold text-dark mb-2 fs-5">${rack.rack_number.toUpperCase()}</div>
+                    <div class="rack-capacity text-muted small mb-3">
+                        <i class="bi bi-boxes me-1"></i>Capacity: ${rack.capacity || 'N/A'}
+                    </div>
+                    <div class="rack-status badge ${rack.rack_status === 'Available' ? 'bg-success-subtle text-success border border-success border-opacity-25' : 'bg-danger-subtle text-danger border border-danger border-opacity-25'} px-3 py-2 rounded-pill">
+                        <i class="bi ${rack.rack_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${rack.rack_status}
+                    </div>
+                </label>
+            </div>
+        </div>
+    `).join('');
+
+    // 綁定卡片點擊事件
+    bindRackCardEvents();
+
+    // 更新選擇計數器
+    updateRackSelectionCounter();
+}
+
+/**
+ * 隱藏 Rack 卡片
+ */
+function hideRackCards() {
+    const selectionArea = document.getElementById('rackSelection');
+    if (selectionArea) {
+        selectionArea.classList.add('d-none');
+    }
+
+    // 顯示初始消息
+    const initialMessage = document.getElementById('initial-rack-message');
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
+    }
+
+    // 重置計數器
+    const counter = document.getElementById('rackSelectionCounter');
+    if (counter) {
+        counter.textContent = '0 selected';
+        counter.className = 'badge bg-primary';
+    }
+}
+
+/**
+ * 綁定 Rack 卡片事件
+ */
+function bindRackCardEvents() {
+    const cards = document.querySelectorAll('.rack-card');
+    cards.forEach(card => {
+        // 為複選框添加事件監聽
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        const checkIcon = card.querySelector('.rack-check-icon');
+
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    card.classList.add('border-success', 'bg-success-subtle');
+                    card.classList.remove('border-light');
+                    card.style.transform = 'scale(1.02)';
+                    card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
+                    if (checkIcon) {
+                        checkIcon.classList.remove('d-none');
+                    }
+                } else {
+                    card.classList.remove('border-success', 'bg-success-subtle');
+                    card.classList.add('border-light');
+                    card.style.transform = 'scale(1)';
+                    card.style.boxShadow = '';
+                    if (checkIcon) {
+                        checkIcon.classList.add('d-none');
+                    }
+                }
+                updateRackSelectionCounter();
+            });
+        }
+
+        // 添加悬停效果
+        card.addEventListener('mouseenter', function() {
+            if (!checkbox.checked) {
+                this.classList.add('border-primary');
+                this.classList.remove('border-light');
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }
+        });
+
+        card.addEventListener('mouseleave', function() {
+            if (!checkbox.checked) {
+                this.classList.remove('border-primary');
+                this.classList.add('border-light');
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = '';
+            }
+        });
+    });
+}
+
+/**
+ * 更新 Rack 選擇計數器
+ */
+function updateRackSelectionCounter() {
+    const selectedCount = document.querySelectorAll('#rackCardsContainer input[type="checkbox"]:checked').length;
+    const counter = document.getElementById('rackSelectionCounter');
+    const submitBtn = document.getElementById('submitCreateLocationModal');
+
+    if (counter) {
+        counter.textContent = `${selectedCount} selected`;
+
+        if (selectedCount > 0) {
+            counter.className = 'badge bg-success';
+        } else {
+            counter.className = 'badge bg-primary';
+        }
+    }
+
+    // 更新提交按鈕狀態
+    if (submitBtn) {
+        submitBtn.disabled = selectedCount === 0;
+    }
+}
+
+/**
+ * 選擇所有 Racks
+ */
+function selectAllRacks() {
+    const checkboxes = document.querySelectorAll('#rackCardsContainer input[type="checkbox"]');
+    if (checkboxes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No racks available to select', 'warning');
+        } else {
+            alert('No racks available to select');
+        }
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        const card = checkbox.closest('.rack-card');
+        const checkIcon = card?.querySelector('.rack-check-icon');
+        if (card) {
+            card.classList.add('border-success', 'bg-success-subtle');
+            card.classList.remove('border-light');
+            card.style.transform = 'scale(1.02)';
+            card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
+            if (checkIcon) {
+                checkIcon.classList.remove('d-none');
+            }
+        }
+    });
+    updateRackSelectionCounter();
+
+    // 顯示選擇提示
+    const selectedCount = checkboxes.length;
+    if (typeof window.showAlert === 'function') {
+        window.showAlert(`${selectedCount} rack${selectedCount > 1 ? 's' : ''} selected`, 'success');
+    } else {
+        alert(`${selectedCount} rack${selectedCount > 1 ? 's' : ''} selected`);
+    }
+}
+
+/**
+ * 清除所有 Racks 選擇
+ */
+function clearAllRacks() {
+    const checkboxes = document.querySelectorAll('#rackCardsContainer input[type="checkbox"]:checked');
+    if (checkboxes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No racks selected to clear', 'info');
+        } else {
+            alert('No racks selected to clear');
+        }
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.rack-card');
+        const checkIcon = card?.querySelector('.rack-check-icon');
+        if (card) {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+            if (checkIcon) {
+                checkIcon.classList.add('d-none');
+            }
+        }
+    });
+    updateRackSelectionCounter();
+
+    // 顯示清除提示
+    if (typeof window.showAlert === 'function') {
+        window.showAlert('All selections cleared', 'info');
+    } else {
+        alert('All selections cleared');
+    }
+}
+
+/**
+ * 重置 Location Modal
+ */
+function resetLocationModal() {
+    // 重置表單
+    const form = document.getElementById('createLocationModalForm');
+    if (form) {
+        form.reset();
+    }
+
+    // 重置 Zone 選擇
+    const zoneSelect = document.getElementById('zone_id');
+    if (zoneSelect) {
+        zoneSelect.value = '';
+    }
+
+    // 隱藏 Rack 卡片
+    hideRackCards();
+
+    // 清除所有選擇
+    const checkboxes = document.querySelectorAll('#rackCardsContainer input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.rack-card');
+        const checkIcon = card?.querySelector('.rack-check-icon');
+        if (card) {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+            if (checkIcon) {
+                checkIcon.classList.add('d-none');
+            }
+        }
+    });
+
+    // 更新計數器
+    const counter = document.getElementById('rackSelectionCounter');
+    if (counter) {
+        counter.textContent = '0 selected';
+        counter.className = 'badge bg-primary';
+    }
+
+    // 禁用提交按鈕
+    const submitBtn = document.getElementById('submitCreateLocationModal');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+    }
+}
+
+/**
+ * 提交 Location Modal
+ */
+function submitLocationModal() {
+    const zoneId = document.getElementById('zone_id').value;
+    const selectedRacks = Array.from(document.querySelectorAll('#rackCardsContainer input[type="checkbox"]:checked'))
+        .map(checkbox => checkbox.value);
+
+    // 驗證
+    if (!zoneId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a zone first', 'warning');
+        } else {
+            alert('Please select a zone first');
+        }
+        return;
+    }
+
+    if (selectedRacks.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select at least one rack', 'warning');
+        } else {
+            alert('Please select at least one rack');
+        }
+        return;
+    }
+
+    // 準備數據
+    const locations = selectedRacks.map(rackId => ({
+        zoneId: zoneId,
+        rackId: rackId,
+        locationStatus: 'Available'
+    }));
+
+    // 顯示加載狀態
+    const submitBtn = document.getElementById('submitCreateLocationModal');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creating...';
+    submitBtn.disabled = true;
+
+    // 提交創建請求
+    createLocation({ locations },
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Locations created successfully', 'success');
+            } else {
+                alert(data.message || 'Locations created successfully');
+            }
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createLocationModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to create locations', 'error');
+            } else {
+                alert(error || 'Failed to create locations');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    );
+}
+
+// =============================================================================
+// Update Location Modal 功能 (Update Location Modal Functions)
+// =============================================================================
+
+/**
+ * 綁定 Update Location Modal 事件
+ */
+function bindUpdateLocationModalEvents() {
+    // 彈窗打開時初始化狀態卡片
+    $('#updateLocationModal').on('show.bs.modal', function() {
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('location_status');
+        }
+    });
+
+    // 彈窗關閉時清理表單
+    $('#updateLocationModal').on('hidden.bs.modal', function() {
+        const form = document.getElementById('updateLocationModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        // 清空 select 選項
+        $('#update_zone_id').empty().append('<option value="">Select zone</option>');
+        $('#update_rack_id').empty().append('<option value="">Select rack</option>');
+
+        // 清空當前信息卡片
+        $('#currentLocationInfo').html('');
+
+        // 重置狀態卡片（只清理 modal 內的）
+        const modal = document.getElementById('updateLocationModal');
+        if (modal) {
+            $(modal).find('input[name="location_status"]').prop('checked', false);
+            $(modal).find('.status-card').removeClass('selected');
+        }
+
+        // 移除驗證類
+        $('#updateLocationModalForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+
+        // 清除隱藏的 location ID
+        $('#updateLocationModalForm').removeAttr('data-location-id');
+    });
+}
+
+/**
+ * 打開更新位置彈窗
+ */
+function openUpdateLocationModal(locationId) {
+    const url = window.editLocationUrl.replace(':id', locationId);
+
+    // 从按钮或表格行获取location数据（如果可用，用于快速填充）
+    let updateButton = $(`button[onclick*="openUpdateLocationModal(${locationId})"]`);
+    if (updateButton.length === 0) {
+        updateButton = $(`button[data-location-id="${locationId}"]`).first();
+    }
+
+    let locationData = null;
+
+    if (updateButton.length > 0) {
+        // 快速填充基本数据
+        locationData = {
+            id: locationId,
+            zone_id: updateButton.attr('data-zone-id') || '',
+            rack_id: updateButton.attr('data-rack-id') || '',
+            location_status: updateButton.attr('data-location-status') || 'Available',
+            zone_name: updateButton.attr('data-zone-name') || '',
+            rack_number: updateButton.attr('data-rack-number') || ''
+        };
+        populateLocationModal(locationData);
+    } else {
+        // 如果找不到按钮，尝试从表格行获取
+        const locationRow = $(`tr[data-location-id="${locationId}"]`);
+        if (locationRow.length > 0) {
+            locationData = {
+                id: locationId,
+                zone_id: locationRow.attr('data-zone-id') || '',
+                rack_id: locationRow.attr('data-rack-id') || '',
+                location_status: locationRow.attr('data-location-status') || 'Available',
+                zone_name: locationRow.attr('data-zone-name') || '',
+                rack_number: locationRow.attr('data-rack-number') || ''
+            };
+            populateLocationModal(locationData);
+        }
+    }
+
+    // 从 API 获取完整location数据
+    $.ajax({
+        url: url,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        success: (response) => {
+            if (response.success && response.data) {
+                populateLocationModal(response.data);
+            } else {
+                if (typeof window.showAlert === 'function') {
+                    window.showAlert(response.message || 'Failed to load location data', 'error');
+                } else {
+                    alert(response.message || 'Failed to load location data');
+                }
+            }
+        },
+        error: (xhr) => {
+            let errorMessage = 'Failed to load location data';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
+        }
+    });
+}
+
+/**
+ * 填充 Location Update Modal 的數據
+ */
+function populateLocationModal(locationData) {
+
+    // 設置隱藏的location ID（用於提交）
+    const form = $('#updateLocationModalForm');
+    form.attr('data-location-id', locationData.id);
+
+    // 更新當前Location信息卡片
+    const currentInfo = `
+        <div class="mb-1">
+            <i class="bi bi-geo-alt me-2 text-muted"></i>
+            <span>Zone: <strong>${locationData.zone_name || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-box-seam me-2 text-muted"></i>
+            <span>Rack: <strong>${locationData.rack_number || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-shield-check me-2 text-muted"></i>
+            <span>Status: <strong>${locationData.location_status || 'N/A'}</strong></span>
+        </div>
+    `;
+    $('#currentLocationInfo').html(currentInfo);
+
+    // 填充 Zone 選項
+    const zoneSelect = $('#update_zone_id');
+    zoneSelect.empty();
+    zoneSelect.append('<option value="">Select zone</option>');
+    if (window.availableZones && Array.isArray(window.availableZones)) {
+        window.availableZones.forEach(zone => {
+            const selected = zone.id == locationData.zone_id ? 'selected' : '';
+            zoneSelect.append(`<option value="${zone.id}" ${selected}>${zone.zone_name}</option>`);
+        });
+    }
+
+    // 填充 Rack 選項
+    const rackSelect = $('#update_rack_id');
+    rackSelect.empty();
+    rackSelect.append('<option value="">Select rack</option>');
+    if (window.availableRacks && Array.isArray(window.availableRacks)) {
+        window.availableRacks.forEach(rack => {
+            const selected = rack.id == locationData.rack_id ? 'selected' : '';
+            rackSelect.append(`<option value="${rack.id}" ${selected}>${rack.rack_number}</option>`);
+        });
+    }
+
+    // 設置狀態（交給 status-management 初始化後，直接設置單選值）
+    const targetStatus = locationData.location_status === 'Unavailable' ? 'Unavailable' : 'Available';
+    const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+    $(radioSelector).prop('checked', true);
+
+    // 初始化状态卡片（在打开 modal 前）
+    if (typeof window.initializeStatusCardSelection === 'function') {
+        window.initializeStatusCardSelection('location_status');
+    }
+
+    // 打開彈窗
+    const modal = new bootstrap.Modal(document.getElementById('updateLocationModal'));
+    modal.show();
+
+    // 綁定提交事件（如果還沒綁定）
+    if (!form.data('submit-bound')) {
+        $('#submitUpdateLocationModal').off('click').on('click', function() {
+            submitUpdateLocationModal();
+        });
+        form.data('submit-bound', true);
+    }
+}
+
+/**
+ * 提交更新位置彈窗
+ */
+function submitUpdateLocationModal() {
+    const form = $('#updateLocationModalForm');
+    const locationId = form.attr('data-location-id');
+
+    if (!locationId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Location ID not found', 'error');
+        } else {
+            alert('Location ID not found');
+        }
+        return;
+    }
+
+    // 驗證表單
+    const zoneId = $('#update_zone_id').val();
+    const rackId = $('#update_rack_id').val();
+    const status = $('input[name="location_status"]:checked').val();
+
+    if (!zoneId || !rackId || !status) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please fill in all required fields', 'warning');
+        } else {
+            alert('Please fill in all required fields');
+        }
+        return;
+    }
+
+    // 準備表單數據
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    formData.append('_method', 'PUT');
+    formData.append('zone_id', zoneId);
+    formData.append('rack_id', rackId);
+    formData.append('location_status', status);
+
+    // 顯示加載狀態
+    const submitBtn = $('#submitUpdateLocationModal');
+    const originalText = submitBtn.html();
+    submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+    submitBtn.prop('disabled', true);
+
+    // 提交更新請求
+    updateLocation(locationId, formData,
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Location updated successfully', 'success');
+            } else {
+                alert(data.message || 'Location updated successfully');
+            }
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('updateLocationModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to update location', 'error');
+            } else {
+                alert(error || 'Failed to update location');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        }
+    );
 }
 
 // =============================================================================
@@ -1619,19 +1571,17 @@ function formatStatus(status) {
 document.addEventListener('DOMContentLoaded', function() {
     // 檢查當前頁面類型並初始化相應功能
     const dashboardCardsContainer = document.getElementById('dashboard-cards-container');
-    const locationForm = document.getElementById('locationForm');
-    const updateLocationForm = document.getElementById('updateLocationForm');
     const viewTable = document.querySelector('table tbody');
+    const createLocationModal = document.getElementById('createLocationModal');
 
     if (dashboardCardsContainer) {
         // Dashboard 頁面
         initializeLocationDashboard();
-    } else if (locationForm) {
-        // Create 頁面
-        initializeLocationCreate();
-    } else if (updateLocationForm) {
-        // Update 頁面
-        initializeLocationUpdate();
+
+        // 初始化 Create Location Modal
+        if (createLocationModal) {
+            initializeLocationCreateModal();
+        }
     } else if (viewTable) {
         // View 頁面
         initializeLocationView();
@@ -1639,14 +1589,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // =============================================================================
-// 全局實例初始化 (Global Instance Initialization)
+// 全局函數導出 (Global Function Exports)
 // =============================================================================
 
-// 導出函數供全局使用
+// 導出主要函數到全局作用域（用於 HTML onclick 屬性）
 window.editLocation = editLocation;
-window.deleteLocation = deleteLocation;
-window.toggleLocationStatus = toggleLocationStatus;
 window.setLocationAvailable = setLocationAvailable;
 window.setLocationUnavailable = setLocationUnavailable;
-window.updateLocationStatus = updateLocationStatus;
 window.viewZoneDetails = viewZoneDetails;
+window.openUpdateLocationModal = openUpdateLocationModal;
+window.submitUpdateLocationModal = submitUpdateLocationModal;

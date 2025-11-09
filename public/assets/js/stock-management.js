@@ -1,16 +1,17 @@
 /**
- * Stock Management JavaScript 統一管理文件
- * 整合所有庫存管理相關功能
+ * Stock Management JavaScript
+ * 庫存管理統一交互邏輯
  *
  * 功能模塊：
- * - Stock Dashboard: 產品數據管理、搜索、篩選、分頁
- * - Stock History: 庫存歷史報告、導出功能
- * - Stock In: 庫存入庫、條碼掃描
- * - Stock Out: 庫存出庫、條碼掃描
- * - Stock Return: 庫存退貨、條碼掃描
+ * - Dashboard 頁面：產品數據管理、搜索、篩選、分頁
+ * - History 頁面：庫存歷史報告、導出功能
+ * - Stock In Modal：庫存入庫、條碼掃描
+ * - Stock Out Modal：庫存出庫、條碼掃描
+ * - Stock Return Modal：庫存退貨、條碼掃描
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
@@ -199,7 +200,7 @@ class StockDashboard {
         // 检查是否有 checkbox（Admin 和 SuperAdmin 有 checkbox，不显示 ID）
         // Staff 没有 checkbox，显示 ID
         const hasCheckbox = window.currentUserRole === 'SuperAdmin' || window.currentUserRole === 'Admin';
-        const colspan = '7'; // checkbox/ID + IMAGE + PRODUCT NAME + SKU CODE + STOCK + STATUS + ACTIONS = 7 columns
+        const colspan = '6'; // checkbox/ID + PRODUCT (IMAGE+NAME) + SKU CODE + STOCK + STATUS + ACTIONS = 6 columns
 
         if (products.length === 0) {
             tbody.innerHTML = '';
@@ -233,16 +234,18 @@ class StockDashboard {
                     ${checkboxCell}
                     ${idCell}
                     <td>
-                        <img src="${product.cover_image ? `${window.productImagePath}/${product.cover_image}` : window.defaultProductImage}"
-                             alt="${product.name}"
-                             class="rounded"
-                             style="width: 50px; height: 50px; object-fit: cover;"
-                             onerror="this.src='${window.defaultProductImage}'">
-                    </td>
-                    <td>
-                        <div class="fw-medium">${product.name}</div>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <span class="text-muted small">${product.category?.category_name || 'N/A'}</span>
+                        <div class="d-flex align-items-start gap-3">
+                            <img src="${product.cover_image ? `${window.productImagePath}/${product.cover_image}` : window.defaultProductImage}"
+                                 alt="${product.name}"
+                                 class="rounded flex-shrink-0"
+                                 style="width: 50px; height: 50px; object-fit: cover;"
+                                 onerror="this.src='${window.defaultProductImage}'">
+                            <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
+                                <div class="fw-medium" style="line-height: 1.4;">${product.name}</div>
+                                <div class="d-flex align-items-center gap-2 mt-1">
+                                    <span class="text-muted small">${product.category?.category_name || 'N/A'}</span>
+                                </div>
+                            </div>
                         </div>
                     </td>
                     <td>
@@ -353,9 +356,286 @@ class StockDashboard {
      * @param {string} productName 产品名称
      */
     viewStockHistory(productId, productName) {
-        // 跳转到 stock detail 页面
-        const stockDetailUrl = `/staff/stock-detail?id=${productId}`;
-        window.location.href = stockDetailUrl;
+        // 打开库存详情模态框
+        const modal = new bootstrap.Modal(document.getElementById('stockDetailModal'));
+
+        // 直接从 API 获取完整产品数据，确保数据准确
+        this.loadProductForModal(productId, modal);
+    }
+
+    /**
+     * 从 API 加载产品信息用于模态框
+     */
+    async loadProductForModal(productId, modal) {
+        try {
+            // 先打开模态框显示加载状态
+            modal.show();
+
+            // 从表格行快速获取基本信息（用于快速显示）
+            const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+            if (row) {
+                const hasCheckbox = window.currentUserRole === 'SuperAdmin' || window.currentUserRole === 'Admin';
+                const stockColIndex = 5;
+                const statusColIndex = 6;
+
+                const quickData = {
+                    id: productId,
+                    name: row.querySelector('td:nth-child(3) .fw-medium')?.textContent || 'Loading...',
+                    quantity: row.querySelector(`td:nth-child(${stockColIndex}) span`)?.textContent || '0',
+                    product_status: row.querySelector(`td:nth-child(${statusColIndex}) .badge`)?.textContent.trim() || 'Available',
+                    cover_image: null // 从 API 获取
+                };
+
+                // 快速渲染基本信息
+                this.renderModalProductDetail(quickData);
+            }
+
+            // 从 API 获取完整产品数据
+            const response = await fetch(`${window.stockManagementRoute}?search=${productId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data && data.data.length > 0) {
+                    const productData = data.data[0];
+                    window.currentProductId = productId;
+                    window.currentProductData = productData;
+
+                    // 使用完整数据重新渲染（包括图片）
+                    this.renderModalProductDetail(productData);
+
+                    // 加载库存历史
+                    this.loadModalStockHistory(productId, 1);
+                } else {
+                    console.error('Product not found in API response');
+                }
+            } else {
+                console.error('Failed to fetch product data:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error loading product for modal:', error);
+        }
+    }
+
+    /**
+     * 渲染模态框中的产品详情
+     */
+    renderModalProductDetail(product) {
+        const currentStock = parseInt(product.quantity) || 0;
+
+        // 更新产品图片
+        const productImage = document.getElementById('modal-product-image');
+        if (!productImage) {
+            console.error('Modal product image element not found');
+            return;
+        }
+
+        if (product.cover_image) {
+            // 确保图片路径正确
+            let imagePath;
+            if (product.cover_image.startsWith('http://') || product.cover_image.startsWith('https://')) {
+                imagePath = product.cover_image;
+            } else if (product.cover_image.startsWith('/')) {
+                imagePath = product.cover_image;
+            } else {
+                imagePath = `${window.productImagePath}/${product.cover_image}`;
+            }
+
+            console.log('Setting product image:', {
+                cover_image: product.cover_image,
+                imagePath: imagePath,
+                productImagePath: window.productImagePath
+            });
+
+            productImage.src = imagePath;
+            // 添加错误处理，如果图片加载失败则使用默认图片
+            productImage.onerror = function() {
+                console.error('Failed to load product image:', imagePath);
+                this.src = window.defaultProductImage;
+                this.onerror = null; // 防止无限循环
+            };
+        } else {
+            console.log('No cover_image for product:', product.id);
+            productImage.src = window.defaultProductImage;
+        }
+
+        // 更新产品信息
+        document.getElementById('modal-product-name').textContent = product.name;
+        document.getElementById('modal-current-stock').textContent = currentStock;
+
+        // 更新库存状态
+        const stockElement = document.getElementById('modal-current-stock');
+        stockElement.className = `fs-3 fw-bold me-2 ${currentStock > 10 ? 'text-success' : (currentStock > 0 ? 'text-warning' : 'text-danger')}`;
+
+        // 更新状态徽章
+        const statusElement = document.getElementById('modal-product-status');
+        const status = product.product_status || 'Available';
+        statusElement.textContent = status;
+        statusElement.className = `badge fs-6 ${status === 'Available' ? 'bg-success' : 'bg-danger'}`;
+    }
+
+    /**
+     * 加载模态框中的库存历史
+     */
+    async loadModalStockHistory(productId, page = 1) {
+        try {
+            const params = new URLSearchParams({
+                page: page,
+                product_id: productId
+            });
+
+            const response = await fetch(`${window.stockHistoryApiRoute}?${params}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.renderModalStockHistory(data.data || []);
+                this.renderModalPagination(data.pagination);
+                this.updateModalResultsCount(data.pagination);
+            } else {
+                this.renderModalStockHistory([]);
+            }
+        } catch (error) {
+            console.error('Error loading modal stock history:', error);
+            this.renderModalStockHistory([]);
+        }
+    }
+
+    /**
+     * 渲染模态框中的库存历史
+     */
+    renderModalStockHistory(movements) {
+        const tbody = document.getElementById('modal-history-table-body');
+        const emptyState = document.getElementById('modal-empty-state');
+
+        if (!movements || movements.length === 0) {
+            tbody.innerHTML = '';
+            if (emptyState) emptyState.classList.remove('d-none');
+            return;
+        }
+
+        if (emptyState) emptyState.classList.add('d-none');
+
+        tbody.innerHTML = movements.map(movement => `
+            <tr>
+                <td class="ps-4">
+                    <span class="fw-medium">#${movement.id}</span>
+                </td>
+                <td>
+                    <div class="fw-medium">${new Date(movement.date).toLocaleDateString()}</div>
+                    <div class="text-muted small">${new Date(movement.date).toLocaleTimeString()}</div>
+                </td>
+                <td>
+                    <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
+                                      movement.movement_type === 'stock_out' ? 'bg-danger' : 'bg-warning'}">
+                        ${movement.movement_type === 'stock_in' ? 'Stock In' :
+                          movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
+                    </span>
+                </td>
+                <td class="${movement.movement_type === 'stock_out' ? 'text-danger' : 'text-success'}">
+                    <span class="fw-bold">${movement.movement_type === 'stock_out' ? '-' : '+'}${Math.abs(movement.quantity)}</span>
+                </td>
+                <td>
+                    <span class="fw-medium">${movement.previous_stock}</span>
+                </td>
+                <td>
+                    <span class="fw-medium">${movement.current_stock}</span>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-person-fill text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="flex-fill">
+                            <div class="fw-semibold text-dark mb-1">
+                                ${movement.user_name || 'Unknown User'}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">${movement.user_email || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <code class="bg-light px-2 py-1 rounded">${movement.reference_number || '-'}</code>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    /**
+     * 渲染模态框中的分页
+     */
+    renderModalPagination(pagination) {
+        const prevBtn = document.getElementById('modal-prev-page');
+        const nextBtn = document.getElementById('modal-next-page');
+        const currentPageSpan = document.getElementById('modal-page-number');
+
+        if (prevBtn) {
+            if (pagination.current_page > 1) {
+                prevBtn.classList.remove('disabled');
+                prevBtn.querySelector('a').onclick = (e) => {
+                    e.preventDefault();
+                    this.loadModalStockHistory(window.currentProductId, pagination.current_page - 1);
+                };
+            } else {
+                prevBtn.classList.add('disabled');
+                prevBtn.querySelector('a').onclick = null;
+            }
+        }
+
+        if (nextBtn) {
+            if (pagination.current_page < pagination.last_page) {
+                nextBtn.classList.remove('disabled');
+                nextBtn.querySelector('a').onclick = (e) => {
+                    e.preventDefault();
+                    this.loadModalStockHistory(window.currentProductId, pagination.current_page + 1);
+                };
+            } else {
+                nextBtn.classList.add('disabled');
+                nextBtn.querySelector('a').onclick = null;
+            }
+        }
+
+        if (currentPageSpan) {
+            currentPageSpan.textContent = pagination.current_page;
+        }
+    }
+
+    /**
+     * 更新模态框中的结果计数
+     */
+    updateModalResultsCount(pagination) {
+        const countElement = document.getElementById('modal-detail-history-count');
+        const showingStart = document.getElementById('modal-showing-start');
+        const showingEnd = document.getElementById('modal-showing-end');
+        const totalCount = document.getElementById('modal-total-count');
+
+        if (countElement) {
+            countElement.textContent = `${pagination.total || 0} records`;
+        }
+
+        if (showingStart) showingStart.textContent = pagination.from || 0;
+        if (showingEnd) showingEnd.textContent = pagination.to || 0;
+        if (totalCount) totalCount.textContent = pagination.total || 0;
     }
 
     /**
@@ -876,13 +1156,13 @@ class StockHistory {
                     </span>
                 </td>
                 <td>
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-start gap-3">
                         ${movement.product_image ?
-                            `<img src="${window.productImagePath}/${movement.product_image}" alt="${movement.product_name}" class="me-2 rounded" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='${window.defaultProductImage}'">` :
-                            `<div class="me-2 rounded d-flex align-items-center justify-content-center bg-light" style="width: 40px; height: 40px;"><i class="bi bi-image text-muted"></i></div>`
+                            `<img src="${window.productImagePath}/${movement.product_image}" alt="${movement.product_name}" class="rounded flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.src='${window.defaultProductImage}'">` :
+                            `<div class="rounded d-flex align-items-center justify-content-center bg-light flex-shrink-0" style="width: 50px; height: 50px;"><i class="bi bi-image text-muted"></i></div>`
                         }
-                        <div>
-                            <div class="fw-medium text-truncate" style="max-width: 200px;" title="${movement.product_name || 'N/A'}">${movement.product_name || 'N/A'}</div>
+                        <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
+                            <div class="fw-medium" style="line-height: 1.4;">${movement.product_name || 'N/A'}</div>
                             <div class="text-muted small">SKU: ${movement.sku_code || 'N/A'}</div>
                         </div>
                     </div>
@@ -1279,18 +1559,20 @@ class StockIn {
                     <span class="fw-medium">${index + 1}</span>
                     </td>
                     <td>
-                        ${product.cover_image
-                            ? `<img src="/assets/images/${product.cover_image}"
-                                 alt="Product Image" class="rounded border border-2 border-white shadow-sm"
-                                 style="width: 50px; height: 50px; object-fit: cover;">`
-                        : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                             <i class="bi bi-image text-muted"></i>
-                               </div>`
-                        }
-                    </td>
-                    <td>
-                        <div class="fw-medium">${product.name}</div>
-                        <div class="text-muted small">${product.category?.category_name || 'N/A'}</div>
+                        <div class="d-flex align-items-start gap-3">
+                            ${product.cover_image
+                                ? `<img src="/assets/images/${product.cover_image}"
+                                     alt="Product Image" class="rounded border border-2 border-white shadow-sm flex-shrink-0"
+                                     style="width: 50px; height: 50px; object-fit: cover;">`
+                            : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center flex-shrink-0" style="width: 50px; height: 50px;">
+                                 <i class="bi bi-image text-muted"></i>
+                                   </div>`
+                            }
+                            <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
+                                <div class="fw-medium" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 2.8em;" title="${product.name}">${product.name}</div>
+                                <div class="text-muted small mt-1">${product.category?.category_name || 'N/A'}</div>
+                            </div>
+                        </div>
                     </td>
                     <td>
                     <code class="bg-light px-2 py-1 rounded">${product.variants && product.variants.length > 0 ? product.variants[0].sku_code : 'N/A'}</code>
@@ -1769,18 +2051,20 @@ class StockOut {
                     <span class="fw-medium">${index + 1}</span>
                     </td>
                     <td>
-                        ${product.cover_image
-                            ? `<img src="/assets/images/${product.cover_image}"
-                                 alt="Product Image" class="rounded border border-2 border-white shadow-sm"
-                                 style="width: 50px; height: 50px; object-fit: cover;">`
-                        : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                             <i class="bi bi-image text-muted"></i>
-                               </div>`
-                        }
-                    </td>
-                    <td>
-                        <div class="fw-medium">${product.name}</div>
-                        <div class="text-muted small">${product.category?.category_name || 'N/A'}</div>
+                        <div class="d-flex align-items-start gap-3">
+                            ${product.cover_image
+                                ? `<img src="/assets/images/${product.cover_image}"
+                                     alt="Product Image" class="rounded border border-2 border-white shadow-sm flex-shrink-0"
+                                     style="width: 50px; height: 50px; object-fit: cover;">`
+                            : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center flex-shrink-0" style="width: 50px; height: 50px;">
+                                 <i class="bi bi-image text-muted"></i>
+                                   </div>`
+                            }
+                            <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
+                                <div class="fw-medium" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 2.8em;" title="${product.name}">${product.name}</div>
+                                <div class="text-muted small mt-1">${product.category?.category_name || 'N/A'}</div>
+                            </div>
+                        </div>
                     </td>
                     <td>
                     <code class="bg-light px-2 py-1 rounded">${product.variants && product.variants.length > 0 ? product.variants[0].sku_code : 'N/A'}</code>
@@ -2259,18 +2543,20 @@ class StockReturn {
                     <span class="fw-medium">${index + 1}</span>
                     </td>
                     <td>
-                        ${product.cover_image
-                            ? `<img src="/assets/images/${product.cover_image}"
-                                 alt="Product Image" class="rounded border border-2 border-white shadow-sm"
-                                 style="width: 50px; height: 50px; object-fit: cover;">`
-                        : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                             <i class="bi bi-image text-muted"></i>
-                               </div>`
-                        }
-                    </td>
-                    <td>
-                        <div class="fw-medium">${product.name}</div>
-                        <div class="text-muted small">${product.category?.category_name || 'N/A'}</div>
+                        <div class="d-flex align-items-start gap-3">
+                            ${product.cover_image
+                                ? `<img src="/assets/images/${product.cover_image}"
+                                     alt="Product Image" class="rounded border border-2 border-white shadow-sm flex-shrink-0"
+                                     style="width: 50px; height: 50px; object-fit: cover;">`
+                            : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center flex-shrink-0" style="width: 50px; height: 50px;">
+                                 <i class="bi bi-image text-muted"></i>
+                                   </div>`
+                            }
+                            <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
+                                <div class="fw-medium" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 2.8em;" title="${product.name}">${product.name}</div>
+                                <div class="text-muted small mt-1">${product.category?.category_name || 'N/A'}</div>
+                            </div>
+                        </div>
                     </td>
                     <td>
                     <code class="bg-light px-2 py-1 rounded">${product.variants && product.variants.length > 0 ? product.variants[0].sku_code : 'N/A'}</code>
@@ -2886,41 +3172,225 @@ document.addEventListener('DOMContentLoaded', () => {
     const productsTableBody = document.getElementById('products-table-body');
     const historyTableBody = document.getElementById('history-table-body');
     const barcodeScanner = document.getElementById('barcode-scanner');
-    const productDetailSubtitle = document.getElementById('product-detail-subtitle');
 
     if (productsTableBody) {
         // Stock Dashboard 頁面
         window.stockManagement = new StockDashboard();
 
-    } else if (historyTableBody && !productDetailSubtitle) {
-        // Stock History 頁面（不是 stock detail 頁面）
-        window.stockHistory = new StockHistory();
-    } else if (productDetailSubtitle) {
-        // Stock Detail 頁面
-        console.log('Initializing StockDetail...');
-        window.stockDetail = new StockDetail();
-    } else if (barcodeScanner) {
-        // 檢查是哪種庫存操作頁面 - 通過 URL 路徑判斷
-        const currentPath = window.location.pathname;
-        console.log('Barcode scanner found, current path:', currentPath);
+        // 初始化 modal 中的库存操作功能
+        initStockModals();
 
-        if (currentPath.includes('stock-in')) {
-            // Stock In 頁面
-            console.log('Initializing StockIn...');
-            window.stockIn = new StockIn();
-        } else if (currentPath.includes('stock-out')) {
-            // Stock Out 頁面
-            console.log('Initializing StockOut...');
-            window.stockOut = new StockOut();
-        } else if (currentPath.includes('stock-return')) {
-            // Stock Return 頁面
-            console.log('Initializing StockReturn...');
-            window.stockReturn = new StockReturn();
-        } else {
-            console.log('Unknown stock page type, path:', currentPath);
-        }
+    } else if (historyTableBody) {
+        // Stock History 頁面
+        window.stockHistory = new StockHistory();
     }
 });
+
+/**
+ * 初始化库存操作 modal
+ */
+function initStockModals() {
+    // Stock In Modal
+    const stockInModal = document.getElementById('stockInModal');
+    if (stockInModal) {
+        stockInModal.addEventListener('shown.bs.modal', function() {
+            if (!window.stockIn) {
+                console.log('Initializing StockIn in modal...');
+                // 临时修改元素 ID 以匹配 modal
+                const scanner = document.getElementById('stock-in-barcode-scanner');
+                const clearBtn = document.getElementById('stock-in-clear-all-btn');
+                const refInput = document.getElementById('stock-in-reference-number');
+                const submitBtn = document.getElementById('stock-in-submit-btn');
+                const scannedCard = document.getElementById('stock-in-scanned-products-card');
+                const emptyCard = document.getElementById('stock-in-empty-state-card');
+                const submitSection = document.getElementById('stock-in-submit-section');
+                const scannedTableBody = document.getElementById('stock-in-scanned-products-table-body');
+                const scannedCount = document.getElementById('stock-in-scanned-count');
+                const scannedProductsCount = document.getElementById('stock-in-scanned-products-count');
+
+                // 重命名元素 ID 以匹配 StockIn 类的期望
+                if (scanner) scanner.id = 'barcode-scanner';
+                if (clearBtn) clearBtn.id = 'clear-all-btn';
+                if (refInput) refInput.id = 'reference-number';
+                if (submitBtn) submitBtn.id = 'submit-btn';
+                if (scannedCard) scannedCard.id = 'scanned-products-card';
+                if (emptyCard) emptyCard.id = 'empty-state-card';
+                if (submitSection) submitSection.id = 'submit-section';
+                if (scannedTableBody) scannedTableBody.id = 'scanned-products-table-body';
+                if (scannedCount) scannedCount.id = 'scanned-count';
+                if (scannedProductsCount) scannedProductsCount.id = 'scanned-products-count';
+
+                window.stockIn = new StockIn();
+            }
+        });
+
+        stockInModal.addEventListener('hidden.bs.modal', function() {
+            // Modal 关闭时恢复元素 ID 并清理
+            const scanner = document.getElementById('barcode-scanner');
+            const clearBtn = document.getElementById('clear-all-btn');
+            const refInput = document.getElementById('reference-number');
+            const submitBtn = document.getElementById('submit-btn');
+            const scannedCard = document.getElementById('scanned-products-card');
+            const emptyCard = document.getElementById('empty-state-card');
+            const submitSection = document.getElementById('submit-section');
+            const scannedTableBody = document.getElementById('scanned-products-table-body');
+            const scannedCount = document.getElementById('scanned-count');
+            const scannedProductsCount = document.getElementById('scanned-products-count');
+
+            // 恢复原始 ID
+            if (scanner && scanner.closest('#stockInModal')) scanner.id = 'stock-in-barcode-scanner';
+            if (clearBtn && clearBtn.closest('#stockInModal')) clearBtn.id = 'stock-in-clear-all-btn';
+            if (refInput && refInput.closest('#stockInModal')) refInput.id = 'stock-in-reference-number';
+            if (submitBtn && submitBtn.closest('#stockInModal')) submitBtn.id = 'stock-in-submit-btn';
+            if (scannedCard && scannedCard.closest('#stockInModal')) scannedCard.id = 'stock-in-scanned-products-card';
+            if (emptyCard && emptyCard.closest('#stockInModal')) emptyCard.id = 'stock-in-empty-state-card';
+            if (submitSection && submitSection.closest('#stockInModal')) submitSection.id = 'stock-in-submit-section';
+            if (scannedTableBody && scannedTableBody.closest('#stockInModal')) scannedTableBody.id = 'stock-in-scanned-products-table-body';
+            if (scannedCount && scannedCount.closest('#stockInModal')) scannedCount.id = 'stock-in-scanned-count';
+            if (scannedProductsCount && scannedProductsCount.closest('#stockInModal')) scannedProductsCount.id = 'stock-in-scanned-products-count';
+
+            // 清理数据
+            if (window.stockIn) {
+                window.stockIn.scannedProducts = [];
+                window.stockIn = null; // 清除实例，下次打开时重新创建
+            }
+        });
+    }
+
+    // Stock Out Modal
+    const stockOutModal = document.getElementById('stockOutModal');
+    if (stockOutModal) {
+        stockOutModal.addEventListener('shown.bs.modal', function() {
+            if (!window.stockOut) {
+                console.log('Initializing StockOut in modal...');
+                // 临时修改元素 ID 以匹配 modal
+                const scanner = document.getElementById('stock-out-barcode-scanner');
+                const clearBtn = document.getElementById('stock-out-clear-all-btn');
+                const refInput = document.getElementById('stock-out-reference-number');
+                const submitBtn = document.getElementById('stock-out-submit-btn');
+                const scannedCard = document.getElementById('stock-out-scanned-products-card');
+                const emptyCard = document.getElementById('stock-out-empty-state-card');
+                const submitSection = document.getElementById('stock-out-submit-section');
+                const scannedTableBody = document.getElementById('stock-out-scanned-products-table-body');
+                const scannedCount = document.getElementById('stock-out-scanned-count');
+                const scannedProductsCount = document.getElementById('stock-out-scanned-products-count');
+
+                // 重命名元素 ID 以匹配 StockOut 类的期望
+                if (scanner) scanner.id = 'barcode-scanner';
+                if (clearBtn) clearBtn.id = 'clear-all-btn';
+                if (refInput) refInput.id = 'reference-number';
+                if (submitBtn) submitBtn.id = 'submit-btn';
+                if (scannedCard) scannedCard.id = 'scanned-products-card';
+                if (emptyCard) emptyCard.id = 'empty-state-card';
+                if (submitSection) submitSection.id = 'submit-section';
+                if (scannedTableBody) scannedTableBody.id = 'scanned-products-table-body';
+                if (scannedCount) scannedCount.id = 'scanned-count';
+                if (scannedProductsCount) scannedProductsCount.id = 'scanned-products-count';
+
+                window.stockOut = new StockOut();
+            }
+        });
+
+        stockOutModal.addEventListener('hidden.bs.modal', function() {
+            // Modal 关闭时恢复元素 ID 并清理
+            const scanner = document.getElementById('barcode-scanner');
+            const clearBtn = document.getElementById('clear-all-btn');
+            const refInput = document.getElementById('reference-number');
+            const submitBtn = document.getElementById('submit-btn');
+            const scannedCard = document.getElementById('scanned-products-card');
+            const emptyCard = document.getElementById('empty-state-card');
+            const submitSection = document.getElementById('submit-section');
+            const scannedTableBody = document.getElementById('scanned-products-table-body');
+            const scannedCount = document.getElementById('scanned-count');
+            const scannedProductsCount = document.getElementById('scanned-products-count');
+
+            // 恢复原始 ID
+            if (scanner && scanner.closest('#stockOutModal')) scanner.id = 'stock-out-barcode-scanner';
+            if (clearBtn && clearBtn.closest('#stockOutModal')) clearBtn.id = 'stock-out-clear-all-btn';
+            if (refInput && refInput.closest('#stockOutModal')) refInput.id = 'stock-out-reference-number';
+            if (submitBtn && submitBtn.closest('#stockOutModal')) submitBtn.id = 'stock-out-submit-btn';
+            if (scannedCard && scannedCard.closest('#stockOutModal')) scannedCard.id = 'stock-out-scanned-products-card';
+            if (emptyCard && emptyCard.closest('#stockOutModal')) emptyCard.id = 'stock-out-empty-state-card';
+            if (submitSection && submitSection.closest('#stockOutModal')) submitSection.id = 'stock-out-submit-section';
+            if (scannedTableBody && scannedTableBody.closest('#stockOutModal')) scannedTableBody.id = 'stock-out-scanned-products-table-body';
+            if (scannedCount && scannedCount.closest('#stockOutModal')) scannedCount.id = 'stock-out-scanned-count';
+            if (scannedProductsCount && scannedProductsCount.closest('#stockOutModal')) scannedProductsCount.id = 'stock-out-scanned-products-count';
+
+            // 清理数据
+            if (window.stockOut) {
+                window.stockOut.scannedProducts = [];
+                window.stockOut = null; // 清除实例，下次打开时重新创建
+            }
+        });
+    }
+
+    // Stock Return Modal
+    const stockReturnModal = document.getElementById('stockReturnModal');
+    if (stockReturnModal) {
+        stockReturnModal.addEventListener('shown.bs.modal', function() {
+            if (!window.stockReturn) {
+                console.log('Initializing StockReturn in modal...');
+                // 临时修改元素 ID 以匹配 modal
+                const scanner = document.getElementById('stock-return-barcode-scanner');
+                const clearBtn = document.getElementById('stock-return-clear-all-btn');
+                const refInput = document.getElementById('stock-return-reference-number');
+                const submitBtn = document.getElementById('stock-return-submit-btn');
+                const scannedCard = document.getElementById('stock-return-scanned-products-card');
+                const emptyCard = document.getElementById('stock-return-empty-state-card');
+                const submitSection = document.getElementById('stock-return-submit-section');
+                const scannedTableBody = document.getElementById('stock-return-scanned-products-table-body');
+                const scannedCount = document.getElementById('stock-return-scanned-count');
+                const scannedProductsCount = document.getElementById('stock-return-scanned-products-count');
+
+                // 重命名元素 ID 以匹配 StockReturn 类的期望
+                if (scanner) scanner.id = 'barcode-scanner';
+                if (clearBtn) clearBtn.id = 'clear-all-btn';
+                if (refInput) refInput.id = 'reference-number';
+                if (submitBtn) submitBtn.id = 'submit-btn';
+                if (scannedCard) scannedCard.id = 'scanned-products-card';
+                if (emptyCard) emptyCard.id = 'empty-state-card';
+                if (submitSection) submitSection.id = 'submit-section';
+                if (scannedTableBody) scannedTableBody.id = 'scanned-products-table-body';
+                if (scannedCount) scannedCount.id = 'scanned-count';
+                if (scannedProductsCount) scannedProductsCount.id = 'scanned-products-count';
+
+                window.stockReturn = new StockReturn();
+            }
+        });
+
+        stockReturnModal.addEventListener('hidden.bs.modal', function() {
+            // Modal 关闭时恢复元素 ID 并清理
+            const scanner = document.getElementById('barcode-scanner');
+            const clearBtn = document.getElementById('clear-all-btn');
+            const refInput = document.getElementById('reference-number');
+            const submitBtn = document.getElementById('submit-btn');
+            const scannedCard = document.getElementById('scanned-products-card');
+            const emptyCard = document.getElementById('empty-state-card');
+            const submitSection = document.getElementById('submit-section');
+            const scannedTableBody = document.getElementById('scanned-products-table-body');
+            const scannedCount = document.getElementById('scanned-count');
+            const scannedProductsCount = document.getElementById('scanned-products-count');
+
+            // 恢复原始 ID
+            if (scanner && scanner.closest('#stockReturnModal')) scanner.id = 'stock-return-barcode-scanner';
+            if (clearBtn && clearBtn.closest('#stockReturnModal')) clearBtn.id = 'stock-return-clear-all-btn';
+            if (refInput && refInput.closest('#stockReturnModal')) refInput.id = 'stock-return-reference-number';
+            if (submitBtn && submitBtn.closest('#stockReturnModal')) submitBtn.id = 'stock-return-submit-btn';
+            if (scannedCard && scannedCard.closest('#stockReturnModal')) scannedCard.id = 'stock-return-scanned-products-card';
+            if (emptyCard && emptyCard.closest('#stockReturnModal')) emptyCard.id = 'stock-return-empty-state-card';
+            if (submitSection && submitSection.closest('#stockReturnModal')) submitSection.id = 'stock-return-submit-section';
+            if (scannedTableBody && scannedTableBody.closest('#stockReturnModal')) scannedTableBody.id = 'stock-return-scanned-products-table-body';
+            if (scannedCount && scannedCount.closest('#stockReturnModal')) scannedCount.id = 'stock-return-scanned-count';
+            if (scannedProductsCount && scannedProductsCount.closest('#stockReturnModal')) scannedProductsCount.id = 'stock-return-scanned-products-count';
+
+            // 清理数据
+            if (window.stockReturn) {
+                window.stockReturn.scannedProducts = [];
+                window.stockReturn = null; // 清除实例，下次打开时重新创建
+            }
+        });
+    }
+}
 
 // =============================================================================
 // 全局函數導出 (Global Function Exports)

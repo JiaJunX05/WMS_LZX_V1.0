@@ -10,52 +10,67 @@ use App\Exports\RackExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 
+/**
+ * 货架管理控制器
+ * Rack Management Controller
+ *
+ * 功能模块：
+ * - 货架列表展示：搜索、筛选、分页
+ * - 货架操作：创建、编辑、删除、状态管理
+ * - 图片管理：上传、更新、删除
+ * - 数据导出：Excel 导出功能
+ *
+ * @author WMS Team
+ * @version 3.0.0
+ */
 class RackController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_RACKS = 10;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 货架验证规则
+     */
     private const RACK_RULES = [
         'rack_number' => 'required|string|max:255',
         'capacity' => 'nullable|integer|min:1',
     ];
 
+    /**
+     * 货架图片验证规则
+     */
     private const RACK_IMAGE_RULES = [
         'rack_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ];
 
-    /**
-     * Normalize rack data from frontend
-     */
-    private function normalizeRackData(array $rackData): array
-    {
-        // Convert camelCase to snake_case
-        if (isset($rackData['rackNumber']) && !isset($rackData['rack_number'])) {
-            $rackData['rack_number'] = $rackData['rackNumber'];
-        }
-        if (isset($rackData['rackStatus']) && !isset($rackData['rack_status'])) {
-            $rackData['rack_status'] = $rackData['rackStatus'];
-        }
-
-        return $rackData;
-    }
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -70,7 +85,11 @@ class RackController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -84,11 +103,16 @@ class RackController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -97,12 +121,25 @@ class RackController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
+    /**
+     * 显示货架列表页面
+     * Display rack list page
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
     public function index(Request $request)
     {
         if ($request->ajax()) {
             try {
                 $query = Rack::query();
 
+                // 搜索功能
                 if ($request->has('search') && $request->search) {
                     $search = $request->search;
                     $query->where(function($q) use ($search) {
@@ -110,6 +147,7 @@ class RackController extends Controller
                     });
                 }
 
+                // 状态筛选
                 if ($request->has('status_filter') && $request->status_filter) {
                     $query->where('rack_status', $request->status_filter);
                 }
@@ -137,30 +175,15 @@ class RackController extends Controller
         return view('admin.rack.dashboard');
     }
 
-    public function create()
-    {
-        return view('admin.rack.create');
-    }
-
     /**
      * 存储新货架
+     * Store new rack
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        // 与 CategoryController 的实现保持一致：有数组走批量，否则走单个
-        if ($request->has('racks') && is_array($request->input('racks'))) {
-            return $this->storeMultipleRacks($request);
-        }
-
-        return $this->storeSingleRack($request);
-    }
-
-    /**
-     * 单个存储货架
-     */
-    private function storeSingleRack(Request $request)
-    {
-        // 校验
         $rules = array_merge(self::RACK_RULES, self::RACK_IMAGE_RULES);
         $rules['rack_number'] .= '|unique:racks,rack_number';
 
@@ -169,26 +192,27 @@ class RackController extends Controller
         try {
             $rackData = [
                 'rack_number' => $request->input('rack_number') ?? $request->input('rackNumber'),
-                'capacity' => $request->input('capacity') ?: 50, // 使用默认值50如果为空或0
-                'rack_status' => 'Available', // 默认为 Available
+                'capacity' => $request->input('capacity') ?: 50,
+                'rack_status' => 'Available',
             ];
 
             // 处理文件上传
             if ($request->hasFile('rack_image')) {
-                // 文件上传（确保目录存在）
                 $image = $request->file('rack_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/racks');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $rackData['rack_image'] = 'racks/' . $imageName;
             }
 
             $rack = Rack::create($rackData);
 
-            $this->logOperation('created (single)', [
+            $this->logOperation('created', [
                 'rack_id' => $rack->id,
                 'rack_number' => $rackData['rack_number']
             ]);
@@ -212,116 +236,55 @@ class RackController extends Controller
     }
 
     /**
-     * 批量存储货架（统一入口）
+     * 显示货架编辑表单（用于 Modal）
+     * Show rack edit form (for Modal)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    private function storeMultipleRacks(Request $request)
+    public function showEditForm(Request $request, $id)
     {
-        // 仅处理批量数组
-        $racks = $request->input('racks', []);
+        try {
+            $rack = Rack::findOrFail($id);
 
-        // 限制批量创建数量
-        if (count($racks) > self::MAX_BULK_RACKS) {
-            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_RACKS . ' racks at once');
-        }
-
-        $createdRacks = [];
-        $errors = [];
-
-        // 预处理：收集所有货架编号进行批量检查
-        $rackNumbersToCheck = [];
-        foreach ($racks as $index => $rackData) {
-            $rackData = $this->normalizeRackData($rackData);
-            if (isset($rackData['rack_number'])) {
-                $rackNumbersToCheck[] = $rackData['rack_number'];
-            }
-        }
-
-        // 批量检查货架编号是否已存在
-        $existingRackNumbers = Rack::whereIn('rack_number', $rackNumbersToCheck)->pluck('rack_number')->toArray();
-
-        foreach ($racks as $index => $rackData) {
-            // 先标准化数据，再进行验证
-            $rackData = $this->normalizeRackData($rackData);
-
-            $validator = \Validator::make($rackData, self::RACK_RULES);
-
-            if ($validator->fails()) {
-                $errors[] = "Rack " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
-                continue;
-            }
-
-            // 检查货架编号是否已存在
-            if (in_array($rackData['rack_number'], $existingRackNumbers)) {
-                $errors[] = "Rack " . ($index + 1) . ": Rack number '{$rackData['rack_number']}' already exists";
-                continue;
-            }
-
-            try {
-                $rackRecord = [
-                    'rack_number' => $rackData['rack_number'],
-                    'capacity' => $rackData['capacity'] ?? 50, // 使用默认值50如果为空
-                    'rack_status' => 'Available', // 默认为 Available
-                ];
-
-                // 处理图片上传 - 使用文件数组
-                $files = $request->file('images');
-                if (is_array($files) && isset($files[$index]) && $files[$index] && $files[$index]->isValid()) {
-                    $image = $files[$index];
-                    $directory = public_path('assets/images/racks');
-                    if (!file_exists($directory)) {
-                        mkdir($directory, 0777, true);
-                    }
-                    $imageName = time() . '_' . $index . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move($directory, $imageName);
-                    $rackRecord['rack_image'] = 'racks/' . $imageName;
-                }
-
-                $rack = Rack::create($rackRecord);
-                $createdRacks[] = $rack;
-
-                $this->logOperation('created (batch)', [
-                    'rack_id' => $rack->id,
-                    'rack_number' => $rackData['rack_number']
-                ]);
-            } catch (\Exception $e) {
-                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
-                $errorMessage = $simplifiedError ?: $e->getMessage();
-                $errors[] = "Rack " . ($index + 1) . ": " . $errorMessage;
-            }
-        }
-
-        if ($request->ajax()) {
-            if (count($errors) > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some racks failed to create',
-                    'errors' => $errors,
-                    'created_count' => count($createdRacks)
-                ], 422);
-            } else {
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => count($createdRacks) . ' racks created successfully',
-                    'data' => $createdRacks
+                    'message' => 'Rack data fetched successfully',
+                    'data' => [
+                        'id' => $rack->id,
+                        'rack_number' => $rack->rack_number,
+                        'capacity' => $rack->capacity,
+                        'rack_status' => $rack->rack_status,
+                        'rack_image' => $rack->rack_image
+                    ]
                 ]);
             }
-        }
 
-        if (count($errors) > 0) {
-            return back()->withErrors(['error' => implode('; ', $errors)])
-                ->withInput();
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.storage_locations.rack.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load rack data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('admin.storage_locations.rack.index')
+                ->with('error', 'Rack not found');
         }
-
-        return redirect()->route('admin.storage_locations.rack.index')
-            ->with('success', count($createdRacks) . ' racks created successfully');
     }
 
-    public function edit($id)
-    {
-        $rack = Rack::findOrFail($id);
-        return view('admin.rack.update', compact('rack'));
-    }
-
+    /**
+     * 更新货架信息
+     * Update rack information
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, $id)
     {
         try {
@@ -363,7 +326,7 @@ class RackController extends Controller
             // 更新货架记录
             $rackData = [
                 'rack_number' => $validatedData['rack_number'],
-                'capacity' => $validatedData['capacity'] ?: 50, // 使用默认值50如果为空或0
+                'capacity' => $validatedData['capacity'] ?: 50,
                 'rack_status' => $validatedData['rack_status'],
             ];
 
@@ -399,6 +362,7 @@ class RackController extends Controller
 
             if ($request->ajax()) {
                 $freshRack = $rack->fresh();
+
                 Log::info('AJAX response data', [
                     'success' => true,
                     'message' => $message,
@@ -437,6 +401,13 @@ class RackController extends Controller
         }
     }
 
+    /**
+     * 设置货架为可用状态
+     * Set rack to available status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function setAvailable($id)
     {
         try {
@@ -445,7 +416,6 @@ class RackController extends Controller
 
             $this->logOperation('set to available', ['rack_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -462,6 +432,13 @@ class RackController extends Controller
         }
     }
 
+    /**
+     * 设置货架为不可用状态
+     * Set rack to unavailable status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function setUnavailable($id)
     {
         try {
@@ -470,7 +447,6 @@ class RackController extends Controller
 
             $this->logOperation('set to unavailable', ['rack_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -487,11 +463,19 @@ class RackController extends Controller
         }
     }
 
+    /**
+     * 删除货架
+     * Delete rack
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function destroy($id)
     {
         try {
             $rack = Rack::findOrFail($id);
 
+            // 删除货架图片
             if ($rack->rack_image && file_exists(public_path('assets/images/' . $rack->rack_image))) {
                 unlink(public_path('assets/images/' . $rack->rack_image));
             }
@@ -500,7 +484,6 @@ class RackController extends Controller
 
             $this->logOperation('deleted', ['rack_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -521,12 +504,16 @@ class RackController extends Controller
     }
 
     /**
-     * 導出貨架數據到Excel
+     * 导出货架数据到 Excel
+     * Export racks data to Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function exportRacks(Request $request)
     {
         try {
-            // 獲取篩選條件
+            // 获取筛选条件
             $filters = [
                 'search' => $request->get('search'),
                 'status_filter' => $request->get('status_filter'),
@@ -537,7 +524,7 @@ class RackController extends Controller
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
             $filename = "racks_export_{$timestamp}.xlsx";
 
-            // 使用Laravel Excel導出
+            // 使用 Laravel Excel 导出
             return Excel::download(new RackExport($filters), $filename);
 
         } catch (\Exception $e) {

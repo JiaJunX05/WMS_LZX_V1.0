@@ -16,21 +16,19 @@
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.location-dashboard-header', ['type' => 'dashboard'])
+    @include('admin.location.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.location-metric-cards')
+    @include('admin.location.components.metric-cards')
 
     {{-- 主要内容区域 --}}
-    <div id="dashboard-cards-container" class="row g-4">
-        {{-- 按区域分组的位置卡片将通过JavaScript动态加载 --}}
-    </div>
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.location-empty-list')
+    @include('admin.location.components.data-cards')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.location-pagination-nav')
+    @include('admin.location.components.pagination-nav')
+
+    {{-- Location Create Modal --}}
+    @include('admin.location.create-model')
 </div>
 
 @endsection
@@ -40,11 +38,14 @@
 <script>
     // 设置位置管理相关路由
     window.locationManagementRoute = "{{ route('admin.location.index') }}";
+    window.createLocationUrl = "{{ route('admin.location.store') }}";
     window.viewLocationUrl = "{{ route('admin.location.view', ['id' => ':id']) }}";
-    window.editLocationUrl = "{{ route('admin.location.edit', ['id' => ':id']) }}";
     window.deleteLocationUrl = "{{ route('admin.location.destroy', ['id' => ':id']) }}";
     window.availableLocationUrl = "{{ route('admin.location.available', ['id' => ':id']) }}";
     window.unavailableLocationUrl = "{{ route('admin.location.unavailable', ['id' => ':id']) }}";
+
+    // 设置可用 racks 数据（从后端传递）
+    window.availableRacks = @json($racks);
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}

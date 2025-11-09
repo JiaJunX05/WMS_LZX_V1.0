@@ -12,52 +12,64 @@ use Carbon\Carbon;
 
 /**
  * 子分类管理控制器
+ * Subcategory Management Controller
+ *
+ * 功能模块：
+ * - 子分类列表展示：搜索、筛选、分页
+ * - 子分类操作：创建、编辑、删除、状态管理
+ * - 图片管理：上传、更新、删除
+ * - 数据导出：Excel 导出功能
+ *
+ * @author WMS Team
+ * @version 3.0.0
  */
 class SubcategoryController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_SUBCATEGORIES = 10;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 子分类验证规则
+     */
     private const SUBCATEGORY_RULES = [
         'subcategory_name' => 'required|string|max:255',
     ];
 
+    /**
+     * 子分类图片验证规则
+     */
     private const SUBCATEGORY_IMAGE_RULES = [
         'subcategory_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ];
 
-    /**
-     * Normalize subcategory data from frontend
-     */
-    private function normalizeSubcategoryData(array $subcategoryData): array
-    {
-        // Convert camelCase to snake_case
-        if (isset($subcategoryData['subcategoryName']) && !isset($subcategoryData['subcategory_name'])) {
-            $subcategoryData['subcategory_name'] = $subcategoryData['subcategoryName'];
-        }
-        if (isset($subcategoryData['subcategoryStatus']) && !isset($subcategoryData['subcategory_status'])) {
-            $subcategoryData['subcategory_status'] = $subcategoryData['subcategoryStatus'];
-        }
-
-        return $subcategoryData;
-    }
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -72,7 +84,11 @@ class SubcategoryController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -86,11 +102,16 @@ class SubcategoryController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -99,12 +120,25 @@ class SubcategoryController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
+    /**
+     * 显示子分类列表页面
+     * Display subcategory list page
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
     public function index(Request $request)
     {
         if ($request->ajax()) {
             try {
                 $query = Subcategory::query();
 
+                // 搜索功能
                 if ($request->has('search') && $request->search) {
                     $search = $request->search;
                     $query->where(function($q) use ($search) {
@@ -112,6 +146,7 @@ class SubcategoryController extends Controller
                     });
                 }
 
+                // 状态筛选
                 if ($request->has('status_filter') && $request->status_filter) {
                     $query->where('subcategory_status', $request->status_filter);
                 }
@@ -140,27 +175,15 @@ class SubcategoryController extends Controller
         return view('admin.subcategory.dashboard', compact('subcategories'));
     }
 
-    public function create()
-    {
-        return view('admin.subcategory.create');
-    }
-
+    /**
+     * 存储新子分类
+     * Store new subcategory
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
-        // 与 CategoryController 的实现保持一致：有数组走批量，否则走单个
-        if ($request->has('subcategories') && is_array($request->input('subcategories'))) {
-            return $this->storeMultipleSubcategories($request);
-        }
-
-        return $this->storeSingleSubcategory($request);
-    }
-
-    /**
-     * 单个存储子分类
-     */
-    private function storeSingleSubcategory(Request $request)
-    {
-        // 校验
         $rules = array_merge(self::SUBCATEGORY_RULES, self::SUBCATEGORY_IMAGE_RULES);
         $rules['subcategory_name'] .= '|unique:subcategories,subcategory_name';
 
@@ -169,25 +192,26 @@ class SubcategoryController extends Controller
         try {
             $subcategoryData = [
                 'subcategory_name' => $request->input('subcategory_name') ?? $request->input('subcategoryName'),
-                'subcategory_status' => 'Available', // 默認為 Available
+                'subcategory_status' => 'Available',
             ];
 
             // 处理文件上传
             if ($request->hasFile('subcategory_image')) {
-                // 文件上传（确保目录存在）
                 $image = $request->file('subcategory_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/subcategories');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $subcategoryData['subcategory_image'] = 'subcategories/' . $imageName;
             }
 
             $subcategory = Subcategory::create($subcategoryData);
 
-            $this->logOperation('created (single)', [
+            $this->logOperation('created', [
                 'subcategory_id' => $subcategory->id,
                 'subcategory_name' => $subcategoryData['subcategory_name']
             ]);
@@ -211,113 +235,54 @@ class SubcategoryController extends Controller
     }
 
     /**
-     * 批量存储子分类（统一入口）
+     * 显示子分类编辑表单（用于 Modal）
+     * Show subcategory edit form (for Modal)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    private function storeMultipleSubcategories(Request $request)
+    public function showEditForm(Request $request, $id)
     {
-        // 仅处理批量数组
-        $subcategories = $request->input('subcategories', []);
+        try {
+            $subcategory = Subcategory::findOrFail($id);
 
-        // 限制批量创建数量
-        if (count($subcategories) > self::MAX_BULK_SUBCATEGORIES) {
-            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_SUBCATEGORIES . ' subcategories at once');
-        }
-
-        $createdSubcategories = [];
-        $errors = [];
-
-        // 预处理：收集所有子分类名称进行批量检查
-        $subcategoryNamesToCheck = [];
-        foreach ($subcategories as $index => $subcategoryData) {
-            $subcategoryData = $this->normalizeSubcategoryData($subcategoryData);
-            if (isset($subcategoryData['subcategory_name'])) {
-                $subcategoryNamesToCheck[] = $subcategoryData['subcategory_name'];
-            }
-        }
-
-        $existingSubcategoryNames = Subcategory::whereIn('subcategory_name', $subcategoryNamesToCheck)->pluck('subcategory_name')->toArray();
-
-        foreach ($subcategories as $index => $subcategoryData) {
-            $subcategoryData = $this->normalizeSubcategoryData($subcategoryData);
-
-            $validator = \Validator::make($subcategoryData, self::SUBCATEGORY_RULES);
-
-            if ($validator->fails()) {
-                $errors[] = "Subcategory " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
-                continue;
-            }
-
-            // 检查子分类名称是否已存在
-            if (in_array($subcategoryData['subcategory_name'], $existingSubcategoryNames)) {
-                $errors[] = "Subcategory " . ($index + 1) . ": Subcategory name '{$subcategoryData['subcategory_name']}' already exists";
-                continue;
-            }
-
-            try {
-                $subcategoryRecord = [
-                    'subcategory_name' => $subcategoryData['subcategory_name'],
-                    'subcategory_status' => 'Available', // 默認為 Available
-                ];
-
-                // 处理图片上传 - 使用文件数组
-                $files = $request->file('images');
-                if (is_array($files) && isset($files[$index]) && $files[$index] && $files[$index]->isValid()) {
-                    $image = $files[$index];
-                    $directory = public_path('assets/images/subcategories');
-                    if (!file_exists($directory)) {
-                        mkdir($directory, 0777, true);
-                    }
-                    $imageName = time() . '_' . $index . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move($directory, $imageName);
-                    $subcategoryRecord['subcategory_image'] = 'subcategories/' . $imageName;
-                }
-
-                $subcategory = Subcategory::create($subcategoryRecord);
-                $createdSubcategories[] = $subcategory;
-
-                $this->logOperation('created (batch)', [
-                    'subcategory_id' => $subcategory->id,
-                    'subcategory_name' => $subcategoryData['subcategory_name']
-                ]);
-            } catch (\Exception $e) {
-                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
-                $errorMessage = $simplifiedError ?: $e->getMessage();
-                $errors[] = "Subcategory " . ($index + 1) . ": " . $errorMessage;
-            }
-        }
-
-        if ($request->ajax()) {
-            if (count($errors) > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some subcategories failed to create',
-                    'errors' => $errors,
-                    'created_count' => count($createdSubcategories)
-                ], 422);
-            } else {
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => count($createdSubcategories) . ' subcategories created successfully',
-                    'data' => $createdSubcategories
+                    'message' => 'Subcategory data fetched successfully',
+                    'data' => [
+                        'id' => $subcategory->id,
+                        'subcategory_name' => $subcategory->subcategory_name,
+                        'subcategory_status' => $subcategory->subcategory_status,
+                        'subcategory_image' => $subcategory->subcategory_image
+                    ]
                 ]);
             }
-        }
 
-        if (count($errors) > 0) {
-            return back()->withErrors(['error' => implode('; ', $errors)])
-                ->withInput();
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.category_mapping.subcategory.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load subcategory data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('admin.category_mapping.subcategory.index')
+                ->with('error', 'Subcategory not found');
         }
-
-        return redirect()->route('admin.category_mapping.subcategory.index')
-            ->with('success', count($createdSubcategories) . ' subcategories created successfully');
     }
 
-    public function edit($id)
-    {
-        $subcategory = Subcategory::findOrFail($id);
-        return view('admin.subcategory.update', compact('subcategory'));
-    }
-
+    /**
+     * 更新子分类信息
+     * Update subcategory information
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, $id)
     {
         try {
@@ -393,6 +358,7 @@ class SubcategoryController extends Controller
 
             if ($request->ajax()) {
                 $freshSubcategory = $subcategory->fresh();
+
                 Log::info('AJAX response data', [
                     'success' => true,
                     'message' => $message,
@@ -431,6 +397,13 @@ class SubcategoryController extends Controller
         }
     }
 
+    /**
+     * 设置子分类为可用状态
+     * Set subcategory to available status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function setAvailable($id)
     {
         try {
@@ -439,7 +412,6 @@ class SubcategoryController extends Controller
 
             $this->logOperation('set to available', ['subcategory_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -456,6 +428,13 @@ class SubcategoryController extends Controller
         }
     }
 
+    /**
+     * 设置子分类为不可用状态
+     * Set subcategory to unavailable status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function setUnavailable($id)
     {
         try {
@@ -464,7 +443,6 @@ class SubcategoryController extends Controller
 
             $this->logOperation('set to unavailable', ['subcategory_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -481,11 +459,19 @@ class SubcategoryController extends Controller
         }
     }
 
+    /**
+     * 删除子分类
+     * Delete subcategory
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function destroy($id)
     {
         try {
             $subcategory = Subcategory::findOrFail($id);
 
+            // 删除子分类图片
             if ($subcategory->subcategory_image && file_exists(public_path('assets/images/' . $subcategory->subcategory_image))) {
                 unlink(public_path('assets/images/' . $subcategory->subcategory_image));
             }
@@ -494,7 +480,6 @@ class SubcategoryController extends Controller
 
             $this->logOperation('deleted', ['subcategory_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -515,12 +500,16 @@ class SubcategoryController extends Controller
     }
 
     /**
-     * 導出子分類數據到Excel
+     * 导出子分类数据到 Excel
+     * Export subcategories data to Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function exportSubcategories(Request $request)
     {
         try {
-            // 獲取篩選條件
+            // 获取筛选条件
             $filters = [
                 'search' => $request->get('search'),
                 'status_filter' => $request->get('status_filter'),
@@ -531,7 +520,7 @@ class SubcategoryController extends Controller
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
             $filename = "subcategories_export_{$timestamp}.xlsx";
 
-            // 使用Laravel Excel導出
+            // 使用 Laravel Excel 导出
             return Excel::download(new SubcategoryExport($filters), $filename);
 
         } catch (\Exception $e) {

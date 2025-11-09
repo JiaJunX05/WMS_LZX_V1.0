@@ -15,7 +15,7 @@ use App\Models\Product;
  * - 提供产品数据给前端JavaScript处理
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class PrintController extends Controller
 {
@@ -35,7 +35,7 @@ class PrintController extends Controller
 
             // 普通请求：返回视图
             $products = Product::with('barcode')->paginate(10);
-            return view('print_dashboard', compact('products'));
+            return view('print.dashboard', compact('products'));
 
         } catch (\Exception $e) {
             Log::error('Print index error: ' . $e->getMessage());
@@ -118,7 +118,7 @@ class PrintController extends Controller
             }
 
             // 渲染Blade模板并返回HTML
-            return response()->make(view('print-labels', [
+            return response()->make(view('print.labels', [
                 'products' => $products,
                 'includeBarcode' => $includeBarcode,
                 'includeImage' => $includeImage

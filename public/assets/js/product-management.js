@@ -1,115 +1,42 @@
 /**
- * 产品管理系统 JavaScript
- * Product Management System JavaScript
+ * Product Management JavaScript
+ * 產品管理統一交互邏輯
  *
- * 整合产品相关的所有功能：
- * - Dashboard 产品列表展示、搜索、筛选、分页
- * - Create 产品创建表单处理
- * - Update 产品更新表单处理
- * - View 产品查看和操作
- * - 图片处理（封面图片、详细图片）
+ * 功能模塊：
+ * - Dashboard 頁面：產品列表展示、搜索、篩選、分頁
+ * - View 頁面：查看詳情、刪除操作、Update Modal
+ * - Create Modal：產品創建、表單驗證、圖片上傳、SKU/Barcode 生成
+ * - Update Modal：編輯更新、表單提交、圖片管理
+ * - 圖片處理：封面圖片、詳細圖片
  * - SKU 和 Barcode 生成
- * - 级联选择（分类、子分类、尺寸、区域、货架）
- * - 状态管理
- * - 表单验证
+ * - 級聯選擇：分類、子分類、尺寸、區域、貨架
+ * - 狀態管理
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
-// 全局变量 (Global Variables)
+// 全局變量和狀態管理 (Global Variables and State Management)
 // =============================================================================
 
+// View 頁面相關變量
 let currentImageIndex = 0;
 let totalImages = 0;
 let productImages = [];
 
-// Product Create 相关变量
-let coverImageArea, coverImageInput, coverUploadPlaceholder, coverPreview, removeCoverBtn;
-let addDetailImageBtn, detailImagesInput, detailImagesGrid;
-
 // =============================================================================
-// 页面初始化 (Page Initialization)
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Product Management JS loaded successfully!');
-
-    try {
-        // 检测当前页面类型并初始化相应功能
-        detectPageTypeAndInitialize();
-    } catch (error) {
-        console.error('Error during initialization:', error);
-        if (typeof showAlert === 'function') {
-            showAlert('JavaScript initialization error: ' + error.message, 'error');
-        } else {
-            alert('JavaScript initialization error: ' + error.message);
-        }
-    }
-});
-
-/**
- * 检测页面类型并初始化相应功能
- */
-function detectPageTypeAndInitialize() {
-    // Dashboard 页面
-    if (document.getElementById('product-card-container')) {
-        console.log('Initializing Product Dashboard...');
-        initializeProductDashboard();
-    }
-
-    // Create 页面
-    if (document.getElementById('product-form') && window.location.pathname.includes('/create')) {
-        console.log('Initializing Product Create...');
-        initializeProductCreate();
-    }
-
-    // Update 页面
-    if (document.getElementById('product-form') && (window.location.pathname.includes('/edit/') || window.location.pathname.includes('/update/'))) {
-        console.log('Initializing Product Update...');
-        initializeProductUpdate();
-    }
-
-    // View 页面
-    const barcodeCanvas = document.getElementById('barcodeCanvas');
-    const barcodeSection = document.querySelector('.barcode-section');
-    console.log('barcodeCanvas element:', barcodeCanvas);
-    console.log('barcodeSection element:', barcodeSection);
-
-    if (barcodeCanvas || barcodeSection) {
-        console.log('Initializing Product View...');
-        initializeProductView();
-    } else {
-        console.log('Product View elements not found');
-    }
-}
-
-// =============================================================================
-// Dashboard 页面功能 (Dashboard Page Functions)
+// Dashboard 頁面功能 (Dashboard Page Functions)
 // =============================================================================
 
 /**
- * 初始化产品 Dashboard
+ * Product Dashboard 類
+ * 產品儀表板頁面交互邏輯
  */
-function initializeProductDashboard() {
-    // 传递路由信息到 JavaScript
-    const container = document.getElementById('product-card-container');
-    if (container) {
-        window.productManagementRoute = container.dataset.url;
-        window.viewProductUrl = container.dataset.viewUrl;
-    }
-
-    const productManager = new ProductManagement();
-    window.productManager = productManager;
-    productManager.init();
-}
-
-/**
- * 产品管理类
- */
-class ProductManagement {
+class ProductDashboard {
     constructor() {
+        // 狀態管理
         this.currentPage = 1;
         this.perPage = 10;
         this.products = [];
@@ -120,211 +47,136 @@ class ProductManagement {
             brand: [],
             status: ''
         };
+
+        // 初始化
+        this.init();
     }
 
+    // =============================================================================
+    // 初始化模塊 (Initialization Module)
+    // =============================================================================
     init() {
-        this.bindEvents();
-        this.loadProducts();
+        // 傳遞路由信息到 JavaScript
+        const container = document.getElementById('product-card-container');
+        if (container) {
+            window.productManagementRoute = container.dataset.url;
+            window.viewProductUrl = container.dataset.viewUrl;
+        }
+
+        // 只在 Dashboard 頁面綁定事件和獲取數據
+        if (container) {
+            this.bindEvents();
+            this.fetchProducts();
+        }
     }
 
+    // =============================================================================
+    // 事件綁定模塊 (Event Binding Module)
+    // =============================================================================
     bindEvents() {
         // 搜索功能
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.addEventListener('keyup', (e) => {
-                const searchValue = e.target.value.trim();
-                this.filters.search = searchValue;
-
-                if (searchValue === '') {
-                    document.querySelectorAll('.filter-list .filter-item').forEach(el => el.classList.remove('active'));
-                    const allCategoriesItem = document.querySelector('.filter-list .filter-item[data-category=""]');
-                    if (allCategoriesItem) {
-                        allCategoriesItem.classList.add('active');
-                    } else {
-                        document.querySelector('.filter-list .filter-item:first-child').classList.add('active');
-                    }
-                    document.querySelectorAll('#filterSubcategory input:checked').forEach(cb => cb.checked = false);
-                    document.querySelectorAll('#filterBrand input:checked').forEach(cb => cb.checked = false);
-                    this.filters.category = '';
-                    this.filters.subcategory = [];
-                    this.filters.brand = [];
-                }
-
-                this.currentPage = 1;
-                this.loadProducts();
-            });
-        }
-
-        // 分类筛选
-        const categoryItems = document.querySelectorAll('.filter-option[data-category]');
-        categoryItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.selectCategory(item);
-            });
+        $('#search-input').on('keyup', (e) => {
+            this.filters.search = $(e.target).val().trim();
+            this.handleSearch();
         });
 
-        // 子分类筛选
-        const subcategoryCheckboxes = document.querySelectorAll('.filter-checkbox-input[data-subcategory]');
-        subcategoryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                this.updateSubcategoryFilter();
-                this.currentPage = 1;
-                this.loadProducts();
-            });
+        // 分類篩選
+        $(document).on('click', '.filter-option[data-category]', (e) => {
+            e.preventDefault();
+            this.selectCategory($(e.currentTarget));
         });
 
-        // 品牌筛选
-        const brandCheckboxes = document.querySelectorAll('.filter-checkbox-input[data-brand]');
-        brandCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                this.updateBrandFilter();
-                this.currentPage = 1;
-                this.loadProducts();
-            });
+        // 子分類篩選
+        $(document).on('change', '.filter-checkbox-input[data-subcategory]', () => {
+            this.updateSubcategoryFilter();
+            this.handleFilter();
         });
 
-        // 清除所有筛选
-        const clearFiltersBtn = document.getElementById('clear-filters');
-        if (clearFiltersBtn) {
-            clearFiltersBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.clearAllFilters();
-            });
-        }
+        // 品牌篩選
+        $(document).on('change', '.filter-checkbox-input[data-brand]', () => {
+            this.updateBrandFilter();
+            this.handleFilter();
+        });
 
-        // 清除搜索按钮
-        const clearSearchBtn = document.getElementById('clear-search');
-        if (clearSearchBtn) {
-            clearSearchBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.clearSearch();
-            });
-        }
+        // 清除所有篩選
+        $('#clear-filters').on('click', () => {
+            this.clearFilters();
+        });
 
-        // 分页按钮事件
-        this.bindPaginationEvents();
+        // 清除搜索按鈕
+        $('#clear-search').on('click', () => {
+            this.clearSearch();
+        });
+
+        // 分頁功能
+        $('#pagination').on('click', '.pagination-btn', (e) => {
+            e.preventDefault();
+            const page = parseInt($(e.currentTarget).data('page'));
+            this.fetchProducts(page);
+        });
+
+        $('#prev-page').on('click', 'a', (e) => {
+            e.preventDefault();
+            if (!$(e.currentTarget).parent().hasClass('disabled')) {
+                this.fetchProducts(this.currentPage - 1);
+            }
+        });
+
+        $('#next-page').on('click', 'a', (e) => {
+            e.preventDefault();
+            if (!$(e.currentTarget).parent().hasClass('disabled')) {
+                this.fetchProducts(this.currentPage + 1);
+            }
+        });
     }
 
-    selectCategory(item) {
-        const categoryId = item.dataset.category || '';
+    // =============================================================================
+    // 數據請求模塊 (Data Request Module)
+    // =============================================================================
 
-        document.querySelectorAll('.filter-option[data-category]').forEach(el => {
-            el.classList.remove('active');
-        });
-
-        item.classList.add('active');
-
-        if (!categoryId) {
-            document.querySelectorAll('.filter-checkbox-input[data-subcategory]:checked').forEach(cb => cb.checked = false);
-            document.querySelectorAll('.filter-checkbox-input[data-brand]:checked').forEach(cb => cb.checked = false);
-            this.filters.subcategory = [];
-            this.filters.brand = [];
-        }
-
-        this.filters.category = categoryId;
-        this.currentPage = 1;
-        this.loadProducts();
-    }
-
-    updateSubcategoryFilter() {
-        this.filters.subcategory = Array.from(document.querySelectorAll('.filter-checkbox-input[data-subcategory]:checked'))
-            .map(cb => cb.dataset.subcategory);
-    }
-
-    updateBrandFilter() {
-        this.filters.brand = Array.from(document.querySelectorAll('.filter-checkbox-input[data-brand]:checked'))
-            .map(cb => cb.dataset.brand);
-    }
-
-    clearAllFilters() {
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.value = '';
-        }
-
-        document.querySelectorAll('.filter-option[data-category]').forEach(el => {
-            el.classList.remove('active');
-        });
-        document.querySelector('.filter-option[data-category=""]').classList.add('active');
-
-        document.querySelectorAll('.filter-checkbox-input[data-subcategory]:checked').forEach(cb => cb.checked = false);
-        document.querySelectorAll('.filter-checkbox-input[data-brand]:checked').forEach(cb => cb.checked = false);
-
-        this.filters = {
-            search: '',
-            category: '',
-            subcategory: [],
-            brand: [],
-            status: ''
+    /**
+     * 獲取搜索參數
+     * @param {number} page 頁碼
+     * @returns {Object} 搜索參數對象
+     */
+    getSearchParams(page = 1) {
+        const params = {
+            page: page,
+            perPage: this.perPage,
+            search: this.filters.search,
+            category_id: this.filters.category,
+            product_status: this.filters.status
         };
 
-        this.currentPage = 1;
-        this.loadProducts();
+        // 添加子分類和品牌篩選（數組格式）
+        if (this.filters.subcategory.length > 0) {
+            params.subcategory_id = this.filters.subcategory;
+        }
+        if (this.filters.brand.length > 0) {
+            params.brand_id = this.filters.brand;
+        }
+
+        return params;
     }
 
-    clearSearch() {
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.value = '';
-        }
+    /**
+     * 獲取產品數據
+     * @param {number} page 頁碼
+     */
+    async fetchProducts(page = 1) {
+        this.currentPage = page;
+        const params = this.getSearchParams(page);
+        const apiRoute = window.productManagementRoute;
 
-        this.filters.search = '';
-        this.currentPage = 1;
-        this.loadProducts();
-    }
-
-    bindPaginationEvents() {
-        const paginationElement = document.getElementById('pagination');
-        const prevPageBtn = document.getElementById('prev-page');
-        const nextPageBtn = document.getElementById('next-page');
-
-        if (paginationElement) {
-            paginationElement.addEventListener('click', (e) => {
-                if (e.target.classList.contains('pagination-btn')) {
-                    e.preventDefault();
-                    const page = parseInt(e.target.dataset.page);
-                    this.currentPage = page;
-                    this.loadProducts();
-                }
-            });
-        }
-
-        if (prevPageBtn) {
-            prevPageBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (!prevPageBtn.classList.contains('disabled') && this.currentPage > 1) {
-                    this.currentPage = this.currentPage - 1;
-                    this.loadProducts();
-                }
-            });
-        }
-
-        if (nextPageBtn) {
-            nextPageBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (!nextPageBtn.classList.contains('disabled')) {
-                    this.currentPage = this.currentPage + 1;
-                    this.loadProducts();
-                }
-            });
-        }
-    }
-
-    async loadProducts() {
         try {
-            const params = new URLSearchParams({
-                page: this.currentPage,
-                perPage: this.perPage,
-                search: this.filters.search,
-                category_id: this.filters.category,
-                product_status: this.filters.status
+            const url = new URL(apiRoute, window.location.origin);
+            Object.keys(params).forEach(key => {
+                if (Array.isArray(params[key])) {
+                    params[key].forEach(value => url.searchParams.append(`${key}[]`, value));
+                } else {
+                    url.searchParams.append(key, params[key]);
+                }
             });
-
-            this.filters.subcategory.forEach(id => params.append('subcategory_id[]', id));
-            this.filters.brand.forEach(id => params.append('brand_id[]', id));
-
-            const url = `${window.productManagementRoute}?${params}`;
 
             const response = await fetch(url, {
                 headers: {
@@ -334,36 +186,159 @@ class ProductManagement {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch products: ${response.status} - ${errorText}`);
+                throw new Error(`Failed to fetch products: ${response.status}`);
             }
 
             const data = await response.json();
-            this.products = data.data || [];
 
-            this.renderProducts();
-            this.updatePaginationInfo(data.pagination);
-            this.generatePagination(data.pagination);
+            if (data.data && data.data.length > 0) {
+                this.renderProducts(data.data);
+                this.updatePaginationInfo(data);
+            } else {
+                this.showNoResults();
+            }
+            this.updateResultsCount(data);
+            this.generatePagination(data);
         } catch (error) {
             console.error('Error loading products:', error);
-            this.showError('Failed to load products');
+            this.showAlert('Failed to load products, please try again', 'danger');
         }
     }
 
-    renderProducts() {
-        const container = document.getElementById('product-card-container');
-
-        if (!this.products || this.products.length === 0) {
-            this.showNoResults();
-            return;
+    /**
+     * 處理搜索
+     */
+    handleSearch() {
+        // 如果搜索為空，清除相關篩選
+        if (this.filters.search === '') {
+            $('.filter-list .filter-item').removeClass('active');
+            const allCategoriesItem = $('.filter-list .filter-item[data-category=""]');
+            if (allCategoriesItem.length > 0) {
+                allCategoriesItem.addClass('active');
+            } else {
+                $('.filter-list .filter-item:first-child').addClass('active');
+            }
+            $('#filterSubcategory input:checked').prop('checked', false);
+            $('#filterBrand input:checked').prop('checked', false);
+            this.filters.category = '';
+            this.filters.subcategory = [];
+            this.filters.brand = [];
         }
 
-        container.innerHTML = this.products.map(product => this.createProductCard(product)).join('');
+        this.fetchProducts(1);
+    }
+
+    /**
+     * 處理篩選
+     */
+    handleFilter() {
+        this.fetchProducts(1);
+    }
+
+    /**
+     * 選擇分類
+     * @param {jQuery} item 分類元素
+     */
+    selectCategory(item) {
+        const categoryId = item.data('category') || '';
+
+        $('.filter-option[data-category]').removeClass('active');
+        item.addClass('active');
+
+        if (!categoryId) {
+            $('.filter-checkbox-input[data-subcategory]:checked').prop('checked', false);
+            $('.filter-checkbox-input[data-brand]:checked').prop('checked', false);
+            this.filters.subcategory = [];
+            this.filters.brand = [];
+        }
+
+        this.filters.category = categoryId;
+        this.fetchProducts(1);
+    }
+
+    /**
+     * 更新子分類篩選
+     */
+    updateSubcategoryFilter() {
+        this.filters.subcategory = $('.filter-checkbox-input[data-subcategory]:checked')
+            .map(function() {
+                return $(this).data('subcategory');
+            })
+            .get();
+    }
+
+    /**
+     * 更新品牌篩選
+     */
+    updateBrandFilter() {
+        this.filters.brand = $('.filter-checkbox-input[data-brand]:checked')
+            .map(function() {
+                return $(this).data('brand');
+            })
+            .get();
+    }
+
+    /**
+     * 清除所有篩選條件
+     */
+    clearFilters() {
+        this.filters = {
+            search: '',
+            category: '',
+            subcategory: [],
+            brand: [],
+            status: ''
+        };
+
+        $('#search-input').val('');
+        $('.filter-option[data-category]').removeClass('active');
+        $('.filter-option[data-category=""]').addClass('active');
+        $('.filter-checkbox-input[data-subcategory]:checked').prop('checked', false);
+        $('.filter-checkbox-input[data-brand]:checked').prop('checked', false);
+
+        this.fetchProducts(1);
+    }
+
+    /**
+     * 清除搜索
+     */
+    clearSearch() {
+        this.filters.search = '';
+        $('#search-input').val('');
+        this.handleSearch();
+    }
+
+    /**
+     * 更新結果計數顯示
+     * @param {Object} response API響應數據
+     */
+    updateResultsCount(response) {
+        const total = response.pagination?.total || 0;
+        $('#results-count').text(`${total} records`);
+    }
+
+    // =============================================================================
+    // 渲染模塊 (Rendering Module)
+    // =============================================================================
+
+    /**
+     * 渲染產品列表
+     * @param {Array} products 產品數據數組
+     */
+    renderProducts(products) {
+        const container = $('#product-card-container');
+        const html = products.map(product => this.createProductCard(product)).join('');
+        container.html(html);
 
         // 隱藏空狀態
         $('#empty-state').addClass('d-none');
     }
 
+    /**
+     * 創建產品卡片
+     * @param {Object} product 產品數據對象
+     * @returns {string} 產品卡片HTML
+     */
     createProductCard(product) {
         return `
             <div class="col-sm-6 col-md-4 col-lg-4">
@@ -379,7 +354,7 @@ class ProductManagement {
 
                     <div class="card-body">
                         <div class="sku-code">${product.sku_code || 'N/A'}</div>
-                        <h6 class="product-name text-truncate" title="${product.name || 'N/A'}">
+                        <h6 class="product-name" title="${product.name || 'N/A'}">
                             ${product.name ? product.name.toUpperCase() : 'N/A'}
                         </h6>
                     </div>
@@ -395,41 +370,48 @@ class ProductManagement {
         `;
     }
 
-    updatePaginationInfo(pagination) {
+    /**
+     * 顯示無結果
+     */
+    showNoResults() {
+        $('#product-card-container').empty();
+        $('#empty-state').removeClass('d-none');
+        this.updatePaginationInfo({ pagination: { total: 0, from: 0, to: 0 } });
+    }
+
+    // =============================================================================
+    // 分頁模塊 (Pagination Module)
+    // =============================================================================
+
+    /**
+     * 更新分頁信息
+     * @param {Object} response API響應數據
+     */
+    updatePaginationInfo(response) {
+        const pagination = response.pagination || {};
         const start = pagination.from || ((pagination.current_page - 1) * pagination.per_page + 1);
         const end = pagination.to || Math.min(start + pagination.per_page - 1, pagination.total);
 
-        const showingStart = document.getElementById('showing-start');
-        const showingEnd = document.getElementById('showing-end');
-        const totalCount = document.getElementById('total-count');
-
-        if (showingStart) showingStart.textContent = pagination.total > 0 ? start : 0;
-        if (showingEnd) showingEnd.textContent = end || 0;
-        if (totalCount) totalCount.textContent = pagination.total || 0;
+        $('#showing-start').text(pagination.total > 0 ? start : 0);
+        $('#showing-end').text(end || 0);
+        $('#total-count').text(pagination.total || 0);
     }
 
-    showNoResults() {
-        const container = document.getElementById('product-card-container');
-        container.innerHTML = '';
-        $('#empty-state').removeClass('d-none');
-    }
-
+    /**
+     * 生成分頁
+     * @param {Object} data API響應數據
+     */
     generatePagination(data) {
-        const paginationElement = document.getElementById('pagination');
-        const prevPageBtn = document.getElementById('prev-page');
-        const nextPageBtn = document.getElementById('next-page');
-
-        if (!paginationElement || !prevPageBtn || !nextPageBtn) return;
-
-        const existingPages = paginationElement.querySelectorAll('li:not(#prev-page):not(#next-page)');
-        existingPages.forEach(page => page.remove());
+        $("#pagination li:not(#prev-page):not(#next-page)").remove();
+        const pagination = data.pagination || {};
+        if (!pagination.last_page) return;
 
         let paginationHTML = '';
-        prevPageBtn.classList.toggle('disabled', data.current_page === 1);
+        $('#prev-page').toggleClass('disabled', pagination.current_page <= 1);
 
-        if (data.last_page > 7) {
-            const startPage = Math.max(1, data.current_page - 2);
-            const endPage = Math.min(data.last_page, data.current_page + 2);
+        if (pagination.last_page > 7) {
+            const startPage = Math.max(1, pagination.current_page - 2);
+            const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
 
             if (startPage > 1) {
                 paginationHTML += `<li class="page-item"><a class="page-link pagination-btn" href="#" data-page="1">1</a></li>`;
@@ -439,167 +421,239 @@ class ProductManagement {
             }
 
             for (let i = startPage; i <= endPage; i++) {
-                paginationHTML += `
-                    <li class="page-item ${i === data.current_page ? 'active' : ''}">
-                        <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
-                    </li>`;
+                paginationHTML += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                </li>`;
             }
 
-            if (endPage < data.last_page) {
-                if (endPage < data.last_page - 1) {
+            if (endPage < pagination.last_page) {
+                if (endPage < pagination.last_page - 1) {
                     paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
                 }
-                paginationHTML += `<li class="page-item"><a class="page-link pagination-btn" href="#" data-page="${data.last_page}">${data.last_page}</a></li>`;
+                paginationHTML += `<li class="page-item"><a class="page-link pagination-btn" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a></li>`;
             }
         } else {
-            for (let i = 1; i <= data.last_page; i++) {
-                paginationHTML += `
-                    <li class="page-item ${i === data.current_page ? 'active' : ''}">
-                        <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
-                    </li>`;
+            for (let i = 1; i <= pagination.last_page; i++) {
+                paginationHTML += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                </li>`;
             }
         }
 
-        prevPageBtn.insertAdjacentHTML('afterend', paginationHTML);
-        nextPageBtn.classList.toggle('disabled', data.current_page === data.last_page);
+        $('#next-page').toggleClass('disabled', pagination.current_page >= pagination.last_page);
+        $('#prev-page').after(paginationHTML);
     }
 
-    showError(message) {
-        const container = document.getElementById('product-card-container');
-        container.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-danger text-center">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
+    // =============================================================================
+    // 產品操作模塊 (Product Operations Module)
+    // =============================================================================
+
+    /**
+     * 編輯產品（打開更新彈窗）
+     * @param {number} productId 產品ID
+     */
+    editProduct(productId) {
+        // 產品編輯使用 Modal，直接調用全局函數
+        if (typeof window.openUpdateProductModal === 'function') {
+            window.openUpdateProductModal(productId);
+        } else {
+            // 如果 Modal 不可用，使用傳統頁面跳轉
+            const editUrl = window.editProductUrl.replace(':id', productId);
+            window.location.href = editUrl;
+        }
+    }
+
+    /**
+     * 刪除產品
+     * @param {number} productId 產品ID
+     */
+    deleteProduct(productId) {
+        if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+
+        fetch(window.deleteProductUrl.replace(':id', productId), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Product deleted successfully', 'success');
+
+                // 檢查當前頁面是否還有數據
+                const currentPageData = $('#product-card-container .product-card').length;
+
+                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
+                if (currentPageData <= 1 && this.currentPage > 1) {
+                    this.fetchProducts(1);
+                } else {
+                    // 重新載入當前頁面的產品列表
+                    this.fetchProducts(this.currentPage);
+                }
+            } else {
+                this.showAlert(data.message || 'Failed to delete product', 'error');
+            }
+        })
+        .catch(error => {
+            this.showAlert('Failed to delete product', 'error');
+        });
+    }
+
+    /**
+     * 激活產品
+     * @param {number} productId 產品ID
+     */
+    setAvailable(productId) {
+        if (!confirm('Are you sure you want to activate this product?')) return;
+
+        fetch(window.availableProductUrl.replace(':id', productId), {
+            method: 'PATCH',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Product has been set to available status', 'success');
+
+                // 檢查當前頁面類型
+                const isDashboardPage = document.getElementById('product-card-container') !== null;
+                if (isDashboardPage) {
+                    // Dashboard 頁面：重新載入產品列表
+                    this.fetchProducts(this.currentPage);
+                } else {
+                    // View 頁面：刷新當前頁面
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            } else {
+                this.showAlert(data.message || 'Failed to set product available', 'error');
+            }
+        })
+        .catch(error => {
+            this.showAlert('Failed to set product available', 'error');
+        });
+    }
+
+    /**
+     * 停用產品
+     * @param {number} productId 產品ID
+     */
+    setUnavailable(productId) {
+        if (!confirm('Are you sure you want to deactivate this product?')) return;
+
+        fetch(window.unavailableProductUrl.replace(':id', productId), {
+            method: 'PATCH',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Product has been set to unavailable status', 'success');
+
+                // 檢查當前頁面類型
+                const isDashboardPage = document.getElementById('product-card-container') !== null;
+                if (isDashboardPage) {
+                    // Dashboard 頁面：重新載入產品列表
+                    this.fetchProducts(this.currentPage);
+                } else {
+                    // View 頁面：刷新當前頁面
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            } else {
+                this.showAlert(data.message || 'Failed to set product unavailable', 'error');
+            }
+        })
+        .catch(error => {
+            this.showAlert('Failed to set product unavailable', 'error');
+        });
+    }
+
+    /**
+     * 顯示提示信息
+     * @param {string} message 提示信息
+     * @param {string} type 提示類型
+     */
+    showAlert(message, type) {
+        // 使用統一的 alert 系統
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(message, type);
+        } else {
+            // 備用實現 - 修復 Bootstrap 5 的 alert 類名
+            const alertClass = type === 'danger' ? 'alert-danger' : `alert-${type}`;
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                     ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            </div>
-        `;
-    }
-}
+            `;
 
-// =============================================================================
-// Create 页面功能 (Create Page Functions)
-// =============================================================================
+            // 插入到頁面頂部
+            const container = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
+            container.insertAdjacentHTML('afterbegin', alertHtml);
 
-/**
- * 初始化产品创建页面
- */
-function initializeProductCreate() {
-    // 绑定图片事件
-    if (typeof bindProductImageEvents === 'function') {
-        bindProductImageEvents();
-    }
-
-    // 绑定状态卡片事件
-    if (typeof initializeProductStatusCardSelection === 'function') {
-        initializeProductStatusCardSelection();
-    }
-
-    // 绑定级联选择事件
-    bindCascadingSelectEvents();
-
-    // 绑定SKU和Barcode生成事件
-    bindSKUGenerationEvents();
-
-    // 绑定表单提交事件
-    bindFormSubmitEvent();
-
-    // 初始化按钮位置
-    if (typeof resetProductAddButtonToOriginalState === 'function') {
-        resetProductAddButtonToOriginalState();
-    }
-    if (typeof updateProductAddButtonPosition === 'function') {
-        updateProductAddButtonPosition();
-    }
-
-    // 生成初始SKU和Barcode
-    generateSKU();
-    generateBarcodeNumber();
-
-    // 初始化表单验证
-    initializeFormValidation();
-}
-
-// =============================================================================
-// Update 页面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * 初始化产品更新页面
- */
-function initializeProductUpdate() {
-    // 绑定图片事件
-    if (typeof bindProductImageEvents === 'function') {
-        bindProductImageEvents();
-    }
-
-    // 绑定状态卡片事件
-    if (typeof initializeProductStatusCardSelection === 'function') {
-        initializeProductStatusCardSelection();
-    }
-
-    // 绑定级联选择事件
-    bindCascadingSelectEvents();
-
-    // 绑定SKU和Barcode生成事件
-    bindSKUGenerationEvents();
-
-    // 绑定表单提交事件
-    bindFormSubmitEvent();
-
-    // 初始化按钮位置
-    if (typeof resetProductAddButtonToOriginalState === 'function') {
-        resetProductAddButtonToOriginalState();
-    }
-    if (typeof updateProductAddButtonPosition === 'function') {
-        updateProductAddButtonPosition();
-    }
-
-    // 初始化Update页面特殊功能
-    initializeUpdatePageFeatures();
-
-    // 初始化表单验证
-    initializeFormValidation();
-
-    // 确保 subcategory 选择框在页面加载时被启用
-    setTimeout(() => {
-        const subcategorySelect = document.querySelector('select[name="subcategory_id"]');
-        const categorySelect = document.querySelector('select[name="category_id"]');
-
-        if (subcategorySelect && categorySelect && categorySelect.value) {
-            if (subcategorySelect.disabled) {
-                subcategorySelect.disabled = false;
-            }
+            // 自動消失
+            setTimeout(() => {
+                const alertElement = container.querySelector('.alert');
+                if (alertElement) {
+                    alertElement.remove();
+                }
+            }, 5000);
         }
-    }, 100);
+    }
 }
 
 // =============================================================================
-// View 页面功能 (View Page Functions)
+// View 頁面功能 (View Page Functions)
 // =============================================================================
 
 /**
- * 初始化产品查看页面
+ * 初始化產品查看頁面
  */
 function initializeProductView() {
-    console.log('initializeProductView function called');
-
-    // 初始化图片数据
+    // 初始化圖片數據
     initializeImageData();
 
-    // 生成条形码 - 等待 JsBarcode 库加载完成
-    console.log('Waiting for JsBarcode library to load...');
+    // 生成條形碼 - 等待 JsBarcode 庫加載完成
     waitForJsBarcode();
 
-    // 绑定键盘事件
+    // 綁定鍵盤事件
     bindKeyboardEvents();
-
-    // 绑定全屏事件
-    bindFullscreenEvents();
 }
 
 /**
- * 初始化图片数据
+ * 初始化圖片數據
  */
 function initializeImageData() {
     const coverImage = document.querySelector('.main-image');
@@ -620,7 +674,7 @@ function initializeImageData() {
 }
 
 /**
- * 绑定键盘事件
+ * 綁定鍵盤事件
  */
 function bindKeyboardEvents() {
     document.addEventListener('keydown', function(e) {
@@ -633,31 +687,19 @@ function bindKeyboardEvents() {
                 e.preventDefault();
                 nextImage();
                 break;
-            case 'Escape':
-                e.preventDefault();
-                closeFullscreen();
-                break;
-        }
-    });
-}
-
-/**
- * 绑定全屏事件
- */
-function bindFullscreenEvents() {
-    document.addEventListener('fullscreenchange', function() {
-        if (!document.fullscreenElement) {
-            exitFullscreen();
         }
     });
 }
 
 // =============================================================================
-// 图片切换功能 (Image Switching Functions)
+// 圖片切換功能 (Image Switching Functions)
 // =============================================================================
 
 /**
- * 切换主图片
+ * 切換主圖片
+ * @param {string} imageSrc 圖片URL
+ * @param {HTMLElement} thumbnailElement 縮略圖元素
+ * @param {number} index 圖片索引
  */
 function switchMainImage(imageSrc, thumbnailElement, index) {
     const mainImage = document.getElementById('mainImage');
@@ -676,7 +718,7 @@ function switchMainImage(imageSrc, thumbnailElement, index) {
 }
 
 /**
- * 上一张图片
+ * 上一張圖片
  */
 function previousImage() {
     if (totalImages <= 1) return;
@@ -693,7 +735,7 @@ function previousImage() {
 }
 
 /**
- * 下一张图片
+ * 下一張圖片
  */
 function nextImage() {
     if (totalImages <= 1) return;
@@ -710,7 +752,7 @@ function nextImage() {
 }
 
 /**
- * 更新图片计数器
+ * 更新圖片計數器
  */
 function updateImageCounter() {
     const currentIndexElement = document.getElementById('currentImageIndex');
@@ -725,74 +767,11 @@ function updateImageCounter() {
 }
 
 // =============================================================================
-// 图片查看功能 (Image Viewing Functions)
+// 條形碼功能 (Barcode Functions)
 // =============================================================================
 
 /**
- * 打开图片模态框
- */
-function openImageModal(imageSrc) {
-    const modalImage = document.getElementById('modalImage');
-    if (modalImage) {
-        modalImage.src = imageSrc;
-        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-        modal.show();
-    }
-}
-
-/**
- * 切换全屏
- */
-function toggleFullscreen() {
-    const mainImageWrapper = document.querySelector('.main-image-wrapper');
-    if (!mainImageWrapper) return;
-
-    if (!document.fullscreenElement) {
-        enterFullscreen(mainImageWrapper);
-    } else {
-        exitFullscreen();
-    }
-}
-
-/**
- * 进入全屏
- */
-function enterFullscreen(element) {
-    if (element.requestFullscreen) {
-        element.requestFullscreen();
-    } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen();
-    } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen();
-    }
-}
-
-/**
- * 退出全屏
- */
-function exitFullscreen() {
-    if (document.exitFullscreen) {
-        document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-    }
-}
-
-/**
- * 关闭全屏
- */
-function closeFullscreen() {
-    exitFullscreen();
-}
-
-// =============================================================================
-// 条形码功能 (Barcode Functions)
-// =============================================================================
-
-/**
- * 等待 JsBarcode 库加载完成
+ * 等待 JsBarcode 庫加載完成
  */
 function waitForJsBarcode() {
     let attempts = 0;
@@ -800,15 +779,10 @@ function waitForJsBarcode() {
 
     function checkJsBarcode() {
         attempts++;
-        console.log(`Checking JsBarcode library (attempt ${attempts}/${maxAttempts})...`);
 
         if (typeof JsBarcode !== 'undefined') {
-            console.log('JsBarcode library loaded successfully!');
-            console.log('About to call generateBarcode()...');
             generateBarcode();
-            console.log('generateBarcode() call completed');
         } else if (attempts < maxAttempts) {
-            console.log('JsBarcode not ready, retrying in 100ms...');
             setTimeout(checkJsBarcode, 100);
         } else {
             console.error('JsBarcode library failed to load after maximum attempts');
@@ -819,13 +793,11 @@ function waitForJsBarcode() {
 }
 
 /**
- * 生成条形码
+ * 生成條形碼
  */
 function generateBarcode() {
     try {
-        console.log('generateBarcode function called');
-
-        // 检查 JsBarcode 库是否已加载
+        // 檢查 JsBarcode 庫是否已加載
         if (typeof JsBarcode === 'undefined') {
             console.error('JsBarcode library not loaded');
             return;
@@ -835,11 +807,7 @@ function generateBarcode() {
         const barcodeNumberElement = document.getElementById('barcode-number');
         const barcodeNumber = barcodeNumberElement?.textContent?.trim();
 
-        console.log('barcodeCanvas:', barcodeCanvas);
-        console.log('barcodeNumber:', barcodeNumber);
-
         if (barcodeCanvas && barcodeNumber) {
-            console.log('Generating barcode with number:', barcodeNumber);
             JsBarcode(barcodeCanvas, barcodeNumber, {
                 format: "CODE128",
                 width: 2,
@@ -848,7 +816,6 @@ function generateBarcode() {
                 background: "#ffffff",
                 lineColor: "#000000",
             });
-            console.log('Barcode generated successfully');
         } else {
             console.error('Missing elements: barcodeCanvas or barcodeNumber');
         }
@@ -858,23 +825,30 @@ function generateBarcode() {
 }
 
 /**
- * 复制条形码
+ * 複製條形碼
+ * @param {string} barcodeNumber 條形碼號碼
+ * @param {Event} event 觸發事件
  */
 function copyBarcode(barcodeNumber, event) {
-    // 防止重复触发
+    // 防止重複觸發
     let isCopied = false;
 
-    // 获取触发按钮
+    // 獲取觸發按鈕
     const btn = event ? event.target.closest('.btn') : null;
 
     function showSuccessMessage() {
-        if (isCopied) return; // 防止重复显示
+        if (isCopied) return; // 防止重複顯示
         isCopied = true;
 
         if (typeof showAlert === 'function') {
             showAlert('Barcode copied to clipboard!', 'success');
         } else {
-            alert('Barcode copied to clipboard!');
+            const message = 'Barcode copied to clipboard!';
+            if (typeof window.safeAlert === 'function') {
+                window.safeAlert(message);
+            } else if (message && message.trim()) {
+                alert(message);
+            }
         }
 
         if (btn) {
@@ -890,15 +864,20 @@ function copyBarcode(barcodeNumber, event) {
     }
 
     function showErrorMessage(message) {
+        if (!message || typeof message !== 'string' || message.trim() === '') {
+            return;
+        }
         if (typeof showAlert === 'function') {
             showAlert(message, 'error');
-        } else {
+        } else if (typeof window.safeAlert === 'function') {
+            window.safeAlert(message);
+        } else if (message && message.trim()) {
             alert(message);
         }
     }
 
     function fallbackCopyTextToClipboard(text) {
-        if (isCopied) return; // 如果已经复制成功，不再执行 fallback
+        if (isCopied) return; // 如果已經複製成功，不再執行 fallback
 
         const textArea = document.createElement("textarea");
         textArea.value = text;
@@ -962,7 +941,8 @@ function copyBarcode(barcodeNumber, event) {
  * 生成SKU代码
  */
 function generateSKU() {
-    const skuInput = document.getElementById('sku_code');
+    // 自动检测当前上下文（标准页面、create modal 或 update modal）
+    const skuInput = document.getElementById('update_sku_code') || document.getElementById('sku_code');
     if (skuInput) {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
@@ -972,14 +952,17 @@ function generateSKU() {
 
         skuInput.value = `PRD-${year}${month}${day}-${random}`;
         console.log('SKU generated:', skuInput.value);
+        return skuInput.value;
     }
+    return '';
 }
 
 /**
  * 生成Barcode代码 (用于表单输入)
  */
 function generateBarcodeNumber() {
-    const barcodeInput = document.getElementById('barcode_number');
+    // 自动检测当前上下文（标准页面、create modal 或 update modal）
+    const barcodeInput = document.getElementById('update_barcode_number') || document.getElementById('barcode_number');
     if (barcodeInput) {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
@@ -989,18 +972,34 @@ function generateBarcodeNumber() {
 
         barcodeInput.value = `PRD${year}${month}${day}${random}`;
         console.log('Barcode generated:', barcodeInput.value);
+        return barcodeInput.value;
     }
+    return '';
 }
 
 /**
  * 生成新的SKU和条形码
  */
 function generateNewCodes() {
-    const categorySelect = document.getElementById('subcategory_id');
-    const brandSelect = document.getElementById('brand_id');
-    const colorSelect = document.getElementById('color_id');
-    const skuInput = document.getElementById('sku_code');
-    const barcodeInput = document.getElementById('barcode_number');
+    // 自动检测当前上下文（标准页面、create modal 或 update modal）
+    let categorySelect, brandSelect, colorSelect, skuInput, barcodeInput;
+
+    // 检测是否在 update modal 中
+    if (document.getElementById('update_sku_code')) {
+        categorySelect = document.getElementById('update_category_id');
+        brandSelect = document.getElementById('update_brand_id');
+        colorSelect = document.getElementById('update_color_id');
+        skuInput = document.getElementById('update_sku_code');
+        barcodeInput = document.getElementById('update_barcode_number');
+    }
+    // 检测是否在 create modal 或标准页面中
+    else {
+        categorySelect = document.getElementById('create_category_id') || document.querySelector('select[name="category_id"]');
+        brandSelect = document.getElementById('create_brand_id') || document.querySelector('select[name="brand_id"]');
+        colorSelect = document.getElementById('create_color_id') || document.querySelector('select[name="color_id"]');
+        skuInput = document.getElementById('sku_code');
+        barcodeInput = document.getElementById('barcode_number');
+    }
 
     if (!skuInput || !barcodeInput) return;
 
@@ -1068,11 +1067,12 @@ function generateBarcodeFromSKU(sku) {
  * 绑定级联选择事件
  */
 function bindCascadingSelectEvents() {
-    const categorySelect = document.querySelector('select[name="category_id"]');
-    const subcategorySelect = document.querySelector('select[name="subcategory_id"]');
-    const zoneSelect = document.querySelector('select[name="zone_id"]');
-    const rackSelect = document.querySelector('select[name="rack_id"]');
-    const sizeSelect = document.querySelector('select[name="size_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const categorySelect = document.querySelector('#update_category_id') || document.querySelector('select[name="category_id"]');
+    const subcategorySelect = document.querySelector('#update_subcategory_id') || document.querySelector('select[name="subcategory_id"]');
+    const zoneSelect = document.querySelector('#update_zone_id') || document.querySelector('select[name="zone_id"]');
+    const rackSelect = document.querySelector('#update_rack_id') || document.querySelector('select[name="rack_id"]');
+    const sizeSelect = document.querySelector('#update_size_id') || document.querySelector('select[name="size_id"]');
 
     // 分类选择事件
     if (categorySelect && subcategorySelect) {
@@ -1114,29 +1114,46 @@ function bindCascadingSelectEvents() {
         });
     }
 
-    // Update页面特殊处理
+    // Update页面或Update Modal特殊处理
     const isUpdatePage = window.location.pathname.includes('/edit/') || window.location.pathname.includes('/update/');
-    if (isUpdatePage && rackSelect && subcategorySelect) {
+    const isUpdateModal = categorySelect && categorySelect.id && categorySelect.id.includes('update');
+
+    if ((isUpdatePage || isUpdateModal) && rackSelect && subcategorySelect) {
         const selectedRackId = rackSelect.value;
         const selectedSubCategoryId = subcategorySelect.value;
 
-        if (!zoneSelect.value) {
-            resetRackSelect();
+        if (!zoneSelect || !zoneSelect.value) {
+            if (isUpdateModal) {
+                $('#update_rack_id').prop('disabled', true).empty().append('<option value="">Select Rack</option>');
+            } else {
+                resetRackSelect();
+            }
         } else {
             loadRacks(zoneSelect.value, selectedRackId);
         }
 
-        if (!categorySelect.value) {
-            resetSubCategorySelect();
-            resetSizeSelect();
+        if (!categorySelect || !categorySelect.value) {
+            if (isUpdateModal) {
+                $('#update_subcategory_id').prop('disabled', true).empty().append('<option value="">Select Subcategory</option>');
+                $('#update_size_id').prop('disabled', true).empty().append('<option value="">Select Size</option>');
+            } else {
+                resetSubCategorySelect();
+                resetSizeSelect();
+            }
         } else {
             loadSubcategories(categorySelect.value, selectedSubCategoryId);
             loadSizes(categorySelect.value, sizeSelect ? sizeSelect.value : null);
         }
     } else {
-        resetRackSelect();
-        resetSubCategorySelect();
-        resetSizeSelect();
+        if (isUpdateModal) {
+            $('#update_rack_id').prop('disabled', true).empty().append('<option value="">Select Rack</option>');
+            $('#update_subcategory_id').prop('disabled', true).empty().append('<option value="">Select Subcategory</option>');
+            $('#update_size_id').prop('disabled', true).empty().append('<option value="">Select Size</option>');
+        } else {
+            resetRackSelect();
+            resetSubCategorySelect();
+            resetSizeSelect();
+        }
     }
 }
 
@@ -1253,7 +1270,9 @@ function checkRackCapacity(rackId) {
         // 显示alert提示
         if (typeof showAlert === 'function') {
             showAlert(errorMessage, 'error');
-        } else {
+        } else if (typeof window.safeAlert === 'function') {
+            window.safeAlert(errorMessage);
+        } else if (errorMessage && errorMessage.trim()) {
             alert(errorMessage);
         }
     } else {
@@ -1284,9 +1303,10 @@ function getRackCapacityInfo(rackId) {
  * 显示货架容量错误
  */
 function showRackCapacityError(message) {
-    const errorDiv = document.getElementById('rack-capacity-error');
-    const errorText = document.getElementById('rack-capacity-error-text');
-    const rackSelect = document.querySelector('select[name="rack_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const errorDiv = document.getElementById('update-rack-capacity-error') || document.getElementById('rack-capacity-error');
+    const errorText = document.getElementById('update-rack-capacity-error-text') || document.getElementById('rack-capacity-error-text');
+    const rackSelect = document.querySelector('#update_rack_id') || document.querySelector('select[name="rack_id"]');
 
     if (errorDiv && errorText && rackSelect) {
         errorText.textContent = message;
@@ -1299,8 +1319,9 @@ function showRackCapacityError(message) {
  * 隐藏货架容量错误
  */
 function hideRackCapacityError() {
-    const errorDiv = document.getElementById('rack-capacity-error');
-    const rackSelect = document.querySelector('select[name="rack_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const errorDiv = document.getElementById('update-rack-capacity-error') || document.getElementById('rack-capacity-error');
+    const rackSelect = document.querySelector('#update_rack_id') || document.querySelector('select[name="rack_id"]');
 
     if (errorDiv && rackSelect) {
         errorDiv.classList.add('d-none');
@@ -1348,7 +1369,8 @@ function updateSizeOptions(categoryId, subcategoryId, sizeSelect) {
  * 加载货架选项
  */
 function loadRacks(zoneId, selectedId = null) {
-    const rackSelect = document.querySelector('select[name="rack_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const rackSelect = document.querySelector('#update_rack_id') || document.querySelector('select[name="rack_id"]');
     if (!rackSelect) return;
 
     rackSelect.innerHTML = '<option selected disabled value="">Select a rack</option>';
@@ -1369,9 +1391,20 @@ function loadRacks(zoneId, selectedId = null) {
                 if (rack && rack.id) {
                     const option = document.createElement('option');
                     option.value = rack.id;
-                    option.text = (rack.rack_number || rack.rack_name || 'Rack ' + rack.id).toUpperCase();
 
-                    if (selectedId && rack.id == selectedId) {
+                    // 获取容量信息并显示在选项文本中
+                    const capacityInfo = getRackCapacityInfo(rack.id);
+                    const capacityText = capacityInfo ? ` (${capacityInfo.available}/${capacityInfo.capacity})` : '';
+                    option.textContent = (rack.rack_number || rack.rack_name || 'Rack ' + rack.id).toUpperCase() + capacityText;
+
+                    // 设置容量相关的 data 属性
+                    if (capacityInfo) {
+                        option.dataset.capacity = capacityInfo.capacity;
+                        option.dataset.used = capacityInfo.used;
+                        option.dataset.available = capacityInfo.available;
+                    }
+
+                    if (selectedId && parseInt(rack.id) === parseInt(selectedId)) {
                         option.selected = true;
                     }
 
@@ -1390,7 +1423,8 @@ function loadRacks(zoneId, selectedId = null) {
  * 加载子分类选项
  */
 function loadSubcategories(categoryId, selectedId = null) {
-    const subCategorySelect = document.querySelector('select[name="subcategory_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const subCategorySelect = document.querySelector('#update_subcategory_id') || document.querySelector('select[name="subcategory_id"]');
     if (!subCategorySelect) return;
 
     subCategorySelect.innerHTML = '<option selected disabled value="">Select a SubCategory</option>';
@@ -1413,7 +1447,7 @@ function loadSubcategories(categoryId, selectedId = null) {
                     option.value = subCategory.id;
                     option.text = (subCategory.subcategory_name || 'Subcategory ' + subCategory.id).toUpperCase();
 
-                    if (selectedId && subCategory.id == selectedId) {
+                    if (selectedId && parseInt(subCategory.id) === parseInt(selectedId)) {
                         option.selected = true;
                     }
 
@@ -1432,7 +1466,8 @@ function loadSubcategories(categoryId, selectedId = null) {
  * 加载尺寸选项
  */
 function loadSizes(categoryId, selectedId = null) {
-    const sizeSelect = document.querySelector('select[name="size_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const sizeSelect = document.querySelector('#update_size_id') || document.querySelector('select[name="size_id"]');
     if (!sizeSelect) return;
 
     if (!categoryId) {
@@ -1457,7 +1492,7 @@ function loadSizes(categoryId, selectedId = null) {
                     option.value = size.id;
                     option.textContent = size.size_value || 'Size ' + size.id;
 
-                    if (selectedId && size.id == selectedId) {
+                    if (selectedId && parseInt(size.id) === parseInt(selectedId)) {
                         option.selected = true;
                     }
 
@@ -1476,10 +1511,12 @@ function loadSizes(categoryId, selectedId = null) {
  * 重置货架选择框
  */
 function resetRackSelect() {
-    const rackSelect = document.querySelector('select[name="rack_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const rackSelect = document.querySelector('#update_rack_id') || document.querySelector('select[name="rack_id"]');
     if (rackSelect) {
         rackSelect.innerHTML = '<option selected disabled value="">Select a rack</option>';
         rackSelect.disabled = true;
+        hideRackCapacityError();
     }
 }
 
@@ -1487,7 +1524,8 @@ function resetRackSelect() {
  * 重置子分类选择框
  */
 function resetSubCategorySelect() {
-    const subCategorySelect = document.querySelector('select[name="subcategory_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const subCategorySelect = document.querySelector('#update_subcategory_id') || document.querySelector('select[name="subcategory_id"]');
     if (subCategorySelect) {
         subCategorySelect.innerHTML = '<option selected disabled value="">Select a SubCategory</option>';
         subCategorySelect.disabled = true;
@@ -1498,7 +1536,8 @@ function resetSubCategorySelect() {
  * 重置尺寸选择框
  */
 function resetSizeSelect() {
-    const sizeSelect = document.querySelector('select[name="size_id"]');
+    // 支持标准 ID 和 update 前缀的 ID
+    const sizeSelect = document.querySelector('#update_size_id') || document.querySelector('select[name="size_id"]');
     if (sizeSelect) {
         sizeSelect.innerHTML = '<option selected disabled value="">Select Size</option>';
         sizeSelect.disabled = true;
@@ -1513,10 +1552,32 @@ function resetSizeSelect() {
  * 绑定SKU生成事件
  */
 function bindSKUGenerationEvents() {
-    const regenerateSkuBtn = document.getElementById('regenerate-sku');
-    const regenerateBarcodeBtn = document.getElementById('regenerate-barcode');
-    const generateCodesBtn = document.getElementById('generate-codes-btn');
+    // 自动检测当前上下文（标准页面、create modal 或 update modal）
+    let regenerateSkuBtn, regenerateBarcodeBtn, generateCodesBtn;
+    let categorySelect, brandSelect, colorSelect, skuInput;
 
+    // 检测是否在 update modal 中
+    if (document.getElementById('update_sku_code')) {
+        regenerateSkuBtn = document.getElementById('update-regenerate-sku');
+        regenerateBarcodeBtn = document.getElementById('update-regenerate-barcode');
+        generateCodesBtn = document.getElementById('update-generate-codes-btn');
+        categorySelect = document.getElementById('update_category_id');
+        brandSelect = document.getElementById('update_brand_id');
+        colorSelect = document.getElementById('update_color_id');
+        skuInput = document.getElementById('update_sku_code');
+    }
+    // 检测是否在 create modal 或标准页面中（使用标准 ID）
+    else {
+        regenerateSkuBtn = document.getElementById('regenerate-sku');
+        regenerateBarcodeBtn = document.getElementById('regenerate-barcode');
+        generateCodesBtn = document.getElementById('generate-codes-btn');
+        categorySelect = document.getElementById('create_category_id') || document.querySelector('select[name="category_id"]');
+        brandSelect = document.getElementById('create_brand_id') || document.querySelector('select[name="brand_id"]');
+        colorSelect = document.getElementById('create_color_id') || document.querySelector('select[name="color_id"]');
+        skuInput = document.getElementById('sku_code');
+    }
+
+    // 绑定按钮事件（generateSKU 和 generateBarcodeNumber 函数会自动检测并设置值）
     if (regenerateSkuBtn) {
         regenerateSkuBtn.addEventListener('click', function() {
             generateSKU();
@@ -1540,11 +1601,6 @@ function bindSKUGenerationEvents() {
     }
 
     // 当产品信息改变时，自动更新建议
-    const categorySelect = document.getElementById('subcategory_id');
-    const brandSelect = document.getElementById('brand_id');
-    const colorSelect = document.getElementById('color_id');
-    const skuInput = document.getElementById('sku_code');
-
     [categorySelect, brandSelect, colorSelect].forEach(select => {
         if (select) {
             select.addEventListener('change', function() {
@@ -1557,167 +1613,11 @@ function bindSKUGenerationEvents() {
 }
 
 // =============================================================================
-// 表单验证功能 (Form Validation)
+// Update Modal 图片删除功能 (Update Modal Image Removal)
 // =============================================================================
 
 /**
- * 初始化表单验证
- */
-function initializeFormValidation() {
-    const form = document.getElementById('product-form');
-    if (!form) return;
-
-    const requiredFields = form.querySelectorAll('[required]');
-    requiredFields.forEach(field => {
-        field.addEventListener('blur', validateField);
-    });
-}
-
-/**
- * 验证字段
- */
-function validateField(e) {
-    const field = e.target;
-    const value = field.value.trim();
-
-    if (field.hasAttribute('required') && !value) {
-        field.classList.add('is-invalid');
-        showFieldError(field, 'This field is required');
-    } else {
-        field.classList.remove('is-invalid');
-        hideFieldError(field);
-    }
-}
-
-/**
- * 显示字段错误
- */
-function showFieldError(field, message) {
-    let errorDiv = field.parentNode.querySelector('.invalid-feedback');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.className = 'invalid-feedback';
-        field.parentNode.appendChild(errorDiv);
-    }
-    errorDiv.textContent = message;
-}
-
-/**
- * 隐藏字段错误
- */
-function hideFieldError(field) {
-    const errorDiv = field.parentNode.querySelector('.invalid-feedback');
-    if (errorDiv) {
-        errorDiv.remove();
-    }
-}
-
-// =============================================================================
-// 表单提交处理 (Form Submit Handler)
-// =============================================================================
-
-/**
- * 绑定表单提交事件
- */
-function bindFormSubmitEvent() {
-    const form = document.getElementById('product-form');
-    if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-    }
-}
-
-/**
- * 处理表单提交
- */
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    // 在提交前启用 rack 和 subcategory 选择框
-    const rackSelect = document.querySelector('select[name="rack_id"]');
-    if (rackSelect && rackSelect.disabled && rackSelect.value) {
-        rackSelect.disabled = false;
-    }
-
-    const subcategorySelect = document.querySelector('select[name="subcategory_id"]');
-    if (subcategorySelect && subcategorySelect.disabled && subcategorySelect.value) {
-        subcategorySelect.disabled = false;
-    }
-
-    // 显示载入状态
-    const originalText = submitBtn.innerHTML;
-    const isUpdate = window.location.pathname.includes('/edit/') || window.location.pathname.includes('/update/');
-    submitBtn.innerHTML = `<i class="bi bi-spinner-border spinner-border-sm me-2"></i>${isUpdate ? 'Updating...' : 'Creating...'}`;
-    submitBtn.disabled = true;
-
-    // 创建 FormData
-    const formData = new FormData(form);
-
-    // 发送 AJAX 请求
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            return response.json();
-        } else {
-            return response.text().then(text => {
-                throw new Error('Server returned HTML instead of JSON. Check if AJAX request is properly detected.');
-            });
-        }
-    })
-    .then(data => {
-        // 恢复按钮状态
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-
-        if (data.success) {
-            if (typeof showAlert === 'function') {
-                showAlert(data.message, 'success');
-            }
-            setTimeout(() => {
-                window.location.href = data.redirect;
-            }, 1500);
-        } else {
-            if (typeof showAlert === 'function') {
-                showAlert(data.message, 'error');
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // 恢复按钮状态
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        if (typeof showAlert === 'function') {
-            showAlert('An error occurred while processing the request', 'error');
-        }
-    });
-}
-
-// =============================================================================
-// Update页面特殊功能 (Update Page Features)
-// =============================================================================
-
-/**
- * 初始化Update页面特殊功能
- */
-function initializeUpdatePageFeatures() {
-    // 将toggleImageRemoval函数暴露到全局作用域
-    window.toggleImageRemoval = toggleImageRemoval;
-}
-
-/**
- * 切换图片删除状态
+ * 切换图片删除状态（用于 Update Modal）
  */
 function toggleImageRemoval(button, imageId) {
     const checkbox = document.getElementById(`remove_image_${imageId}`);
@@ -1764,29 +1664,64 @@ function toggleImageRemoval(button, imageId) {
     }
 }
 
+
 // =============================================================================
-// 产品操作功能 (Product Operations)
+// Create Product Modal 功能 (Create Product Modal Functions)
 // =============================================================================
 
 /**
- * 编辑产品
+ * 初始化 Create Product Modal
  */
-function editProduct(productId) {
-    const editUrl = window.editProductUrl.replace(':id', productId);
-    window.location.href = editUrl;
+function initCreateProductModal() {
+    const modal = document.getElementById('createProductModal');
+    if (!modal) return;
+
+    // Modal 打开时重置表单并初始化功能
+    $(modal).on('show.bs.modal', function() {
+        resetCreateProductModal();
+        loadCreateProductModalData();
+
+        // 初始化图片上传事件
+        if (typeof bindProductImageEvents === 'function') {
+            bindProductImageEvents();
+        }
+
+        // 初始化 SKU/Barcode 生成事件
+        bindSKUGenerationEvents();
+
+        // 初始化级联选择事件
+        bindCascadingSelectEvents();
+
+        // 生成初始 SKU 和 Barcode
+        generateSKU();
+        generateBarcodeNumber();
+    });
+
+    // Modal 关闭时清理
+    $(modal).on('hidden.bs.modal', function() {
+        resetCreateProductModal();
+    });
+
+    // 提交按钮事件
+    $('#submitCreateProduct').on('click', function(e) {
+        e.preventDefault();
+        submitCreateProductModal();
+    });
 }
 
 /**
- * 删除产品
+ * 加载 Create Product Modal 所需数据
  */
-function deleteProduct(productId) {
-    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-        const deleteUrl = window.deleteProductUrl.replace(':id', productId);
-
-        fetch(deleteUrl, {
-            method: 'DELETE',
+function loadCreateProductModalData() {
+    // 这里需要从服务器获取 categories, zones, brands, colors, sizes 等数据
+    // 可以通过 AJAX 调用 create 路由获取，或者从 dashboard 页面传递
+    // 暂时使用已有的 window 变量（如果存在）
+    if (window.productModalData) {
+        populateCreateProductSelects(window.productModalData);
+    } else {
+        // 如果没有预加载数据，可以通过 AJAX 获取
+        fetch(window.createProductDataUrl || window.productManagementRoute + '/create-data', {
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             }
@@ -1794,94 +1729,762 @@ function deleteProduct(productId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                if (typeof showAlert === 'function') {
-                    showAlert(data.message, 'success');
-                }
-                setTimeout(() => {
-                    window.location.href = window.productIndexUrl || '/products';
-                }, 1500);
-            } else {
-                if (typeof showAlert === 'function') {
-                    showAlert(data.message, 'error');
-                }
+                populateCreateProductSelects(data.data);
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error loading create product data:', error);
+        });
+    }
+}
+
+/**
+ * 填充 Create Product Modal 的选择框
+ */
+function populateCreateProductSelects(data) {
+    // 保存数据到全局变量，供级联选择使用
+    if (data.locations) {
+        window.locationsData = data.locations;
+    }
+    if (data.mappings) {
+        window.mappingsData = data.mappings;
+    }
+    if (data.sizes) {
+        window.sizesData = data.sizes;
+    }
+    if (data.rackCapacities) {
+        window.rackCapacitiesData = data.rackCapacities;
+    }
+
+    // Zones
+    if (data.zones) {
+        const zoneSelect = $('#create_zone_id');
+        zoneSelect.empty().append('<option value="">Select Zone</option>');
+        data.zones.forEach(zone => {
+            zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
+        });
+    }
+
+    // Categories
+    if (data.categories) {
+        const categorySelect = $('#create_category_id');
+        categorySelect.empty().append('<option value="">Select Category</option>');
+        data.categories.forEach(category => {
+            categorySelect.append(`<option value="${category.id}">${category.category_name}</option>`);
+        });
+    }
+
+    // Brands
+    if (data.brands) {
+        const brandSelect = $('#create_brand_id');
+        brandSelect.empty().append('<option value="">Select Brand</option>');
+        data.brands.forEach(brand => {
+            brandSelect.append(`<option value="${brand.id}">${brand.brand_name}</option>`);
+        });
+    }
+
+    // Colors
+    if (data.colors) {
+        const colorSelect = $('#create_color_id');
+        colorSelect.empty().append('<option value="">Select Color</option>');
+        data.colors.forEach(color => {
+            colorSelect.append(`<option value="${color.id}">${color.color_name}</option>`);
+        });
+    }
+
+    // Sizes - 不直接填充，因为需要根据 category 动态加载
+    const sizeSelect = $('#create_size_id');
+    if (sizeSelect) {
+        sizeSelect.empty().append('<option value="">Select Size</option>');
+        sizeSelect.prop('disabled', true);
+    }
+}
+
+/**
+ * 重置 Create Product Modal
+ */
+function resetCreateProductModal() {
+    const form = document.getElementById('createProductForm');
+    if (form) {
+        form.reset();
+    }
+
+    // 重置封面图片
+    const coverPreview = document.getElementById('cover-preview');
+    const coverPlaceholder = document.getElementById('cover-upload-placeholder');
+    const removeCoverBtn = document.getElementById('remove-cover-image');
+    const coverInput = document.getElementById('cover_image');
+
+    if (coverPreview) coverPreview.classList.add('d-none');
+    if (coverPlaceholder) coverPlaceholder.classList.remove('d-none');
+    if (removeCoverBtn) removeCoverBtn.classList.add('d-none');
+    if (coverInput) coverInput.value = '';
+
+    // 重置详细图片
+    const detailGrid = document.getElementById('detail-images-grid');
+    const detailInput = document.getElementById('detail_images');
+    if (detailGrid) detailGrid.innerHTML = '';
+    if (detailInput) detailInput.value = '';
+
+    // 重置级联选择
+    $('#create_rack_id').prop('disabled', true).empty().append('<option value="">Select Rack</option>');
+    $('#create_subcategory_id').prop('disabled', true).empty().append('<option value="">Select Subcategory</option>');
+    $('#create_size_id').prop('disabled', true).empty().append('<option value="">Select Size</option>');
+
+    // 重置 SKU 和 Barcode
+    const skuInput = document.getElementById('sku_code');
+    const barcodeInput = document.getElementById('barcode_number');
+    if (skuInput) skuInput.value = '';
+    if (barcodeInput) barcodeInput.value = '';
+}
+
+/**
+ * 提交 Create Product Modal
+ */
+function submitCreateProductModal() {
+    const form = document.getElementById('createProductForm');
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitCreateProduct');
+
+    // 在提交前启用 rack 和 subcategory 选择框
+    const rackSelect = document.querySelector('#create_rack_id');
+    if (rackSelect && rackSelect.disabled && rackSelect.value) {
+        rackSelect.disabled = false;
+    }
+
+    const subcategorySelect = document.querySelector('#create_subcategory_id');
+    if (subcategorySelect && subcategorySelect.disabled && subcategorySelect.value) {
+        subcategorySelect.disabled = false;
+    }
+
+    // 显示载入状态
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = `<i class="bi bi-spinner-border spinner-border-sm me-2"></i>Creating...`;
+    submitBtn.disabled = true;
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+
+        if (data.success) {
             if (typeof showAlert === 'function') {
-                showAlert('An error occurred while deleting the product', 'error');
+                showAlert(data.message, 'success');
+            }
+            // 关闭 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createProductModal'));
+            if (modal) modal.hide();
+            // 刷新页面或更新列表
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            if (typeof showAlert === 'function') {
+                showAlert(data.message, 'error');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        if (typeof showAlert === 'function') {
+            showAlert('An error occurred while creating the product', 'error');
+        }
+    });
+}
+
+// =============================================================================
+// Update Product Modal 功能 (Update Product Modal Functions)
+// =============================================================================
+
+/**
+ * 打開更新產品 Modal
+ */
+function openUpdateProductModal(productId) {
+    const url = window.editProductUrl.replace(':id', productId);
+    const modal = document.getElementById('updateProductModal');
+
+    // 先加载数据，然后再显示 modal（避免闪烁）
+    // 从 API 获取完整产品数据
+    $.ajax({
+        url: url,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        success: (response) => {
+            if (response.success && response.data) {
+                // 先加载级联选择的数据，然后填充表单，最后显示 modal
+                loadUpdateProductModalData().then(() => {
+                    fillUpdateProductModal(response.data);
+                    // 数据填充完成后再显示 modal
+                    const bsModal = new bootstrap.Modal(modal);
+                    bsModal.show();
+                });
+            } else {
+                if (typeof showAlert === 'function') {
+                    showAlert(response.message || 'Failed to load product data', 'error');
+                } else {
+                    alert(response.message || 'Failed to load product data');
+                }
+            }
+        },
+        error: (xhr) => {
+            let errorMessage = 'Failed to load product data';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            if (typeof showAlert === 'function') {
+                showAlert(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
+        }
+    });
+}
+
+/**
+ * 填充更新产品 Modal 表单
+ */
+function fillUpdateProductModal(data) {
+    // 基本信息
+    $('#update_product_name').val(data.name || '');
+    $('#update_product_price').val(data.price || '');
+    $('#update_product_quantity').val(data.quantity || '');
+    $('#update_product_description').val(data.description || '');
+    $('#update_sku_code').val(data.sku_code || '');
+    $('#update_barcode_number').val(data.barcode_number || '');
+
+    // 设置表单 action
+    const updateUrl = window.updateProductUrl.replace(':id', data.id);
+    $('#updateProductForm').attr('action', updateUrl);
+
+    // 状态
+    if (data.product_status === 'Available') {
+        $('#update_status_available').prop('checked', true);
+        $('.status-card[data-status="Available"]').addClass('selected');
+        $('.status-card[data-status="Unavailable"]').removeClass('selected');
+    } else {
+        $('#update_status_unavailable').prop('checked', true);
+        $('.status-card[data-status="Unavailable"]').addClass('selected');
+        $('.status-card[data-status="Available"]').removeClass('selected');
+    }
+
+    // 级联选择：参考旧的 update 页面处理方式
+    // 先设置父级选择框的值，然后调用 loadRacks/loadSubcategories/loadSizes 并传递 selectedId
+    if (data.zone_id) {
+        $('#update_zone_id').val(data.zone_id);
+        // 直接调用 loadRacks 并传递 selectedId，这样会在加载选项时自动选中
+        if (typeof loadRacks === 'function') {
+            loadRacks(data.zone_id, data.rack_id);
+        } else {
+            // 如果 loadRacks 还没加载，触发 change 事件
+            $('#update_zone_id').trigger('change');
+            setTimeout(() => {
+                if (data.rack_id) {
+                    $('#update_rack_id').val(data.rack_id);
+                }
+            }, 500);
+        }
+    }
+
+    if (data.category_id) {
+        $('#update_category_id').val(data.category_id);
+        // 直接调用 loadSubcategories 和 loadSizes 并传递 selectedId
+        if (typeof loadSubcategories === 'function') {
+            loadSubcategories(data.category_id, data.subcategory_id);
+        } else {
+            $('#update_category_id').trigger('change');
+            setTimeout(() => {
+                if (data.subcategory_id) {
+                    $('#update_subcategory_id').val(data.subcategory_id).trigger('change');
+                }
+            }, 500);
+        }
+
+        if (typeof loadSizes === 'function') {
+            loadSizes(data.category_id, data.size_id);
+        } else {
+            setTimeout(() => {
+                if (data.size_id) {
+                    $('#update_size_id').val(data.size_id);
+                }
+            }, 500);
+        }
+    }
+
+    // 设置其他独立的选择框
+    if (data.brand_id) {
+        $('#update_brand_id').val(data.brand_id);
+    }
+    if (data.color_id) {
+        $('#update_color_id').val(data.color_id);
+    }
+    if (data.gender) {
+        $('#update_gender').val(data.gender);
+    }
+
+    // 封面图片
+    if (data.cover_image) {
+        const coverImagePath = '/assets/images/' + data.cover_image;
+        $('#update-cover-preview').attr('src', coverImagePath).removeClass('d-none');
+        $('#update-cover-upload-placeholder').addClass('d-none');
+        $('#remove-update-cover-image').removeClass('d-none');
+    } else {
+        $('#update-cover-preview').addClass('d-none');
+        $('#update-cover-upload-placeholder').removeClass('d-none');
+        $('#remove-update-cover-image').addClass('d-none');
+    }
+
+    // 详细图片
+    const detailImagesGrid = $('#update-detail-images-grid');
+    detailImagesGrid.empty();
+    if (data.images && data.images.length > 0) {
+        data.images.forEach((image) => {
+            const imageItem = $(`
+                <div class="detail-image-item">
+                    <img src="/assets/images/${image.detail_image}" alt="Detail Image">
+                    <button type="button" class="remove-btn" onclick="toggleImageRemoval(this, ${image.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <input type="checkbox" name="remove_image[]" value="${image.id}" id="remove_image_${image.id}" class="d-none">
+                </div>
+            `);
+            detailImagesGrid.append(imageItem);
+        });
+    }
+}
+
+/**
+ * 初始化 Update Product Modal
+ */
+function initUpdateProductModal() {
+    const modal = document.getElementById('updateProductModal');
+    if (!modal) return;
+
+    // Modal 打开时初始化功能
+    $(modal).on('show.bs.modal', function() {
+        // 初始化图片上传事件（使用 update 前缀的 ID）
+        initUpdateModalImageSystem();
+
+        // 初始化 SKU/Barcode 生成事件（使用 update 前缀的 ID）
+        bindUpdateModalSKUGenerationEvents();
+
+        // 如果数据还没有加载，则加载级联选择所需的数据
+        // 注意：如果 openUpdateProductModal 已经加载了数据，这里就不需要重复加载
+        if (!window.productModalData || !window.locationsData || !window.mappingsData || !window.sizesData) {
+            loadUpdateProductModalData().then(() => {
+                // 数据加载完成后再绑定级联选择事件
+                bindCascadingSelectEvents();
+            });
+        } else {
+            // 数据已经加载，直接绑定级联选择事件
+            bindCascadingSelectEvents();
+        }
+    });
+
+    // Modal 关闭时清理
+    $(modal).on('hidden.bs.modal', function() {
+        resetUpdateProductModal();
+    });
+
+    // 提交按钮事件
+    $('#submitUpdateProduct').on('click', function(e) {
+        e.preventDefault();
+        submitUpdateProductModal();
+    });
+}
+
+/**
+ * 初始化 Update Modal 图片系统
+ */
+function initUpdateModalImageSystem() {
+    // 封面图片事件
+    const coverImageArea = document.getElementById('update-cover-image-area');
+    const coverImageInput = document.getElementById('update_cover_image');
+    const removeCoverBtn = document.getElementById('remove-update-cover-image');
+
+    if (coverImageArea && coverImageInput) {
+        // 移除旧的事件监听器
+        const newCoverImageArea = coverImageArea.cloneNode(true);
+        coverImageArea.parentNode.replaceChild(newCoverImageArea, coverImageArea);
+        const newCoverImageInput = coverImageInput.cloneNode(true);
+        coverImageInput.parentNode.replaceChild(newCoverImageInput, coverImageInput);
+
+        // 重新获取元素
+        const updatedCoverImageArea = document.getElementById('update-cover-image-area');
+        const updatedCoverImageInput = document.getElementById('update_cover_image');
+        const updatedRemoveCoverBtn = document.getElementById('remove-update-cover-image');
+
+        updatedCoverImageArea.addEventListener('click', function() {
+            updatedCoverImageInput.click();
+        });
+
+        updatedCoverImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleUpdateModalCoverImagePreview(file);
+            }
+        });
+
+        if (updatedRemoveCoverBtn) {
+            updatedRemoveCoverBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeUpdateModalCoverImage();
+            });
+        }
+    }
+
+    // 详细图片事件
+    const addDetailImageBtn = document.getElementById('add-update-detail-image');
+    const detailImagesInput = document.getElementById('update_detail_images');
+
+    if (addDetailImageBtn && detailImagesInput) {
+        addDetailImageBtn.addEventListener('click', function() {
+            detailImagesInput.click();
+        });
+
+        detailImagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                handleUpdateModalDetailImagePreview(file);
+            });
+        });
+    }
+}
+
+/**
+ * 处理 Update Modal 封面图片预览
+ */
+function handleUpdateModalCoverImagePreview(file) {
+    if (typeof validateImageFile === 'function' && !validateImageFile(file)) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('update-cover-preview');
+        const placeholder = document.getElementById('update-cover-upload-placeholder');
+        const removeBtn = document.getElementById('remove-update-cover-image');
+
+        if (preview) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        }
+        if (placeholder) {
+            placeholder.classList.add('d-none');
+        }
+        if (removeBtn) {
+            removeBtn.classList.remove('d-none');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 移除 Update Modal 封面图片
+ */
+function removeUpdateModalCoverImage() {
+    const preview = document.getElementById('update-cover-preview');
+    const placeholder = document.getElementById('update-cover-upload-placeholder');
+    const removeBtn = document.getElementById('remove-update-cover-image');
+    const input = document.getElementById('update_cover_image');
+    const removeInput = document.getElementById('update_remove_cover_image');
+
+    if (preview) {
+        preview.src = '';
+        preview.classList.add('d-none');
+    }
+    if (placeholder) {
+        placeholder.classList.remove('d-none');
+    }
+    if (removeBtn) {
+        removeBtn.classList.add('d-none');
+    }
+    if (input) {
+        input.value = '';
+    }
+    if (removeInput) {
+        removeInput.value = '1';
+    }
+}
+
+/**
+ * 处理 Update Modal 详细图片预览
+ */
+function handleUpdateModalDetailImagePreview(file) {
+    if (typeof validateImageFile === 'function' && !validateImageFile(file)) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const grid = document.getElementById('update-detail-images-grid');
+        if (!grid) return;
+
+        const imageItem = document.createElement('div');
+        imageItem.className = 'detail-image-item';
+        imageItem.innerHTML = `
+            <img src="${e.target.result}" alt="Detail Image">
+            <button type="button" class="remove-btn" onclick="removeUpdateModalDetailImage(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+        grid.appendChild(imageItem);
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 移除 Update Modal 详细图片
+ */
+function removeUpdateModalDetailImage(btn) {
+    if (btn && btn.closest('.detail-image-item')) {
+        btn.closest('.detail-image-item').remove();
+    }
+}
+
+/**
+ * 绑定 Update Modal SKU/Barcode 生成事件
+ */
+function bindUpdateModalSKUGenerationEvents() {
+    const regenerateSkuBtn = document.getElementById('update-regenerate-sku');
+    const regenerateBarcodeBtn = document.getElementById('update-regenerate-barcode');
+    const generateCodesBtn = document.getElementById('update-generate-codes-btn');
+    const skuInput = document.getElementById('update_sku_code');
+    const barcodeInput = document.getElementById('update_barcode_number');
+
+    if (regenerateSkuBtn && skuInput) {
+        regenerateSkuBtn.addEventListener('click', function() {
+            if (typeof generateSKU === 'function') {
+                const newSKU = generateSKU();
+                skuInput.value = newSKU;
+            }
+        });
+    }
+
+    if (regenerateBarcodeBtn && barcodeInput) {
+        regenerateBarcodeBtn.addEventListener('click', function() {
+            if (typeof generateBarcodeNumber === 'function') {
+                const newBarcode = generateBarcodeNumber();
+                barcodeInput.value = newBarcode;
+            }
+        });
+    }
+
+    if (generateCodesBtn && skuInput && barcodeInput) {
+        generateCodesBtn.addEventListener('click', function() {
+            if (typeof generateSKU === 'function' && typeof generateBarcodeNumber === 'function') {
+                const newSKU = generateSKU();
+                const newBarcode = generateBarcodeNumber();
+                skuInput.value = newSKU;
+                barcodeInput.value = newBarcode;
+                if (typeof showAlert === 'function') {
+                    showAlert('SKU and Barcode generated successfully!', 'success');
+                }
             }
         });
     }
 }
 
 /**
- * 设置产品为可用
+ * 加载 Update Product Modal 所需数据
  */
-function setAvailable(productId) {
-    const availableUrl = window.availableProductUrl.replace(':id', productId);
-
-    fetch(availableUrl, {
-        method: 'PATCH',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            if (typeof showAlert === 'function') {
-                showAlert(data.message, 'success');
-            }
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+function loadUpdateProductModalData() {
+    return new Promise((resolve, reject) => {
+        // 如果已经有预加载的数据，直接使用
+        if (window.productModalData) {
+            populateUpdateProductSelects(window.productModalData);
+            // 等待 DOM 更新完成
+            setTimeout(() => resolve(), 100);
         } else {
-            if (typeof showAlert === 'function') {
-                showAlert(data.message, 'error');
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        if (typeof showAlert === 'function') {
-            showAlert('An error occurred while updating the product status', 'error');
+            // 如果没有预加载数据，可以通过 AJAX 获取
+            fetch(window.createProductDataUrl || window.productManagementRoute + '/create-data', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    populateUpdateProductSelects(data.data);
+                    // 等待 DOM 更新完成
+                    setTimeout(() => resolve(), 100);
+                } else {
+                    reject(new Error('Failed to load data'));
+                }
+            })
+            .catch(error => {
+                console.error('Error loading update product data:', error);
+                reject(error);
+            });
         }
     });
 }
 
 /**
- * 设置产品为不可用
+ * 填充 Update Product Modal 的选择框
  */
-function setUnavailable(productId) {
-    const unavailableUrl = window.unavailableProductUrl.replace(':id', productId);
+function populateUpdateProductSelects(data) {
+    // 保存数据到全局变量，供级联选择使用
+    if (data.locations) {
+        window.locationsData = data.locations;
+    }
+    if (data.mappings) {
+        window.mappingsData = data.mappings;
+    }
+    if (data.sizes) {
+        window.sizesData = data.sizes;
+    }
+    if (data.rackCapacities) {
+        window.rackCapacitiesData = data.rackCapacities;
+    }
 
-    fetch(unavailableUrl, {
-        method: 'PATCH',
+    // Zones
+    if (data.zones) {
+        const zoneSelect = $('#update_zone_id');
+        zoneSelect.empty().append('<option value="">Select Zone</option>');
+        data.zones.forEach(zone => {
+            zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
+        });
+    }
+
+    // Categories
+    if (data.categories) {
+        const categorySelect = $('#update_category_id');
+        categorySelect.empty().append('<option value="">Select Category</option>');
+        data.categories.forEach(category => {
+            categorySelect.append(`<option value="${category.id}">${category.category_name}</option>`);
+        });
+    }
+
+    // Brands
+    if (data.brands) {
+        const brandSelect = $('#update_brand_id');
+        brandSelect.empty().append('<option value="">Select Brand</option>');
+        data.brands.forEach(brand => {
+            brandSelect.append(`<option value="${brand.id}">${brand.brand_name}</option>`);
+        });
+    }
+
+    // Colors
+    if (data.colors) {
+        const colorSelect = $('#update_color_id');
+        colorSelect.empty().append('<option value="">Select Color</option>');
+        data.colors.forEach(color => {
+            colorSelect.append(`<option value="${color.id}">${color.color_name}</option>`);
+        });
+    }
+}
+
+/**
+ * 重置 Update Product Modal
+ */
+function resetUpdateProductModal() {
+    const form = document.getElementById('updateProductForm');
+    if (form) {
+        form.reset();
+    }
+
+    // 重置封面图片
+    const coverPreview = document.getElementById('update-cover-preview');
+    const coverPlaceholder = document.getElementById('update-cover-upload-placeholder');
+    const removeCoverBtn = document.getElementById('remove-update-cover-image');
+    const coverInput = document.getElementById('update_cover_image');
+    const removeCoverInput = document.getElementById('update_remove_cover_image');
+
+    if (coverPreview) {
+        coverPreview.src = '';
+        coverPreview.classList.add('d-none');
+    }
+    if (coverPlaceholder) {
+        coverPlaceholder.classList.remove('d-none');
+    }
+    if (removeCoverBtn) {
+        removeCoverBtn.classList.add('d-none');
+    }
+    if (coverInput) {
+        coverInput.value = '';
+    }
+    if (removeCoverInput) {
+        removeCoverInput.value = '0';
+    }
+
+    // 重置详细图片
+    const detailGrid = document.getElementById('update-detail-images-grid');
+    const detailInput = document.getElementById('update_detail_images');
+    if (detailGrid) {
+        detailGrid.innerHTML = '';
+    }
+    if (detailInput) {
+        detailInput.value = '';
+    }
+
+    // 重置级联选择
+    $('#update_rack_id').prop('disabled', true).empty().append('<option value="">Select Rack</option>');
+    $('#update_subcategory_id').prop('disabled', true).empty().append('<option value="">Select Subcategory</option>');
+    $('#update_size_id').prop('disabled', true).empty().append('<option value="">Select Size</option>');
+}
+
+/**
+ * 提交 Update Product Modal
+ */
+function submitUpdateProductModal() {
+    const form = document.getElementById('updateProductForm');
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitUpdateProduct');
+
+    // 在提交前启用 rack 和 subcategory 选择框
+    const rackSelect = document.querySelector('#update_rack_id');
+    if (rackSelect && rackSelect.disabled && rackSelect.value) {
+        rackSelect.disabled = false;
+    }
+
+    const subcategorySelect = document.querySelector('#update_subcategory_id');
+    if (subcategorySelect && subcategorySelect.disabled && subcategorySelect.value) {
+        subcategorySelect.disabled = false;
+    }
+
+    // 显示载入状态
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = `<i class="bi bi-spinner-border spinner-border-sm me-2"></i>Updating...`;
+    submitBtn.disabled = true;
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-HTTP-Method-Override': 'PUT'
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+
         if (data.success) {
             if (typeof showAlert === 'function') {
                 showAlert(data.message, 'success');
             }
+            // 关闭 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('updateProductModal'));
+            if (modal) modal.hide();
+            // 刷新页面或更新列表
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
@@ -1893,34 +2496,21 @@ function setUnavailable(productId) {
     })
     .catch(error => {
         console.error('Error:', error);
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
         if (typeof showAlert === 'function') {
-            showAlert('An error occurred while updating the product status', 'error');
+            showAlert('An error occurred while updating the product', 'error');
         }
     });
 }
 
-// =============================================================================
-// 向后兼容性函数 (Backward Compatibility Functions)
-// =============================================================================
-
-// 为了向后兼容，保留旧的函数名
-window.editProduct = editProduct;
-window.deleteProduct = deleteProduct;
-window.activateProduct = setAvailable;
-window.deactivateProduct = setUnavailable;
+// 为了向后兼容，保留旧的函数名（这些函数在全局实例初始化时导出）
 
 // 图片切换函数
 window.switchMainImage = switchMainImage;
 window.previousImage = previousImage;
 window.nextImage = nextImage;
 window.updateImageCounter = updateImageCounter;
-
-// 图片查看函数
-window.openImageModal = openImageModal;
-window.toggleFullscreen = toggleFullscreen;
-window.enterFullscreen = enterFullscreen;
-window.exitFullscreen = exitFullscreen;
-window.closeFullscreen = closeFullscreen;
 
 // 条形码函数
 window.generateBarcode = generateBarcode;
@@ -1947,32 +2537,68 @@ window.resetSizeSelect = resetSizeSelect;
 // Update页面特殊函数
 window.toggleImageRemoval = toggleImageRemoval;
 
-// 产品操作函数
-window.setAvailable = setAvailable;
-window.setUnavailable = setUnavailable;
-
 // =============================================================================
-// 注意事项 (Notes)
+// 全局實例初始化 (Global Instance Initialization)
 // =============================================================================
 
-/**
- * 此文件整合了所有产品相关的 JavaScript 功能
- * 包括 Dashboard、Create、Update、View 页面的所有功能
- *
- * 依赖的外部系统：
- * - alert-system.js: 统一的提示消息系统
- * - image-system.js: 图片处理系统（包含产品特殊处理）
- * - status-system.js: 状态卡片系统
- *
- * 功能模块：
- * 1. Dashboard: 产品列表展示、搜索、筛选、分页
- * 2. Create: 产品创建表单处理、图片上传、SKU生成
- * 3. Update: 产品更新表单处理、图片管理、级联选择
- * 4. View: 产品查看、图片切换、条形码生成、产品操作
- * 5. 图片处理: 封面图片、详细图片、拖拽上传
- * 6. 级联选择: 分类、子分类、尺寸、区域、货架
- * 7. 状态管理: 产品状态卡片选择
- * 8. 表单验证: 字段验证和错误显示
- * 9. 产品操作: 编辑、删除、设置状态
- */
+let productDashboard;
+
+$(document).ready(function() {
+    // Dashboard 頁面初始化
+    if ($("#product-card-container").length > 0) {
+        productDashboard = new ProductDashboard();
+
+        // 導出方法到全局作用域
+        window.editProduct = (productId) => productDashboard.editProduct(productId);
+        window.deleteProduct = (productId) => productDashboard.deleteProduct(productId);
+        window.setAvailable = (productId) => productDashboard.setAvailable(productId);
+        window.setUnavailable = (productId) => productDashboard.setUnavailable(productId);
+        window.setProductAvailable = (productId) => productDashboard.setAvailable(productId);
+        window.setProductUnavailable = (productId) => productDashboard.setUnavailable(productId);
+        window.activateProduct = (productId) => productDashboard.setAvailable(productId);
+        window.deactivateProduct = (productId) => productDashboard.setUnavailable(productId);
+        window.productManager = productDashboard;
+    }
+
+    // View 頁面初始化
+    const barcodeCanvas = document.getElementById('barcodeCanvas');
+    const barcodeSection = document.querySelector('.barcode-section');
+    if (barcodeCanvas || barcodeSection) {
+        initializeProductView();
+
+        // 初始化 Update Modal
+        if ($("#updateProductModal").length > 0) {
+            initUpdateProductModal();
+        }
+
+        // 為 View 頁面導出操作函數（如果 Dashboard 實例不存在，創建臨時實例）
+        if (!productDashboard) {
+            // 創建臨時的 Dashboard 實例用於操作函數
+            // 注意：這會觸發 fetchProducts，但 View 頁面沒有產品列表容器，所以會失敗但不影響功能
+            productDashboard = new ProductDashboard();
+        }
+
+        // 導出方法到全局作用域（View 頁面使用）
+        if (!window.setAvailable || !window.setUnavailable) {
+            window.editProduct = (productId) => productDashboard.editProduct(productId);
+            window.deleteProduct = (productId) => productDashboard.deleteProduct(productId);
+            window.setAvailable = (productId) => productDashboard.setAvailable(productId);
+            window.setUnavailable = (productId) => productDashboard.setUnavailable(productId);
+            window.setProductAvailable = (productId) => productDashboard.setAvailable(productId);
+            window.setProductUnavailable = (productId) => productDashboard.setUnavailable(productId);
+            window.activateProduct = (productId) => productDashboard.setAvailable(productId);
+            window.deactivateProduct = (productId) => productDashboard.setUnavailable(productId);
+        }
+    }
+
+    // Dashboard 頁面 - 初始化 Create Modal
+    if ($("#createProductModal").length > 0) {
+        initCreateProductModal();
+    }
+
+    // View 或 Dashboard 頁面 - 初始化 Update Modal
+    if ($("#updateProductModal").length > 0) {
+        initUpdateProductModal();
+    }
+});
 

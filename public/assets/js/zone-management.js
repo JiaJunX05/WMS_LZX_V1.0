@@ -3,24 +3,14 @@
  * 區域管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、圖片處理、表單提交
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - Create Modal：批量創建、表單驗證、狀態管理、圖片上傳
+ * - Update Modal：編輯更新、表單提交、圖片管理
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
-
-// =============================================================================
-// 全局變量和狀態管理 (Global Variables and State Management)
-// =============================================================================
-
-// 區域列表數組（用於 Create 頁面）
-let zoneList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = false; // 默認降序（最新的在上面）
 
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
@@ -108,6 +98,12 @@ class ZoneDashboard {
         $('#export-zones-btn').on('click', () => {
             this.exportSelectedZones();
         });
+
+        // Add Zone 彈窗事件
+        this.bindModalEvents();
+
+        // Update Zone 彈窗事件
+        this.bindUpdateModalEvents();
     }
 
     // =============================================================================
@@ -233,12 +229,12 @@ class ZoneDashboard {
 
     createZoneRow(zone) {
         const statusMenuItem = zone.zone_status === 'Unavailable'
-            ? `<a class="dropdown-item" href="javascript:void(0)" onclick="zoneDashboard.setAvailable(${zone.id})">
-                   <i class="bi bi-check-circle me-2"></i> Activate Zone
-               </a>`
-            : `<a class="dropdown-item" href="javascript:void(0)" onclick="zoneDashboard.setUnavailable(${zone.id})">
-                   <i class="bi bi-slash-circle me-2"></i> Deactivate Zone
-               </a>`;
+            ? `<button type="button" class="dropdown-item" onclick="zoneDashboard.setAvailable(${zone.id})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="zoneDashboard.setUnavailable(${zone.id})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
 
         const actionButtons = `
             <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="zoneDashboard.editZone(${zone.id})">
@@ -253,16 +249,20 @@ class ZoneDashboard {
                         ${statusMenuItem}
                     </li>
                     <li>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="zoneDashboard.deleteZone(${zone.id})">
-                            <i class="bi bi-trash me-2"></i> Delete Zone
-                        </a>
+                        <button type="button" class="dropdown-item text-danger" onclick="zoneDashboard.deleteZone(${zone.id})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
                     </li>
                 </ul>
             </div>
         `;
 
         return `
-            <tr>
+            <tr data-zone-id="${zone.id}"
+                data-zone-name="${zone.zone_name || ''}"
+                data-zone-location="${zone.location || ''}"
+                data-zone-status="${zone.zone_status || 'Available'}"
+                data-zone-image="${zone.zone_image || ''}">
                 <td class="ps-4">
                     <input class="zone-checkbox form-check-input" type="checkbox" value="${zone.id}" id="zone-${zone.id}">
                 </td>
@@ -352,12 +352,49 @@ class ZoneDashboard {
     // =============================================================================
 
     /**
-     * 編輯區域
+     * 編輯區域（打開更新彈窗）
      * @param {number} zoneId 區域ID
      */
     editZone(zoneId) {
         const url = window.editZoneUrl.replace(':id', zoneId);
-        window.location.href = url;
+
+        // 从表格行获取zone数据（如果可用，用于快速填充）
+        const zoneRow = $(`tr[data-zone-id="${zoneId}"]`);
+        if (zoneRow.length > 0) {
+            // 快速填充基本数据
+            const zoneData = {
+                id: zoneId,
+                zone_name: zoneRow.attr('data-zone-name') || '',
+                location: zoneRow.attr('data-zone-location') || '',
+                zone_status: zoneRow.attr('data-zone-status') || 'Available',
+                zone_image: zoneRow.attr('data-zone-image') || ''
+            };
+            this.openUpdateModal(zoneData);
+        }
+
+        // 从 API 获取完整zone数据
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            success: (response) => {
+                if (response.success && response.data) {
+                    this.openUpdateModal(response.data);
+                } else {
+                    this.showAlert(response.message || 'Failed to load zone data', 'error');
+                }
+            },
+            error: (xhr) => {
+                let errorMessage = 'Failed to load zone data';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                this.showAlert(errorMessage, 'error');
+            }
+        });
     }
 
     /**
@@ -406,6 +443,134 @@ class ZoneDashboard {
     }
 
     /**
+     * 更新表格行的所有數據（用於 update 操作後）
+     * @param {number} zoneId 區域ID
+     * @param {Object} zoneData 更新後的區域數據
+     */
+    updateZoneRow(zoneId, zoneData) {
+        const zoneRow = $(`tr[data-zone-id="${zoneId}"]`);
+        if (zoneRow.length === 0) return;
+
+        // 確保圖片路徑正確處理（可能是 null、空字符串或完整路徑）
+        // 如果 zone_image 是 null 或 undefined，設置為空字符串；否則保持原值
+        const zoneImage = (zoneData.zone_image === null || zoneData.zone_image === undefined) ? '' : zoneData.zone_image;
+
+        // 更新 data 屬性（確保圖片路徑正確保存）
+        // 使用 attr() 而不是 data()，因為 data() 會緩存值，導致更新後讀取不到最新值
+        zoneRow.attr('data-zone-name', zoneData.zone_name || '');
+        zoneRow.attr('data-zone-location', zoneData.location || '');
+        zoneRow.attr('data-zone-status', zoneData.zone_status || 'Available');
+        zoneRow.attr('data-zone-image', zoneImage);
+
+        // 清除 jQuery 的 data 緩存，確保下次讀取時能獲取最新值
+        zoneRow.removeData('zone-name');
+        zoneRow.removeData('zone-location');
+        zoneRow.removeData('zone-status');
+        zoneRow.removeData('zone-image');
+
+        // 更新圖片顯示
+        const imageCell = zoneRow.find('td').eq(1);
+        if (imageCell.length > 0) {
+            if (zoneImage && zoneImage.trim() !== '') {
+                // 確保圖片路徑格式正確（如果已經是完整路徑則直接使用，否則添加前綴）
+                const imagePath = zoneImage.startsWith('/') ? zoneImage : `/assets/images/${zoneImage}`;
+                imageCell.html(`
+                    <img src="${imagePath}" alt="Zone Image"
+                         class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
+                `);
+            } else {
+                // 沒有圖片時顯示占位符
+                imageCell.html(`
+                    <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                        <i class="bi bi-image text-muted"></i>
+                    </div>
+                `);
+            }
+        }
+
+        // 更新名稱和位置顯示
+        const nameCell = zoneRow.find('td').eq(2);
+        if (nameCell.length > 0) {
+            nameCell.html(`
+                <div class="d-flex flex-column">
+                    <div class="fw-bold text-dark mb-1">
+                        <i class="bi bi-geo-alt me-2 text-primary"></i>${zoneData.zone_name || ''}
+                    </div>
+                    <div class="text-muted small">
+                        <i class="bi bi-geo me-1"></i>${zoneData.location || 'No location specified'}
+                    </div>
+                </div>
+            `);
+        }
+
+        // 更新狀態顯示（使用 updateZoneRowStatus 函數）
+        this.updateZoneRowStatus(zoneId, zoneData.zone_status || 'Available');
+    }
+
+    /**
+     * 更新表格行的狀態顯示和 data 屬性
+     * @param {number} zoneId 區域ID
+     * @param {string} newStatus 新狀態 ('Available' 或 'Unavailable')
+     */
+    updateZoneRowStatus(zoneId, newStatus) {
+        const zoneRow = $(`tr[data-zone-id="${zoneId}"]`);
+        if (zoneRow.length === 0) return;
+
+        // 更新 data 屬性
+        zoneRow.attr('data-zone-status', newStatus);
+
+        // 更新狀態菜單項（與 createZoneRow 中的格式完全一致）
+        const statusMenuItem = newStatus === 'Unavailable'
+            ? `<button type="button" class="dropdown-item" onclick="zoneDashboard.setAvailable(${zoneId})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="zoneDashboard.setUnavailable(${zoneId})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
+
+        // 更新操作按鈕區域（與 createZoneRow 中的格式完全一致）
+        const actionButtons = `
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="zoneDashboard.editZone(${zoneId})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        ${statusMenuItem}
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item text-danger" onclick="zoneDashboard.deleteZone(${zoneId})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        `;
+
+        // 更新操作按鈕列
+        const actionsCell = zoneRow.find('td:last-child');
+        actionsCell.html(actionButtons);
+
+        // 更新狀態標籤顯示（與 createZoneRow 中的格式完全一致）
+        const statusBadge = newStatus === 'Available'
+            ? `<span class="badge bg-success px-3 py-2">
+                <i class="bi bi-check-circle me-1"></i>${newStatus}
+            </span>`
+            : `<span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-x-circle me-1"></i>${newStatus}
+            </span>`;
+
+        // 更新狀態列顯示
+        const statusCell = zoneRow.find('td').eq(-2); // 倒數第二列是狀態列
+        if (statusCell.length > 0) {
+            statusCell.html(statusBadge);
+        }
+    }
+
+    /**
      * 激活區域
      * @param {number} zoneId 區域ID
      */
@@ -430,17 +595,8 @@ class ZoneDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Zone has been set to available status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchZones(1);
-                } else {
-                    // 重新載入當前頁面的區域列表
-                    this.fetchZones(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateZoneRowStatus(zoneId, 'Available');
             } else {
                 this.showAlert(data.message || 'Failed to set zone available', 'error');
             }
@@ -475,17 +631,8 @@ class ZoneDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Zone has been set to unavailable status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchZones(1);
-                } else {
-                    // 重新載入當前頁面的區域列表
-                    this.fetchZones(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateZoneRowStatus(zoneId, 'Unavailable');
             } else {
                 this.showAlert(data.message || 'Failed to set zone unavailable', 'error');
             }
@@ -614,618 +761,708 @@ class ZoneDashboard {
                     alertElement.remove();
                 }
             }, 5000);
+    }
+}
+
+// =============================================================================
+    // Add Zone 彈窗模塊 (Add Zone Modal Module)
+// =============================================================================
+
+/**
+     * 綁定彈窗事件
+     */
+    bindModalEvents() {
+        // 彈窗打開時重置表單並初始化圖片處理
+        $('#createZoneModal').on('show.bs.modal', () => {
+            this.resetModalForm();
+            this.initModalImageSystem();
+        });
+
+        // 彈窗完全顯示後設置焦點
+        $('#createZoneModal').on('shown.bs.modal', () => {
+            const zoneNameInput = document.getElementById('zone_name');
+            if (zoneNameInput) {
+                zoneNameInput.focus();
+            }
+        });
+
+        // 彈窗關閉時清理
+        $('#createZoneModal').on('hidden.bs.modal', () => {
+            this.resetModalForm();
+        });
+
+        // 提交按鈕事件
+        $('#submitCreateZoneModal').on('click', () => {
+            this.submitModalZone();
+        });
+
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#createZoneModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'zone_image') {
+                    return;
+                }
+
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button') {
+                    e.preventDefault();
+
+                    // 定義輸入框順序
+                    const inputOrder = ['zone_name', 'location'];
+                    const currentIndex = inputOrder.indexOf(target.id);
+
+                    if (currentIndex !== -1 && currentIndex < inputOrder.length - 1) {
+                        // 跳轉到下一個輸入框
+                        const nextInput = document.getElementById(inputOrder[currentIndex + 1]);
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    } else {
+                        // 最後一個輸入框，提交表單
+                        this.submitModalZone();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 初始化彈窗中的圖片處理系統（完全交給ImageSystem處理）
+     * 參考其他模組（rack、brand、category）的實現方式
+     * 圖片的所有處理（上傳、預覽、刪除、驗證）都由ImageSystem負責
+     */
+    initModalImageSystem() {
+        // 使用統一的圖片處理模組（完全交給ImageSystem處理）
+        if (typeof window.ImageSystem !== 'undefined') {
+            // 檢查彈窗內是否有圖片元素
+            const modal = document.getElementById('createZoneModal');
+            if (!modal) return;
+
+            const imageInput = modal.querySelector('#zone_image');
+            const imageUploadArea = modal.querySelector('#imageUploadArea');
+
+            // 只綁定彈窗內的元素（避免與create頁面衝突，雖然create頁面JS已關閉）
+            if (imageInput && imageUploadArea) {
+                // 直接使用ImageSystem綁定事件（所有圖片處理都由ImageSystem負責）
+                // bindImageUploadEvents 會自動處理：上傳、預覽、刪除、驗證、拖拽等功能
+                window.ImageSystem.bindImageUploadEvents({
+                    createImageInputId: 'zone_image',
+                    createImageUploadAreaId: 'imageUploadArea',
+                    createPreviewImageId: 'img-preview',
+                    createPreviewIconId: 'preview-icon',
+                    createImageUploadContentId: 'imageUploadContent'
+                });
+            }
+        } else {
+            console.warn('ImageSystem not available, image functionality may not work properly');
         }
     }
-}
 
-// =============================================================================
-// Create 頁面功能 (Create Page Functions)
-// =============================================================================
+    /**
+     * 重置彈窗表單
+     */
+    resetModalForm() {
+        const form = document.getElementById('createZoneModalForm');
+        if (form) {
+            form.reset();
+        }
 
-/**
- * 添加區域到數組
- * @param {string} zoneName 區域名稱
- * @param {string} location 位置
- * @param {File} zoneImageFile 圖片文件
- */
-function addZoneToArray(zoneName, location, zoneImageFile) {
-    // 調試信息：檢查傳入的數據
-    console.log('addZoneToArray called with:', { zoneName, location, zoneImageFile });
+        // 使用ImageSystem重置圖片
+        if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
+            window.ImageSystem.resetImage('imageUploadArea', {
+                imageInputId: 'zone_image',
+                previewImageId: 'img-preview',
+                previewIconId: 'preview-icon',
+                imageUploadContentId: 'imageUploadContent'
+            });
+        }
 
-    // 添加區域到數組
-    const zoneData = {
-        zoneName: zoneName,
-        location: location,
-        zoneStatus: 'Available', // 默認為 Available
-        zoneImageFile: zoneImageFile // 存儲文件對象而不是base64
-    };
-
-    zoneList.push(zoneData);
-
-    // 更新UI
-    updateZoneList();
-    updateUI();
-
-    // 顯示右邊的區域表格
-    showZoneValuesArea();
-
-    // 清空輸入框
-    const zoneNameInput = document.getElementById('zone_name');
-    const locationInput = document.getElementById('location');
-    if (zoneNameInput) {
-        zoneNameInput.value = '';
-    }
-    if (locationInput) {
-        locationInput.value = '';
+        // 移除驗證類
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
     }
 
-    // 清空圖片（不顯示消息）
-    resetImageWithoutMessage('zone');
-
-    // 調試信息：檢查添加後的狀態選擇
-    const currentStatus = document.querySelector('input[name="zone_status"]:checked');
-    console.log('After adding zone, current status selection:', currentStatus ? currentStatus.value : 'No status selected');
-}
-
-/**
- * 檢查區域名稱是否已存在（簡化版本，用於當前頁面）
- * @param {string} zoneName 區域名稱
- * @returns {boolean} 是否存在
- */
-function isZoneExists(zoneName) {
-    return zoneList.some(item => item.zoneName.toLowerCase() === zoneName.toLowerCase());
-}
-
-/**
- * 添加區域
- */
-function addZone() {
-    console.log('addZone function called');
-
+    /**
+     * 提交彈窗中的Zone
+     */
+    submitModalZone() {
     const zoneNameInput = document.getElementById('zone_name');
     const locationInput = document.getElementById('location');
+        const imageInput = document.getElementById('zone_image');
+        const submitBtn = $('#submitCreateZoneModal');
 
-    console.log('zoneNameInput element:', zoneNameInput);
-    console.log('locationInput element:', locationInput);
-
+        // 獲取輸入值
     const zoneName = zoneNameInput ? zoneNameInput.value.trim() : '';
     const location = locationInput ? locationInput.value.trim() : '';
 
-    console.log('Zone name:', zoneName, 'Location:', location);
-
     // 驗證輸入
+        let isValid = true;
+
     if (!zoneName) {
-        showAlert('Please enter zone name', 'warning');
-        zoneNameInput.focus();
-        return;
+            if (zoneNameInput) {
+                zoneNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (zoneNameInput) {
+                zoneNameInput.classList.remove('is-invalid');
+                zoneNameInput.classList.add('is-valid');
+            }
     }
 
     if (!location) {
-        showAlert('Please enter zone location', 'warning');
-        locationInput.focus();
-        return;
-    }
-
-    // 檢查是否已存在
-    if (isZoneExists(zoneName)) {
-        showAlert(`Zone name "${zoneName}" already exists in the list`, 'error');
-        highlightExistingZone(zoneName);
-        zoneNameInput.focus();
-        return;
-    }
-
-    // 獲取當前圖片文件
-    const imageInput = document.getElementById('zone_image');
-    let zoneImageFile = null;
-    if (imageInput && imageInput.files && imageInput.files[0]) {
-        zoneImageFile = imageInput.files[0];
-    }
-
-    // 添加到區域數組（狀態默認為 Available）
-    addZoneToArray(zoneName, location, zoneImageFile);
-
-    // 顯示成功提示
-    showAlert('Zone added successfully', 'success');
-}
-
-/**
- * 移除區域
- * @param {number} index 索引
- */
-function removeZone(index) {
-    console.log('Removing zone at index:', index);
-    console.log('Zone list before removal:', zoneList);
-
-    // 確認機制
-    if (!confirm('Are you sure you want to remove this zone?')) {
-        return;
-    }
-
-    if (index >= 0 && index < zoneList.length) {
-        zoneList.splice(index, 1);
-        console.log('Zone list after removal:', zoneList);
-        updateZoneList();
-        updateUI();
-
-        // 顯示成功移除的 alert
-        showAlert('Zone removed successfully', 'success');
-    } else {
-        console.error('Invalid index:', index);
-        showAlert('Failed to remove zone', 'error');
-    }
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    // 檢查是否有數據需要清除
-    if (zoneList.length === 0) {
-        showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 確認清除
-    if (!confirm('Are you sure you want to clear all zones?')) {
-        return;
-    }
-
-    // 清空數組
-    zoneList = [];
-
-    // 清空輸入框
-    const zoneNameInput = document.getElementById('zone_name');
-    const locationInput = document.getElementById('location');
-    if (zoneNameInput) {
-        zoneNameInput.value = '';
-    }
-    if (locationInput) {
-        locationInput.value = '';
-    }
-
-    // 更新UI
-    updateZoneList();
-    updateUI();
-
-    // 顯示成功提示
-    showAlert('All zones cleared successfully', 'success');
-
-    // 隱藏所有區域
-    hideAllAreas();
-}
-
-/**
- * 更新區域列表
- */
-function updateZoneList() {
-    const container = document.getElementById('zoneValuesList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    zoneList.forEach((item, index) => {
-        // 檢查是否為重複項
-        const isDuplicate = isZoneExists(item.zoneName) &&
-            zoneList.filter(i => i.zoneName.toLowerCase() === item.zoneName.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        const zoneItem = document.createElement('div');
-        zoneItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        zoneItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                <div class="me-3 flex-shrink-0">
-                    ${item.zoneImageFile ?
-                        `<img src="${URL.createObjectURL(item.zoneImageFile)}" class="rounded border border-2 border-white shadow-sm" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Zone Image">` :
-                        `<div class="bg-light rounded border border-2 border-white shadow-sm d-flex align-items-center justify-content-center"
-                            style="width: 3.125rem; height: 3.125rem;">
-                            <i class="bi bi-geo-alt text-muted fs-5"></i>
-                        </div>`
-                    }
-                </div>
-                <div class="flex-grow-1 min-width-0">
-                    <div class="fw-bold text-dark mb-1 text-truncate">
-                        <i class="bi bi-geo-alt me-2 text-primary"></i>${item.zoneName}
-                    </div>
-                    <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
-                        <i class="bi bi-geo me-1"></i>${item.location || 'N/A'}
-                    </div>
-                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
-        `;
-
-        container.appendChild(zoneItem);
-    });
-}
-
-/**
- * 高亮顯示列表中已存在的區域名稱
- * @param {string} zoneName 區域名稱
- */
-function highlightExistingZone(zoneName) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.fw-bold').textContent.trim();
-        if (value.toLowerCase() === zoneName.toLowerCase()) {
-            // 添加 Bootstrap 高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 顯示區域值區域
- */
-function showZoneValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 顯示區域值區域
-    const zoneValuesArea = document.getElementById('zoneValuesArea');
-    if (zoneValuesArea) {
-        zoneValuesArea.classList.remove('d-none');
-    }
-
-    // 更新區域名稱顯示
-    updateZoneNameDisplay();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏區域值區域
-    const zoneValuesArea = document.getElementById('zoneValuesArea');
-    if (zoneValuesArea) {
-        zoneValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-
-// =============================================================================
-// UI 更新功能 (UI Update Functions)
-// =============================================================================
-
-/**
- * 更新UI（簡化版本，用於當前頁面）
- */
-function updateUI() {
-    // 更新區域值計數
-    updateZoneValuesCount();
-
-
-    // 更新區域名稱顯示
-    updateZoneNameDisplay();
-
-    // 如果沒有區域，隱藏所有區域並顯示初始狀態
-    if (zoneList.length === 0) {
-        hideAllAreas();
-    }
-}
-
-/**
- * 更新區域值計數
- */
-function updateZoneValuesCount() {
-    const count = zoneList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('zoneValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} zones`;
-    }
-}
-
-function updateZoneNameDisplay() {
-    const zoneNameSpan = document.getElementById('zoneName');
-    if (zoneNameSpan) {
-        if (zoneList.length > 0) {
-            // 顯示區域數量
-            zoneNameSpan.textContent = `- ${zoneList.length} zones`;
+            if (locationInput) {
+                locationInput.classList.add('is-invalid');
+            }
+            isValid = false;
         } else {
-            zoneNameSpan.textContent = '';
-        }
-    }
-}
-
-
-// =============================================================================
-// 排序功能 (Sorting Functions)
-// =============================================================================
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortZones');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortZoneValuesList();
-}
-
-/**
- * 排序區域值列表
- */
-function sortZoneValuesList() {
-    const zoneValuesList = document.getElementById('zoneValuesList');
-    const items = Array.from(zoneValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取區域名稱並排序
-    const zoneValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.fw-bold').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    zoneValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    zoneValues.forEach(({ element }) => {
-        zoneValuesList.appendChild(element);
-    });
-}
-
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * Update 頁面表單提交處理
- * @param {HTMLFormElement} form 表單元素
- */
-function handleUpdateFormSubmit(form) {
-    // 驗證表單
-    if (!validateUpdateForm()) {
-        return;
-    }
-
-    // 顯示加載狀態
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
-    submitBtn.disabled = true;
-
-    // 準備表單數據
-    const formData = new FormData(form);
-
-    // 提交數據
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            const message = data.message || 'Zone updated successfully';
-            showAlert(message, 'success');
-
-            // 延遲重定向到列表頁面
-            setTimeout(() => {
-                window.location.href = window.zoneManagementRoute || '/admin/storage-locations/zone/index';
-            }, 2000);
-        } else {
-            isZoneUpdating = false; // 錯誤時重置標誌
-            // 简化错误信息，类似 mapping 页面
-            if (data.message && data.message.includes('Some zones failed to create')) {
-                showAlert('Some zones failed to create', 'error');
-            } else {
-                showAlert(data.message || 'Failed to update zone', 'error');
+            if (locationInput) {
+                locationInput.classList.remove('is-invalid');
+                locationInput.classList.add('is-valid');
             }
         }
-    })
-    .catch(error => {
-        isZoneUpdating = false; // 錯誤時重置標誌
-        if (error.message.includes('already been taken') || error.message.includes('zone_name')) {
-            showAlert('This zone name already exists. Please choose a different name.', 'warning');
-        } else {
-            showAlert('Failed to update zone', 'error');
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+
+        // 準備表單數據
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('zone_name', zoneName);
+        formData.append('location', location);
+
+        // 添加圖片（如果有）
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('zone_image', imageInput.files[0]);
         }
-    })
-    .finally(() => {
-        // 恢復按鈕狀態
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
 
+        // 檢查是否有圖片
+        const hasImage = imageInput && imageInput.files && imageInput.files[0];
 
-/**
- * Update 頁面表單驗證
- * @returns {boolean} 驗證結果
- */
-function validateUpdateForm() {
-    const zoneNameInput = document.getElementById('zone_name');
-    const locationInput = document.getElementById('location');
+        // 顯示加載狀態
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Creating...');
+        submitBtn.prop('disabled', true);
 
-    // 驗證區域名稱
-    if (!zoneNameInput.value.trim()) {
-        showAlert('Please enter zone name', 'warning');
-        zoneNameInput.focus();
-        return false;
-    }
+        // 提交數據
+        fetch(window.createZoneUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to create zone');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Zone created successfully', 'success');
 
-    // 驗證區域位置
-    if (!locationInput.value.trim()) {
-        showAlert('Please enter zone location', 'warning');
-        locationInput.focus();
-        return false;
-    }
+                // 關閉彈窗
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createZoneModal'));
+                if (modal) {
+                    modal.hide();
+                }
 
-    // 驗證狀態選擇
-    const selectedStatus = document.querySelector('input[name="zone_status"]:checked');
-    if (!selectedStatus) {
-        showAlert('Please select zone status', 'warning');
-        return false;
-    }
-
-    return true;
-}
-
-// 图片处理函数已移至 image-system.js
-
-/**
- * Update 頁面狀態卡片初始化
- */
-function initializeUpdateStatusCards() {
-    // 狀態卡片選擇
-    const statusCards = document.querySelectorAll('.status-card');
-    statusCards.forEach(card => {
-        card.addEventListener('click', function() {
-            selectUpdateStatusCard(this);
+                // 如果有圖片，刷新整個頁面；否則只更新 DOM
+                if (hasImage) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片，重新載入當前頁面以顯示新記錄
+                    this.fetchZones(this.currentPage);
+                }
+            } else {
+                this.showAlert(data.message || 'Failed to create zone', 'error');
+            }
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to create zone';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
         });
-    });
-}
-
-/**
- * Update 頁面狀態卡片選擇
- * @param {HTMLElement} card 狀態卡片元素
- */
-function selectUpdateStatusCard(card) {
-    // 移除所有選中狀態
-    const allCards = document.querySelectorAll('.status-card');
-    allCards.forEach(c => c.classList.remove('selected'));
-
-    // 添加選中狀態到當前卡片
-    card.classList.add('selected');
-
-    // 更新對應的單選按鈕
-    const radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-        radio.checked = true;
     }
-}
 
-// resetImageWithoutMessage 函数已移至 image-system.js
+    // =============================================================================
+    // Update Zone 彈窗模塊 (Update Zone Modal Module)
+    // =============================================================================
 
-// =============================================================================
-// 表單驗證和提交 (Form Validation & Submission)
-// =============================================================================
+    /**
+     * 綁定更新彈窗事件
+     */
+    bindUpdateModalEvents() {
+        // 彈窗打開時初始化圖片處理
+        $('#updateZoneModal').on('show.bs.modal', () => {
+            this.initUpdateModalImageSystem();
+            // 使用統一的狀態管理初始化選擇（交給 status-management）
+            if (typeof window.initializeStatusCardSelection === 'function') {
+                window.initializeStatusCardSelection('zone_status');
+            }
+        });
 
-/**
- * 驗證區域數據
- * @returns {boolean} 驗證結果
- */
-function validateZoneData() {
-    // 檢查是否有重複的區域名稱
-    const duplicates = [];
-    const seen = new Set();
-    for (const item of zoneList) {
-        const combination = item.zoneName.toLowerCase();
-        if (seen.has(combination)) {
-            duplicates.push(item.zoneName);
+        // 彈窗完全顯示後設置焦點
+        $('#updateZoneModal').on('shown.bs.modal', () => {
+            const zoneNameInput = document.getElementById('update_zone_name');
+            if (zoneNameInput) {
+                zoneNameInput.focus();
+            }
+        });
+
+        // 彈窗關閉時清理
+        $('#updateZoneModal').on('hidden.bs.modal', () => {
+            this.resetUpdateModalForm();
+        });
+
+        // 提交按鈕事件
+        $('#submitUpdateZoneModal').on('click', () => {
+            this.submitUpdateModalZone();
+        });
+
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#updateZoneModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'input_image') {
+                    return;
+                }
+
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button' && target.type !== 'radio') {
+                    e.preventDefault();
+
+                    // 定義輸入框順序
+                    const inputOrder = ['update_zone_name', 'update_location'];
+                    const currentIndex = inputOrder.indexOf(target.id);
+
+                    if (currentIndex !== -1 && currentIndex < inputOrder.length - 1) {
+                        // 跳轉到下一個輸入框
+                        const nextInput = document.getElementById(inputOrder[currentIndex + 1]);
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    } else {
+                        // 最後一個輸入框，提交表單
+                        this.submitUpdateModalZone();
+                    }
+                }
+            }
+        });
+
+        // 狀態卡片交互由 status-management 接管，這裡不再自定義事件
+    }
+
+    /**
+     * 打開更新彈窗並填充數據
+     * @param {Object} zoneData Zone數據對象
+     */
+    openUpdateModal(zoneData) {
+        // 填充表單數據
+        $('#update_zone_name').val(zoneData.zone_name || '');
+        $('#update_location').val(zoneData.location || '');
+
+        // 設置狀態（交給 status-management 初始化後，直接設置單選值）
+        const targetStatus = zoneData.zone_status === 'Unavailable' ? 'Unavailable' : 'Available';
+        const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+        $(radioSelector).prop('checked', true);
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('zone_status');
+        }
+
+        // 設置隱藏的zone ID（用於提交）
+        const form = $('#updateZoneModalForm');
+        form.attr('data-zone-id', zoneData.id);
+
+        // 更新當前Zone信息卡片
+        const currentInfo = `
+            <div class="mb-1">
+                <i class="bi bi-geo-alt me-2 text-muted"></i>
+                <span>Name: <strong>${zoneData.zone_name || 'N/A'}</strong></span>
+                </div>
+            <div class="mb-1">
+                <i class="bi bi-geo me-2 text-muted"></i>
+                <span>Location: <strong>${zoneData.location || 'N/A'}</strong></span>
+                    </div>
+            <div class="mb-1">
+                <i class="bi bi-shield-check me-2 text-muted"></i>
+                <span>Status: <strong>${zoneData.zone_status || 'N/A'}</strong></span>
+                    </div>
+        `;
+        $('#currentZoneInfo').html(currentInfo);
+
+        // 處理圖片
+        if (zoneData.zone_image) {
+            const imageUrl = `/assets/images/${zoneData.zone_image}`;
+            this.setUpdateModalImage(imageUrl);
         } else {
-            seen.add(combination);
+            this.resetUpdateModalImage();
+        }
+
+        // 重置移除圖片標記
+        $('#remove_image').val('0');
+
+        // 打開彈窗
+        const modal = new bootstrap.Modal(document.getElementById('updateZoneModal'));
+        modal.show();
+    }
+
+    /**
+     * 初始化更新彈窗中的圖片處理系統（使用標準ImageSystem配置 - Update模式）
+     */
+    initUpdateModalImageSystem() {
+        // 使用統一的圖片處理模組（完全交給ImageSystem處理）
+        // Update modal 使用 Update 模式的配置：input_image 和 image-preview
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('updateZoneModal');
+            if (!modal) return;
+
+            const imageInput = modal.querySelector('#input_image');
+            const previewContainer = modal.querySelector('#image-preview');
+            const removeImageBtn = modal.querySelector('#removeImage');
+
+            // 只綁定彈窗內的元素（避免與Add Zone Modal衝突）
+            if (imageInput && previewContainer) {
+                // 使用 Update 模式的配置調用 ImageSystem
+                // bindImageUploadEvents 會自動處理：上傳、預覽、刪除、驗證等功能
+                window.ImageSystem.bindImageUploadEvents({
+                    updateImageInputId: 'input_image',
+                    updatePreviewContainerId: 'image-preview'
+                });
+
+                // 為 Update modal 點擊預覽區域觸發文件選擇
+                previewContainer.addEventListener('click', function(e) {
+                    if (e.target.closest('.img-remove-btn')) {
+                        return; // 不觸發文件選擇
+                    }
+                    imageInput.click();
+                });
+
+                // 綁定靜態移除按鈕事件（參考 rack 的實現方式，只使用靜態按鈕）
+                // 重要：先移除所有旧的事件监听器，然后重新绑定，确保只绑定一次
+                if (removeImageBtn) {
+                    // 克隆按钮以移除所有旧的事件监听器
+                    const newRemoveBtn = removeImageBtn.cloneNode(true);
+                    removeImageBtn.parentNode.replaceChild(newRemoveBtn, removeImageBtn);
+
+                    // 重新获取按钮引用
+                    const freshRemoveBtn = modal.querySelector('#removeImage');
+
+                    // 绑定新的事件监听器（只绑定一次）
+                    freshRemoveBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        // 防止重复触发
+                        if (freshRemoveBtn.hasAttribute('data-processing')) {
+                            return;
+                        }
+                        freshRemoveBtn.setAttribute('data-processing', 'true');
+
+                        const modal = document.getElementById('updateZoneModal');
+                        const form = modal ? document.getElementById('updateZoneModalForm') : null;
+
+                        if (!confirm('Are you sure you want to remove this image?')) {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                            return;
+                        }
+
+                        const imageInput = modal?.querySelector('#input_image');
+                        const previewContainer = modal?.querySelector('#image-preview');
+                        const imageUploadContent = modal?.querySelector('#imageUploadContent');
+                        const removeImageInput = modal?.querySelector('#remove_image');
+
+                        if (imageInput && previewContainer && form) {
+                            // 重置文件输入
+                            imageInput.value = '';
+
+                            // 設置 remove_image 標記
+                            if (removeImageInput) {
+                                removeImageInput.value = '1';
+                            }
+
+                            // 隐藏图片，显示占位符
+                            const previewImg = previewContainer.querySelector('#preview-image') || previewContainer.querySelector('#img-preview');
+                            if (previewImg) {
+                                previewImg.remove();
+                            }
+
+                            // 恢复原始内容（显示占位符）
+                            const originalContent = previewContainer.getAttribute('data-original-content');
+                            if (originalContent) {
+                                // 恢复原始 HTML 结构
+                                previewContainer.innerHTML = originalContent;
+
+                                // 确保 preview-image 是隐藏的
+                                const restoredPreviewImg = previewContainer.querySelector('#preview-image');
+                                if (restoredPreviewImg) {
+                                    restoredPreviewImg.classList.add('d-none');
+                                }
+
+                                // 确保 removeImage 按钮是隐藏的
+                                const restoredRemoveBtn = previewContainer.querySelector('#removeImage');
+                                if (restoredRemoveBtn) {
+                                    restoredRemoveBtn.classList.add('d-none');
+                                }
+
+                                // 确保 imageUploadContent 是显示的
+                                const restoredImageUploadContent = previewContainer.querySelector('#imageUploadContent');
+                                if (restoredImageUploadContent) {
+                                    restoredImageUploadContent.classList.remove('d-none');
+                                    restoredImageUploadContent.style.display = '';
+                                }
+        } else {
+                                // 如果没有原始内容，显示默认占位符
+                                if (imageUploadContent) {
+                                    imageUploadContent.classList.remove('d-none');
+                                    imageUploadContent.style.display = '';
+                                }
+                            }
+
+                            // 隐藏移除按钮
+                            freshRemoveBtn.classList.add('d-none');
+                            freshRemoveBtn.removeAttribute('data-processing');
+
+                            // 顯示成功提示
+                            if (typeof window.showAlert === 'function') {
+                                window.showAlert('Image removed successfully', 'success');
+    } else {
+                                alert('Image removed successfully');
+                            }
+                        } else {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                        }
+                    });
+                }
+            }
+        } else {
+            console.warn('ImageSystem not available, image functionality may not work properly');
         }
     }
 
-    if (duplicates.length > 0) {
-        showAlert('Duplicate zone names found. Please remove duplicates before submitting.', 'error');
-        return false;
+    /**
+     * 設置更新彈窗中的圖片（使用Update模式標準ID）
+     * @param {string} imageUrl 圖片URL
+     */
+    setUpdateModalImage(imageUrl) {
+        const modal = document.getElementById('updateZoneModal');
+        if (!modal) return;
+
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+
+        if (previewContainer && previewImg && imageUploadContent) {
+            // 顯示圖片，隱藏上傳占位符
+            previewImg.src = imageUrl;
+            previewImg.classList.remove('d-none');
+            previewImg.style.display = 'block';
+            imageUploadContent.classList.add('d-none');
+            imageUploadContent.style.display = 'none';
+
+            // 顯示移除按鈕（只使用靜態按鈕，參考 rack 的實現）
+            if (removeBtn) {
+                removeBtn.classList.remove('d-none');
+                // 確保事件已綁定（在 initUpdateModalImageSystem 中綁定）
+            }
+        }
     }
 
-    return true;
-}
+    /**
+     * 重置更新彈窗中的圖片（使用Update模式標準ID）
+     * 注意：此函數只用於重置UI顯示，不會設置 remove_image 標記
+     */
+    resetUpdateModalImage() {
+        const modal = document.getElementById('updateZoneModal');
+        if (!modal) return;
 
-/**
- * 提交區域表單
- */
-function submitZoneForm() {
-    // 調試信息：檢查要提交的數據
-    console.log('Submitting zone data:', zoneList);
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image') || modal.querySelector('#img-preview');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+        const imageInput = modal.querySelector('#input_image');
 
-    // 準備提交數據
+        if (previewContainer) {
+            // 隱藏圖片，顯示上傳占位符
+            if (previewImg) {
+                previewImg.classList.add('d-none');
+                previewImg.style.display = 'none';
+                previewImg.src = '';
+            }
+
+            if (imageUploadContent) {
+                imageUploadContent.classList.remove('d-none');
+                imageUploadContent.style.display = '';
+
+                // 恢复文本内容显示
+                const textElements = imageUploadContent.querySelectorAll('h6, p');
+                textElements.forEach(el => {
+                    el.style.display = '';
+                });
+            }
+
+            // 隱藏移除按鈕
+            if (removeBtn) {
+                removeBtn.classList.add('d-none');
+            }
+
+            // 重置文件輸入
+            if (imageInput) {
+                imageInput.value = '';
+            }
+
+            // 注意：不設置 remove_image，因為這應該只在用戶確認移除時設置
+        }
+    }
+
+    /**
+     * 移除更新彈窗中的圖片（已廢棄，改用靜態按鈕直接處理）
+     * @deprecated 使用靜態按鈕直接處理移除邏輯，參考 rack 的實現
+     */
+    removeUpdateModalImage() {
+        // 此函數已不再使用，移除邏輯直接在靜態按鈕的事件處理中實現
+        console.warn('removeUpdateModalImage is deprecated, use static button handler instead');
+    }
+
+    /**
+     * 重置更新彈窗表單
+     */
+    resetUpdateModalForm() {
+        const form = document.getElementById('updateZoneModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        // 重置圖片
+        this.resetUpdateModalImage();
+        $('#remove_image').val('0');
+
+        // 移除驗證類
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        // 重置狀態卡片
+        $('#updateZoneModal .status-card').removeClass('selected');
+    }
+
+    /**
+     * 提交更新彈窗中的Zone
+     */
+    submitUpdateModalZone() {
+        const form = document.getElementById('updateZoneModalForm');
+        const zoneId = form.getAttribute('data-zone-id');
+
+        if (!zoneId) {
+            this.showAlert('Zone ID not found', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('updateZoneModal');
+        const zoneNameInput = modal ? modal.querySelector('#update_zone_name') : null;
+        const locationInput = modal ? modal.querySelector('#update_location') : null;
+        const statusInput = modal ? modal.querySelector('input[name="zone_status"]:checked') : null;
+        const imageInput = modal ? modal.querySelector('#input_image') : null;
+        const removeImageInput = modal ? modal.querySelector('#remove_image') : null;
+        const submitBtn = $('#submitUpdateZoneModal');
+
+        // 獲取輸入值
+        const zoneName = zoneNameInput ? zoneNameInput.value.trim() : '';
+        const location = locationInput ? locationInput.value.trim() : '';
+        const zoneStatus = statusInput ? statusInput.value : '';
+
+        // 驗證輸入
+        let isValid = true;
+
+        if (!zoneName) {
+            if (zoneNameInput) {
+                zoneNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (zoneNameInput) {
+                zoneNameInput.classList.remove('is-invalid');
+                zoneNameInput.classList.add('is-valid');
+            }
+        }
+
+        if (!location) {
+            if (locationInput) {
+                locationInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (locationInput) {
+                locationInput.classList.remove('is-invalid');
+                locationInput.classList.add('is-valid');
+            }
+        }
+
+        if (!zoneStatus) {
+            this.showAlert('Please select zone status', 'warning');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        // 準備表單數據
     const formData = new FormData();
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PUT');
+        formData.append('zone_name', zoneName);
+        formData.append('location', location);
+        formData.append('zone_status', zoneStatus);
 
-    // 添加區域數據
-    zoneList.forEach((item, index) => {
-        // 調試信息：檢查每個區域的狀態
-        console.log(`Zone ${index + 1}:`, { zoneName: item.zoneName, zoneStatus: item.zoneStatus });
-
-        // 添加區域文本數據
-        formData.append(`zones[${index}][zone_name]`, item.zoneName);
-        formData.append(`zones[${index}][location]`, item.location);
-        formData.append(`zones[${index}][zone_status]`, item.zoneStatus);
-
-        // 添加圖片文件（如果有）
-        if (item.zoneImageFile) {
-            formData.append(`images[${index}]`, item.zoneImageFile);
+        // 添加圖片（如果有新圖片）
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('zone_image', imageInput.files[0]);
         }
-    });
+
+        // 如果標記了移除圖片
+        if (removeImageInput && removeImageInput.value === '1') {
+            formData.append('remove_image', '1');
+        }
+
+        // 檢查是否有圖片相關的更改
+        const hasImageChange = (imageInput && imageInput.files && imageInput.files[0]) ||
+                               (removeImageInput && removeImageInput.value === '1');
+
+        // 顯示加載狀態
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+        submitBtn.prop('disabled', true);
 
     // 提交數據
-    fetch(window.createZoneUrl, {
+        const updateUrl = window.updateZoneUrl.replace(':id', zoneId);
+        fetch(updateUrl, {
         method: 'POST',
         body: formData,
         headers: {
@@ -1234,196 +1471,51 @@ function submitZoneForm() {
     })
     .then(response => {
         if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update zone');
             });
         }
         return response.json();
     })
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message || 'Zones created successfully', 'success');
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Zone updated successfully', 'success');
 
-            // 延遲重定向到dashboard，讓用戶看到成功消息
-            setTimeout(() => {
-                window.location.href = window.zoneManagementRoute || '/admin/storage-locations/zone/index';
-            }, 2000);
-        } else {
-            // 简化错误信息，类似 mapping 页面
-            if (data.message && data.message.includes('Some zones failed to create')) {
-                showAlert('Some zones failed to create', 'error');
+                // 關閉彈窗
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateZoneModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 如果有圖片更改，刷新整個頁面；否則只更新 DOM
+                if (hasImageChange) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片更改，只更新 DOM
+                    if (data.data) {
+                        this.updateZoneRow(zoneId, data.data);
+                    } else {
+                        // 如果沒有返回數據，重新載入當前頁面
+                        this.fetchZones(this.currentPage);
+                    }
+                }
             } else {
-                showAlert(data.message || 'Failed to create zones', 'error');
+                this.showAlert(data.message || 'Failed to update zone', 'error');
             }
-        }
-    })
-    .catch(error => {
-        // 简化错误信息
-        showAlert('Some zones failed to create', 'error');
-    });
-}
-
-// =============================================================================
-// 頁面初始化功能 (Page Initialization Functions)
-// =============================================================================
-
-/**
- * 綁定區域事件
- */
-function bindZoneEvents() {
-    // Create 頁面事件綁定
-    bindZoneCreateEvents();
-
-    // 使用統一的圖片處理模組（避免重複綁定）
-    if (typeof window.ImageSystem !== 'undefined' && !window.ImageSystem._zoneEventsBound) {
-        window.ImageSystem.bindModuleImageEvents('zone');
-        window.ImageSystem._zoneEventsBound = true; // 標記已綁定
-    } else if (typeof window.ImageSystem === 'undefined') {
-        console.warn('ImageSystem not available, image functionality may not work properly');
-    }
-
-    // 表單提交事件監聽器
-    const zoneForm = document.getElementById('zoneForm');
-    if (zoneForm) {
-        zoneForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // 檢查是否有區域
-            if (zoneList.length === 0) {
-                showAlert('Please add at least one zone', 'warning');
-                return;
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to update zone';
+            if (error.message) {
+                errorMessage = error.message;
             }
-
-            // 驗證所有區域數據
-            if (!validateZoneData()) {
-                return;
-            }
-
-            // 提交表單
-            submitZoneForm();
-        });
-    }
-}
-
-/**
- * 綁定區域創建頁面事件
- */
-function bindZoneCreateEvents() {
-    // 區域名稱輸入框回車事件
-    const zoneNameInput = document.getElementById('zone_name');
-    if (zoneNameInput) {
-        zoneNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addZone();
-            }
-        });
-    }
-
-    // 事件委托：刪除區域按鈕和 AddToList 按鈕
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            removeZone(index);
-        }
-
-        // AddToList 按鈕事件 - 更新選擇器
-        if (e.target.closest('#addZone')) {
-            e.preventDefault();
-            addZone();
-        }
-    });
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortZones');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-}
-
-/**
- * 初始化區域更新頁面
- */
-// 全局變量防止重複請求
-let isZoneUpdating = false;
-let zoneUpdateFormBound = false;
-
-function initializeZoneUpdate() {
-    bindZoneEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!zoneUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isZoneUpdating) return false;
-                isZoneUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            zoneUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面圖片上傳區域點擊事件
-    const imagePreviewArea = document.getElementById('image-preview');
-    if (imagePreviewArea && updateImageInput) {
-        imagePreviewArea.addEventListener('click', function(e) {
-            // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.img-remove-btn')) {
-                return; // 不觸發文件選擇
-            }
-            updateImageInput.click();
-        });
-    }
-
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
-
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
-            }
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeStatusCards();
-}
-
-/**
- * 初始化區域頁面
- * @param {Object} config 配置對象
- */
-function initializeZonePage(config) {
-    bindZoneEvents();
-
-    if (config && config.events) {
-        // 綁定自定義事件
-        Object.keys(config.events).forEach(eventName => {
-            if (typeof config.events[eventName] === 'function') {
-                // 這裡可以根據需要綁定特定事件
-                console.log(`Custom event ${eventName} registered`);
-            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
         });
     }
 }
@@ -1435,71 +1527,13 @@ function initializeZonePage(config) {
 let zoneDashboard;
 
 $(document).ready(function() {
-    // 檢查當前頁面是否是dashboard頁面（有table-body元素）
     if ($("#table-body").length > 0) {
         zoneDashboard = new ZoneDashboard();
+
+        // 導出方法到全局作用域
+        window.setZoneAvailable = (zoneId) => zoneDashboard.setAvailable(zoneId);
+        window.setZoneUnavailable = (zoneId) => zoneDashboard.setUnavailable(zoneId);
+        window.editZone = (zoneId) => zoneDashboard.editZone(zoneId);
+        window.deleteZone = (zoneId) => zoneDashboard.deleteZone(zoneId);
     }
 });
-
-// =============================================================================
-// DOM 內容加載完成後的事件綁定 (DOM Content Loaded Event Binding)
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化區域事件（包括圖片上傳功能）
-    bindZoneEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!zoneUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isZoneUpdating) return false;
-                isZoneUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            zoneUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
-
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
-            }
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeUpdateStatusCards();
-});
-
-// =============================================================================
-// 全局函數導出 (Global Function Exports)
-// =============================================================================
-
-// 導出主要函數到全局作用域
-window.addZone = addZone;
-window.removeZone = removeZone;
-window.clearForm = clearForm;
-window.toggleZoneStatus = toggleZoneStatus;
-window.setZoneAvailable = setZoneAvailable;
-window.setZoneUnavailable = setZoneUnavailable;
-window.updateZoneStatus = updateZoneStatus;
-window.viewZoneDetails = viewZoneDetails;
-window.handleRemoveImageButton = handleRemoveImageButton;
-window.removeUpdateImage = removeUpdateImage;

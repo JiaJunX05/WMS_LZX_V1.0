@@ -14,12 +14,25 @@ use App\Exports\UserExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 
+/**
+ * 用户认证管理控制器
+ * User Authentication Management Controller
+ *
+ * 功能模块：
+ * - 用户列表展示：搜索、筛选、分页
+ * - 用户操作：创建、编辑、删除、状态管理
+ * - 角色管理：用户角色分配和更改
+ * - 图片管理：用户头像上传、更新、删除
+ * - 数据导出：Excel 导出功能
+ *
+ * @author WMS Team
+ * @version 3.0.0
+ */
 class AuthController extends Controller
 {
     // 常量定义
     private const ROLES = ['SuperAdmin', 'Admin', 'Staff'];
     private const STATUSES = ['Available', 'Unavailable'];
-    private const MAX_BULK_USERS = 10;
     private const DEFAULT_PER_PAGE = 10;
     private const MAX_PER_PAGE = 100;
 
@@ -139,30 +152,6 @@ class AuthController extends Controller
         return $query;
     }
 
-    /**
-     * 标准化用户数据（前端字段兼容）
-     */
-    private function normalizeUserData(array $userData): array
-    {
-        // 兼容前端字段命名（camelCase -> snake_case）
-        $fieldMapping = [
-            'userName' => 'first_name',
-            'userEmail' => 'email',
-            'userPassword' => 'password',
-            'accountRole' => 'account_role',
-            'accountStatus' => 'account_status',
-            'firstName' => 'first_name',
-            'lastName' => 'last_name',
-        ];
-
-        foreach ($fieldMapping as $frontendField => $backendField) {
-            if (isset($userData[$frontendField]) && !isset($userData[$backendField])) {
-                $userData[$backendField] = $userData[$frontendField];
-            }
-        }
-
-        return $userData;
-    }
 
     /**
      * 创建用户记录
@@ -360,27 +349,11 @@ class AuthController extends Controller
         }
     }
 
-    public function showRegisterForm() {
-        $userRole = $this->getCurrentUserRole();
-        return view('auth.auth_register', compact('userRole'));
-    }
 
     /**
      * 存儲新用戶
      */
     public function register(Request $request) {
-        // 與 GenderController 的實現保持一致：有數組走批量，否則走單個
-        if ($request->has('users') && is_array($request->input('users'))) {
-            return $this->storeMultipleUsers($request);
-        }
-
-        return $this->storeSingleUser($request);
-    }
-
-    /**
-     * 單個存儲用戶（优化版）
-     */
-    private function storeSingleUser(Request $request) {
         try {
             $currentRole = $this->getCurrentUserRole();
 
@@ -432,217 +405,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * 批量存儲用戶（統一入口）- 优化版
-     */
-    private function storeMultipleUsers(Request $request) {
-        try {
-            $currentUserRole = $this->getCurrentUserRole();
-            $users = $request->input('users', []);
-
-            // 限制批量创建数量，防止内存溢出
-            if (count($users) > self::MAX_BULK_USERS) {
-                return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_USERS . ' users at once');
-            }
-
-            $createdUsers = [];
-            $errors = [];
-            $emailsToCheck = [];
-
-            // 预处理：收集所有邮箱用于批量检查
-            foreach ($users as $index => $userData) {
-                $userData = $this->normalizeUserData($userData);
-                if (isset($userData['email'])) {
-                    $emailsToCheck[] = $userData['email'];
-                }
-            }
-
-            // 批量检查邮箱是否存在
-            $existingEmails = User::whereIn('email', $emailsToCheck)->pluck('email')->toArray();
-
-            foreach ($users as $index => $userData) {
-                $userData = $this->normalizeUserData($userData);
-
-                // 验证数据
-                $validator = \Validator::make($userData, [
-                    'first_name' => 'required|string|max:255',
-                    'last_name' => 'required|string|max:255',
-                    'email' => 'required|string|email|max:255',
-                    'password' => 'required|string|min:6',
-                    'account_role' => 'required|string|in:' . implode(',', self::ROLES),
-                ]);
-
-                if ($validator->fails()) {
-                    $errors[] = "User " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
-                    continue;
-                }
-
-                // 权限检查
-                if ($currentUserRole === 'Admin' && $userData['account_role'] !== 'Staff') {
-                    $errors[] = "User " . ($index + 1) . ": You can only create Staff accounts";
-                    continue;
-                }
-
-                // 检查邮箱是否已存在
-                if (in_array($userData['email'], $existingEmails)) {
-                    $errors[] = "User " . ($index + 1) . ": Email '{$userData['email']}' already exists";
-                    continue;
-                }
-
-                try {
-                    $user = $this->createUserRecord($userData);
-                    $createdUsers[] = $user;
-                } catch (\Exception $e) {
-                    $errors[] = "User " . ($index + 1) . ": " . $e->getMessage();
-                }
-            }
-
-            if ($request->ajax()) {
-                if (count($errors) > 0) {
-                    return $this->jsonResponse(false, 'Some users failed to create', [
-                        'errors' => $errors,
-                        'created_count' => count($createdUsers)
-                    ], 422);
-                } else {
-                    return $this->jsonResponse(true, count($createdUsers) . ' users created successfully', $createdUsers);
-                }
-            }
-
-            if (count($errors) > 0) {
-                return redirect()->back()
-                                ->withErrors(['error' => implode('; ', $errors)])
-                                ->withInput();
-            }
-
-            $this->logOperation('users_created_bulk', [
-                'created_count' => count($createdUsers),
-                'created_by_role' => $currentUserRole
-            ]);
-
-            return $this->redirectToManagement($currentUserRole, count($createdUsers) . ' users created successfully');
-
-        } catch (\Exception $e) {
-            return $this->handleError($request, 'An error occurred during bulk user creation. Please try again.', $e);
-        }
-    }
-
-    /**
-     * 显示批量创建用户表单
-     */
-    public function showBulkCreateForm() {
-        $globalUserRole = Auth::user()->getAccountRole();
-        return view('auth.bulk-create', compact('globalUserRole'));
-    }
-
-    /**
-     * 批量创建用户
-     */
-    public function bulkCreateUsers(Request $request) {
-        try {
-            $currentUserRole = Auth::user()->getAccountRole();
-            $requestedRole = $request->default_role ?? 'Staff';
-
-            // Permission check
-            if ($currentUserRole === 'Admin' && $requestedRole !== 'Staff') {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You can only create Staff accounts.'])
-                                ->withInput();
-            }
-
-            if ($currentUserRole === 'Staff') {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You do not have permission to create accounts.'])
-                                ->withInput();
-            }
-
-            $userCount = (int) $request->user_count;
-            if ($userCount < 1 || $userCount > 10) {
-                return redirect()->back()
-                                ->withErrors(['error' => 'You can only create 1-10 users at once.'])
-                                ->withInput();
-            }
-
-            $request->validate([
-                'default_role' => ['required', 'string', 'in:SuperAdmin,Admin,Staff'],
-                'default_status' => ['required', 'string', 'in:Available,Unavailable'],
-                'default_password' => ['required', 'string', 'min:6'],
-            ]);
-
-            $createdUsers = [];
-            $errors = [];
-
-            for ($i = 1; $i <= $userCount; $i++) {
-                try {
-                    $firstName = $request->input("user_{$i}_first_name");
-                    $lastName = $request->input("user_{$i}_last_name");
-                    $email = $request->input("user_{$i}_email");
-
-                    if (empty($firstName) || empty($lastName) || empty($email)) {
-                        $errors[] = "User {$i}: First name, last name and email are required";
-                        continue;
-                    }
-
-                    // Check if email already exists
-                    if (User::where('email', $email)->exists()) {
-                        $errors[] = "User {$i}: Email {$email} already exists";
-                        continue;
-                    }
-
-                    $user = User::create([
-                        'first_name' => $firstName,
-                        'last_name' => $lastName,
-                        'email' => $email,
-                        'password' => Hash::make($request->default_password),
-                    ]);
-
-                    Account::create([
-                        'user_id' => $user->id,
-                        'account_role' => $requestedRole,
-                        'account_status' => $request->default_status,
-                    ]);
-
-                    $createdUsers[] = $user;
-
-                } catch (\Exception $e) {
-                    $errors[] = "User {$i}: " . $e->getMessage();
-                }
-            }
-
-            if (count($createdUsers) > 0) {
-                Log::info('Bulk user creation completed', [
-                    'created_count' => count($createdUsers),
-                    'requested_count' => $userCount,
-                    'role' => $requestedRole,
-                    'status' => $request->default_status,
-                    'created_by' => Auth::user()->id
-                ]);
-
-                $successMessage = count($createdUsers) . ' users created successfully';
-                if (count($errors) > 0) {
-                    $successMessage .= '. Some users failed to create: ' . implode(', ', $errors);
-                }
-
-                // Redirect based on current user role
-                if ($currentUserRole === 'SuperAdmin') {
-                    return redirect()->route('superadmin.users.management')
-                                    ->with('success', $successMessage);
-                } else {
-                    return redirect()->route('admin.users.management')
-                                    ->with('success', $successMessage);
-                }
-            } else {
-                return redirect()->back()
-                                ->withErrors(['error' => 'No users were created. ' . implode(', ', $errors)])
-                                ->withInput();
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Bulk user creation error: ' . $e->getMessage());
-            return redirect()->back()
-                            ->withErrors(['error' => 'An error occurred during bulk user creation. Please try again.'])
-                            ->withInput();
-        }
-    }
 
     public function logout(Request $request) {
         try {
@@ -722,62 +484,43 @@ class AuthController extends Controller
     }
 
     /**
-     * 获取用户统计数据（优化版）
+     * 显示用户更新表单（用于 Modal）
      */
-    public function getUserStats(Request $request) {
-        try {
-            $currentRole = $this->getCurrentUserRole();
-
-            // 构建查询
-            $query = $this->buildUserQuery();
-
-            // 一次性获取所有统计数据，减少数据库查询
-            $baseQuery = clone $query;
-
-            $stats = [
-                'total_users' => $baseQuery->count(),
-            ];
-
-            // 批量获取状态统计
-            $statusStats = $baseQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
-                ->selectRaw('account_status, COUNT(*) as count')
-                ->groupBy('account_status')
-                ->pluck('count', 'account_status')
-                ->toArray();
-
-            $stats['available_users'] = $statusStats['Available'] ?? 0;
-            $stats['unavailable_users'] = $statusStats['Unavailable'] ?? 0;
-
-            // 管理员统计
-            if ($currentRole === 'SuperAdmin') {
-                $adminQuery = clone $query;
-                $stats['admin_users'] = $adminQuery->join('accounts', 'users.id', '=', 'accounts.user_id')
-                    ->whereIn('account_role', ['Admin', 'SuperAdmin'])
-                    ->count();
-            } else {
-                $stats['admin_users'] = 0;
-            }
-
-            return $this->jsonResponse(true, 'User statistics fetched successfully', $stats);
-        } catch (\Exception $e) {
-            return $this->handleError($request, 'Failed to fetch user statistics', $e);
-        }
-    }
-
-    /**
-     * 显示用户更新表单（优化版）
-     */
-    public function showUpdateForm($id) {
+    public function showUpdateForm(Request $request, $id) {
         $user = User::with('account')->findOrFail($id);
         $userRole = $this->getCurrentUserRole();
         $isUpdatingSelf = Auth::id() == $id;
 
         // 权限检查
         if (!$this->checkUserPermission('edit_user', $user)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return $this->jsonResponse(false, 'You do not have permission to edit this user', null, 403);
+            }
             abort(403, 'You do not have permission to edit this user');
         }
 
-        return view('auth.auth_update', compact('user', 'userRole', 'isUpdatingSelf'));
+        // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+        if ($request->expectsJson() || $request->ajax()) {
+            return $this->jsonResponse(true, 'User data fetched successfully', [
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'account' => [
+                        'username' => $user->account->username ?? null,
+                        'account_role' => $user->account->account_role ?? 'Staff',
+                        'account_status' => $user->account->account_status ?? 'Available',
+                        'user_image' => $user->account->user_image ?? null,
+                    ]
+                ],
+                'isUpdatingSelf' => $isUpdatingSelf
+            ]);
+        }
+
+        // 非 AJAX 请求重定向到管理页面
+        $route = $userRole === 'SuperAdmin' ? 'superadmin.users.management' : 'admin.users.management';
+        return redirect()->route($route);
     }
 
     /**

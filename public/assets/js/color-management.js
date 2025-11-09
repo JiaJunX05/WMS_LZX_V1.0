@@ -3,24 +3,14 @@
  * 顏色管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、顏色預覽、表單提交
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
-
-// =============================================================================
-// 全局變量和狀態管理 (Global Variables and State Management)
-// =============================================================================
-
-// 顏色列表數組（用於 Create 頁面）
-let colorList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = false; // 默認降序（最新的在上面）
 
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
@@ -114,6 +104,10 @@ class ColorDashboard {
         $('#export-colors-btn').on('click', () => {
             this.exportSelectedColors();
         });
+
+        // Modal 事件绑定
+        this.bindModalEvents();
+        this.bindUpdateModalEvents();
     }
 
     // =============================================================================
@@ -242,12 +236,12 @@ class ColorDashboard {
 
     createColorRow(color) {
         const statusMenuItem = color.color_status === 'Unavailable'
-            ? `<a class="dropdown-item" href="javascript:void(0)" onclick="colorDashboard.setAvailable(${color.id})">
-                   <i class="bi bi-check-circle me-2"></i> Activate Color
-               </a>`
-            : `<a class="dropdown-item" href="javascript:void(0)" onclick="colorDashboard.setUnavailable(${color.id})">
-                   <i class="bi bi-slash-circle me-2"></i> Deactivate Color
-               </a>`;
+            ? `<button type="button" class="dropdown-item" onclick="colorDashboard.setAvailable(${color.id})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="colorDashboard.setUnavailable(${color.id})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
 
         const actionButtons = `
             <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="colorDashboard.editColor(${color.id})">
@@ -262,16 +256,20 @@ class ColorDashboard {
                         ${statusMenuItem}
                     </li>
                     <li>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="colorDashboard.deleteColor(${color.id})">
-                            <i class="bi bi-trash me-2"></i> Delete Color
-                        </a>
+                        <button type="button" class="dropdown-item text-danger" onclick="colorDashboard.deleteColor(${color.id})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
                     </li>
                 </ul>
             </div>
         `;
 
         return `
-            <tr>
+            <tr data-color-id="${color.id}"
+                data-color-name="${color.color_name || ''}"
+                data-color-hex="${color.color_hex || ''}"
+                data-color-rgb="${color.color_rgb || ''}"
+                data-color-status="${color.color_status || 'Available'}">
                 <td class="ps-4">
                     <input class="color-checkbox form-check-input" type="checkbox" value="${color.id}" id="color-${color.id}">
                 </td>
@@ -363,7 +361,44 @@ class ColorDashboard {
      */
     editColor(colorId) {
         const url = window.editColorUrl.replace(':id', colorId);
-        window.location.href = url;
+
+        // 从表格行获取color数据（如果可用，用于快速填充）
+        const row = document.querySelector(`tr[data-color-id="${colorId}"]`);
+        if (row) {
+            // 快速填充基本数据
+            const colorData = {
+                id: colorId,
+                color_name: row.getAttribute('data-color-name') || '',
+                color_hex: row.getAttribute('data-color-hex') || '',
+                color_rgb: row.getAttribute('data-color-rgb') || '',
+                color_status: row.getAttribute('data-color-status') || 'Available'
+            };
+            this.openUpdateModal(colorData);
+        }
+
+        // 从 API 获取完整color数据
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            success: (response) => {
+                if (response.success && response.data) {
+                    this.openUpdateModal(response.data);
+                } else {
+                    this.showAlert(response.message || 'Failed to load color data', 'error');
+                }
+            },
+            error: (xhr) => {
+                let errorMessage = 'Failed to load color data';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                this.showAlert(errorMessage, 'error');
+            }
+        });
     }
 
     /**
@@ -412,6 +447,69 @@ class ColorDashboard {
     }
 
     /**
+     * 更新表格行的狀態顯示和 data 屬性
+     * @param {number} colorId 顏色ID
+     * @param {string} newStatus 新狀態 ('Available' 或 'Unavailable')
+     */
+    updateColorRowStatus(colorId, newStatus) {
+        const colorRow = $(`tr[data-color-id="${colorId}"]`);
+        if (colorRow.length === 0) return;
+
+        // 更新 data 屬性
+        colorRow.attr('data-color-status', newStatus);
+
+        // 更新狀態菜單項（與 createColorRow 中的格式完全一致）
+        const statusMenuItem = newStatus === 'Unavailable'
+            ? `<button type="button" class="dropdown-item" onclick="colorDashboard.setAvailable(${colorId})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="colorDashboard.setUnavailable(${colorId})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
+
+        // 更新操作按鈕區域（與 createColorRow 中的格式完全一致）
+        const actionButtons = `
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="colorDashboard.editColor(${colorId})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        ${statusMenuItem}
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item text-danger" onclick="colorDashboard.deleteColor(${colorId})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        `;
+
+        // 更新操作按鈕列
+        const actionsCell = colorRow.find('td:last-child');
+        actionsCell.html(actionButtons);
+
+        // 更新狀態標籤顯示（與 createColorRow 中的格式完全一致）
+        const statusBadge = newStatus === 'Available'
+            ? `<span class="badge bg-success px-3 py-2">
+                <i class="bi bi-check-circle me-1"></i>${newStatus}
+            </span>`
+            : `<span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-x-circle me-1"></i>${newStatus}
+            </span>`;
+
+        // 更新狀態列顯示
+        const statusCell = colorRow.find('td').eq(-2); // 倒數第二列是狀態列
+        if (statusCell.length > 0) {
+            statusCell.html(statusBadge);
+        }
+    }
+
+    /**
      * 激活顏色
      * @param {number} colorId 顏色ID
      */
@@ -436,17 +534,8 @@ class ColorDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Color has been set to available status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchColors(1);
-                } else {
-                    // 重新載入當前頁面的顏色列表
-                    this.fetchColors(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateColorRowStatus(colorId, 'Available');
             } else {
                 this.showAlert(data.message || 'Failed to set color available', 'error');
             }
@@ -481,17 +570,8 @@ class ColorDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Color has been set to unavailable status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchColors(1);
-                } else {
-                    // 重新載入當前頁面的顏色列表
-                    this.fetchColors(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateColorRowStatus(colorId, 'Unavailable');
             } else {
                 this.showAlert(data.message || 'Failed to set color unavailable', 'error');
             }
@@ -622,10 +702,655 @@ class ColorDashboard {
             }, 5000);
         }
     }
+
+    // =============================================================================
+    // Create Color 彈窗模塊 (Create Color Modal Module)
+    // =============================================================================
+
+    /**
+     * 綁定彈窗事件
+     */
+    bindModalEvents() {
+        // 彈窗打開時重置表單
+        $('#createColorModal').on('show.bs.modal', () => {
+            this.resetModalForm();
+            this.initColorPreview();
+        });
+
+        // 彈窗完全顯示後設置焦點
+        $('#createColorModal').on('shown.bs.modal', () => {
+            const colorNameInput = document.getElementById('color_name');
+            if (colorNameInput) {
+                colorNameInput.focus();
+            }
+        });
+
+        // 彈窗關閉時清理
+        $('#createColorModal').on('hidden.bs.modal', () => {
+            this.resetModalForm();
+        });
+
+        // 提交按鈕事件
+        $('#submitCreateColorModal').on('click', () => {
+            this.submitModalColor();
+        });
+
+        // Enter鍵提交表單
+        $('#createColorModal').on('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.submitModalColor();
+            }
+        });
+
+        // Hex 輸入框變化時更新預覽和 RGB（使用事件委托，確保動態元素也能觸發）
+        $(document).on('input', '#color_hex', () => {
+            this.updateColorPreview('#color_hex', '#color-preview', '#color_rgb');
+        });
+
+        // 顏色名稱輸入框變化時自動填充 hex code（使用事件委托）
+        $(document).on('input', '#color_name', () => {
+            // 延遲執行，確保輸入完成
+            clearTimeout(this.colorNameInputTimeout);
+            this.colorNameInputTimeout = setTimeout(() => {
+                this.autoFillHexFromColorName('#color_name', '#color_hex');
+            }, 300);
+        });
+    }
+
+    /**
+     * 初始化顏色預覽
+     */
+    initColorPreview() {
+        const hexInput = document.getElementById('color_hex');
+        const preview = document.getElementById('color-preview');
+        if (hexInput && preview) {
+            preview.style.backgroundColor = '#f3f4f6';
+        }
+    }
+
+    /**
+     * 根據顏色名稱自動填充 hex code
+     * 在 modal 模式下直接使用顏色映射表
+     */
+    autoFillHexFromColorName(colorNameInputId, hexInputId) {
+        const colorNameInput = document.getElementById(colorNameInputId.startsWith('#') ? colorNameInputId.substring(1) : colorNameInputId);
+        const hexInput = document.getElementById(hexInputId.startsWith('#') ? hexInputId.substring(1) : hexInputId);
+
+        if (!colorNameInput || !hexInput) return;
+
+        const colorName = colorNameInput.value.trim();
+        if (!colorName) {
+            // 如果顏色名稱為空，清空 hex code
+            hexInput.value = '';
+            hexInput.dispatchEvent(new Event('input', { bubbles: true }));
+            return;
+        }
+
+        // 直接使用顏色映射表（modal 模式下 Color.js 不可用）
+        this.fallbackColorMapping(colorName, hexInput);
+    }
+
+    /**
+     * 顏色映射表（根據顏色名稱自動填充 hex code）
+     */
+    fallbackColorMapping(colorName, hexInput) {
+        // 嘗試一些常見的顏色名稱映射
+        const colorMap = {
+            'red': '#FF0000', 'green': '#008000', 'blue': '#0000FF', 'yellow': '#FFFF00', 'orange': '#FFA500',
+            'purple': '#800080', 'pink': '#FFC0CB', 'brown': '#A52A2A', 'black': '#000000', 'white': '#FFFFFF',
+            'gray': '#808080', 'grey': '#808080',
+            'light red': '#FFB6C1', 'dark red': '#8B0000', 'light blue': '#ADD8E6', 'dark blue': '#00008B',
+            'light green': '#90EE90', 'dark green': '#006400', 'light yellow': '#FFFFE0', 'dark yellow': '#B8860B',
+            'light pink': '#FFB6C1', 'dark pink': '#FF1493', 'light gray': '#D3D3D3', 'dark gray': '#696969',
+            'light grey': '#D3D3D3', 'dark grey': '#696969',
+            'navy': '#000080', 'teal': '#008080', 'lime': '#00FF00', 'cyan': '#00FFFF', 'magenta': '#FF00FF',
+            'silver': '#C0C0C0', 'gold': '#FFD700', 'maroon': '#800000', 'olive': '#808000', 'aqua': '#00FFFF',
+            'fuchsia': '#FF00FF',
+        };
+
+        const normalizedName = colorName.toLowerCase().trim();
+
+        // 直接匹配
+        if (colorMap[normalizedName]) {
+            const hexCode = colorMap[normalizedName];
+            hexInput.value = hexCode;
+            // 觸發 hex 輸入框的 input 事件以更新預覽和 RGB
+            hexInput.dispatchEvent(new Event('input', { bubbles: true }));
+            // 顯示成功提示
+            this.showInfo(`Auto-filled Hex code: ${hexCode}`);
+            return;
+        }
+
+        // 模糊匹配
+        for (const [name, hex] of Object.entries(colorMap)) {
+            if (name.includes(normalizedName) || normalizedName.includes(name)) {
+                hexInput.value = hex;
+                // 觸發 hex 輸入框的 input 事件以更新預覽和 RGB
+                hexInput.dispatchEvent(new Event('input', { bubbles: true }));
+                // 顯示成功提示
+                this.showInfo(`Auto-filled Hex code: ${hex} (matched: ${name})`);
+                return;
+            }
+        }
+    }
+
+    /**
+     * 顯示信息提示
+     * @param {string} message 提示信息
+     */
+    showInfo(message) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(message, 'info');
+        } else {
+            // 備用實現
+            this.showAlert(message, 'info');
+        }
+    }
+
+    /**
+     * 更新顏色預覽和 RGB
+     */
+    updateColorPreview(hexInputId, previewId, rgbInputId) {
+        // 移除 # 前綴以獲取實際的 ID
+        const hexInputIdClean = hexInputId.startsWith('#') ? hexInputId.substring(1) : hexInputId;
+        const previewIdClean = previewId.startsWith('#') ? previewId.substring(1) : previewId;
+        const rgbInputIdClean = rgbInputId ? (rgbInputId.startsWith('#') ? rgbInputId.substring(1) : rgbInputId) : null;
+
+        // 確定在哪個 modal 中查找元素
+        let modal = null;
+        let hexInput = null;
+        let preview = null;
+        let rgbInput = null;
+
+        // 檢查是否在 update modal 中
+        if (hexInputIdClean === 'update_color_hex') {
+            modal = document.getElementById('updateColorModal');
+            if (modal) {
+                hexInput = modal.querySelector(`#${hexInputIdClean}`);
+                preview = modal.querySelector(`#${previewIdClean}`);
+                rgbInput = rgbInputIdClean ? modal.querySelector(`#${rgbInputIdClean}`) : null;
+            }
+        } else {
+            // 在 create modal 中
+            modal = document.getElementById('createColorModal');
+            if (modal) {
+                hexInput = modal.querySelector(`#${hexInputIdClean}`);
+                preview = modal.querySelector(`#${previewIdClean}`);
+                rgbInput = rgbInputIdClean ? modal.querySelector(`#${rgbInputIdClean}`) : null;
+            }
+        }
+
+        // 如果找不到，嘗試全局查找（向後兼容）
+        if (!hexInput) {
+            hexInput = document.getElementById(hexInputIdClean);
+        }
+        if (!preview) {
+            preview = document.getElementById(previewIdClean);
+        }
+        if (!rgbInput && rgbInputIdClean) {
+            rgbInput = document.getElementById(rgbInputIdClean);
+        }
+
+        if (!hexInput || !preview) return;
+
+        const hexValue = hexInput.value.trim();
+
+        // 如果 hex code 格式正確（完整的 6 位 hex code）
+        if (hexValue && /^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
+            preview.style.backgroundColor = hexValue;
+            if (rgbInput) {
+                if (typeof window.hexToRgb === 'function') {
+                    const rgb = window.hexToRgb(hexValue);
+                    rgbInput.value = `RGB(${rgb})`;
+                } else if (typeof hexToRgb === 'function') {
+                    const rgb = hexToRgb(hexValue);
+                    rgbInput.value = `RGB(${rgb})`;
+                }
+            }
+        } else if (hexValue && /^#[0-9A-Fa-f]{0,6}$/i.test(hexValue)) {
+            // 如果正在輸入中（部分 hex code），嘗試顯示預覽
+            // 補全到 6 位（用 0 填充）
+            let paddedHex = hexValue;
+            if (hexValue.length < 7) {
+                const hexPart = hexValue.substring(1); // 移除 #
+                const padded = hexPart.padEnd(6, '0');
+                paddedHex = '#' + padded;
+            }
+            preview.style.backgroundColor = paddedHex;
+            if (rgbInput) {
+                rgbInput.value = '';
+            }
+        } else {
+            // 無效的 hex code，重置預覽
+            preview.style.backgroundColor = '#f3f4f6';
+            if (rgbInput) {
+                rgbInput.value = '';
+            }
+        }
+    }
+
+    /**
+     * 重置彈窗表單
+     */
+    resetModalForm() {
+        const form = document.getElementById('createColorModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        const preview = document.getElementById('color-preview');
+        if (preview) {
+            preview.style.backgroundColor = '#f3f4f6';
+        }
+
+        const rgbInput = document.getElementById('color_rgb');
+        if (rgbInput) {
+            rgbInput.value = '';
+        }
+
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+    }
+
+    /**
+     * 提交彈窗中的Color
+     */
+    submitModalColor() {
+        const colorNameInput = document.getElementById('color_name');
+        const colorHexInput = document.getElementById('color_hex');
+        const submitBtn = $('#submitCreateColorModal');
+
+        const colorName = colorNameInput ? colorNameInput.value.trim() : '';
+        const colorHex = colorHexInput ? colorHexInput.value.trim() : '';
+
+        let isValid = true;
+
+        if (!colorName) {
+            if (colorNameInput) {
+                colorNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (colorNameInput) {
+                colorNameInput.classList.remove('is-invalid');
+                colorNameInput.classList.add('is-valid');
+            }
+        }
+
+        if (!colorHex) {
+            if (colorHexInput) {
+                colorHexInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else if (!/^#[0-9A-Fa-f]{6}$/.test(colorHex)) {
+            if (colorHexInput) {
+                colorHexInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (colorHexInput) {
+                colorHexInput.classList.remove('is-invalid');
+                colorHexInput.classList.add('is-valid');
+            }
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields with valid values', 'warning');
+            return;
+        }
+
+        // 轉換 HEX 為 RGB
+        let colorRgb = '';
+        let rgbValue = '';
+        if (typeof window.hexToRgb === 'function') {
+            colorRgb = window.hexToRgb(colorHex);
+            rgbValue = `RGB(${colorRgb})`;
+        } else if (typeof hexToRgb === 'function') {
+            colorRgb = hexToRgb(colorHex);
+            rgbValue = `RGB(${colorRgb})`;
+        } else {
+            // 備用方案：手動轉換
+            const hex = colorHex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            rgbValue = `RGB(${r},${g},${b})`;
+        }
+
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('color_name', colorName);
+        formData.append('color_hex', colorHex);
+        formData.append('color_rgb', rgbValue);
+
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Creating...');
+        submitBtn.prop('disabled', true);
+
+        fetch(window.createColorUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to create color');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Color created successfully', 'success');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createColorModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                this.showAlert(data.message || 'Failed to create color', 'error');
+            }
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to create color';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        });
+    }
+
+    // =============================================================================
+    // Update Color 彈窗模塊 (Update Color Modal Module)
+    // =============================================================================
+
+    /**
+     * 綁定更新彈窗事件
+     */
+    bindUpdateModalEvents() {
+        $('#updateColorModal').on('show.bs.modal', () => {
+            this.initUpdateColorPreview();
+            if (typeof window.initializeStatusCardSelection === 'function') {
+                window.initializeStatusCardSelection('color_status');
+            }
+        });
+
+        // 彈窗完全顯示後設置焦點並更新預覽
+        $('#updateColorModal').on('shown.bs.modal', () => {
+            // 使用 setTimeout 確保 DOM 完全準備好
+            setTimeout(() => {
+                // 更新顏色預覽
+                this.updateColorPreview('#update_color_hex', '#color-preview', '#update_color_rgb');
+
+                // 設置焦點
+                const colorNameInput = document.getElementById('update_color_name');
+                if (colorNameInput) {
+                    colorNameInput.focus();
+                }
+            }, 100);
+        });
+
+        $('#updateColorModal').on('hidden.bs.modal', () => {
+            this.resetUpdateModalForm();
+        });
+
+        $('#submitUpdateColorModal').on('click', () => {
+            this.submitUpdateModalColor();
+        });
+
+        // Enter鍵提交表單
+        $('#updateColorModal').on('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.submitUpdateModalColor();
+            }
+        });
+
+        // Hex 輸入框變化時更新預覽和 RGB（使用事件委托）
+        $(document).on('input', '#update_color_hex', () => {
+            this.updateColorPreview('#update_color_hex', '#color-preview', '#update_color_rgb');
+        });
+
+        // 顏色名稱輸入框變化時自動填充 hex code（使用事件委托）
+        $(document).on('input', '#update_color_name', () => {
+            // 延遲執行，確保輸入完成
+            clearTimeout(this.updateColorNameInputTimeout);
+            this.updateColorNameInputTimeout = setTimeout(() => {
+                this.autoFillHexFromColorName('#update_color_name', '#update_color_hex');
+            }, 300);
+        });
+    }
+
+    /**
+     * 打開更新彈窗並填充數據
+     */
+    openUpdateModal(colorData) {
+        $('#update_color_name').val(colorData.color_name || '');
+        $('#update_color_hex').val(colorData.color_hex || '');
+
+        const targetStatus = colorData.color_status === 'Unavailable' ? 'Unavailable' : 'Available';
+        const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+        $(radioSelector).prop('checked', true);
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('color_status');
+        }
+
+        const form = $('#updateColorModalForm');
+        form.attr('data-color-id', colorData.id);
+
+        const currentInfo = `
+            <div class="mb-1">
+                <i class="bi bi-palette me-2 text-muted"></i>
+                <span>Name: <strong>${colorData.color_name || 'N/A'}</strong></span>
+            </div>
+            <div class="mb-1">
+                <i class="bi bi-hash me-2 text-muted"></i>
+                <span>Hex: <strong>${colorData.color_hex || 'N/A'}</strong></span>
+            </div>
+            <div class="mb-1">
+                <i class="bi bi-shield-check me-2 text-muted"></i>
+                <span>Status: <strong>${colorData.color_status || 'N/A'}</strong></span>
+            </div>
+        `;
+        $('#currentColorInfo').html(currentInfo);
+
+        const modal = new bootstrap.Modal(document.getElementById('updateColorModal'));
+        modal.show();
+
+        // 在 modal 顯示後立即更新預覽（備用方案）
+        setTimeout(() => {
+            this.updateColorPreview('#update_color_hex', '#color-preview', '#update_color_rgb');
+        }, 150);
+    }
+
+    /**
+     * 初始化更新彈窗中的顏色預覽
+     */
+    initUpdateColorPreview() {
+        const hexInput = document.getElementById('update_color_hex');
+        const preview = document.getElementById('color-preview');
+        if (hexInput && preview) {
+            const hexValue = hexInput.value.trim();
+            if (hexValue && /^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
+                preview.style.backgroundColor = hexValue;
+            } else {
+                preview.style.backgroundColor = '#f3f4f6';
+            }
+        }
+    }
+
+    /**
+     * 重置更新彈窗表單
+     */
+    resetUpdateModalForm() {
+        const form = document.getElementById('updateColorModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        const preview = document.getElementById('color-preview');
+        if (preview) {
+            preview.style.backgroundColor = '#f3f4f6';
+        }
+
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+    }
+
+    /**
+     * 提交更新彈窗中的Color
+     */
+    submitUpdateModalColor() {
+        const form = document.getElementById('updateColorModalForm');
+        const colorId = form?.getAttribute('data-color-id');
+        const colorNameInput = document.getElementById('update_color_name');
+        const colorHexInput = document.getElementById('update_color_hex');
+        const submitBtn = $('#submitUpdateColorModal');
+
+        if (!colorId) {
+            this.showAlert('Color ID not found', 'error');
+            return;
+        }
+
+        const colorName = colorNameInput ? colorNameInput.value.trim() : '';
+        const colorHex = colorHexInput ? colorHexInput.value.trim() : '';
+        const colorStatus = form?.querySelector('input[name="color_status"]:checked')?.value || 'Available';
+
+        let isValid = true;
+
+        if (!colorName) {
+            if (colorNameInput) {
+                colorNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (colorNameInput) {
+                colorNameInput.classList.remove('is-invalid');
+                colorNameInput.classList.add('is-valid');
+            }
+        }
+
+        if (!colorHex) {
+            if (colorHexInput) {
+                colorHexInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else if (!/^#[0-9A-Fa-f]{6}$/.test(colorHex)) {
+            if (colorHexInput) {
+                colorHexInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (colorHexInput) {
+                colorHexInput.classList.remove('is-invalid');
+                colorHexInput.classList.add('is-valid');
+            }
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields with valid values', 'warning');
+            return;
+        }
+
+        // 轉換 HEX 為 RGB
+        let colorRgb = '';
+        let rgbValue = '';
+        if (typeof window.hexToRgb === 'function') {
+            colorRgb = window.hexToRgb(colorHex);
+            rgbValue = `RGB(${colorRgb})`;
+        } else if (typeof hexToRgb === 'function') {
+            colorRgb = hexToRgb(colorHex);
+            rgbValue = `RGB(${colorRgb})`;
+        } else {
+            // 備用方案：手動轉換
+            const hex = colorHex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            rgbValue = `RGB(${r},${g},${b})`;
+        }
+
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PUT');
+        formData.append('color_name', colorName);
+        formData.append('color_hex', colorHex);
+        formData.append('color_rgb', rgbValue);
+        formData.append('color_status', colorStatus);
+
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+        submitBtn.prop('disabled', true);
+
+        const updateUrl = window.updateColorUrl.replace(':id', colorId);
+
+        fetch(updateUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update color');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Color updated successfully', 'success');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateColorModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                this.showAlert(data.message || 'Failed to update color', 'error');
+            }
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to update color';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        });
+    }
 }
 
 // =============================================================================
-// Create 頁面功能 (Create Page Functions)
+// 工具函數 (Utility Functions)
 // =============================================================================
 
 /**
@@ -645,1084 +1370,6 @@ function hexToRgb(hex) {
     return `${r},${g},${b}`;
 }
 
-/**
- * 使用 Color.js 库根据颜色名称自动填充 Hex 代码
- */
-function autoFillHexFromColorName() {
-    const colorNameInput = document.getElementById('color_name');
-    const colorHexInput = document.getElementById('color_hex');
-
-    if (!colorNameInput || !colorHexInput) return;
-
-    const colorName = colorNameInput.value.trim();
-    if (!colorName) return;
-
-    // 检查 Color.js 是否可用
-    if (typeof Color === 'undefined') {
-        console.log('Color.js library not available, using fallback mapping');
-        fallbackColorMapping();
-        return;
-    }
-
-    try {
-        // 使用 Color.js 库解析颜色名称
-        const color = new Color(colorName);
-
-        if (color && color.isValid && color.isValid()) {
-            const hexCode = color.to('srgb').toString({ format: 'hex' });
-            colorHexInput.value = hexCode;
-
-            // 更新颜色预览
-            const colorPreview = document.getElementById('color-preview');
-            if (colorPreview) {
-                colorPreview.style.backgroundColor = hexCode;
-            }
-
-            // 显示成功提示
-            showInfo(`Auto-filled Hex code: ${hexCode}`);
-        } else {
-            // Color.js 无法解析，尝试备用方案
-            fallbackColorMapping();
-        }
-    } catch (error) {
-        // Color.js 解析失败，使用备用方案
-        console.log('Color.js parsing failed:', error);
-        fallbackColorMapping();
-    }
-
-    function fallbackColorMapping() {
-        // 尝试一些常见的颜色名称映射
-        const colorMap = {
-            'red': '#FF0000', 'green': '#008000', 'blue': '#0000FF', 'yellow': '#FFFF00', 'orange': '#FFA500',
-            'purple': '#800080', 'pink': '#FFC0CB', 'brown': '#A52A2A', 'black': '#000000', 'white': '#FFFFFF',
-            'gray': '#808080', 'grey': '#808080',
-            '紅色': '#FF0000', '綠色': '#008000', '藍色': '#0000FF', '黃色': '#FFFF00', '橙色': '#FFA500',
-            '紫色': '#800080', '粉色': '#FFC0CB', '棕色': '#A52A2A', '黑色': '#000000', '白色': '#FFFFFF',
-            '灰色': '#808080',
-            'light red': '#FFB6C1', 'dark red': '#8B0000', 'light blue': '#ADD8E6', 'dark blue': '#00008B',
-            'light green': '#90EE90', 'dark green': '#006400', 'light yellow': '#FFFFE0', 'dark yellow': '#B8860B',
-            'light pink': '#FFB6C1', 'dark pink': '#FF1493', 'light gray': '#D3D3D3', 'dark gray': '#696969',
-            'light grey': '#D3D3D3', 'dark grey': '#696969',
-            '淺紅色': '#FFB6C1', '深紅色': '#8B0000', '淺藍色': '#ADD8E6', '深藍色': '#00008B',
-            '淺綠色': '#90EE90', '深綠色': '#006400', '淺黃色': '#FFFFE0', '深黃色': '#B8860B',
-            '淺粉色': '#FFB6C1', '深粉色': '#FF1493', '淺灰色': '#D3D3D3', '深灰色': '#696969',
-            'navy': '#000080', 'teal': '#008080', 'lime': '#00FF00', 'cyan': '#00FFFF', 'magenta': '#FF00FF',
-            'silver': '#C0C0C0', 'gold': '#FFD700', 'maroon': '#800000', 'olive': '#808000', 'aqua': '#00FFFF',
-            'fuchsia': '#FF00FF',
-            '海軍藍': '#000080', '青綠色': '#008080', '萊姆綠': '#00FF00', '青色': '#00FFFF',
-            '洋紅色': '#FF00FF', '銀色': '#C0C0C0', '金色': '#FFD700', '栗色': '#800000',
-            '橄欖綠': '#808000', '水藍色': '#00FFFF', '紫紅色': '#FF00FF'
-        };
-
-        const normalizedName = colorName.toLowerCase().trim();
-
-        // 直接匹配
-        if (colorMap[normalizedName]) {
-            const hexCode = colorMap[normalizedName];
-            colorHexInput.value = hexCode;
-
-            // 更新颜色预览
-            const colorPreview = document.getElementById('color-preview');
-            if (colorPreview) {
-                colorPreview.style.backgroundColor = hexCode;
-            }
-
-            showInfo(`Auto-filled Hex code: ${hexCode}`);
-        } else {
-            // 模糊匹配
-            for (const [name, hex] of Object.entries(colorMap)) {
-                if (name.includes(normalizedName) || normalizedName.includes(name)) {
-                    colorHexInput.value = hex;
-
-                    // 更新颜色预览
-                    const colorPreview = document.getElementById('color-preview');
-                    if (colorPreview) {
-                        colorPreview.style.backgroundColor = hex;
-                    }
-
-                    showInfo(`Auto-filled Hex code: ${hex} (matched: ${name})`);
-                    return;
-                }
-            }
-
-            // 没有找到匹配的颜色
-            showWarning(`No matching color found for "${colorName}"`);
-        }
-    }
-}
-
-
-/**
- * 驗證顏色代碼格式
- * @param {string} colorCode 顏色代碼
- * @returns {boolean} 是否有效
- */
-function isValidColorCode(colorCode) {
-    // 移除#號進行驗證
-    const cleanCode = colorCode.replace('#', '');
-    // 驗證6位十六進制代碼
-    return /^[0-9A-Fa-f]{6}$/.test(cleanCode);
-}
-
-/**
- * 標準化顏色代碼
- * @param {string} colorHex 顏色代碼
- * @returns {string} 標準化的顏色代碼
- */
-function normalizeColorHex(colorHex) {
-    return colorHex.startsWith('#') ? colorHex : '#' + colorHex;
-}
-
-/**
- * 添加顏色到數組
- * @param {string} colorName 顏色名稱
- * @param {string} colorHex 顏色代碼
- * @param {string} colorStatus 顏色狀態
- */
-function addColorToArray(colorName, colorHex, colorStatus) {
-    // 標準化顏色代碼（確保有#前綴）
-    const normalizedColorHex = normalizeColorHex(colorHex);
-
-    // 將 HEX 轉換為 RGB
-    const colorRgb = hexToRgb(normalizedColorHex);
-
-    // 添加顏色到數組
-    const colorData = {
-        colorName: colorName,
-        colorHex: normalizedColorHex,
-        colorRgb: colorRgb,
-        colorStatus: colorStatus
-    };
-
-    colorList.push(colorData);
-
-    // 更新UI
-    updateColorList();
-    updateUI();
-
-    // 顯示右邊的顏色表格
-    showColorValuesArea();
-
-    // 清空輸入框
-    const colorNameInput = document.getElementById('color_name');
-    const colorHexInput = document.getElementById('color_hex');
-    const colorPreview = document.getElementById('color-preview');
-
-    if (colorNameInput) {
-        colorNameInput.value = '';
-        colorNameInput.focus();
-    }
-    if (colorHexInput) {
-        colorHexInput.value = '';
-    }
-
-    // 重置顏色預覽
-    if (colorPreview) {
-        colorPreview.style.backgroundColor = '#f3f4f6';
-    }
-}
-
-/**
- * 檢查顏色名稱是否已存在（簡化版本，用於當前頁面）
- * @param {string} colorName 顏色名稱
- * @returns {boolean} 是否存在
- */
-function isColorExists(colorName) {
-    return colorList.some(item => item.colorName.toLowerCase() === colorName.toLowerCase());
-}
-
-/**
- * 添加顏色
- */
-function addColor() {
-    const colorNameInput = document.getElementById('color_name');
-    const colorHexInput = document.getElementById('color_hex');
-
-    const colorName = colorNameInput.value.trim();
-    const colorHex = colorHexInput.value.trim();
-
-    // 驗證輸入
-    if (!colorName) {
-        showAlert('Please enter color name', 'warning');
-        colorNameInput.focus();
-        return;
-    }
-
-    if (!colorHex) {
-        showAlert('Please enter color code', 'warning');
-        colorHexInput.focus();
-        return;
-    }
-
-    // 驗證顏色代碼格式
-    if (!isValidColorCode(colorHex)) {
-        showAlert('Please enter a valid color code (e.g., #FF0000 or FF0000)', 'warning');
-        colorHexInput.focus();
-        return;
-    }
-
-    // 檢查是否已存在
-    if (isColorExists(colorName)) {
-        showAlert(`Color name "${colorName}" already exists in the list`, 'error');
-        highlightExistingColor(colorName);
-        colorNameInput.focus();
-        return;
-    }
-
-    // 添加到顏色數組（狀態默認為 Available）
-    addColorToArray(colorName, colorHex, 'Available');
-
-    // 顯示成功提示
-    showAlert('Color added successfully', 'success');
-}
-
-/**
- * 移除顏色
- * @param {number} index 索引
- */
-function removeColor(index) {
-    console.log('Removing color at index:', index);
-    console.log('Color list before removal:', colorList);
-
-    // 確認機制
-    if (!confirm('Are you sure you want to remove this color?')) {
-        return;
-    }
-
-    if (index >= 0 && index < colorList.length) {
-        colorList.splice(index, 1);
-        console.log('Color list after removal:', colorList);
-        updateColorList();
-        updateUI();
-
-        // 顯示成功移除的 alert
-        showAlert('Color removed successfully', 'success');
-    } else {
-        console.error('Invalid index:', index);
-        showAlert('Failed to remove color', 'error');
-    }
-}
-
-/**
- * 更新顏色列表
- */
-function updateColorList() {
-    const container = document.getElementById('colorValuesList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    colorList.forEach((item, index) => {
-        // 檢查是否為重複項
-        const isDuplicate = isColorExists(item.colorName) &&
-            colorList.filter(i => i.colorName.toLowerCase() === item.colorName.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        const colorItem = document.createElement('div');
-        colorItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        colorItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                <div class="me-3 flex-shrink-0">
-                    <div class="rounded border border-2 border-white shadow-sm" style="background-color: ${item.colorHex}; width: 2.5rem; height: 2.5rem;"></div>
-                </div>
-                <div class="flex-grow-1 min-width-0">
-                    <div class="fw-bold text-dark mb-1 text-truncate">
-                        <i class="bi bi-palette me-2 text-primary"></i>${item.colorName}
-                    </div>
-                    <div class="text-muted small" style="line-height: 1.3;">
-                        <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${item.colorHex}</span>
-                        <span class="mx-2">|</span>
-                        <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${item.colorRgb}</span>
-                    </div>
-                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
-        `;
-
-        container.appendChild(colorItem);
-    });
-}
-
-/**
- * 高亮顯示列表中已存在的顏色名稱
- * @param {string} colorName 顏色名稱
- */
-function highlightExistingColor(colorName) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.fw-bold').textContent.trim();
-        if (value.toLowerCase() === colorName.toLowerCase()) {
-            // 添加 Bootstrap 高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 顯示顏色值區域
- */
-function showColorValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 顯示顏色值區域
-    const colorValuesArea = document.getElementById('colorValuesArea');
-    if (colorValuesArea) {
-        colorValuesArea.classList.remove('d-none');
-    }
-
-    // 更新顏色名稱顯示
-    updateColorNameDisplay();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏顏色值區域
-    const colorValuesArea = document.getElementById('colorValuesArea');
-    if (colorValuesArea) {
-        colorValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    // 檢查是否有數據需要清除
-    if (colorList.length === 0) {
-        showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 確認清除
-    if (!confirm('Are you sure you want to clear all colors?')) {
-        return;
-    }
-
-    // 清空數組
-    colorList = [];
-
-    // 清空輸入框
-    const colorNameInput = document.getElementById('color_name');
-    const colorHexInput = document.getElementById('color_hex');
-    const colorPreview = document.getElementById('color-preview');
-
-    if (colorNameInput) {
-        colorNameInput.value = '';
-    }
-    if (colorHexInput) {
-        colorHexInput.value = '';
-    }
-
-    // 重置顏色預覽
-    if (colorPreview) {
-        colorPreview.style.backgroundColor = '#f3f4f6';
-    }
-
-    // 更新UI
-    updateColorList();
-    updateUI();
-
-    // 顯示成功提示
-    showAlert('All colors cleared successfully', 'success');
-
-    // 隱藏所有區域
-    hideAllAreas();
-}
-
-// =============================================================================
-// UI 更新功能 (UI Update Functions)
-// =============================================================================
-
-/**
- * 更新UI（簡化版本，用於當前頁面）
- */
-function updateUI() {
-    // 更新顏色值計數
-    updateColorValuesCount();
-
-    // 更新顏色範圍顯示
-    updateColorRangeDisplay();
-
-    // 更新顏色名稱顯示
-    updateColorNameDisplay();
-
-    // 如果沒有顏色，隱藏所有區域並顯示初始狀態
-    if (colorList.length === 0) {
-        hideAllAreas();
-    }
-}
-
-/**
- * 更新顏色值計數
- */
-function updateColorValuesCount() {
-    const count = colorList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('colorValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} colors`;
-    }
-}
-
-
-function updateColorNameDisplay() {
-    const colorNameSpan = document.getElementById('colorName');
-    if (colorNameSpan) {
-        if (colorList.length > 0) {
-            // 顯示顏色數量
-            colorNameSpan.textContent = `- ${colorList.length} colors`;
-        } else {
-            colorNameSpan.textContent = '';
-        }
-    }
-}
-
-function updateColorRangeDisplay() {
-    const colorNames = colorList.map(item => item.colorName);
-
-    const selectedColorSpan = document.getElementById('selectedColor');
-    if (selectedColorSpan) {
-        if (colorNames.length === 0) {
-            selectedColorSpan.textContent = 'None';
-        } else if (colorNames.length === 1) {
-            selectedColorSpan.textContent = colorNames[0];
-        } else {
-            // 按字母順序排序
-            const sortedNames = colorNames.sort();
-            const minColor = sortedNames[0];
-            const maxColor = sortedNames[sortedNames.length - 1];
-            selectedColorSpan.textContent = `${minColor} - ${maxColor}`;
-        }
-    }
-}
-
-// =============================================================================
-// 排序功能 (Sorting Functions)
-// =============================================================================
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortColors');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortColorValuesList();
-}
-
-/**
- * 排序顏色值列表
- */
-function sortColorValuesList() {
-    const colorValuesList = document.getElementById('colorValuesList');
-    const items = Array.from(colorValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取顏色名稱並排序
-    const colorValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.fw-bold').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    colorValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    colorValues.forEach(({ element }) => {
-        colorValuesList.appendChild(element);
-    });
-}
-
-// =============================================================================
-// 批量添加功能 (Batch Add Functions)
-// =============================================================================
-
-
-/**
- * 添加多個顏色
- * @param {Array} colors 顏色數組
- */
-function addMultipleColors(colors) {
-    let addedCount = 0;
-    let skippedCount = 0;
-
-    colors.forEach(color => {
-        if (!isColorExists(color.name)) {
-            addColorToList(color.name, color.hex, 'Available'); // 默認為 Available
-            addedCount++;
-        } else {
-            skippedCount++;
-        }
-    });
-
-    // 顯示結果
-    if (addedCount > 0 && skippedCount === 0) {
-        showAlert(`Successfully added ${addedCount} colors`, 'success');
-    } else if (addedCount > 0 && skippedCount > 0) {
-        showAlert(`Added ${addedCount} colors, ${skippedCount} already existed`, 'info');
-    } else if (skippedCount > 0) {
-        showAlert('All colors already exist in the list', 'warning');
-    }
-
-    // 更新UI
-    updateUI();
-
-    // 如果有添加顏色，顯示右邊的表格
-    if (addedCount > 0) {
-        showColorValuesArea();
-    }
-}
-
-/**
- * 添加顏色到列表
- * @param {string} colorName 顏色名稱
- * @param {string} colorHex 顏色代碼
- * @param {string} colorStatus 狀態（默認為 Available）
- */
-function addColorToList(colorName, colorHex, colorStatus = 'Available') {
-    // 檢查是否為重複項
-    if (isColorExists(colorName)) {
-        console.log('Duplicate detected in batch add, skipping:', colorName);
-        return; // 跳過重複項，不添加到列表
-    }
-
-    // 標準化顏色代碼
-    const normalizedColorHex = normalizeColorHex(colorHex);
-
-    // 添加到 colorList 數組
-    colorList.push({
-        colorName: colorName,
-        colorHex: normalizedColorHex,
-        colorRgb: hexToRgb(normalizedColorHex),
-        colorStatus: colorStatus
-    });
-
-    // 重新渲染整個列表
-    updateColorList();
-    updateUI();
-
-    // 顯示顏色值區域
-    showColorValuesArea();
-}
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * Update 頁面表單提交處理
- * @param {HTMLFormElement} form 表單元素
- */
-function handleUpdateFormSubmit(form) {
-    // 驗證表單
-    if (!validateUpdateForm()) {
-        return;
-    }
-
-    // 確保 RGB 值是最新的
-    const hexInput = document.getElementById('color_hex');
-    const rgbInput = document.getElementById('color_rgb');
-
-    if (hexInput && rgbInput) {
-        const hexValue = hexInput.value.trim();
-        if (hexValue && /^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
-            const rgb = hexToRgb(hexValue);
-            if (rgb) {
-                rgbInput.value = rgb;
-            }
-        } else {
-            // 如果 Hex 值无效，设置默认 RGB 值
-            rgbInput.value = '0,0,0';
-        }
-    }
-
-    // 顯示加載狀態
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
-    submitBtn.disabled = true;
-
-    // 準備表單數據
-    const formData = new FormData(form);
-
-    // 提交數據
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            const message = data.message || 'Color updated successfully';
-            showAlert(message, 'success');
-
-            // 延遲重定向到列表頁面
-            setTimeout(() => {
-                window.location.href = window.colorManagementRoute || '/admin/colors/index';
-            }, 2000);
-        } else {
-            isColorUpdating = false; // 錯誤時重置標誌
-            showAlert(data.message || 'Failed to update color', 'error');
-        }
-    })
-    .catch(error => {
-        isColorUpdating = false; // 錯誤時重置標誌
-        console.error('Update error:', error);
-
-        if (error.message.includes('already been taken') || error.message.includes('color_name')) {
-            showAlert('This color name already exists. Please choose a different name.', 'warning');
-        } else if (error.message.includes('422')) {
-            showAlert('Validation failed. Please check your input.', 'warning');
-        } else if (error.message.includes('419')) {
-            showAlert('Session expired. Please refresh the page and try again.', 'warning');
-        } else {
-            showAlert('Failed to update color: ' + error.message, 'error');
-        }
-    })
-    .finally(() => {
-        // 恢復按鈕狀態
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
-
-
-/**
- * Update 頁面表單驗證
- * @returns {boolean} 驗證結果
- */
-function validateUpdateForm() {
-    const colorNameInput = document.getElementById('color_name');
-    const colorHexInput = document.getElementById('color_hex');
-
-    // 驗證顏色名稱
-    if (!colorNameInput.value.trim()) {
-        showAlert('Please enter color name', 'warning');
-        colorNameInput.focus();
-        return false;
-    }
-
-    // 驗證顏色代碼
-    if (!colorHexInput.value.trim()) {
-        showAlert('Please enter color code', 'warning');
-        colorHexInput.focus();
-        return false;
-    }
-
-    // 驗證顏色代碼格式
-    if (!isValidColorCode(colorHexInput.value.trim())) {
-        showAlert('Please enter a valid color code (e.g., #FF0000 or FF0000)', 'warning');
-        colorHexInput.focus();
-        return false;
-    }
-
-    return true;
-}
-
-// =============================================================================
-// 顏色預覽功能 (Color Preview Functions)
-// =============================================================================
-
-/**
- * 更新顏色預覽
- */
-function updateColorPreview() {
-    const colorHexInput = document.getElementById('color_hex');
-    const colorPreview = document.getElementById('color-preview');
-    const rgbInput = document.getElementById('color_rgb');
-
-    if (colorHexInput && colorPreview) {
-        const colorValue = colorHexInput.value.trim();
-        if (colorValue && isValidColorCode(colorValue)) {
-            const normalizedColor = colorValue.startsWith('#') ? colorValue : '#' + colorValue;
-            colorPreview.style.backgroundColor = normalizedColor;
-            colorPreview.classList.remove('d-none');
-
-            // 自動生成RGB代碼
-            if (rgbInput) {
-                const rgb = hexToRgb(normalizedColor);
-                if (rgb) {
-                    rgbInput.value = rgb;
-                }
-            }
-        } else {
-            colorPreview.classList.add('d-none');
-        }
-    }
-}
-
-/**
- * 設置顏色預覽
- */
-function setupColorPreview() {
-    const hexInput = document.getElementById('color_hex');
-    const rgbInput = document.getElementById('color_rgb');
-    const colorPreview = document.getElementById('color-preview');
-
-    if (hexInput && colorPreview) {
-        // 實時更新顏色預覽
-        function updateColorPreviewRealTime() {
-            const hexValue = hexInput.value;
-
-            if (hexValue && /^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
-                colorPreview.style.backgroundColor = hexValue;
-
-                // 自動生成RGB代碼到隱藏字段
-                if (rgbInput) {
-                    const rgb = hexToRgb(hexValue);
-                    if (rgb) {
-                        rgbInput.value = rgb;
-                    }
-                }
-            }
-        }
-
-        // 監聽輸入變化
-        hexInput.addEventListener('input', updateColorPreviewRealTime);
-
-        // 初始化預覽
-        updateColorPreviewRealTime();
-    }
-}
-
-// =============================================================================
-// 表單驗證和提交 (Form Validation & Submission)
-// =============================================================================
-
-/**
- * 驗證顏色數據
- * @returns {boolean} 驗證結果
- */
-function validateColorData() {
-    // 檢查是否有重複的顏色名稱
-    const duplicates = [];
-    const seen = new Set();
-    for (const item of colorList) {
-        const combination = item.colorName.toLowerCase();
-        if (seen.has(combination)) {
-            duplicates.push(item.colorName);
-        } else {
-            seen.add(combination);
-        }
-    }
-
-    if (duplicates.length > 0) {
-        showAlert('Duplicate color names found. Please remove duplicates before submitting.', 'error');
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * 提交顏色表單
- */
-function submitColorForm() {
-    // 調試信息：檢查要提交的數據
-    console.log('Submitting color data:', colorList);
-
-    // 準備提交數據
-    const formData = new FormData();
-    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-
-    // 添加顏色數據
-    colorList.forEach((item, index) => {
-        // 調試信息：檢查每個顏色的狀態
-        console.log(`Color ${index + 1}:`, { colorName: item.colorName, colorStatus: item.colorStatus });
-
-        // 添加顏色文本數據
-        formData.append(`colors[${index}][colorName]`, item.colorName);
-        formData.append(`colors[${index}][colorHex]`, item.colorHex);
-        formData.append(`colors[${index}][colorRgb]`, item.colorRgb);
-        formData.append(`colors[${index}][colorStatus]`, item.colorStatus);
-    });
-
-    // 提交數據
-    fetch(window.createColorUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message || 'Colors created successfully', 'success');
-
-            // 延遲重定向到dashboard，讓用戶看到成功消息
-            setTimeout(() => {
-                window.location.href = window.colorManagementRoute || '/admin/colors/index';
-            }, 2000);
-        } else {
-            showAlert(data.message || 'Failed to create colors', 'error');
-        }
-    })
-    .catch(error => {
-        showAlert('Some colors failed to create', 'error');
-    });
-}
-
-// =============================================================================
-// 頁面初始化功能 (Page Initialization Functions)
-// =============================================================================
-
-/**
- * 綁定顏色事件
- */
-function bindColorEvents() {
-    // Create 頁面事件綁定
-    bindColorCreateEvents();
-
-    // 表單提交事件監聽器
-    const colorForm = document.getElementById('colorForm');
-    if (colorForm) {
-        colorForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // 檢查是否有顏色
-            if (colorList.length === 0) {
-                showAlert('Please add at least one color', 'warning');
-                return;
-            }
-
-            // 驗證所有顏色數據
-            if (!validateColorData()) {
-                return;
-            }
-
-            // 提交表單
-            submitColorForm();
-        });
-    }
-}
-
-/**
- * 綁定顏色創建頁面事件
- */
-function bindColorCreateEvents() {
-    // 顏色名稱輸入框回車事件
-    const colorNameInput = document.getElementById('color_name');
-    if (colorNameInput) {
-        colorNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addColor();
-            }
-        });
-
-        // 顏色名稱自動填充功能
-        colorNameInput.addEventListener('blur', function() {
-            autoFillHexFromColorName();
-        });
-
-        colorNameInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
-                autoFillHexFromColorName();
-            }
-        });
-    }
-
-    // 顏色代碼輸入框回車事件
-    const colorHexInput = document.getElementById('color_hex');
-    if (colorHexInput) {
-        colorHexInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addColor();
-            }
-        });
-    }
-
-    // 添加顏色按鈕
-    const addColorBtn = document.getElementById('addColor');
-    if (addColorBtn) {
-        addColorBtn.addEventListener('click', addColor);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 事件委托：刪除顏色按鈕
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            removeColor(index);
-        }
-    });
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortColors');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-}
-
-/**
- * Update 頁面狀態卡片初始化
- */
-function initializeUpdateStatusCards() {
-    // 狀態卡片選擇
-    const statusCards = document.querySelectorAll('.status-card');
-    statusCards.forEach(card => {
-        card.addEventListener('click', function() {
-            selectUpdateStatusCard(this);
-        });
-    });
-}
-
-/**
- * Update 頁面狀態卡片選擇
- * @param {HTMLElement} card 狀態卡片元素
- */
-function selectUpdateStatusCard(card) {
-    // 移除所有選中狀態
-    const allCards = document.querySelectorAll('.status-card');
-    allCards.forEach(c => c.classList.remove('selected'));
-
-    // 添加選中狀態到當前卡片
-    card.classList.add('selected');
-
-    // 更新對應的單選按鈕
-    const radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-        radio.checked = true;
-    }
-}
-
-// 全局變量防止重複請求
-let isColorUpdating = false;
-let colorUpdateFormBound = false;
-
-/**
- * 初始化顏色更新頁面
- */
-function initializeColorUpdate() {
-    bindColorEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!colorUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isColorUpdating) return false;
-                isColorUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            colorUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeUpdateStatusCards();
-
-    // 設置顏色預覽功能
-    setupColorPreview();
-}
-
-/**
- * 初始化顏色頁面
- * @param {Object} config 配置對象
- */
-function initializeColorPage(config) {
-    bindColorEvents();
-
-    if (config && config.events) {
-        // 綁定自定義事件
-        Object.keys(config.events).forEach(eventName => {
-            if (typeof config.events[eventName] === 'function') {
-                // 這裡可以根據需要綁定特定事件
-                console.log(`Custom event ${eventName} registered`);
-            }
-        });
-    }
-}
-
 // =============================================================================
 // 全局實例初始化 (Global Instance Initialization)
 // =============================================================================
@@ -1730,51 +1377,13 @@ function initializeColorPage(config) {
 let colorDashboard;
 
 $(document).ready(function() {
-    // 檢查當前頁面是否是dashboard頁面（有table-body元素）
     if ($("#table-body").length > 0) {
         colorDashboard = new ColorDashboard();
+
+        // 導出方法到全局作用域
+        window.setColorAvailable = (colorId) => colorDashboard.setAvailable(colorId);
+        window.setColorUnavailable = (colorId) => colorDashboard.setUnavailable(colorId);
+        window.editColor = (colorId) => colorDashboard.editColor(colorId);
+        window.deleteColor = (colorId) => colorDashboard.deleteColor(colorId);
     }
 });
-
-// =============================================================================
-// DOM 內容加載完成後的事件綁定 (DOM Content Loaded Event Binding)
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化顏色事件
-    bindColorEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!colorUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isColorUpdating) return false;
-                isColorUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            colorUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeUpdateStatusCards();
-
-    // 初始化顏色預覽
-    setupColorPreview();
-});
-
-// =============================================================================
-// 全局函數導出 (Global Function Exports)
-// =============================================================================
-
-// 導出主要函數到全局作用域
-window.addColor = addColor;
-window.removeColor = removeColor;
-window.clearForm = clearForm;
-window.toggleColorStatus = toggleColorStatus;
-window.setColorAvailable = setColorAvailable;
-window.setColorUnavailable = setColorUnavailable;
-window.updateColorStatus = updateColorStatus;
-window.viewColorDetails = viewColorDetails;

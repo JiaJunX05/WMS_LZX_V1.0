@@ -233,7 +233,7 @@
                         <span>Stock Movement</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'staff.stock_in_page', 'staff.stock_out_page', 'staff.stock_return_page', 'stock_history']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'show' : '' }}"
                         id="stockMovementCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
@@ -246,24 +246,6 @@
                                 <a href="{{ route('stock_history') }}" class="nav-link {{ request()->routeIs('stock_history') ? 'active' : '' }}">
                                     <i class="bi bi-clock-history me-2"></i>
                                     <span>Stock History</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('staff.stock_in_page') }}" class="nav-link {{ request()->routeIs('staff.stock_in_page') ? 'active' : '' }}">
-                                    <i class="bi bi-box-arrow-in-down me-2"></i>
-                                    <span>Scan In</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('staff.stock_out_page') }}" class="nav-link {{ request()->routeIs('staff.stock_out_page') ? 'active' : '' }}">
-                                    <i class="bi bi-box-arrow-up me-2"></i>
-                                    <span>Scan Out</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('staff.stock_return_page') }}" class="nav-link {{ request()->routeIs('staff.stock_return_page') ? 'active' : '' }}">
-                                    <i class="bi bi-arrow-return-left me-2"></i>
-                                    <span>Scan Return</span>
                                 </a>
                             </li>
                         </ul>

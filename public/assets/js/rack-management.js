@@ -3,24 +3,14 @@
  * 貨架管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、圖片處理、表單提交
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
-
-// =============================================================================
-// 全局變量和狀態管理 (Global Variables and State Management)
-// =============================================================================
-
-// 貨架列表數組（用於 Create 頁面）
-let rackList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = false; // 默認降序（最新的在上面）
 
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
@@ -108,6 +98,12 @@ class RackDashboard {
         $('#export-racks-btn').on('click', () => {
             this.exportSelectedRacks();
         });
+
+        // Add Rack 彈窗事件
+        this.bindModalEvents();
+
+        // Update Rack 彈窗事件
+        this.bindUpdateModalEvents();
     }
 
     // =============================================================================
@@ -233,12 +229,12 @@ class RackDashboard {
 
     createRackRow(rack) {
         const statusMenuItem = rack.rack_status === 'Unavailable'
-            ? `<a class="dropdown-item" href="javascript:void(0)" onclick="rackDashboard.setAvailable(${rack.id})">
-                   <i class="bi bi-check-circle me-2"></i> Activate Rack
-               </a>`
-            : `<a class="dropdown-item" href="javascript:void(0)" onclick="rackDashboard.setUnavailable(${rack.id})">
-                   <i class="bi bi-slash-circle me-2"></i> Deactivate Rack
-               </a>`;
+            ? `<button type="button" class="dropdown-item" onclick="rackDashboard.setAvailable(${rack.id})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="rackDashboard.setUnavailable(${rack.id})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
 
         const actionButtons = `
             <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="rackDashboard.editRack(${rack.id})">
@@ -253,16 +249,20 @@ class RackDashboard {
                         ${statusMenuItem}
                     </li>
                     <li>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="rackDashboard.deleteRack(${rack.id})">
-                            <i class="bi bi-trash me-2"></i> Delete Rack
-                        </a>
+                        <button type="button" class="dropdown-item text-danger" onclick="rackDashboard.deleteRack(${rack.id})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
                     </li>
                 </ul>
             </div>
         `;
 
         return `
-            <tr>
+            <tr data-rack-id="${rack.id}"
+                data-rack-number="${rack.rack_number || ''}"
+                data-rack-capacity="${rack.capacity || ''}"
+                data-rack-status="${rack.rack_status || 'Available'}"
+                data-rack-image="${rack.rack_image || ''}">
                 <td class="ps-4">
                     <input class="rack-checkbox form-check-input" type="checkbox" value="${rack.id}" id="rack-${rack.id}">
                 </td>
@@ -356,12 +356,49 @@ class RackDashboard {
     // =============================================================================
 
     /**
-     * 編輯貨架
+     * 編輯貨架（打開更新彈窗）
      * @param {number} rackId 貨架ID
      */
     editRack(rackId) {
         const url = window.editRackUrl.replace(':id', rackId);
-        window.location.href = url;
+
+        // 从表格行获取rack数据（如果可用，用于快速填充）
+        const rackRow = $(`tr[data-rack-id="${rackId}"]`);
+        if (rackRow.length > 0) {
+            // 快速填充基本数据
+            const rackData = {
+                id: rackId,
+                rack_number: rackRow.attr('data-rack-number') || '',
+                capacity: rackRow.attr('data-rack-capacity') || '',
+                rack_status: rackRow.attr('data-rack-status') || 'Available',
+                rack_image: rackRow.attr('data-rack-image') || ''
+            };
+            this.openUpdateModal(rackData);
+        }
+
+        // 从 API 获取完整rack数据
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            success: (response) => {
+                if (response.success && response.data) {
+                    this.openUpdateModal(response.data);
+                } else {
+                    this.showAlert(response.message || 'Failed to load rack data', 'error');
+                }
+            },
+            error: (xhr) => {
+                let errorMessage = 'Failed to load rack data';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                this.showAlert(errorMessage, 'error');
+            }
+        });
     }
 
     /**
@@ -410,6 +447,69 @@ class RackDashboard {
     }
 
     /**
+     * 更新表格行的狀態顯示和 data 屬性
+     * @param {number} rackId 貨架ID
+     * @param {string} newStatus 新狀態 ('Available' 或 'Unavailable')
+     */
+    updateRackRowStatus(rackId, newStatus) {
+        const rackRow = $(`tr[data-rack-id="${rackId}"]`);
+        if (rackRow.length === 0) return;
+
+        // 更新 data 屬性
+        rackRow.attr('data-rack-status', newStatus);
+
+        // 更新狀態菜單項（與 createRackRow 中的格式完全一致）
+        const statusMenuItem = newStatus === 'Unavailable'
+            ? `<button type="button" class="dropdown-item" onclick="rackDashboard.setAvailable(${rackId})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="rackDashboard.setUnavailable(${rackId})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
+
+        // 更新操作按鈕區域（與 createRackRow 中的格式完全一致）
+        const actionButtons = `
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="rackDashboard.editRack(${rackId})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        ${statusMenuItem}
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item text-danger" onclick="rackDashboard.deleteRack(${rackId})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        `;
+
+        // 更新操作按鈕列
+        const actionsCell = rackRow.find('td:last-child');
+        actionsCell.html(actionButtons);
+
+        // 更新狀態標籤顯示（與 createRackRow 中的格式完全一致）
+        const statusBadge = newStatus === 'Available'
+            ? `<span class="badge bg-success px-3 py-2">
+                <i class="bi bi-check-circle me-1"></i>${newStatus}
+            </span>`
+            : `<span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-x-circle me-1"></i>${newStatus}
+            </span>`;
+
+        // 更新狀態列顯示
+        const statusCell = rackRow.find('td').eq(-2); // 倒數第二列是狀態列
+        if (statusCell.length > 0) {
+            statusCell.html(statusBadge);
+        }
+    }
+
+    /**
      * 激活貨架
      * @param {number} rackId 貨架ID
      */
@@ -434,17 +534,8 @@ class RackDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Rack has been set to available status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchRacks(1);
-                } else {
-                    // 重新載入當前頁面的貨架列表
-                    this.fetchRacks(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateRackRowStatus(rackId, 'Available');
             } else {
                 this.showAlert(data.message || 'Failed to set rack available', 'error');
             }
@@ -479,17 +570,8 @@ class RackDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Rack has been set to unavailable status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchRacks(1);
-                } else {
-                    // 重新載入當前頁面的貨架列表
-                    this.fetchRacks(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateRackRowStatus(rackId, 'Unavailable');
             } else {
                 this.showAlert(data.message || 'Failed to set rack unavailable', 'error');
             }
@@ -618,660 +700,650 @@ class RackDashboard {
                     alertElement.remove();
                 }
             }, 5000);
-        }
     }
 }
 
 // =============================================================================
-// Create 頁面功能 (Create Page Functions)
+    // Add Rack 彈窗模塊 (Add Rack Modal Module)
 // =============================================================================
 
 /**
- * 添加貨架到數組
- * @param {string} rackNumber 貨架編號
- * @param {string} capacity 容量
- * @param {string} rackStatus 狀態
- * @param {File} rackImageFile 圖片文件
- */
-function addRackToArray(rackNumber, capacity, rackStatus, rackImageFile) {
-    // 調試信息：檢查傳入的數據
-    console.log('addRackToArray called with:', { rackNumber, capacity, rackStatus, rackImageFile });
+     * 綁定彈窗事件
+     */
+    bindModalEvents() {
+        // 彈窗打開時重置表單並初始化圖片處理
+        $('#createRackModal').on('show.bs.modal', () => {
+            this.resetModalForm();
+            this.initModalImageSystem();
+        });
 
-    // 添加貨架到數組
-    const rackData = {
-        rackNumber: rackNumber,
-        capacity: capacity,
-        rackStatus: rackStatus,
-        rackImageFile: rackImageFile // 存儲文件對象而不是base64
-    };
+        // 彈窗完全顯示後設置焦點
+        $('#createRackModal').on('shown.bs.modal', () => {
+            const rackNumberInput = document.getElementById('rack_number');
+            if (rackNumberInput) {
+                rackNumberInput.focus();
+            }
+        });
 
-    rackList.push(rackData);
+        // 彈窗關閉時清理
+        $('#createRackModal').on('hidden.bs.modal', () => {
+            this.resetModalForm();
+        });
 
-    // 更新UI
-    updateRackList();
-    updateUI();
+        // 提交按鈕事件
+        $('#submitCreateRackModal').on('click', () => {
+            this.submitModalRack();
+        });
 
-    // 顯示右邊的貨架表格
-    showRackValuesArea();
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#createRackModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'rack_image') {
+                    return;
+                }
 
-    // 清空輸入框
-    const rackNumberInput = document.getElementById('rack_number');
-    const capacityInput = document.getElementById('capacity');
-    if (rackNumberInput) {
-        rackNumberInput.value = '';
-    }
-    if (capacityInput) {
-        capacityInput.value = '';
-    }
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button') {
+                    e.preventDefault();
 
-    // 清空圖片（不顯示消息）
-    resetImageWithoutMessage('rack');
+                    // 定義輸入框順序
+                    const inputOrder = ['rack_number', 'capacity'];
+                    const currentIndex = inputOrder.indexOf(target.id);
 
-    // 調試信息：檢查添加後的狀態選擇
-    const currentStatus = document.querySelector('input[name="rack_status"]:checked');
-    console.log('After adding rack, current status selection:', currentStatus ? currentStatus.value : 'No status selected');
-}
-
-/**
- * 檢查貨架編號是否已存在（簡化版本，用於當前頁面）
- * @param {string} rackNumber 貨架編號
- * @returns {boolean} 是否存在
- */
-function isRackExists(rackNumber) {
-    return rackList.some(item => item.rackNumber.toLowerCase() === rackNumber.toLowerCase());
-}
-
-/**
- * 添加貨架
- */
-function addRack() {
-    const rackNumberInput = document.getElementById('rack_number');
-    const capacityInput = document.getElementById('capacity');
-
-    console.log('rackNumberInput element:', rackNumberInput);
-    console.log('capacityInput element:', capacityInput);
-
-    const rackNumber = rackNumberInput ? rackNumberInput.value.trim() : '';
-    const capacity = capacityInput ? capacityInput.value.trim() || '50' : '50'; // 默認容量50
-
-    console.log('Rack number:', rackNumber, 'Capacity:', capacity);
-
-    // 驗證輸入
-    if (!rackNumber) {
-        showAlert('Please enter rack number', 'warning');
-        rackNumberInput.focus();
-        return;
-    }
-
-    // 檢查是否已存在
-    if (isRackExists(rackNumber)) {
-        showAlert(`Rack number "${rackNumber}" already exists in the list`, 'error');
-        highlightExistingRack(rackNumber);
-        rackNumberInput.focus();
-        return;
-    }
-
-    // 獲取當前圖片文件
-    const imageInput = document.getElementById('rack_image');
-    let rackImageFile = null;
-    if (imageInput && imageInput.files && imageInput.files[0]) {
-        rackImageFile = imageInput.files[0];
-    }
-
-    // 添加到貨架數組（狀態默認為 Available）
-    addRackToArray(rackNumber, capacity, 'Available', rackImageFile);
-
-    // 顯示成功提示
-    showAlert('Rack added successfully', 'success');
-}
-
-/**
- * 移除貨架
- * @param {number} index 索引
- */
-function removeRack(index) {
-    console.log('Removing rack at index:', index);
-    console.log('Rack list before removal:', rackList);
-
-    // 確認機制
-    if (!confirm('Are you sure you want to remove this rack?')) {
-        return;
-    }
-
-    if (index >= 0 && index < rackList.length) {
-        rackList.splice(index, 1);
-        console.log('Rack list after removal:', rackList);
-        updateRackList();
-        updateUI();
-
-        // 顯示成功移除的 alert
-        showAlert('Rack removed successfully', 'success');
-    } else {
-        console.error('Invalid index:', index);
-        showAlert('Failed to remove rack', 'error');
-    }
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    // 檢查是否有數據需要清除
-    if (rackList.length === 0) {
-        showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 確認清除
-    if (!confirm('Are you sure you want to clear all racks?')) {
-        return;
-    }
-
-    // 清空數組
-    rackList = [];
-
-    // 清空輸入框
-    const rackNumberInput = document.getElementById('rack_number');
-    if (rackNumberInput) {
-        rackNumberInput.value = '';
-    }
-
-    // 更新UI
-    updateRackList();
-    updateUI();
-
-    // 顯示成功提示
-    showAlert('All racks cleared successfully', 'success');
-
-    // 隱藏所有區域
-    hideAllAreas();
-}
-
-/**
- * 更新貨架列表
- */
-function updateRackList() {
-    const container = document.getElementById('rackValuesList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    rackList.forEach((item, index) => {
-        // 檢查是否為重複項
-        const isDuplicate = isRackExists(item.rackNumber) &&
-            rackList.filter(i => i.rackNumber.toLowerCase() === item.rackNumber.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        const rackItem = document.createElement('div');
-        rackItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        rackItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                <div class="me-3 flex-shrink-0">
-                    ${item.rackImageFile ?
-                        `<img src="${URL.createObjectURL(item.rackImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Rack Image">` :
-                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
-                            <i class="bi bi-box text-muted fs-5"></i>
-                        </div>`
+                    if (currentIndex !== -1 && currentIndex < inputOrder.length - 1) {
+                        // 跳轉到下一個輸入框
+                        const nextInput = document.getElementById(inputOrder[currentIndex + 1]);
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    } else {
+                        // 最後一個輸入框，提交表單
+                        this.submitModalRack();
                     }
-                </div>
-                <div class="flex-grow-1 min-width-0">
-                    <div class="fw-bold text-dark mb-1 text-truncate">
-                        <i class="bi bi-box-seam me-2 text-primary"></i>${item.rackNumber}
-                    </div>
-                    <div class="text-muted small" style="line-height: 1.3; word-wrap: break-word;">
-                        <i class="bi bi-boxes me-1"></i>Capacity: <span class="fw-medium">${item.capacity} items</span>
-                    </div>
-                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
-        `;
-
-        container.appendChild(rackItem);
-    });
-}
-
-/**
- * 高亮顯示列表中已存在的貨架編號
- * @param {string} rackNumber 貨架編號
- */
-function highlightExistingRack(rackNumber) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.fw-bold').textContent.trim();
-        if (value.toLowerCase() === rackNumber.toLowerCase()) {
-            // 添加 Bootstrap 高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 顯示貨架值區域
- */
-function showRackValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
+                }
+            }
+        });
     }
 
-    // 顯示貨架值區域
-    const rackValuesArea = document.getElementById('rackValuesArea');
-    if (rackValuesArea) {
-        rackValuesArea.classList.remove('d-none');
-    }
+    /**
+     * 初始化彈窗中的圖片處理系統（完全交給ImageSystem處理）
+     */
+    initModalImageSystem() {
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('createRackModal');
+            if (!modal) return;
 
-    // 更新貨架名稱顯示
-    updateRackNameDisplay();
+            const imageInput = modal.querySelector('#rack_image');
+            const imageUploadArea = modal.querySelector('#imageUploadArea');
 
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏貨架值區域
-    const rackValuesArea = document.getElementById('rackValuesArea');
-    if (rackValuesArea) {
-        rackValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-
-// =============================================================================
-// UI 更新功能 (UI Update Functions)
-// =============================================================================
-
-/**
- * 更新UI（簡化版本，用於當前頁面）
- */
-function updateUI() {
-    // 更新貨架值計數
-    updateRackValuesCount();
-
-    // 更新貨架範圍顯示
-    updateRackRangeDisplay();
-
-    // 更新貨架名稱顯示
-    updateRackNameDisplay();
-
-    // 如果沒有貨架，隱藏所有區域並顯示初始狀態
-    if (rackList.length === 0) {
-        hideAllAreas();
-    }
-}
-
-/**
- * 更新貨架值計數
- */
-function updateRackValuesCount() {
-    const count = rackList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('rackValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} racks`;
-    }
-}
-
-
-function updateRackNameDisplay() {
-    const rackNameSpan = document.getElementById('rackName');
-    if (rackNameSpan) {
-        if (rackList.length > 0) {
-            // 顯示貨架數量
-            rackNameSpan.textContent = `- ${rackList.length} racks`;
+            if (imageInput && imageUploadArea) {
+                window.ImageSystem.bindImageUploadEvents({
+                    createImageInputId: 'rack_image',
+                    createImageUploadAreaId: 'imageUploadArea',
+                    createPreviewImageId: 'img-preview',
+                    createPreviewIconId: 'preview-icon',
+                    createImageUploadContentId: 'imageUploadContent'
+                });
+            }
         } else {
-            rackNameSpan.textContent = '';
+            console.warn('ImageSystem not available, image functionality may not work properly');
         }
     }
-}
 
-function updateRackRangeDisplay() {
-    const rackNumbers = rackList.map(item => item.rackNumber);
-
-    const selectedRackSpan = document.getElementById('selectedRack');
-    if (selectedRackSpan) {
-        if (rackNumbers.length === 0) {
-            selectedRackSpan.textContent = 'None';
-        } else if (rackNumbers.length === 1) {
-            selectedRackSpan.textContent = rackNumbers[0];
-        } else {
-            // 按字母順序排序
-            const sortedNumbers = rackNumbers.sort();
-            const minRack = sortedNumbers[0];
-            const maxRack = sortedNumbers[sortedNumbers.length - 1];
-            selectedRackSpan.textContent = `${minRack} - ${maxRack}`;
+    /**
+     * 重置彈窗表單
+     */
+    resetModalForm() {
+        const form = document.getElementById('createRackModalForm');
+        if (form) {
+            form.reset();
         }
-    }
-}
 
-// =============================================================================
-// 排序功能 (Sorting Functions)
-// =============================================================================
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortRacks');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortRackValuesList();
-}
-
-/**
- * 排序貨架值列表
- */
-function sortRackValuesList() {
-    const rackValuesList = document.getElementById('rackValuesList');
-    const items = Array.from(rackValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取貨架編號並排序
-    const rackValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.fw-bold').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    rackValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    rackValues.forEach(({ element }) => {
-        rackValuesList.appendChild(element);
-    });
-}
-
-// =============================================================================
-// 批量添加功能 (Batch Add Functions)
-// =============================================================================
-
-/**
- * 添加貨架到列表
- * @param {string} rackNumber 貨架編號
- * @param {string} capacity 容量
- * @param {string} rackStatus 狀態
- * @param {File} rackImageFile 圖片文件
- */
-function addRackToList(rackNumber, capacity, rackStatus = 'Available', rackImageFile = null) {
-    // 檢查是否為重複項
-    if (isRackExists(rackNumber)) {
-        return; // 跳過重複項，不添加到列表
-    }
-
-    // 添加到 rackList 數組
-    rackList.push({
-        rackNumber: rackNumber,
-        capacity: capacity,
-        rackStatus: rackStatus,
-        rackImageFile: rackImageFile
-    });
-
-    // 重新渲染整個列表
-    updateRackList();
-    updateUI();
-
-    // 顯示貨架值區域
-    showRackValuesArea();
-}
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * Update 頁面表單提交處理
- * @param {HTMLFormElement} form 表單元素
- */
-function handleUpdateFormSubmit(form) {
-    // 驗證表單
-    if (!validateUpdateForm()) {
-        return;
-    }
-
-    // 顯示加載狀態
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
-    submitBtn.disabled = true;
-
-    // 準備表單數據
-    const formData = new FormData(form);
-
-    // 提交數據
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+        // 使用ImageSystem重置圖片
+        if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
+            window.ImageSystem.resetImage('imageUploadArea', {
+                imageInputId: 'rack_image',
+                previewImageId: 'img-preview',
+                previewIconId: 'preview-icon',
+                imageUploadContentId: 'imageUploadContent'
             });
         }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            const message = data.message || 'Rack updated successfully';
-            showAlert(message, 'success');
 
-            // 延遲重定向到列表頁面
-            setTimeout(() => {
-                window.location.href = window.rackManagementRoute || '/admin/storage-locations/rack/index';
-            }, 2000);
-        } else {
-            isRackUpdating = false; // 錯誤時重置標誌
-            // 简化错误信息，类似 mapping 页面
-            if (data.message && data.message.includes('Some racks failed to create')) {
-                showAlert('Some racks failed to create', 'error');
-            } else {
-                showAlert(data.message || 'Failed to update rack', 'error');
-            }
+        // 移除驗證類
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
         }
-    })
-    .catch(error => {
-        isRackUpdating = false; // 錯誤時重置標誌
-        if (error.message.includes('already been taken') || error.message.includes('rack_number')) {
-            showAlert('This rack number already exists. Please choose a different number.', 'warning');
-        } else {
-            showAlert('Failed to update rack', 'error');
-        }
-    })
-    .finally(() => {
-        // 恢復按鈕狀態
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
+    }
 
-
-/**
- * Update 頁面表單驗證
- * @returns {boolean} 驗證結果
- */
-function validateUpdateForm() {
+    /**
+     * 提交彈窗中的Rack
+     */
+    submitModalRack() {
     const rackNumberInput = document.getElementById('rack_number');
     const capacityInput = document.getElementById('capacity');
+        const imageInput = document.getElementById('rack_image');
+        const submitBtn = $('#submitCreateRackModal');
 
-    // 驗證貨架編號
-    if (!rackNumberInput.value.trim()) {
-        showAlert('Please enter rack number', 'warning');
-        rackNumberInput.focus();
-        return false;
-    }
+        // 獲取輸入值
+    const rackNumber = rackNumberInput ? rackNumberInput.value.trim() : '';
+        const capacity = capacityInput ? capacityInput.value.trim() : '';
 
-    // 驗證容量
-    const capacity = capacityInput.value.trim();
-    if (capacity && (isNaN(capacity) || parseInt(capacity) <= 0)) {
-        showAlert('Please enter a valid capacity (positive number)', 'warning');
-        capacityInput.focus();
-        return false;
-    }
+    // 驗證輸入
+        let isValid = true;
 
-    // 驗證狀態選擇
-    const selectedStatus = document.querySelector('input[name="rack_status"]:checked');
-    if (!selectedStatus) {
-        showAlert('Please select rack status', 'warning');
-        return false;
-    }
-
-    return true;
-}
-
-// 图片处理函数已移至 image-system.js
-
-/**
- * Update 頁面狀態卡片初始化
- */
-function initializeUpdateStatusCards() {
-    // 狀態卡片選擇
-    const statusCards = document.querySelectorAll('.status-card');
-    statusCards.forEach(card => {
-        card.addEventListener('click', function() {
-            selectUpdateStatusCard(this);
-        });
-    });
-}
-
-/**
- * Update 頁面狀態卡片選擇
- * @param {HTMLElement} card 狀態卡片元素
- */
-function selectUpdateStatusCard(card) {
-    // 移除所有選中狀態
-    const allCards = document.querySelectorAll('.status-card');
-    allCards.forEach(c => c.classList.remove('selected'));
-
-    // 添加選中狀態到當前卡片
-    card.classList.add('selected');
-
-    // 更新對應的單選按鈕
-    const radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-        radio.checked = true;
-    }
-}
-
-// resetImageWithoutMessage 函数已移至 image-system.js
-
-// =============================================================================
-// 表單驗證和提交 (Form Validation & Submission)
-// =============================================================================
-
-/**
- * 驗證貨架數據
- * @returns {boolean} 驗證結果
- */
-function validateRackData() {
-    // 檢查是否有重複的貨架編號
-    const duplicates = [];
-    const seen = new Set();
-    for (const item of rackList) {
-        const combination = item.rackNumber.toLowerCase();
-        if (seen.has(combination)) {
-            duplicates.push(item.rackNumber);
+    if (!rackNumber) {
+            if (rackNumberInput) {
+                rackNumberInput.classList.add('is-invalid');
+            }
+            isValid = false;
         } else {
-            seen.add(combination);
+            if (rackNumberInput) {
+                rackNumberInput.classList.remove('is-invalid');
+                rackNumberInput.classList.add('is-valid');
+            }
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+
+        // 準備表單數據
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('rack_number', rackNumber);
+        if (capacity) {
+            formData.append('capacity', capacity);
+        }
+
+        // 添加圖片（如果有）
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('rack_image', imageInput.files[0]);
+        }
+
+        // 檢查是否有圖片
+        const hasImage = imageInput && imageInput.files && imageInput.files[0];
+
+        // 顯示加載狀態
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Creating...');
+        submitBtn.prop('disabled', true);
+
+        // 提交數據
+        fetch(window.createRackUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to create rack');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Rack created successfully', 'success');
+
+                // 關閉彈窗
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createRackModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 如果有圖片，刷新整個頁面；否則只更新 DOM
+                if (hasImage) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片，重新載入當前頁面以顯示新記錄
+                    this.fetchRacks(this.currentPage);
+                }
+    } else {
+                this.showAlert(data.message || 'Failed to create rack', 'error');
+            }
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to create rack';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        });
+    }
+
+    // =============================================================================
+    // Update Rack 彈窗模塊 (Update Rack Modal Module)
+    // =============================================================================
+
+    /**
+     * 綁定更新彈窗事件
+     */
+    bindUpdateModalEvents() {
+        // 彈窗打開時初始化圖片處理
+        $('#updateRackModal').on('show.bs.modal', () => {
+            this.initUpdateModalImageSystem();
+            // 使用統一的狀態管理初始化選擇（交給 status-management）
+            if (typeof window.initializeStatusCardSelection === 'function') {
+                window.initializeStatusCardSelection('rack_status');
+            }
+        });
+
+        // 彈窗關閉時清理
+        $('#updateRackModal').on('hidden.bs.modal', () => {
+            this.resetUpdateModalForm();
+        });
+
+        // 提交按鈕事件
+        $('#submitUpdateRackModal').on('click', () => {
+            this.submitUpdateModalRack();
+        });
+
+        // 彈窗完全顯示後設置焦點
+        $('#updateRackModal').on('shown.bs.modal', () => {
+            const rackNumberInput = document.getElementById('update_rack_number');
+            if (rackNumberInput) {
+                rackNumberInput.focus();
+            }
+        });
+
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#updateRackModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'input_image') {
+                    return;
+                }
+
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button' && target.type !== 'radio') {
+                    e.preventDefault();
+
+                    // 定義輸入框順序
+                    const inputOrder = ['update_rack_number', 'update_capacity'];
+                    const currentIndex = inputOrder.indexOf(target.id);
+
+                    if (currentIndex !== -1 && currentIndex < inputOrder.length - 1) {
+                        // 跳轉到下一個輸入框
+                        const nextInput = document.getElementById(inputOrder[currentIndex + 1]);
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    } else {
+                        // 最後一個輸入框，提交表單
+                        this.submitUpdateModalRack();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 打開更新彈窗並填充數據
+     * @param {Object} rackData Rack數據對象
+     */
+    openUpdateModal(rackData) {
+        // 填充表單數據
+        $('#update_rack_number').val(rackData.rack_number || '');
+        $('#update_capacity').val(rackData.capacity || '');
+
+        // 設置狀態（交給 status-management 初始化後，直接設置單選值）
+        const targetStatus = rackData.rack_status === 'Unavailable' ? 'Unavailable' : 'Available';
+        const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+        $(radioSelector).prop('checked', true);
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('rack_status');
+        }
+
+        // 設置隱藏的rack ID（用於提交）
+        const form = $('#updateRackModalForm');
+        form.attr('data-rack-id', rackData.id);
+
+        // 更新當前Rack信息卡片
+        const currentInfo = `
+            <div class="mb-1">
+                <i class="bi bi-hash me-2 text-muted"></i>
+                <span>Number: <strong>${rackData.rack_number || 'N/A'}</strong></span>
+                </div>
+            <div class="mb-1">
+                <i class="bi bi-boxes me-2 text-muted"></i>
+                <span>Capacity: <strong>${rackData.capacity || 'N/A'}</strong></span>
+                    </div>
+            <div class="mb-1">
+                <i class="bi bi-shield-check me-2 text-muted"></i>
+                <span>Status: <strong>${rackData.rack_status || 'N/A'}</strong></span>
+                    </div>
+        `;
+        $('#currentRackInfo').html(currentInfo);
+
+        // 處理圖片
+        if (rackData.rack_image) {
+            const imageUrl = `/assets/images/${rackData.rack_image}`;
+            this.setUpdateModalImage(imageUrl);
+        } else {
+            this.resetUpdateModalImage();
+        }
+
+        // 重置移除圖片標記
+        $('#remove_image').val('0');
+
+        // 打開彈窗
+        const modal = new bootstrap.Modal(document.getElementById('updateRackModal'));
+        modal.show();
+    }
+
+    /**
+     * 初始化更新彈窗中的圖片處理系統（使用標準ImageSystem配置 - Update模式）
+     */
+    initUpdateModalImageSystem() {
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('updateRackModal');
+            if (!modal) return;
+
+            const imageInput = modal.querySelector('#input_image');
+            const previewContainer = modal.querySelector('#image-preview');
+            const removeImageBtn = modal.querySelector('#removeImage');
+
+            if (imageInput && previewContainer) {
+                // 使用 Update 模式的配置調用 ImageSystem
+                window.ImageSystem.bindImageUploadEvents({
+                    updateImageInputId: 'input_image',
+                    updatePreviewContainerId: 'image-preview'
+                });
+
+                // 為 Update modal 點擊預覽區域觸發文件選擇
+                previewContainer.addEventListener('click', function(e) {
+                    if (e.target.closest('.img-remove-btn')) {
+                        return; // 不觸發文件選擇
+                    }
+                    imageInput.click();
+                });
+
+                // 綁定靜態移除按鈕事件（參考 zone 的實現方式）
+                if (removeImageBtn) {
+                    // 克隆按钮以移除所有旧的事件监听器
+                    const newRemoveBtn = removeImageBtn.cloneNode(true);
+                    removeImageBtn.parentNode.replaceChild(newRemoveBtn, removeImageBtn);
+
+                    // 重新获取按钮引用
+                    const freshRemoveBtn = modal.querySelector('#removeImage');
+
+                    // 绑定新的事件监听器（只绑定一次）
+                    freshRemoveBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        // 防止重复触发
+                        if (freshRemoveBtn.hasAttribute('data-processing')) {
+                            return;
+                        }
+                        freshRemoveBtn.setAttribute('data-processing', 'true');
+
+                        const modal = document.getElementById('updateRackModal');
+                        const form = modal ? document.getElementById('updateRackModalForm') : null;
+
+                        if (!confirm('Are you sure you want to remove this image?')) {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                            return;
+                        }
+
+                        const imageInput = modal?.querySelector('#input_image');
+                        const previewContainer = modal?.querySelector('#image-preview');
+                        const imageUploadContent = modal?.querySelector('#imageUploadContent');
+                        const removeImageInput = modal?.querySelector('#remove_image');
+
+                        if (imageInput && previewContainer && form) {
+                            // 重置文件输入
+                            imageInput.value = '';
+
+                            // 設置 remove_image 標記
+                            if (removeImageInput) {
+                                removeImageInput.value = '1';
+                            }
+
+                            // 隐藏图片，显示占位符
+                            const previewImg = previewContainer.querySelector('#preview-image') || previewContainer.querySelector('#img-preview');
+                            if (previewImg) {
+                                previewImg.remove();
+                            }
+
+                            // 恢复原始内容（显示占位符）
+                            const originalContent = previewContainer.getAttribute('data-original-content');
+                            if (originalContent) {
+                                previewContainer.innerHTML = originalContent;
+
+                                const restoredPreviewImg = previewContainer.querySelector('#preview-image');
+                                if (restoredPreviewImg) {
+                                    restoredPreviewImg.classList.add('d-none');
+                                }
+
+                                const restoredRemoveBtn = previewContainer.querySelector('#removeImage');
+                                if (restoredRemoveBtn) {
+                                    restoredRemoveBtn.classList.add('d-none');
+                                }
+
+                                const restoredImageUploadContent = previewContainer.querySelector('#imageUploadContent');
+                                if (restoredImageUploadContent) {
+                                    restoredImageUploadContent.classList.remove('d-none');
+                                    restoredImageUploadContent.style.display = '';
+                                }
+        } else {
+                                if (imageUploadContent) {
+                                    imageUploadContent.classList.remove('d-none');
+                                    imageUploadContent.style.display = '';
+                                }
+                            }
+
+                            // 隐藏移除按钮
+                            freshRemoveBtn.classList.add('d-none');
+                            freshRemoveBtn.removeAttribute('data-processing');
+
+                            // 顯示成功提示
+                            if (typeof window.showAlert === 'function') {
+                                window.showAlert('Image removed successfully', 'success');
+        } else {
+                                alert('Image removed successfully');
+                            }
+                        } else {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                        }
+                    });
+                }
+            }
+    } else {
+            console.warn('ImageSystem not available, image functionality may not work properly');
         }
     }
 
-    if (duplicates.length > 0) {
-        showAlert('Duplicate rack numbers found. Please remove duplicates before submitting.', 'error');
-        return false;
+    /**
+     * 設置更新彈窗中的圖片（使用Update模式標準ID）
+     * @param {string} imageUrl 圖片URL
+     */
+    setUpdateModalImage(imageUrl) {
+        const modal = document.getElementById('updateRackModal');
+        if (!modal) return;
+
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+
+        if (previewContainer && previewImg && imageUploadContent) {
+            // 顯示圖片，隱藏上傳占位符
+            previewImg.src = imageUrl;
+            previewImg.classList.remove('d-none');
+            previewImg.style.display = 'block';
+            imageUploadContent.classList.add('d-none');
+            imageUploadContent.style.display = 'none';
+
+            // 顯示移除按鈕
+            if (removeBtn) {
+                removeBtn.classList.remove('d-none');
+            }
+        }
     }
 
-    return true;
-}
+    /**
+     * 重置更新彈窗中的圖片（使用Update模式標準ID）
+     */
+    resetUpdateModalImage() {
+        const modal = document.getElementById('updateRackModal');
+        if (!modal) return;
 
-/**
- * 提交貨架表單
- */
-function submitRackForm() {
-    // 調試信息：檢查要提交的數據
-    console.log('Submitting rack data:', rackList);
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image') || modal.querySelector('#img-preview');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+        const imageInput = modal.querySelector('#input_image');
 
-    // 準備提交數據
+        if (previewContainer) {
+            // 隱藏圖片，顯示上傳占位符
+            if (previewImg) {
+                previewImg.classList.add('d-none');
+                previewImg.style.display = 'none';
+                previewImg.src = '';
+            }
+
+            if (imageUploadContent) {
+                imageUploadContent.classList.remove('d-none');
+                imageUploadContent.style.display = '';
+            }
+
+            // 隱藏移除按鈕
+            if (removeBtn) {
+                removeBtn.classList.add('d-none');
+            }
+
+            // 重置文件輸入
+            if (imageInput) {
+                imageInput.value = '';
+            }
+        }
+    }
+
+    /**
+     * 重置更新彈窗表單
+     */
+    resetUpdateModalForm() {
+        const form = document.getElementById('updateRackModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        // 重置圖片
+        this.resetUpdateModalImage();
+        $('#remove_image').val('0');
+
+        // 移除驗證類
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        // 重置狀態卡片
+        $('#updateRackModal .status-card').removeClass('selected');
+    }
+
+    /**
+     * 提交更新彈窗中的Rack
+     */
+    submitUpdateModalRack() {
+        const form = document.getElementById('updateRackModalForm');
+        const rackId = form.getAttribute('data-rack-id');
+
+        if (!rackId) {
+            this.showAlert('Rack ID not found', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('updateRackModal');
+        const rackNumberInput = modal ? modal.querySelector('#update_rack_number') : null;
+        const capacityInput = modal ? modal.querySelector('#update_capacity') : null;
+        const statusInput = modal ? modal.querySelector('input[name="rack_status"]:checked') : null;
+        const imageInput = modal ? modal.querySelector('#input_image') : null;
+        const removeImageInput = modal ? modal.querySelector('#remove_image') : null;
+        const submitBtn = $('#submitUpdateRackModal');
+
+        // 獲取輸入值
+        const rackNumber = rackNumberInput ? rackNumberInput.value.trim() : '';
+        const capacity = capacityInput ? capacityInput.value.trim() : '';
+        const rackStatus = statusInput ? statusInput.value : '';
+
+        // 驗證輸入
+        let isValid = true;
+
+        if (!rackNumber) {
+            if (rackNumberInput) {
+                rackNumberInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (rackNumberInput) {
+                rackNumberInput.classList.remove('is-invalid');
+                rackNumberInput.classList.add('is-valid');
+            }
+        }
+
+        if (!rackStatus) {
+            this.showAlert('Please select rack status', 'warning');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        // 準備表單數據
     const formData = new FormData();
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-
-    // 添加貨架數據
-    rackList.forEach((item, index) => {
-        // 調試信息：檢查每個貨架的狀態
-        console.log(`Rack ${index + 1}:`, { rackNumber: item.rackNumber, rackStatus: item.rackStatus });
-
-        // 添加貨架文本數據
-        formData.append(`racks[${index}][rack_number]`, item.rackNumber);
-        formData.append(`racks[${index}][capacity]`, item.capacity);
-        formData.append(`racks[${index}][rack_status]`, item.rackStatus);
-
-        // 添加圖片文件（如果有）
-        if (item.rackImageFile) {
-            formData.append(`images[${index}]`, item.rackImageFile);
+        formData.append('_method', 'PUT');
+        formData.append('rack_number', rackNumber);
+        formData.append('rack_status', rackStatus);
+        if (capacity) {
+            formData.append('capacity', capacity);
         }
-    });
+
+        // 添加圖片（如果有新圖片）
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('rack_image', imageInput.files[0]);
+        }
+
+        // 如果標記了移除圖片
+        if (removeImageInput && removeImageInput.value === '1') {
+            formData.append('remove_image', '1');
+        }
+
+        // 檢查是否有圖片相關的更改
+        const hasImageChange = (imageInput && imageInput.files && imageInput.files[0]) ||
+                               (removeImageInput && removeImageInput.value === '1');
+
+        // 顯示加載狀態
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+        submitBtn.prop('disabled', true);
 
     // 提交數據
-    fetch(window.createRackUrl, {
+        const updateUrl = window.updateRackUrl.replace(':id', rackId);
+        fetch(updateUrl, {
         method: 'POST',
         body: formData,
         headers: {
@@ -1280,195 +1352,46 @@ function submitRackForm() {
     })
     .then(response => {
         if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update rack');
             });
         }
         return response.json();
     })
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message || 'Racks created successfully', 'success');
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Rack updated successfully', 'success');
 
-            // 延遲重定向到dashboard，讓用戶看到成功消息
-            setTimeout(() => {
-                window.location.href = window.rackManagementRoute || '/admin/storage-locations/rack/index';
-            }, 2000);
-        } else {
-            // 简化错误信息，类似 mapping 页面
-            if (data.message && data.message.includes('Some racks failed to create')) {
-                showAlert('Some racks failed to create', 'error');
+                // 關閉彈窗
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateRackModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 如果有圖片更改，刷新整個頁面；否則只更新 DOM
+                if (hasImageChange) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片更改，重新載入當前頁面
+                    this.fetchRacks(this.currentPage);
+                }
             } else {
-                showAlert(data.message || 'Failed to create racks', 'error');
+                this.showAlert(data.message || 'Failed to update rack', 'error');
             }
-        }
-    })
+        })
     .catch(error => {
-        // 简化错误信息
-        showAlert('Some racks failed to create', 'error');
-    });
-}
-
-// =============================================================================
-// 頁面初始化功能 (Page Initialization Functions)
-// =============================================================================
-
-/**
- * 綁定貨架事件
- */
-function bindRackEvents() {
-    // Create 頁面事件綁定
-    bindRackCreateEvents();
-
-    // 使用統一的圖片處理模組（避免重複綁定）
-    if (typeof window.ImageSystem !== 'undefined' && !window.ImageSystem._rackEventsBound) {
-        window.ImageSystem.bindModuleImageEvents('rack');
-        window.ImageSystem._rackEventsBound = true; // 標記已綁定
-    } else if (typeof window.ImageSystem === 'undefined') {
-        console.warn('ImageSystem not available, image functionality may not work properly');
-    }
-
-    // 表單提交事件監聽器
-    const rackForm = document.getElementById('rackForm');
-    if (rackForm) {
-        rackForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // 檢查是否有貨架
-            if (rackList.length === 0) {
-                showAlert('Please add at least one rack', 'warning');
-                return;
+            let errorMessage = 'Failed to update rack';
+            if (error.message) {
+                errorMessage = error.message;
             }
-
-            // 驗證所有貨架數據
-            if (!validateRackData()) {
-                return;
-            }
-
-            // 提交表單
-            submitRackForm();
-        });
-    }
-}
-
-/**
- * 綁定貨架創建頁面事件
- */
-function bindRackCreateEvents() {
-    // 貨架編號輸入框回車事件
-    const rackNumberInput = document.getElementById('rack_number');
-    if (rackNumberInput) {
-        rackNumberInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addRack();
-            }
-        });
-    }
-
-    // 添加貨架按鈕
-    const addRackBtn = document.getElementById('addRack');
-    if (addRackBtn) {
-        addRackBtn.addEventListener('click', addRack);
-    }
-
-    // 事件委托：刪除貨架按鈕
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            removeRack(index);
-        }
-    });
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortRacks');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-}
-
-/**
- * 初始化貨架更新頁面
- */
-// 全局變量防止重複請求
-let isRackUpdating = false;
-let rackUpdateFormBound = false;
-
-function initializeRackUpdate() {
-    bindRackEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!rackUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isRackUpdating) return false;
-                isRackUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            rackUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面圖片上傳區域點擊事件
-    const imagePreviewArea = document.getElementById('image-preview');
-    if (imagePreviewArea && updateImageInput) {
-        imagePreviewArea.addEventListener('click', function(e) {
-            // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.img-remove-btn')) {
-                return; // 不觸發文件選擇
-            }
-            updateImageInput.click();
-        });
-    }
-
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
-
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
-            }
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeStatusCards();
-}
-
-/**
- * 初始化貨架頁面
- * @param {Object} config 配置對象
- */
-function initializeRackPage(config) {
-    bindRackEvents();
-
-    if (config && config.events) {
-        // 綁定自定義事件
-        Object.keys(config.events).forEach(eventName => {
-            if (typeof config.events[eventName] === 'function') {
-                // 這裡可以根據需要綁定特定事件
-                console.log(`Custom event ${eventName} registered`);
-            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
         });
     }
 }
@@ -1480,71 +1403,13 @@ function initializeRackPage(config) {
 let rackDashboard;
 
 $(document).ready(function() {
-    // 檢查當前頁面是否是dashboard頁面（有table-body元素）
     if ($("#table-body").length > 0) {
         rackDashboard = new RackDashboard();
+
+        // 導出方法到全局作用域
+        window.setRackAvailable = (rackId) => rackDashboard.setAvailable(rackId);
+        window.setRackUnavailable = (rackId) => rackDashboard.setUnavailable(rackId);
+        window.editRack = (rackId) => rackDashboard.editRack(rackId);
+        window.deleteRack = (rackId) => rackDashboard.deleteRack(rackId);
     }
 });
-
-// =============================================================================
-// DOM 內容加載完成後的事件綁定 (DOM Content Loaded Event Binding)
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化貨架事件（包括圖片上傳功能）
-    bindRackEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!rackUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isRackUpdating) return false;
-                isRackUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            rackUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
-
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
-            }
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeUpdateStatusCards();
-});
-
-// =============================================================================
-// 全局函數導出 (Global Function Exports)
-// =============================================================================
-
-// 導出主要函數到全局作用域
-window.addRack = addRack;
-window.removeRack = removeRack;
-window.clearForm = clearForm;
-window.toggleRackStatus = toggleRackStatus;
-window.setRackAvailable = setRackAvailable;
-window.setRackUnavailable = setRackUnavailable;
-window.updateRackStatus = updateRackStatus;
-window.viewRackDetails = viewRackDetails;
-window.handleRemoveImageButton = handleRemoveImageButton;
-window.removeUpdateImage = removeUpdateImage;

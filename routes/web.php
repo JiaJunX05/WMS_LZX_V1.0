@@ -81,14 +81,14 @@ Route::middleware(['auth'])->group(function () {
         };
     })->name('staff_management');
 
-    // 用户注册页面重定向
+    // 用户注册页面重定向（已改为 Modal，重定向到管理页面）
     Route::get('/register', function () {
         $user = auth()->user();
         $role = $user->getAccountRole();
 
         return match($role) {
-            'SuperAdmin' => redirect()->route('superadmin.users.create'),
-            'Admin' => redirect()->route('admin.users.create'),
+            'SuperAdmin' => redirect()->route('superadmin.users.management'),
+            'Admin' => redirect()->route('admin.users.management'),
             default => abort(403, 'Access denied')
         };
     })->name('register');
@@ -105,7 +105,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/create', [ProductController::class, 'create'])->name('create');
         Route::post('/store', [ProductController::class, 'store'])->name('store');
         Route::get('/view/{id}', [ProductController::class, 'view'])->name('view');
-        Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
+        Route::get('/edit/{id}', [ProductController::class, 'showUpdateForm'])->name('edit');
         Route::put('/update/{id}', [ProductController::class, 'update'])->name('update');
         Route::patch('/available/{id}', [ProductController::class, 'setAvailable'])->name('available');
         Route::patch('/unavailable/{id}', [ProductController::class, 'setUnavailable'])->name('unavailable');
@@ -118,10 +118,6 @@ Route::middleware(['auth'])->group(function () {
     // =============================================================================
     Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/stock-management', [StockController::class, 'stockManagement'])->name('stock_management');
-        Route::get('/stock-detail', [StockController::class, 'stockDetail'])->name('stock_detail');
-        Route::get('/stock-in-page', [StockController::class, 'stockInPage'])->name('stock_in_page');
-        Route::get('/stock-out-page', [StockController::class, 'stockOutPage'])->name('stock_out_page');
-        Route::get('/stock-return-page', [StockController::class, 'stockReturnPage'])->name('stock_return_page');
         Route::post('/stock-in', [StockController::class, 'stockIn'])->name('stock_in');
         Route::post('/stock-out', [StockController::class, 'stockOut'])->name('stock_out');
         Route::post('/stock-return', [StockController::class, 'stockReturn'])->name('stock_return');
@@ -156,8 +152,6 @@ Route::middleware(['auth'])->group(function () {
         // 用户管理
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
-            Route::get('/stats', [AuthController::class, 'getUserStats'])->name('stats');
-            Route::get('/create', [AuthController::class, 'showRegisterForm'])->name('create');
             Route::post('/create', [AuthController::class, 'register'])->name('create.submit');
             Route::get('/{id}/edit', [AuthController::class, 'showUpdateForm'])->name('edit');
             Route::put('/{id}/update', [AuthController::class, 'updateUser'])->name('update');
@@ -189,8 +183,6 @@ Route::middleware(['auth'])->group(function () {
         // 用户管理
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/management', [AuthController::class, 'showUserList'])->name('management');
-            Route::get('/stats', [AuthController::class, 'getUserStats'])->name('stats');
-            Route::get('/create', [AuthController::class, 'showRegisterForm'])->name('create');
             Route::post('/create', [AuthController::class, 'register'])->name('create.submit');
             Route::get('/{id}/edit', [AuthController::class, 'showUpdateForm'])->name('edit');
             Route::put('/{id}/update', [AuthController::class, 'updateUser'])->name('update');
@@ -205,9 +197,8 @@ Route::middleware(['auth'])->group(function () {
         // 区域管理
         Route::prefix('zone')->name('zone.')->group(function () {
             Route::get('/index', [ZoneController::class, 'index'])->name('index');
-            Route::get('/create', [ZoneController::class, 'create'])->name('create');
             Route::post('/store', [ZoneController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [ZoneController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [ZoneController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [ZoneController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [ZoneController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [ZoneController::class, 'setUnavailable'])->name('unavailable');
@@ -218,9 +209,8 @@ Route::middleware(['auth'])->group(function () {
         // 货架管理
         Route::prefix('rack')->name('rack.')->group(function () {
             Route::get('/index', [RackController::class, 'index'])->name('index');
-            Route::get('/create', [RackController::class, 'create'])->name('create');
             Route::post('/store', [RackController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [RackController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [RackController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [RackController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [RackController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [RackController::class, 'setUnavailable'])->name('unavailable');
@@ -231,10 +221,9 @@ Route::middleware(['auth'])->group(function () {
         // 位置管理
         Route::prefix('location')->name('location.')->group(function () {
             Route::get('/index', [LocationController::class, 'index'])->name('index');
-            Route::get('/create', [LocationController::class, 'create'])->name('create');
             Route::post('/store', [LocationController::class, 'store'])->name('store');
             Route::get('/{id}/view', [LocationController::class, 'view'])->name('view');
-            Route::get('/{id}/edit', [LocationController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [LocationController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [LocationController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [LocationController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [LocationController::class, 'setUnavailable'])->name('unavailable');
@@ -248,9 +237,8 @@ Route::middleware(['auth'])->group(function () {
         // 分类管理
         Route::prefix('category')->name('category.')->group(function () {
             Route::get('/index', [CategoryController::class, 'index'])->name('index');
-            Route::get('/create', [CategoryController::class, 'create'])->name('create');
             Route::post('/store', [CategoryController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [CategoryController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [CategoryController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [CategoryController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [CategoryController::class, 'setUnavailable'])->name('unavailable');
@@ -261,9 +249,8 @@ Route::middleware(['auth'])->group(function () {
         // 子分类管理
         Route::prefix('subcategory')->name('subcategory.')->group(function () {
             Route::get('/index', [SubcategoryController::class, 'index'])->name('index');
-            Route::get('/create', [SubcategoryController::class, 'create'])->name('create');
             Route::post('/store', [SubcategoryController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [SubcategoryController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [SubcategoryController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [SubcategoryController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [SubcategoryController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [SubcategoryController::class, 'setUnavailable'])->name('unavailable');
@@ -274,10 +261,9 @@ Route::middleware(['auth'])->group(function () {
         // 映射管理
         Route::prefix('mapping')->name('mapping.')->group(function () {
             Route::get('/index', [MappingController::class, 'index'])->name('index');
-            Route::get('/create', [MappingController::class, 'create'])->name('create');
             Route::post('/store', [MappingController::class, 'store'])->name('store');
             Route::get('/{id}/view', [MappingController::class, 'view'])->name('view');
-            Route::get('/{id}/edit', [MappingController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [MappingController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [MappingController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [MappingController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [MappingController::class, 'setUnavailable'])->name('unavailable');
@@ -291,9 +277,8 @@ Route::middleware(['auth'])->group(function () {
         // 品牌管理
         Route::prefix('brand')->name('brand.')->group(function () {
             Route::get('/index', [BrandController::class, 'index'])->name('index');
-            Route::get('/create', [BrandController::class, 'create'])->name('create');
             Route::post('/store', [BrandController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [BrandController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [BrandController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [BrandController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [BrandController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [BrandController::class, 'setUnavailable'])->name('unavailable');
@@ -304,9 +289,8 @@ Route::middleware(['auth'])->group(function () {
         // 颜色管理
         Route::prefix('color')->name('color.')->group(function () {
             Route::get('/index', [ColorController::class, 'index'])->name('index');
-            Route::get('/create', [ColorController::class, 'create'])->name('create');
             Route::post('/store', [ColorController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [ColorController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [ColorController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [ColorController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [ColorController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [ColorController::class, 'setUnavailable'])->name('unavailable');
@@ -321,10 +305,9 @@ Route::middleware(['auth'])->group(function () {
         // 尺码库管理
         Route::prefix('library')->name('library.')->group(function () {
             Route::get('/index', [LibraryController::class, 'index'])->name('index');
-            Route::get('/create', [LibraryController::class, 'create'])->name('create');
             Route::post('/store', [LibraryController::class, 'store'])->name('store');
             Route::get('/{id}/view', [LibraryController::class, 'view'])->name('view');
-            Route::get('/{id}/edit', [LibraryController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [LibraryController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [LibraryController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [LibraryController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [LibraryController::class, 'setUnavailable'])->name('unavailable');
@@ -334,11 +317,10 @@ Route::middleware(['auth'])->group(function () {
         // 尺码模板管理
         Route::prefix('template')->name('template.')->group(function () {
             Route::get('/index', [TemplateController::class, 'index'])->name('index');
-            Route::get('/create', [TemplateController::class, 'create'])->name('create');
             Route::post('/store', [TemplateController::class, 'store'])->name('store');
             Route::delete('/{id}/delete', [TemplateController::class, 'destroy'])->name('destroy');
             Route::get('/{id}/view', [TemplateController::class, 'view'])->name('view');
-            Route::get('/{id}/edit', [TemplateController::class, 'edit'])->name('edit');
+            Route::get('/{id}/edit', [TemplateController::class, 'showEditForm'])->name('edit');
             Route::put('/{id}/update', [TemplateController::class, 'update'])->name('update');
             Route::patch('/{id}/available', [TemplateController::class, 'setAvailable'])->name('available');
             Route::patch('/{id}/unavailable', [TemplateController::class, 'setUnavailable'])->name('unavailable');

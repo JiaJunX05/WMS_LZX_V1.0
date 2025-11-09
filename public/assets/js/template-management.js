@@ -3,60 +3,26 @@
  * 尺碼模板管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、表單提交
- * - View 頁面：查看詳情、刪除操作
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - View 頁面：查看詳情、刪除操作、Update Modal
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
 // 全局變量和狀態管理 (Global Variables and State Management)
 // =============================================================================
 
-// 模板列表數組（用於 Create 頁面）
-let templateList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = true; // 默認升序
-
 // 全局變量防止重複請求
 let isDeleting = false;
-let isUpdating = false; // 防止重複提交更新表單
-let updateFormBound = false; // 標記更新表單事件是否已綁定
 
 // =============================================================================
-// 通用功能模塊 (Common Functions Module)
+// API 請求函數 (API Request Functions)
 // =============================================================================
-
-/**
- * 驗證模板表單
- */
-function validateTemplateForm() {
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender').value;
-    const sizeLibraryId = document.getElementById('size_library_id') ? document.getElementById('size_library_id').value : '';
-
-    if (!categoryId) {
-        window.showAlert('Please select a category', 'warning');
-        return false;
-    }
-
-    if (!gender) {
-        window.showAlert('Please select a gender', 'warning');
-        return false;
-    }
-
-    if (sizeLibraryId && !sizeLibraryId) {
-        window.showAlert('Please select a size library', 'warning');
-        return false;
-    }
-
-    return true;
-}
 
 /**
  * 處理模板請求
@@ -78,30 +44,18 @@ function handleTemplateRequest(url, method, data, onSuccess, onError) {
         headers: headers
     })
     .then(response => {
-        return response.json().then(data => {
-            if (!response.ok) {
-                // 只显示主要错误信息，不显示详细列表
-                let errorMessage = data.message || 'Server error';
-                // 如果有多个错误，添加一个简短提示
-                if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
-                    errorMessage = data.message || 'Some templates failed to create';
-                }
-                throw new Error(errorMessage);
-            }
-            return data;
-        });
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Server error');
+            });
+        }
+        return response.json();
     })
     .then(data => {
         if (data.success) {
             if (onSuccess) onSuccess(data);
         } else {
-            // 只显示主要错误信息，不显示详细列表
-            let errorMessage = data.message || 'Operation failed';
-            // 如果有多个错误，使用简短提示
-            if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
-                errorMessage = data.message || 'Some templates failed to create';
-            }
-            if (onError) onError(errorMessage);
+            if (onError) onError(data.message || 'Operation failed');
         }
     })
     .catch(error => {
@@ -147,8 +101,10 @@ function createTemplate(templateData, onSuccess, onError) {
 function updateTemplate(templateId, formData, onSuccess, onError) {
     formData.append('_method', 'PUT');
 
+    const url = window.updateTemplateUrl.replace(':id', templateId);
+
     handleTemplateRequest(
-        window.updateTemplateUrl, // 直接使用，不需要替換 ID
+        url,
         'POST',
         formData,
         onSuccess,
@@ -195,389 +151,6 @@ function setTemplateUnavailable(templateId, onSuccess, onError) {
     );
 }
 
-/**
- * 獲取模板狀態類別
- */
-function getTemplateStatusClass(status) {
-    return status === 'Available' ? 'text-success' : 'text-danger';
-}
-
-/**
- * 更新配置摘要
- */
-function updateConfigSummary() {
-    // 配置摘要已移除，此函数保留为空以避免错误
-}
-
-/**
- * 處理分類選擇變化
- */
-function handleCategoryChange() {
-    updateUI();
-    loadAvailableSizeLibraries();
-}
-
-/**
- * 處理性別選擇變化
- */
-function handleGenderChange() {
-    updateUI();
-    loadAvailableSizeLibraries();
-}
-
-/**
- * 更新分類信息
- */
-function updateCategoryInfo() {
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-        const categoryName = selectedOption.text;
-        const categoryDisplay = document.querySelector('#selectedCategory');
-
-        if (categoryDisplay) {
-            categoryDisplay.textContent = categoryName;
-        }
-    }
-}
-
-/**
- * 更新性別信息
- */
-function updateGenderInfo() {
-    const genderSelect = document.getElementById('gender');
-    if (genderSelect) {
-        const selectedOption = genderSelect.options[genderSelect.selectedIndex];
-        const genderName = selectedOption.text;
-        const genderDisplay = document.querySelector('#selectedGender');
-
-        if (genderDisplay) {
-            genderDisplay.textContent = genderName;
-        }
-    }
-}
-
-/**
- * 更新尺碼庫選項
- */
-function updateSizeLibraryOptions() {
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender').value;
-    const sizeLibrarySelect = document.getElementById('size_library_id');
-
-    if (!sizeLibrarySelect) return;
-
-    // 如果類別或性別沒有選擇，清空尺碼庫選項
-    if (!categoryId || !gender) {
-        sizeLibrarySelect.innerHTML = '<option value="">Please select both category and gender first</option>';
-        sizeLibrarySelect.disabled = true;
-        return;
-    }
-
-    // 顯示加載狀態
-    sizeLibrarySelect.innerHTML = '<option value="">Loading...</option>';
-    sizeLibrarySelect.disabled = true;
-
-    // 構建請求URL
-    const url = window.availableSizeLibrariesUrl || window.getAvailableSizeLibrariesUrl;
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            category_id: categoryId,
-            gender: gender
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.data) {
-            sizeLibrarySelect.innerHTML = '<option value="">Select size library</option>';
-            data.data.forEach(library => {
-                const option = document.createElement('option');
-                option.value = library.id;
-                option.textContent = library.size_value;
-                sizeLibrarySelect.appendChild(option);
-            });
-            sizeLibrarySelect.disabled = false;
-        } else {
-            sizeLibrarySelect.innerHTML = '<option value="">No size libraries available</option>';
-            sizeLibrarySelect.disabled = true;
-        }
-    })
-    .catch(error => {
-        console.error('Error loading size libraries:', error);
-        sizeLibrarySelect.innerHTML = '<option value="">Error loading size libraries</option>';
-        sizeLibrarySelect.disabled = true;
-    });
-}
-
-/**
- * 加載可用的尺碼庫
- */
-function loadAvailableSizeLibraries() {
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender').value;
-
-    if (!categoryId || !gender) {
-        hideSizeLibraryCards();
-        return;
-    }
-
-    // 顯示加載狀態
-    showSizeLibraryLoading();
-
-    // 發送 AJAX 請求獲取可用的尺碼庫
-    const url = window.getAvailableSizeLibrariesUrl || window.availableSizeLibrariesUrl;
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            category_id: categoryId,
-            gender: gender
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            displaySizeLibraryCards(data.data);
-        } else {
-            window.showAlert('Failed to load size libraries: ' + (data.message || 'Unknown error'), 'error');
-            hideSizeLibraryCards();
-        }
-    })
-    .catch(error => {
-        console.error('Error loading size libraries:', error);
-        window.showAlert('Error loading size libraries: ' + error.message, 'error');
-        hideSizeLibraryCards();
-    });
-}
-
-/**
- * 顯示尺碼庫加載狀態
- */
-function showSizeLibraryLoading() {
-    const selectionArea = document.getElementById('sizeLibrarySelection');
-    const container = document.getElementById('sizeLibraryCardsContainer');
-
-    if (selectionArea) {
-        selectionArea.classList.remove('d-none');
-    }
-
-    if (container) {
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2 text-muted">Loading available size libraries...</p>
-            </div>
-        `;
-    }
-
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-}
-
-/**
- * 顯示尺碼庫卡片
- */
-function displaySizeLibraryCards(sizeLibraries) {
-    const selectionArea = document.getElementById('sizeLibrarySelection');
-    const container = document.getElementById('sizeLibraryCardsContainer');
-    if (!selectionArea || !container) return;
-
-    // 顯示選擇區域
-    selectionArea.classList.remove('d-none');
-
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    if (sizeLibraries.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <i class="bi bi-exclamation-circle fs-1 text-muted mb-3"></i>
-                <h6 class="text-muted">No Available Size Libraries</h6>
-                <p class="text-muted small">No size libraries found for the selected category and gender combination.</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = sizeLibraries.map(library => `
-        <div class="col-6 col-md-4 col-lg-3 mb-3">
-            <div class="card size-card h-100 border-2 border-light shadow-sm"
-                 data-size-value="${library.size_value}"
-                 data-library-id="${library.id}"
-                 data-status="${library.size_status}"
-                 style="cursor: pointer; transition: all 0.3s ease;">
-                <input type="checkbox" name="size_library_ids[]" value="${library.id}"
-                       class="size-checkbox position-absolute opacity-0"
-                       id="size_${library.id}"
-                       style="pointer-events: none;">
-                <label for="size_${library.id}" class="card-body d-flex flex-column justify-content-center align-items-center text-center p-3"
-                       style="cursor: pointer; min-height: 80px;">
-                    <div class="size-value fw-bold text-dark mb-2">${library.size_value}</div>
-                    <div class="size-status badge ${library.size_status === 'Available' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} px-2 py-1 rounded-pill small">
-                        ${library.size_status}
-                    </div>
-                </label>
-            </div>
-        </div>
-    `).join('');
-
-    // 綁定卡片點擊事件
-    bindSizeLibraryCardEvents();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏尺碼庫卡片
- */
-function hideSizeLibraryCards() {
-    const selectionArea = document.getElementById('sizeLibrarySelection');
-    if (selectionArea) {
-        selectionArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-/**
- * 綁定尺碼庫卡片事件
- */
-function bindSizeLibraryCardEvents() {
-    const cards = document.querySelectorAll('.size-card');
-    cards.forEach(card => {
-        // 為複選框添加事件監聽
-        const checkbox = card.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    card.classList.add('border-success', 'bg-success-subtle');
-                    card.classList.remove('border-light');
-                } else {
-                    card.classList.remove('border-success', 'bg-success-subtle');
-                    card.classList.add('border-light');
-                }
-                updateSelectionCounter();
-            });
-        }
-
-        // 添加悬停效果
-        card.addEventListener('mouseenter', function() {
-            if (!checkbox.checked) {
-                this.classList.add('border-primary');
-                this.classList.remove('border-light');
-            }
-        });
-
-        card.addEventListener('mouseleave', function() {
-            if (!checkbox.checked) {
-                this.classList.remove('border-primary');
-                this.classList.add('border-light');
-            }
-        });
-    });
-}
-
-/**
- * 更新選擇計數器
- */
-function updateSelectionCounter() {
-    const selectedCount = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked').length;
-    const counter = document.getElementById('selectionCounter');
-    if (counter) {
-        counter.textContent = `${selectedCount} selected`;
-
-        // 檢查是否超過限制
-        const MAX_TEMPLATES = 20;
-        if (selectedCount > MAX_TEMPLATES) {
-            counter.className = 'badge bg-danger';
-            counter.textContent = `${selectedCount} selected (Max: ${MAX_TEMPLATES})`;
-        } else if (selectedCount > 0) {
-            counter.className = 'badge bg-success';
-        } else {
-            counter.className = 'badge bg-primary';
-        }
-    }
-
-    // 配置摘要已移除
-}
-
-/**
- * 設置狀態卡片選擇
- */
-function setupStatusCardSelection() {
-    // 調用統一的狀態卡片初始化函數
-    if (typeof window.initializeTemplateStatusCardSelection === 'function') {
-        window.initializeTemplateStatusCardSelection();
-    }
-}
-
-/**
- * 綁定模板事件
- */
-function bindTemplateEvents() {
-    // 狀態卡片選擇
-    setupStatusCardSelection();
-
-    // 分類選擇變化
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', handleCategoryChange);
-    }
-
-    // 性別選擇變化
-    const genderSelect = document.getElementById('gender');
-    if (genderSelect) {
-        genderSelect.addEventListener('change', handleGenderChange);
-    }
-}
-
-/**
- * 初始化模板頁面
- */
-function initializeTemplatePage(config) {
-    // 綁定事件監聽器
-    bindTemplateEvents();
-
-    // 執行初始化回調函數（如果有）
-    if (config && config.initializationCallback && typeof config.initializationCallback === 'function') {
-        config.initializationCallback();
-    }
-}
-
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
 // =============================================================================
@@ -591,12 +164,6 @@ function initializeTemplateDashboard() {
 
     // 加載模板數據
     loadTemplates();
-
-    // 綁定搜索功能
-    bindSearchEvents();
-
-    // 綁定篩選功能
-    bindFilterEvents();
 }
 
 /**
@@ -608,10 +175,15 @@ function checkUrlParams() {
     const error = urlParams.get('error');
 
     if (success) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert(decodeURIComponent(success), 'success');
-        } else {
-            alert(decodeURIComponent(success));
+        const successMessage = decodeURIComponent(success);
+        if (successMessage && successMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(successMessage, 'success');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(successMessage);
+            } else {
+                alert(successMessage);
+            }
         }
         // 清除URL參數
         const url = new URL(window.location);
@@ -620,10 +192,15 @@ function checkUrlParams() {
     }
 
     if (error) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert(decodeURIComponent(error), 'danger');
-        } else {
-            alert(decodeURIComponent(error));
+        const errorMessage = decodeURIComponent(error);
+        if (errorMessage && errorMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'danger');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
         }
         // 清除URL參數
         const url = new URL(window.location);
@@ -642,6 +219,7 @@ function loadTemplates() {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
         }
     })
     .then(response => {
@@ -653,16 +231,23 @@ function loadTemplates() {
     .then(data => {
         if (data.success) {
             renderCategoryCards(data.data);
-            updateStatistics(data.data);
+            updateStatistics(data);
             updatePaginationInfoByCategory(data.data, data.pagination);
         } else {
-            console.error('API returned success: false', data);
-            showError('Failed to load templates: ' + (data.message || 'Unknown error'));
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Failed to load templates', 'error');
+            } else {
+                alert(data.message || 'Failed to load templates');
+            }
         }
     })
     .catch(error => {
         console.error('Error loading templates:', error);
-        showError('Error loading templates: ' + error.message);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to load templates', 'error');
+        } else {
+            alert('Failed to load templates');
+        }
     });
 }
 
@@ -681,26 +266,66 @@ function renderCategoryCards(groupedData) {
 
     emptyState.classList.add('d-none');
 
+    // 按分類和性別分組
+    const groupedByCategory = groupByCategory(groupedData);
+
     // 生成卡片HTML
     let cardsHTML = '';
 
-    groupedData.forEach(group => {
-        const category = group.category;
-        const gender = group.gender;
-        const templates = group.templates;
+    Object.keys(groupedByCategory).forEach(categoryKey => {
+        const categoryData = groupedByCategory[categoryKey];
+        const category = categoryData.category;
+        const gender = categoryData.gender;
+        const templates = categoryData.templates;
 
         // 確保category和gender數據存在
         if (category && category.category_name && gender) {
             cardsHTML += generateCategoryCard(category, gender, templates);
         } else {
-            console.warn(`Category or gender data missing:`, category, gender);
+            console.warn(`Category or gender data missing for key ${categoryKey}:`, category, gender);
         }
     });
 
     container.innerHTML = cardsHTML;
+}
 
-    // 綁定卡片內的事件
-    bindCardEvents();
+/**
+ * 按分類和性別分組
+ */
+function groupByCategory(groupedData) {
+    const grouped = {};
+
+    groupedData.forEach(group => {
+        const category = group.category;
+        const gender = group.gender;
+        const templates = group.templates || [];
+
+        if (category && category.id && gender) {
+            // 使用 categoryId_gender 作為 key
+            const categoryKey = `${category.id}_${gender}`;
+
+            if (!grouped[categoryKey]) {
+                grouped[categoryKey] = {
+                    category: category,
+                    gender: gender,
+                    templates: []
+                };
+            }
+
+            // 添加 templates 數據
+            if (Array.isArray(templates)) {
+                templates.forEach(template => {
+                    grouped[categoryKey].templates.push({
+                        ...template,
+                        id: template.id,
+                        template_status: template.template_status || 'Available'
+                    });
+                });
+            }
+        }
+    });
+
+    return grouped;
 }
 
 /**
@@ -727,12 +352,10 @@ function generateCategoryCard(category, gender, templates) {
     // 生成模板值列表
     const templateValuesHTML = templates.map((template, index) => {
         const status = template.template_status || 'Unavailable';
-        const statusClass = getTemplateStatusClass(status);
-        const statusIcon = status === 'Available' ? 'bi-check-circle' : 'bi-x-circle';
 
         return `
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                <span class="fw-medium">${template.size_library?.size_value || 'N/A'}</span>
+                <span class="fw-medium" style="cursor: pointer;" onclick="editTemplate(${template.id})" title="Click to edit template">${template.size_library?.size_value || 'N/A'}</span>
                 <div class="d-flex align-items-center gap-4">
                     <span class="badge ${status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
                         <i class="bi ${status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${status}
@@ -792,147 +415,61 @@ function generateCategoryCard(category, gender, templates) {
 }
 
 /**
- * 綁定卡片事件
- */
-function bindCardEvents() {
-    // 卡片內的事件綁定 - 目前通過內聯事件處理
-}
-
-/**
- * 切換模板狀態
- */
-function toggleTemplateStatus(id, currentStatus) {
-    const newStatus = currentStatus === 'Available' ? 'Unavailable' : 'Available';
-    updateTemplateStatus(id, newStatus);
-}
-
-/**
- * 設置模板為可用
- */
-function setTemplateAvailable(id) {
-    updateTemplateStatus(id, 'Available');
-}
-
-/**
- * 設置模板為不可用
- */
-function setTemplateUnavailable(id) {
-    updateTemplateStatus(id, 'Unavailable');
-}
-
-/**
- * 更新模板狀態
- */
-function updateTemplateStatus(id, status) {
-    console.log('Updating template status:', { id, status });
-
-    const url = status === 'Available' ?
-        window.availableTemplateUrl.replace(':id', id) :
-        window.unavailableTemplateUrl.replace(':id', id);
-
-    console.log('Template status update URL:', url);
-
-    // 顯示加載提示
-    if (typeof window.showAlert === 'function') {
-        window.showAlert('Updating template status...', 'info');
-    }
-
-    fetch(url, {
-        method: 'PATCH',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        }
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Response data:', data);
-        if (data.success) {
-            if (typeof window.showAlert === 'function') {
-                window.showAlert(`Template status updated to ${status.toLowerCase()} successfully!`, 'success');
-            } else {
-                alert(`Template status updated to ${status.toLowerCase()} successfully!`);
-            }
-            loadTemplates(); // 重新加載數據
-        } else {
-            if (typeof window.showAlert === 'function') {
-                window.showAlert(`Failed to update template status to ${status.toLowerCase()}`, 'error');
-            } else {
-                alert(`Failed to update template status to ${status.toLowerCase()}`);
-            }
-        }
-    })
-        .catch(error => {
-            console.error(`Error setting template to ${status.toLowerCase()}:`, error);
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('Failed to update template status', 'error');
-            } else {
-                alert('Failed to update template status');
-            }
-        });
-}
-
-/**
- * 綁定搜索事件
- */
-function bindSearchEvents() {
-    // 搜索功能綁定 - 預留功能
-}
-
-/**
- * 綁定篩選事件
- */
-function bindFilterEvents() {
-    // 篩選功能綁定 - 預留功能
-}
-
-/**
  * 更新統計信息
  */
-function updateStatistics(groupedData) {
-    // 計算分組數量（category + gender 組合）
-    const groupCount = groupedData.length;
-
-    // 計算所有模板的統計信息
-    let totalTemplates = 0;
-    let availableTemplates = 0;
-    let unavailableTemplates = 0;
-
-    groupedData.forEach(group => {
-        group.templates.forEach(template => {
-            totalTemplates++;
-            const status = template.template_status || 'Unavailable';
-            if (status === 'Available') {
-                availableTemplates++;
-            } else {
-                unavailableTemplates++;
-            }
-        });
-    });
-
-    // 更新統計數據 - 顯示模板總數而不是分組數量
-    // 添加 DOM 元素存在性檢查
+function updateStatistics(data) {
+    // 更新頁面頂部的統計信息
     const totalTemplatesEl = document.getElementById('total-templates');
     const activeTemplatesEl = document.getElementById('active-templates');
     const inactiveTemplatesEl = document.getElementById('inactive-templates');
     const templateGroupsEl = document.getElementById('template-groups');
 
-    if (totalTemplatesEl) totalTemplatesEl.textContent = totalTemplates;
-    if (activeTemplatesEl) activeTemplatesEl.textContent = availableTemplates;
-    if (inactiveTemplatesEl) inactiveTemplatesEl.textContent = unavailableTemplates;
-    if (templateGroupsEl) templateGroupsEl.textContent = groupCount;
+    if (totalTemplatesEl) {
+        totalTemplatesEl.textContent = data.pagination?.total || data.total_templates || data.total || 0;
+    }
+
+    // 計算可用和不可用的模板數量
+    if (data.data && Array.isArray(data.data)) {
+        let availableTemplates = 0;
+        let unavailableTemplates = 0;
+
+        data.data.forEach(group => {
+            if (group.templates && Array.isArray(group.templates)) {
+                group.templates.forEach(template => {
+                    const status = template.template_status || 'Unavailable';
+                    if (status === 'Available') {
+                        availableTemplates++;
+                    } else {
+                        unavailableTemplates++;
+                    }
+                });
+            }
+        });
+
+        if (activeTemplatesEl) {
+            activeTemplatesEl.textContent = availableTemplates;
+        }
+
+        if (inactiveTemplatesEl) {
+            inactiveTemplatesEl.textContent = unavailableTemplates;
+        }
+    }
+
+    if (templateGroupsEl) {
+        // 按分類和性別分組計算
+        const groupedByCategory = groupByCategory(data.data || []);
+        const groupCount = Object.keys(groupedByCategory).length;
+        templateGroupsEl.textContent = groupCount;
+    }
 }
 
 /**
  * 更新分頁信息
  */
 function updatePaginationInfoByCategory(groupedData, pagination) {
-    // 計算分組數量（category + gender 組合）
-    const groupCount = groupedData.length;
+    // 按分類和性別分組計算
+    const groupedByCategory = groupByCategory(groupedData || []);
+    const groupCount = Object.keys(groupedByCategory).length;
 
     // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
     const showingStartEl = document.getElementById('showing-start');
@@ -979,313 +516,6 @@ function updatePaginationButtons(categoryCount) {
     }
 }
 
-/**
- * 查看分類詳情
- */
-function viewCategoryDetails(categoryId, gender) {
-    // 跳轉到view頁面，傳遞category+gender組合ID (gender 现在是字符串值)
-    const combinedId = `${categoryId}_${gender}`;
-    const url = window.viewTemplateUrl.replace(':id', combinedId);
-    window.location.href = url;
-}
-
-function showError(message) {
-    window.showAlert(message, 'danger');
-}
-
-function showSuccess(message) {
-    // 顯示成功消息
-    window.showAlert(message, 'success');
-    console.log('Success:', message);
-}
-
-// =============================================================================
-// Create 頁面功能 (Create Page Functions)
-// =============================================================================
-
-/**
- * 初始化模板創建頁面
- */
-function initializeTemplateCreate() {
-    // 使用通用初始化函數
-    initializeTemplatePage({
-        initializationCallback: function() {
-            bindCreateEvents();
-            updateUI();
-        }
-    });
-}
-
-/**
- * 綁定創建頁面事件
- */
-function bindCreateEvents() {
-    // 綁定選擇按鈕事件
-    bindSelectionButtons();
-
-    // 表單提交處理
-    const form = document.getElementById('templateForm');
-    if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-    }
-}
-
-/**
- * 綁定選擇按鈕事件
- */
-function bindSelectionButtons() {
-    // 全選按鈕
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', selectAllLibraries);
-    }
-
-    // 清除按鈕 - 使用 clearForm 函数
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    if (clearAllBtn) {
-        clearAllBtn.addEventListener('click', clearForm);
-    }
-}
-
-/**
- * 更新配置摘要
- */
-function updateConfigSummary() {
-    // 配置摘要已移除，此函数保留为空以避免错误
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    // 檢查是否有數據需要清除
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender').value;
-    const selectedCheckboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked');
-
-    // 如果沒有任何選擇，顯示提示
-    if (!categoryId && !gender && selectedCheckboxes.length === 0) {
-        window.showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 添加確認對話框
-    if (!confirm('Are you sure you want to clear all selections? This action cannot be undone.')) {
-        return;
-    }
-
-    // 清空選擇
-    document.getElementById('category_id').value = '';
-    document.getElementById('gender').value = '';
-
-    // 清空所有複選框
-    const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = false;
-        const card = checkbox.closest('.size-card');
-        card.classList.remove('border-success', 'bg-success-subtle');
-        card.classList.add('border-light');
-    });
-
-    // 更新UI
-    updateUI();
-    hideSizeLibraryCards();
-
-    window.showAlert('Form cleared successfully', 'success');
-}
-
-/**
- * 選擇所有尺碼庫
- */
-function selectAllLibraries() {
-    const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
-    if (!checkboxes.length) {
-        window.showAlert('No size libraries to select. Please choose category and gender first.', 'info');
-        return;
-    }
-
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = true;
-        const card = checkbox.closest('.size-card');
-        card.classList.add('border-success', 'bg-success-subtle');
-        card.classList.remove('border-light');
-    });
-
-    updateSelectionCounter();
-    window.showAlert('All size libraries selected', 'success');
-}
-
-/**
- * 更新UI狀態
- */
-function updateUI() {
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender').value;
-
-    // 顯示/隱藏區域
-    const initialMessage = document.getElementById('initial-message');
-    const sizeLibrarySelection = document.getElementById('sizeLibrarySelection');
-    const submitSection = document.getElementById('submitSection');
-
-    // 檢查是否有選擇區域顯示
-    const isSelectionVisible = sizeLibrarySelection && !sizeLibrarySelection.classList.contains('d-none');
-
-    if (isSelectionVisible) {
-        // 如果選擇區域已顯示，隱藏初始消息
-        initialMessage.classList.add('d-none');
-        // 顯示提交按鈕
-        if (submitSection) {
-            submitSection.classList.remove('d-none');
-        }
-    } else {
-        // 如果選擇區域未顯示，顯示初始消息
-        initialMessage.classList.remove('d-none');
-        // 隱藏提交按鈕
-        if (submitSection) {
-            submitSection.classList.add('d-none');
-        }
-    }
-}
-
-/**
- * 表單提交處理
- */
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    // 獲取選中的尺碼庫
-    const selectedCheckboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked');
-
-    if (selectedCheckboxes.length === 0) {
-        window.showAlert('Please select at least one size library', 'warning');
-        return;
-    }
-
-    // 檢查是否超過限制
-    const MAX_TEMPLATES = 20;
-    if (selectedCheckboxes.length > MAX_TEMPLATES) {
-        window.showAlert(`Cannot create more than ${MAX_TEMPLATES} templates at once. Please select fewer templates.`, 'warning');
-        return;
-    }
-
-    // 獲取當前選擇的 category 和 gender
-    const categoryId = document.getElementById('category_id').value;
-    const gender = document.getElementById('gender').value;
-    const templateStatus = 'Available'; // 默認為 Available
-
-    // 準備提交數據
-    const templates = Array.from(selectedCheckboxes).map((checkbox, index) => ({
-        categoryId: categoryId,
-        gender: gender,
-        sizeLibraryId: checkbox.value,
-        templateStatus: templateStatus
-    }));
-
-    // 使用通用創建函數
-    createTemplate({ templates },
-        function(data) {
-            window.showAlert(data.message || 'Templates created successfully', 'success');
-            setTimeout(() => {
-                window.location.href = window.templateManagementRoute;
-            }, 1500);
-        },
-        function(error) {
-            window.showAlert(error || 'Error creating templates', 'error');
-        }
-    );
-}
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * 初始化模板更新頁面
- */
-function initializeTemplateUpdate() {
-    // 使用通用初始化函數
-    initializeTemplatePage({
-        initializationCallback: function() {
-            bindUpdateEvents();
-        }
-    });
-}
-
-/**
- * 綁定更新頁面事件
- */
-function bindUpdateEvents() {
-    // 表單提交 - 確保只綁定一次
-    if (!updateFormBound) {
-        const form = document.getElementById('updateTemplateForm');
-        if (form) {
-            form.addEventListener('submit', handleUpdateFormSubmit);
-            updateFormBound = true; // 標記已綁定
-        }
-    }
-
-    // 類別變化時更新尺碼庫選項（如果有的話）
-    const categorySelect = document.getElementById('category_id');
-    if (categorySelect && !categorySelect.hasAttribute('data-change-bound')) {
-        categorySelect.addEventListener('change', updateSizeLibraryOptions);
-        categorySelect.setAttribute('data-change-bound', 'true');
-    }
-
-    // 性別變化時更新尺碼庫選項（如果有的話）
-    const genderSelect = document.getElementById('gender');
-    if (genderSelect && !genderSelect.hasAttribute('data-change-bound')) {
-        genderSelect.addEventListener('change', updateSizeLibraryOptions);
-        genderSelect.setAttribute('data-change-bound', 'true');
-    }
-}
-
-/**
- * 獲取當前ID
- */
-
-
-/**
- * 更新頁面表單提交處理
- */
-function handleUpdateFormSubmit(e) {
-    e.preventDefault();
-
-    // 防止重複提交
-    if (isUpdating) {
-        return false;
-    }
-
-    // 設置提交標誌
-    isUpdating = true;
-
-    // 獲取表單數據
-    const formData = new FormData(e.target);
-
-    // 獲取當前模板ID
-    const templateId = window.location.pathname.split('/').pop();
-
-    // 使用通用函數提交
-    handleTemplateRequest(
-        window.updateTemplateUrl,
-        'POST',
-        formData,
-        function(data) {
-            // 使用後端返回的消息，如果沒有則使用默認消息
-            const message = data.message || 'Template updated successfully';
-            window.showAlert(message, 'success');
-            setTimeout(() => {
-                window.location.href = window.templateManagementRoute;
-            }, 1500);
-        },
-        function(error) {
-            isUpdating = false; // 錯誤時重置標誌
-            window.showAlert(error || 'Failed to update template', 'error');
-        }
-    );
-
-    return false; // 防止表單默認提交
-}
-
 // =============================================================================
 // View 頁面功能 (View Page Functions)
 // =============================================================================
@@ -1297,6 +527,9 @@ function initializeTemplateView() {
     // 綁定事件監聽器
     bindViewEvents();
 
+    // 綁定 Update Modal 事件
+    bindUpdateTemplateModalEvents();
+
     // 初始化狀態
     updateViewUI();
 }
@@ -1305,11 +538,11 @@ function initializeTemplateView() {
  * 綁定查看頁面事件
  */
 function bindViewEvents() {
-    // 刪除按鈕事件 - 使用事件委託避免重複綁定
+    // 刪除按鈕事件 - 使用事件委託，只監聽 Delete 按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-template-id]')) {
-            const button = e.target.closest('button[data-template-id]');
-            const templateId = button.getAttribute('data-template-id');
+        const deleteButton = e.target.closest('button[data-template-id][data-action="delete"]');
+        if (deleteButton) {
+            const templateId = deleteButton.getAttribute('data-template-id');
             deleteTemplateFromView(templateId);
         }
     });
@@ -1352,7 +585,7 @@ function updateViewStatistics() {
  */
 function updateTableStatus() {
     // 更新表格行的狀態
-    const tableRows = document.querySelectorAll('.data-table tbody tr');
+    const tableRows = document.querySelectorAll('tbody tr');
     tableRows.forEach((row, index) => {
         // 添加懸停效果
         row.addEventListener('mouseenter', function() {
@@ -1390,12 +623,8 @@ function deleteTemplateFromView(templateId) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => {
-        console.log('Delete response:', response);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Delete data:', data);
         if (data.success) {
             if (typeof window.showAlert === 'function') {
                 window.showAlert('Template deleted successfully', 'success');
@@ -1415,7 +644,6 @@ function deleteTemplateFromView(templateId) {
             // 檢查是否還有資料，如果沒有就跳轉回 index
             checkAndRedirectIfEmpty();
         } else {
-            console.error('Delete failed:', data);
             if (typeof window.showAlert === 'function') {
                 window.showAlert('Failed to delete template', 'error');
             } else {
@@ -1447,104 +675,1123 @@ function checkAndRedirectIfEmpty() {
         return !row.querySelector('td[colspan]');
     });
 
-    // 如果沒有資料行了，跳轉回 index
+    // 如果沒有資料行了，直接跳轉回 index
     if (dataRows.length === 0) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert('All templates have been deleted. Redirecting to template list...', 'info');
-        } else {
-            alert('All templates have been deleted. Redirecting to template list...');
-        }
-
-        // 延遲跳轉，讓用戶看到提示信息
         setTimeout(() => {
             window.location.href = window.templateManagementRoute;
-        }, 1500);
+        }, 1000);
     }
 }
 
 // =============================================================================
-// 工具函數 (Utility Functions)
+// 模板操作函數 (Template Operations)
 // =============================================================================
 
 /**
- * 工具函數：防抖
+ * 切換模板狀態
  */
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            timeout = null;
-            if (!immediate) func.apply(this, args);
-        };
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func.apply(this, args);
-    };
+function toggleTemplateStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'Available' ? 'Unavailable' : 'Available';
+    updateTemplateStatus(id, newStatus);
 }
 
 /**
- * 工具函數：節流
+ * 設置模板為可用
  */
-function throttle(func, limit) {
-    let inThrottle;
-    return function executedFunction(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+function setTemplateAvailable(id) {
+    updateTemplateStatus(id, 'Available');
+}
+
+/**
+ * 設置模板為不可用
+ */
+function setTemplateUnavailable(id) {
+    updateTemplateStatus(id, 'Unavailable');
+}
+
+/**
+ * 更新單個模板狀態顯示（不重新加載所有數據）
+ */
+function updateSingleTemplateStatusUI(templateId, newStatus) {
+    // 找到包含該 template 的行（通過查找包含 templateId 的按鈕）
+    const templateRows = document.querySelectorAll('.list-container > div');
+    let targetRow = null;
+    let categoryCard = null;
+
+    templateRows.forEach(row => {
+        const button = row.querySelector('button');
+        if (button && button.getAttribute('onclick')) {
+            const onclickAttr = button.getAttribute('onclick');
+            // 檢查 onclick 是否包含該 templateId
+            if (onclickAttr.includes(`(${templateId})`)) {
+                targetRow = row;
+                categoryCard = row.closest('.content-card');
+            }
         }
-    };
-}
+    });
 
-/**
- * 工具函數：轉義HTML
- */
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, (s) => map[s]);
-}
+    if (!targetRow || !categoryCard) {
+        // 如果找不到，則重新加載所有數據
+        console.warn('Could not find template row, reloading all data');
+        loadTemplates();
+        return;
+    }
 
-/**
- * 工具函數：格式化日期
- */
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+    // 更新 badge
+    const badge = targetRow.querySelector('.badge');
+    if (badge) {
+        if (newStatus === 'Available') {
+            badge.className = 'badge bg-success px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Available';
+        } else {
+            badge.className = 'badge bg-danger px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-x-circle me-1"></i>Unavailable';
+        }
+    }
 
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        return 'N/A';
+    // 更新按鈕
+    const toggleButton = targetRow.querySelector('button');
+    if (toggleButton) {
+        if (newStatus === 'Available') {
+            toggleButton.className = 'btn btn-sm btn-outline-warning';
+            toggleButton.title = 'Deactivate';
+            toggleButton.innerHTML = '<i class="bi bi-slash-circle"></i>';
+            toggleButton.setAttribute('onclick', `setTemplateUnavailable(${templateId})`);
+        } else {
+            toggleButton.className = 'btn btn-sm btn-outline-success';
+            toggleButton.title = 'Activate';
+            toggleButton.innerHTML = '<i class="bi bi-check-circle"></i>';
+            toggleButton.setAttribute('onclick', `setTemplateAvailable(${templateId})`);
+        }
+    }
+
+    // 更新分類卡片中的統計數字
+    const availableCountEl = categoryCard.querySelector('.col-6:first-child .h4');
+    const unavailableCountEl = categoryCard.querySelector('.col-6:last-child .h4');
+
+    if (availableCountEl && unavailableCountEl) {
+        let availableCount = parseInt(availableCountEl.textContent) || 0;
+        let unavailableCount = parseInt(unavailableCountEl.textContent) || 0;
+
+        if (newStatus === 'Available') {
+            availableCount++;
+            unavailableCount--;
+        } else {
+            availableCount--;
+            unavailableCount++;
+        }
+
+        availableCountEl.textContent = availableCount;
+        unavailableCountEl.textContent = unavailableCount;
     }
 }
 
 /**
- * 工具函數：格式化狀態
+ * 更新模板狀態
  */
-function formatStatus(status) {
-    const statusMap = {
-        'Available': { class: 'bg-success', icon: 'bi-check-circle' },
-        'Unavailable': { class: 'bg-danger', icon: 'bi-x-circle' }
-    };
+function updateTemplateStatus(id, status) {
+    const url = status === 'Available' ?
+        window.availableTemplateUrl.replace(':id', id) :
+        window.unavailableTemplateUrl.replace(':id', id);
 
-    const statusInfo = statusMap[status] || { class: 'bg-secondary', icon: 'bi-question-circle' };
+    fetch(url, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(`Template status updated to ${status.toLowerCase()} successfully!`, 'success');
+            } else {
+                alert(`Template status updated to ${status.toLowerCase()} successfully!`);
+            }
+            // 只更新單個模板狀態，不重新加載所有數據
+            updateSingleTemplateStatusUI(id, status);
+        } else {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to update template status', 'error');
+            } else {
+                alert('Failed to update template status');
+            }
+        }
+    })
+    .catch(error => {
+        console.error(`Error setting template to ${status.toLowerCase()}:`, error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to update template status', 'error');
+        } else {
+            alert('Failed to update template status');
+        }
+    });
+}
 
-    return `<span class="badge ${statusInfo.class} px-3 py-2">
-        <i class="bi ${statusInfo.icon} me-1"></i>${status}
-    </span>`;
+/**
+ * 查看分類詳情
+ */
+function viewCategoryDetails(categoryId, gender) {
+    // 跳轉到view頁面
+    const combinedId = `${categoryId}_${gender}`;
+    const url = window.viewTemplateUrl.replace(':id', combinedId);
+    window.location.href = url;
+}
+
+/**
+ * 編輯模板（跳轉到 view 頁面）
+ */
+function editTemplate(templateId) {
+    const url = window.viewTemplateUrl.replace(':id', templateId);
+    window.location.href = url;
+}
+
+// =============================================================================
+// Create Modal 功能 (Create Modal Functions)
+// =============================================================================
+
+/**
+ * 初始化 Template Create Modal
+ */
+function initializeTemplateCreateModal() {
+    // 綁定 modal 事件
+    bindTemplateModalEvents();
+    // 加載 Categories
+    loadCategoriesForTemplateModal();
+}
+
+/**
+ * 綁定 Template Modal 事件
+ */
+function bindTemplateModalEvents() {
+    const modal = document.getElementById('createTemplateModal');
+    if (!modal) return;
+
+    // Modal 打開時重置
+    modal.addEventListener('show.bs.modal', function() {
+        resetTemplateModal();
+        loadCategoriesForTemplateModal();
+    });
+
+    // Category 選擇變化
+    const categorySelect = document.getElementById('create_category_id');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', handleCategorySelectChangeForTemplateModal);
+    }
+
+    // Gender 選擇變化
+    const genderSelect = document.getElementById('create_gender');
+    if (genderSelect) {
+        genderSelect.addEventListener('change', handleGenderSelectChangeForTemplateModal);
+    }
+
+    // Select All 按鈕
+    const selectAllBtn = document.getElementById('selectAllSizeLibrariesBtn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', selectAllSizeLibrariesForModal);
+    }
+
+    // Clear All 按鈕
+    const clearAllBtn = document.getElementById('clearAllSizeLibrariesBtn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', clearAllSizeLibrariesForModal);
+    }
+
+    // 提交按鈕
+    const submitBtn = document.getElementById('submitCreateTemplateModal');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitTemplateModal);
+    }
+}
+
+/**
+ * 加載 Categories 到 Template Modal
+ */
+function loadCategoriesForTemplateModal() {
+    const categorySelect = document.getElementById('create_category_id');
+    if (!categorySelect) return;
+
+    // 從 API 獲取 categories
+    fetch(window.createTemplateUrl, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.categories) {
+            categorySelect.innerHTML = '<option value="">Select category</option>';
+            data.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.category_name;
+                categorySelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading categories:', error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Failed to load categories', 'error');
+        } else {
+            alert('Failed to load categories');
+        }
+    });
+}
+
+/**
+ * 處理 Category 選擇變化（Modal）
+ */
+function handleCategorySelectChangeForTemplateModal() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const gender = document.getElementById('create_gender').value;
+
+    if (categoryId && gender) {
+        loadAvailableSizeLibrariesForModal();
+    } else {
+        hideSizeLibraryCardsForModal();
+    }
+}
+
+/**
+ * 處理 Gender 選擇變化（Modal）
+ */
+function handleGenderSelectChangeForTemplateModal() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const gender = document.getElementById('create_gender').value;
+
+    if (categoryId && gender) {
+        loadAvailableSizeLibrariesForModal();
+    } else {
+        hideSizeLibraryCardsForModal();
+    }
+}
+
+/**
+ * 加載可用的尺碼庫（Modal）
+ */
+function loadAvailableSizeLibrariesForModal() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const gender = document.getElementById('create_gender').value;
+
+    if (!categoryId || !gender) {
+        hideSizeLibraryCardsForModal();
+        return;
+    }
+
+    // 顯示加載狀態
+    showSizeLibraryLoadingForModal();
+
+    // 發送 AJAX 請求獲取可用的尺碼庫
+    const url = window.getAvailableSizeLibrariesUrl || window.availableSizeLibrariesUrl;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            category_id: categoryId,
+            gender: gender
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displaySizeLibraryCardsForModal(data.data);
+        } else {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Failed to load size libraries: ' + (data.message || 'Unknown error'), 'error');
+            } else {
+                alert('Failed to load size libraries: ' + (data.message || 'Unknown error'));
+            }
+            hideSizeLibraryCardsForModal();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading size libraries:', error);
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Error loading size libraries: ' + error.message, 'error');
+        } else {
+            alert('Error loading size libraries: ' + error.message);
+        }
+        hideSizeLibraryCardsForModal();
+    });
+}
+
+/**
+ * 顯示尺碼庫加載狀態（Modal）
+ */
+function showSizeLibraryLoadingForModal() {
+    const selectionArea = document.getElementById('sizeLibrarySelection');
+    const container = document.getElementById('sizeLibraryCardsContainer');
+    const initialMessage = document.getElementById('initial-size-library-message');
+
+    if (selectionArea) {
+        selectionArea.classList.remove('d-none');
+    }
+
+    if (container) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading available size libraries...</p>
+            </div>
+        `;
+    }
+
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+}
+
+/**
+ * 顯示尺碼庫卡片（Modal）
+ */
+function displaySizeLibraryCardsForModal(sizeLibraries) {
+    const selectionArea = document.getElementById('sizeLibrarySelection');
+    const container = document.getElementById('sizeLibraryCardsContainer');
+    const initialMessage = document.getElementById('initial-size-library-message');
+    if (!selectionArea || !container) return;
+
+    // 顯示選擇區域
+    selectionArea.classList.remove('d-none');
+
+    // 隱藏初始消息
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    if (sizeLibraries.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-circle fs-1 text-muted mb-3"></i>
+                <h6 class="text-muted">No Available Size Libraries</h6>
+                <p class="text-muted small">No size libraries found for the selected category and gender combination.</p>
+            </div>
+        `;
+        updateSizeLibrarySelectionCounter();
+        updateTemplateSubmitButton();
+        return;
+    }
+
+    container.innerHTML = sizeLibraries.map(library => `
+        <div class="col-6 col-md-4 col-lg-3 mb-3">
+            <div class="card size-library-card h-100 border-2 border-light shadow-sm position-relative overflow-hidden"
+                 data-size-library-id="${library.id}"
+                 data-size-value="${library.size_value}"
+                 data-status="${library.size_status}"
+                 style="cursor: pointer; transition: all 0.3s ease; border-radius: 12px;">
+                <input type="checkbox" name="size_library_ids[]" value="${library.id}"
+                       class="size-library-checkbox position-absolute opacity-0"
+                       id="size_library_${library.id}"
+                       style="pointer-events: none;">
+                <label for="size_library_${library.id}" class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
+                       style="cursor: pointer; min-height: 120px; position: relative;">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <i class="bi bi-check-circle-fill text-success fs-5 d-none size-library-check-icon" style="text-shadow: 0 0 4px rgba(0,0,0,0.2);"></i>
+                    </div>
+                    <div class="size-value fw-bold text-dark mb-2 fs-5">${library.size_value.toUpperCase()}</div>
+                    <div class="size-status badge ${library.size_status === 'Available' ? 'bg-success-subtle text-success border border-success border-opacity-25' : 'bg-danger-subtle text-danger border border-danger border-opacity-25'} px-3 py-2 rounded-pill">
+                        <i class="bi ${library.size_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${library.size_status}
+                    </div>
+                </label>
+            </div>
+        </div>
+    `).join('');
+
+    // 綁定卡片點擊事件
+    bindSizeLibraryCardEventsForModal();
+
+    // 更新選擇計數器
+    updateSizeLibrarySelectionCounter();
+    updateTemplateSubmitButton();
+}
+
+/**
+ * 綁定尺碼庫卡片事件（Modal）
+ */
+function bindSizeLibraryCardEventsForModal() {
+    const cards = document.querySelectorAll('.size-library-card');
+    cards.forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        const checkIcon = card.querySelector('.size-library-check-icon');
+
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    card.classList.add('border-success', 'bg-success-subtle');
+                    card.classList.remove('border-light');
+                    card.style.transform = 'scale(1.02)';
+                    card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
+                    if (checkIcon) {
+                        checkIcon.classList.remove('d-none');
+                    }
+                } else {
+                    card.classList.remove('border-success', 'bg-success-subtle');
+                    card.classList.add('border-light');
+                    card.style.transform = 'scale(1)';
+                    card.style.boxShadow = '';
+                    if (checkIcon) {
+                        checkIcon.classList.add('d-none');
+                    }
+                }
+                updateSizeLibrarySelectionCounter();
+                updateTemplateSubmitButton();
+            });
+        }
+
+        // 添加悬停效果
+        card.addEventListener('mouseenter', function() {
+            if (!checkbox.checked) {
+                this.classList.add('border-primary');
+                this.classList.remove('border-light');
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }
+        });
+
+        card.addEventListener('mouseleave', function() {
+            if (!checkbox.checked) {
+                this.classList.remove('border-primary');
+                this.classList.add('border-light');
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = '';
+            }
+        });
+    });
+}
+
+/**
+ * 隱藏尺碼庫卡片（Modal）
+ */
+function hideSizeLibraryCardsForModal() {
+    const selectionArea = document.getElementById('sizeLibrarySelection');
+    const initialMessage = document.getElementById('initial-size-library-message');
+
+    if (selectionArea) {
+        selectionArea.classList.add('d-none');
+    }
+
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
+    }
+
+    // 重置計數器
+    const counter = document.getElementById('sizeLibrarySelectionCounter');
+    if (counter) {
+        counter.textContent = '0 selected';
+        counter.className = 'badge bg-primary';
+    }
+
+    updateTemplateSubmitButton();
+}
+
+/**
+ * 更新尺碼庫選擇計數器（Modal）
+ */
+function updateSizeLibrarySelectionCounter() {
+    const selectedCount = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked').length;
+    const counter = document.getElementById('sizeLibrarySelectionCounter');
+
+    if (counter) {
+        counter.textContent = `${selectedCount} selected`;
+
+        if (selectedCount > 0) {
+            counter.className = 'badge bg-success';
+        } else {
+            counter.className = 'badge bg-primary';
+        }
+    }
+}
+
+/**
+ * 更新提交按鈕狀態（Modal）
+ */
+function updateTemplateSubmitButton() {
+    const submitBtn = document.getElementById('submitCreateTemplateModal');
+    if (submitBtn) {
+        const selectedCount = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked').length;
+        submitBtn.disabled = selectedCount === 0;
+    }
+}
+
+/**
+ * 選擇所有尺碼庫（Modal）
+ */
+function selectAllSizeLibrariesForModal() {
+    const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
+    if (checkboxes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No size libraries available to select', 'warning');
+        } else {
+            alert('No size libraries available to select');
+        }
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        const card = checkbox.closest('.size-library-card');
+        const checkIcon = card?.querySelector('.size-library-check-icon');
+        if (card) {
+            card.classList.add('border-success', 'bg-success-subtle');
+            card.classList.remove('border-light');
+            card.style.transform = 'scale(1.02)';
+            card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
+            if (checkIcon) {
+                checkIcon.classList.remove('d-none');
+            }
+        }
+    });
+    updateSizeLibrarySelectionCounter();
+    updateTemplateSubmitButton();
+
+    // 顯示選擇提示
+    const selectedCount = checkboxes.length;
+    if (typeof window.showAlert === 'function') {
+        window.showAlert(`${selectedCount} size librar${selectedCount > 1 ? 'ies' : 'y'} selected`, 'success');
+    } else {
+        alert(`${selectedCount} size librar${selectedCount > 1 ? 'ies' : 'y'} selected`);
+    }
+}
+
+/**
+ * 清除所有尺碼庫選擇（Modal）
+ */
+function clearAllSizeLibrariesForModal() {
+    const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked');
+    if (checkboxes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No size libraries selected to clear', 'info');
+        } else {
+            alert('No size libraries selected to clear');
+        }
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.size-library-card');
+        const checkIcon = card?.querySelector('.size-library-check-icon');
+        if (card) {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+            if (checkIcon) {
+                checkIcon.classList.add('d-none');
+            }
+        }
+    });
+    updateSizeLibrarySelectionCounter();
+    updateTemplateSubmitButton();
+
+    // 顯示清除提示
+    if (typeof window.showAlert === 'function') {
+        window.showAlert('All selections cleared', 'info');
+    } else {
+        alert('All selections cleared');
+    }
+}
+
+/**
+ * 重置 Template Modal
+ */
+function resetTemplateModal() {
+    // 重置表單
+    const form = document.getElementById('createTemplateModalForm');
+    if (form) {
+        form.reset();
+    }
+
+    // 重置選擇
+    const categorySelect = document.getElementById('create_category_id');
+    const genderSelect = document.getElementById('create_gender');
+    if (categorySelect) {
+        categorySelect.value = '';
+    }
+    if (genderSelect) {
+        genderSelect.value = '';
+    }
+
+    // 隱藏尺碼庫卡片
+    hideSizeLibraryCardsForModal();
+
+    // 清除所有選擇
+    const checkboxes = document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.size-library-card');
+        const checkIcon = card?.querySelector('.size-library-check-icon');
+        if (card) {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+            if (checkIcon) {
+                checkIcon.classList.add('d-none');
+            }
+        }
+    });
+
+    // 更新計數器
+    const counter = document.getElementById('sizeLibrarySelectionCounter');
+    if (counter) {
+        counter.textContent = '0 selected';
+        counter.className = 'badge bg-primary';
+    }
+
+    // 禁用提交按鈕
+    const submitBtn = document.getElementById('submitCreateTemplateModal');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+    }
+}
+
+/**
+ * 提交 Template Modal
+ */
+function submitTemplateModal() {
+    const categoryId = document.getElementById('create_category_id').value;
+    const gender = document.getElementById('create_gender').value;
+    const selectedSizeLibraries = Array.from(document.querySelectorAll('#sizeLibraryCardsContainer input[type="checkbox"]:checked'))
+        .map(checkbox => checkbox.value);
+
+    // 驗證
+    if (!categoryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a category first', 'warning');
+        } else {
+            alert('Please select a category first');
+        }
+        return;
+    }
+
+    if (!gender) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a gender first', 'warning');
+        } else {
+            alert('Please select a gender first');
+        }
+        return;
+    }
+
+    if (selectedSizeLibraries.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select at least one size library', 'warning');
+        } else {
+            alert('Please select at least one size library');
+        }
+        return;
+    }
+
+    // 準備數據
+    const templates = selectedSizeLibraries.map(sizeLibraryId => ({
+        categoryId: categoryId,
+        gender: gender,
+        sizeLibraryId: sizeLibraryId
+    }));
+
+    // 顯示加載狀態
+    const submitBtn = document.getElementById('submitCreateTemplateModal');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creating...';
+    submitBtn.disabled = true;
+
+    // 提交創建請求
+    createTemplate({ templates },
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Templates created successfully', 'success');
+            } else {
+                alert(data.message || 'Templates created successfully');
+            }
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createTemplateModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to create templates', 'error');
+            } else {
+                alert(error || 'Failed to create templates');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    );
+}
+
+// =============================================================================
+// Update Modal 功能 (Update Modal Functions)
+// =============================================================================
+
+/**
+ * 綁定 Update Template Modal 事件
+ */
+function bindUpdateTemplateModalEvents() {
+    // 彈窗打開時初始化狀態卡片
+    $('#updateTemplateModal').on('show.bs.modal', function() {
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('template_status');
+        }
+    });
+
+    // 彈窗關閉時清理表單
+    $('#updateTemplateModal').on('hidden.bs.modal', function() {
+        const form = document.getElementById('updateTemplateModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        // 清空 select 選項
+        $('#update_category_id').empty().append('<option value="">Select category</option>');
+        $('#update_gender').val('');
+        $('#update_size_library_id').empty().append('<option value="">Select size library</option>');
+
+        // 清空當前信息卡片
+        $('#currentTemplateInfo').html('');
+
+        // 重置狀態卡片（只清理 modal 內的）
+        const modal = document.getElementById('updateTemplateModal');
+        if (modal) {
+            $(modal).find('input[name="template_status"]').prop('checked', false);
+            $(modal).find('.status-card').removeClass('selected');
+        }
+
+        // 移除驗證類
+        $('#updateTemplateModalForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+
+        // 清除隱藏的 template ID
+        $('#updateTemplateModalForm').removeAttr('data-template-id');
+    });
+}
+
+/**
+ * 打開更新模板彈窗
+ */
+function openUpdateTemplateModal(templateId) {
+    const url = window.editTemplateUrl.replace(':id', templateId);
+
+    // 从按钮或表格行获取template数据（如果可用，用于快速填充）
+    let updateButton = $(`button[onclick*="openUpdateTemplateModal(${templateId})"]`);
+    if (updateButton.length === 0) {
+        updateButton = $(`button[data-template-id="${templateId}"]`).first();
+    }
+
+    let templateData = null;
+
+    if (updateButton.length > 0) {
+        // 快速填充基本数据
+        templateData = {
+            id: templateId,
+            category_id: updateButton.attr('data-category-id') || '',
+            gender: updateButton.attr('data-gender') || '',
+            size_library_id: updateButton.attr('data-size-library-id') || '',
+            template_status: updateButton.attr('data-template-status') || 'Available',
+            category_name: updateButton.attr('data-category-name') || '',
+            size_value: updateButton.attr('data-size-value') || ''
+        };
+        populateTemplateModal(templateData);
+    } else {
+        // 如果找不到按钮，尝试从表格行获取
+        const templateRow = $(`tr[data-template-id="${templateId}"]`);
+        if (templateRow.length > 0) {
+            templateData = {
+                id: templateId,
+                category_id: templateRow.attr('data-category-id') || '',
+                gender: templateRow.attr('data-gender') || '',
+                size_library_id: templateRow.attr('data-size-library-id') || '',
+                template_status: templateRow.attr('data-template-status') || 'Available',
+                category_name: templateRow.attr('data-category-name') || '',
+                size_value: templateRow.attr('data-size-value') || ''
+            };
+            populateTemplateModal(templateData);
+        }
+    }
+
+    // 从 API 获取完整template数据
+    $.ajax({
+        url: url,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        success: (response) => {
+            if (response.success && response.data) {
+                populateTemplateModal(response.data);
+            } else {
+                if (typeof window.showAlert === 'function') {
+                    window.showAlert(response.message || 'Failed to load template data', 'error');
+                } else {
+                    alert(response.message || 'Failed to load template data');
+                }
+            }
+        },
+        error: (xhr) => {
+            let errorMessage = 'Failed to load template data';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
+        }
+    });
+}
+
+/**
+ * 填充 Template Update Modal 的數據
+ */
+function populateTemplateModal(templateData) {
+    // 設置隱藏的template ID（用於提交）
+    const form = $('#updateTemplateModalForm');
+    form.attr('data-template-id', templateData.id);
+
+    // 更新當前Template信息卡片
+    const currentInfo = `
+        <div class="mb-1">
+            <i class="bi bi-tag me-2 text-muted"></i>
+            <span>Category: <strong>${templateData.category_name || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-person me-2 text-muted"></i>
+            <span>Gender: <strong>${templateData.gender || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-rulers me-2 text-muted"></i>
+            <span>Size Value: <strong>${templateData.size_value || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-shield-check me-2 text-muted"></i>
+            <span>Status: <strong>${templateData.template_status || 'N/A'}</strong></span>
+        </div>
+    `;
+    $('#currentTemplateInfo').html(currentInfo);
+
+    // 填充 Category 選項
+    const categorySelect = $('#update_category_id');
+    categorySelect.empty();
+    categorySelect.append('<option value="">Select category</option>');
+    if (window.availableCategories && Array.isArray(window.availableCategories)) {
+        window.availableCategories.forEach(category => {
+            const selected = category.id == templateData.category_id ? 'selected' : '';
+            categorySelect.append(`<option value="${category.id}" ${selected}>${category.category_name}</option>`);
+        });
+    }
+
+    // 填充 Gender 選項
+    const genderSelect = $('#update_gender');
+    genderSelect.val(templateData.gender || '');
+
+    // 填充 Size Library 選項（需要根據 category 和 gender 動態加載）
+    const sizeLibrarySelect = $('#update_size_library_id');
+    sizeLibrarySelect.empty();
+    sizeLibrarySelect.append('<option value="">Loading...</option>');
+    sizeLibrarySelect.prop('disabled', true);
+
+    // 如果 category 和 gender 都有值，加載對應的 size libraries
+    if (templateData.category_id && templateData.gender) {
+        loadSizeLibrariesForUpdateModal(templateData.category_id, templateData.gender, templateData.size_library_id);
+    } else {
+        sizeLibrarySelect.empty().append('<option value="">Select category and gender first</option>');
+        sizeLibrarySelect.prop('disabled', true);
+    }
+
+    // 設置狀態（交給 status-management 初始化後，直接設置單選值）
+    const targetStatus = templateData.template_status === 'Unavailable' ? 'Unavailable' : 'Available';
+    const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+    $(radioSelector).prop('checked', true);
+
+    // 初始化状态卡片（在打开 modal 前）
+    if (typeof window.initializeStatusCardSelection === 'function') {
+        window.initializeStatusCardSelection('template_status');
+    }
+
+    // 綁定 Category 和 Gender 變化事件（動態加載 size libraries）
+    categorySelect.off('change.updateModal').on('change.updateModal', function() {
+        const categoryId = $(this).val();
+        const gender = genderSelect.val();
+        if (categoryId && gender) {
+            loadSizeLibrariesForUpdateModal(categoryId, gender);
+        } else {
+            sizeLibrarySelect.empty().append('<option value="">Select category and gender first</option>');
+            sizeLibrarySelect.prop('disabled', true);
+        }
+    });
+
+    genderSelect.off('change.updateModal').on('change.updateModal', function() {
+        const gender = $(this).val();
+        const categoryId = categorySelect.val();
+        if (categoryId && gender) {
+            loadSizeLibrariesForUpdateModal(categoryId, gender);
+        } else {
+            sizeLibrarySelect.empty().append('<option value="">Select category and gender first</option>');
+            sizeLibrarySelect.prop('disabled', true);
+        }
+    });
+
+    // 打開彈窗
+    const modal = new bootstrap.Modal(document.getElementById('updateTemplateModal'));
+    modal.show();
+
+    // 綁定提交事件（如果還沒綁定）
+    if (!form.data('submit-bound')) {
+        $('#submitUpdateTemplateModal').off('click').on('click', function() {
+            submitUpdateTemplateModal();
+        });
+        form.data('submit-bound', true);
+    }
+}
+
+/**
+ * 為 Update Modal 加載 Size Libraries
+ */
+function loadSizeLibrariesForUpdateModal(categoryId, gender, selectedSizeLibraryId = null) {
+    const sizeLibrarySelect = $('#update_size_library_id');
+    sizeLibrarySelect.empty();
+    sizeLibrarySelect.append('<option value="">Loading...</option>');
+    sizeLibrarySelect.prop('disabled', true);
+
+    const url = window.getAvailableSizeLibrariesUrl || window.availableSizeLibrariesUrl;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            category_id: categoryId,
+            gender: gender
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        sizeLibrarySelect.empty();
+        if (data.success && data.data && data.data.length > 0) {
+            sizeLibrarySelect.append('<option value="">Select size library</option>');
+            data.data.forEach(library => {
+                const selected = selectedSizeLibraryId && library.id == selectedSizeLibraryId ? 'selected' : '';
+                sizeLibrarySelect.append(`<option value="${library.id}" ${selected}>${library.size_value}</option>`);
+            });
+            sizeLibrarySelect.prop('disabled', false);
+        } else {
+            sizeLibrarySelect.append('<option value="">No size libraries available</option>');
+            sizeLibrarySelect.prop('disabled', true);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading size libraries:', error);
+        sizeLibrarySelect.empty().append('<option value="">Error loading size libraries</option>');
+        sizeLibrarySelect.prop('disabled', true);
+    });
+}
+
+/**
+ * 提交更新模板彈窗
+ */
+function submitUpdateTemplateModal() {
+    const form = $('#updateTemplateModalForm');
+    const templateId = form.attr('data-template-id');
+
+    if (!templateId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Template ID not found', 'error');
+        } else {
+            alert('Template ID not found');
+        }
+        return;
+    }
+
+    // 驗證表單
+    const categoryId = $('#update_category_id').val();
+    const gender = $('#update_gender').val();
+    const sizeLibraryId = $('#update_size_library_id').val();
+    const status = $('input[name="template_status"]:checked').val();
+
+    if (!categoryId || !gender || !sizeLibraryId || !status) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please fill in all required fields', 'warning');
+        } else {
+            alert('Please fill in all required fields');
+        }
+        return;
+    }
+
+    // 準備表單數據
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    formData.append('_method', 'PUT');
+    formData.append('category_id', categoryId);
+    formData.append('gender', gender);
+    formData.append('size_library_id', sizeLibraryId);
+    formData.append('template_status', status);
+
+    // 顯示加載狀態
+    const submitBtn = $('#submitUpdateTemplateModal');
+    const originalText = submitBtn.html();
+    submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+    submitBtn.prop('disabled', true);
+
+    // 提交更新請求
+    updateTemplate(templateId, formData,
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Template updated successfully', 'success');
+            } else {
+                alert(data.message || 'Template updated successfully');
+            }
+
+            // 關閉 modal
+            const modalElement = document.getElementById('updateTemplateModal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to update template', 'error');
+            } else {
+                alert(error || 'Failed to update template');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        }
+    );
 }
 
 // =============================================================================
@@ -1554,22 +1801,26 @@ function formatStatus(status) {
 document.addEventListener('DOMContentLoaded', function() {
     // 檢查當前頁面類型並初始化相應功能
     const dashboardCardsContainer = document.getElementById('dashboard-cards-container');
-    const templateForm = document.getElementById('templateForm');
-    const updateTemplateForm = document.getElementById('updateTemplateForm');
     const viewTable = document.querySelector('table tbody');
+    const createTemplateModal = document.getElementById('createTemplateModal');
 
     if (dashboardCardsContainer) {
         // Dashboard 頁面
         initializeTemplateDashboard();
-    } else if (templateForm) {
-        // Create 頁面
-        initializeTemplateCreate();
-    } else if (updateTemplateForm) {
-        // Update 頁面
-        initializeTemplateUpdate();
+
+        // 初始化 Create Template Modal（如果存在）
+        if (createTemplateModal) {
+            initializeTemplateCreateModal();
+        }
     } else if (viewTable) {
         // View 頁面
         initializeTemplateView();
+
+        // 初始化 Update Template Modal（如果存在）
+        const updateTemplateModal = document.getElementById('updateTemplateModal');
+        if (updateTemplateModal) {
+            bindUpdateTemplateModalEvents();
+        }
     }
 });
 
@@ -1577,12 +1828,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // 全局函數導出 (Global Function Exports)
 // =============================================================================
 
-// 導出主要函數到全局作用域
-window.toggleTemplateStatus = toggleTemplateStatus;
+// 導出主要函數到全局作用域（用於 HTML onclick 屬性）
+window.editTemplate = editTemplate;
 window.setTemplateAvailable = setTemplateAvailable;
 window.setTemplateUnavailable = setTemplateUnavailable;
-window.updateTemplateStatus = updateTemplateStatus;
 window.viewCategoryDetails = viewCategoryDetails;
-window.clearForm = clearForm;
-window.selectAllLibraries = selectAllLibraries;
+window.openUpdateTemplateModal = openUpdateTemplateModal;
+window.submitUpdateTemplateModal = submitUpdateTemplateModal;
 window.deleteTemplateFromView = deleteTemplateFromView;

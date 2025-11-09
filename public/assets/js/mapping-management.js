@@ -3,54 +3,26 @@
  * 分類映射管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、表單提交
- * - View 頁面：查看詳情、刪除操作
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - View 頁面：查看詳情、刪除操作、Update Modal
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 
 // =============================================================================
 // 全局變量和狀態管理 (Global Variables and State Management)
 // =============================================================================
 
-// 映射列表數組（用於 Create 頁面）
-let mappingList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = true; // 默認升序
-
 // 全局變量防止重複請求
 let isDeleting = false;
-let isUpdating = false; // 防止重複提交更新表單
-let updateFormBound = false; // 標記更新表單事件是否已綁定
 
 // =============================================================================
-// 通用功能模塊 (Common Functions Module)
+// API 請求函數 (API Request Functions)
 // =============================================================================
-
-/**
- * 驗證映射表單
- */
-function validateMappingForm() {
-    const categoryId = document.getElementById('category_id').value;
-    const subcategoryId = document.getElementById('subcategory_id').value;
-
-    if (!categoryId) {
-        window.showAlert('Please select a category', 'warning');
-        return false;
-    }
-
-    if (!subcategoryId) {
-        window.showAlert('Please select a subcategory', 'warning');
-        return false;
-    }
-
-    return true;
-}
 
 /**
  * 處理映射請求
@@ -100,11 +72,17 @@ function createMapping(mappingData, onSuccess, onError) {
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
     // 添加映射數據
-    mappingData.forEach((mapping, index) => {
-        formData.append(`mappings[${index}][category_id]`, mapping.categoryId);
-        formData.append(`mappings[${index}][subcategory_id]`, mapping.subcategoryId);
-        formData.append(`mappings[${index}][mapping_status]`, mapping.status || 'Available');
-    });
+    if (mappingData.mappings && Array.isArray(mappingData.mappings)) {
+        mappingData.mappings.forEach((mapping, index) => {
+            formData.append(`mappings[${index}][category_id]`, mapping.categoryId);
+            formData.append(`mappings[${index}][subcategory_id]`, mapping.subcategoryId);
+            formData.append(`mappings[${index}][mapping_status]`, mapping.status || 'Available');
+        });
+    } else {
+        formData.append('category_id', mappingData.categoryId);
+        formData.append('subcategory_id', mappingData.subcategoryId);
+        formData.append('mapping_status', mappingData.status || 'Available');
+    }
 
     handleMappingRequest(
         window.createMappingUrl,
@@ -169,120 +147,6 @@ function setMappingUnavailable(mappingId, onSuccess, onError) {
     );
 }
 
-/**
- * 獲取映射狀態類別
- */
-function getMappingStatusClass(status) {
-    return status === 'Available' ? 'text-success' : 'text-danger';
-}
-
-/**
- * 檢查映射是否存在
- */
-function isMappingExists(categoryId, subcategoryId) {
-    return mappingList.some(mapping =>
-        mapping.categoryId === categoryId && mapping.subcategoryId === subcategoryId
-    );
-}
-
-/**
- * 高亮顯示已存在的映射
- * @param {string} categoryId 分類ID
- * @param {string} subcategoryId 子分類ID
- */
-function highlightExistingMapping(categoryId, subcategoryId) {
-    // 高亮輸入框
-    const categorySelect = document.getElementById('category_id');
-    const subcategorySelect = document.getElementById('subcategory_id');
-
-    if (categorySelect) {
-        const categoryGroup = categorySelect.closest('.input-group');
-        if (categoryGroup) {
-            categoryGroup.classList.add('duplicate-highlight');
-            setTimeout(() => {
-                categoryGroup.classList.remove('duplicate-highlight');
-            }, 3000);
-        }
-    }
-
-    if (subcategorySelect) {
-        const subcategoryGroup = subcategorySelect.closest('.input-group');
-        if (subcategoryGroup) {
-            subcategoryGroup.classList.add('duplicate-highlight');
-            setTimeout(() => {
-                subcategoryGroup.classList.remove('duplicate-highlight');
-            }, 3000);
-        }
-    }
-
-    // 高亮列表中的重複項
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const itemCategoryId = item.getAttribute('data-category-id');
-        const itemSubcategoryId = item.getAttribute('data-subcategory-id');
-
-        if (itemCategoryId === categoryId && itemSubcategoryId === subcategoryId) {
-            // 添加高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 更新配置摘要
- */
-function updateConfigSummary() {
-    const categorySelect = document.getElementById('category_id');
-    const subcategorySelect = document.getElementById('subcategory_id');
-    const configSummary = document.getElementById('configSummary');
-
-    if (categorySelect && subcategorySelect && configSummary) {
-        if (categorySelect.value && subcategorySelect.value) {
-            configSummary.classList.remove('d-none');
-        } else {
-            configSummary.classList.add('d-none');
-        }
-    }
-}
-
-/**
- * 處理分類選擇變化
- */
-function handleCategoryChange() {
-    // 只更新UI状态，不改变右侧面板
-    updateUI();
-}
-
-/**
- * 處理子分類選擇變化
- */
-function handleSubcategoryChange() {
-    // 只更新UI状态，不改变右侧面板
-    updateUI();
-}
-
-/**
- * 更新映射計數
- */
-function updateMappingValuesCount() {
-    const count = mappingList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('mappingValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} mappings`;
-    }
-}
-
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
 // =============================================================================
@@ -296,12 +160,6 @@ function initializeMappingDashboard() {
 
     // 加載映射數據
     loadMappings();
-
-    // 綁定搜索功能
-    bindSearchEvents();
-
-    // 綁定篩選功能
-    bindFilterEvents();
 }
 
 /**
@@ -313,10 +171,15 @@ function checkUrlParams() {
     const error = urlParams.get('error');
 
     if (success) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert(decodeURIComponent(success), 'success');
-        } else {
-            alert(decodeURIComponent(success));
+        const successMessage = decodeURIComponent(success);
+        if (successMessage && successMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(successMessage, 'success');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(successMessage);
+            } else {
+                alert(successMessage);
+            }
         }
         // 清除URL參數
         const url = new URL(window.location);
@@ -325,10 +188,15 @@ function checkUrlParams() {
     }
 
     if (error) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert(decodeURIComponent(error), 'danger');
-        } else {
-            alert(decodeURIComponent(error));
+        const errorMessage = decodeURIComponent(error);
+        if (errorMessage && errorMessage.trim()) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'danger');
+            } else if (typeof window.safeAlert === 'function') {
+                window.safeAlert(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
         }
         // 清除URL參數
         const url = new URL(window.location);
@@ -342,7 +210,6 @@ function checkUrlParams() {
  */
 function loadMappings() {
     const url = window.categoryMappingManagementRoute;
-    console.log('Loading mappings from:', url);
 
     fetch(url, {
         method: 'GET',
@@ -358,7 +225,6 @@ function loadMappings() {
         return response.json();
     })
     .then(data => {
-        console.log('Received data:', data);
         if (data.success) {
             renderCategoryCards(data.data);
             updateStatistics(data);
@@ -388,8 +254,6 @@ function renderCategoryCards(mappings) {
     const container = document.getElementById('dashboard-cards-container');
     const emptyState = document.getElementById('empty-state');
 
-    console.log('Mappings Data:', mappings);
-
     if (!mappings || mappings.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('d-none');
@@ -400,7 +264,6 @@ function renderCategoryCards(mappings) {
 
     // 按分類分組
     const groupedByCategory = groupByCategory(mappings);
-    console.log('Grouped by Category:', groupedByCategory);
 
     // 生成卡片HTML
     let cardsHTML = '';
@@ -409,8 +272,6 @@ function renderCategoryCards(mappings) {
         const categoryData = groupedByCategory[categoryId];
         const category = categoryData.category;
         const mappings = categoryData.mappings;
-
-        console.log(`Category ${categoryId}:`, category, mappings);
 
         // 確保category數據存在
         if (category && category.category_name) {
@@ -421,9 +282,6 @@ function renderCategoryCards(mappings) {
     });
 
     container.innerHTML = cardsHTML;
-
-    // 綁定卡片內的事件
-    bindCardEvents();
 }
 
 /**
@@ -470,8 +328,6 @@ function groupByCategory(mappings) {
  * 生成分類卡片
  */
 function generateCategoryCard(category, mappings) {
-    console.log('Generating card for category:', category, 'mappings:', mappings);
-
     const availableCount = mappings.filter(mapping => {
         const status = mapping.mapping_status || 'Unavailable';
         return status === 'Available';
@@ -487,13 +343,8 @@ function generateCategoryCard(category, mappings) {
     const categoryId = category ? category.id : 'unknown';
 
     // 生成映射列表
-    console.log(`Generating mapping values for category ${categoryName}, total mappings: ${mappings.length}`);
-
-    // 直接使用原始數據，不進行排序
     const mappingValuesHTML = mappings.map((mapping, index) => {
         const status = mapping.mapping_status || 'Unavailable';
-
-        console.log(`Mapping ${index + 1}: ${mapping.subcategory_name}, Status: ${status}`);
 
         return `
             <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
@@ -504,7 +355,7 @@ function generateCategoryCard(category, mappings) {
                     </span>
                     <button class="btn btn-sm ${status === 'Available' ? 'btn-outline-warning' : 'btn-outline-success'}"
                             title="${status === 'Available' ? 'Deactivate' : 'Activate'}"
-                            onclick="console.log('Button clicked, mapping.id:', ${mapping.mapping_id}, 'status:', '${status}'); ${status === 'Available' ? 'setMappingUnavailable' : 'setMappingAvailable'}(${mapping.mapping_id})">
+                            onclick="${status === 'Available' ? 'setMappingUnavailable' : 'setMappingAvailable'}(${mapping.mapping_id})">
                         <i class="bi ${status === 'Available' ? 'bi-slash-circle' : 'bi-check-circle'}"></i>
                     </button>
                 </div>
@@ -639,572 +490,6 @@ function updatePaginationButtons(categoryCount) {
     }
 }
 
-/**
- * 綁定搜索事件
- */
-function bindSearchEvents() {
-    // 如果有搜索框，綁定搜索事件
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(function() {
-            const searchTerm = this.value;
-            filterMappings(searchTerm);
-        }, 300));
-    }
-}
-
-/**
- * 綁定篩選事件
- */
-function bindFilterEvents() {
-    // 如果有篩選器，綁定篩選事件
-    const filterSelects = document.querySelectorAll('.filter-select');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            applyFilters();
-        });
-    });
-}
-
-/**
- * 篩選映射
- */
-function filterMappings(searchTerm) {
-    // 實現搜索功能
-    console.log('Searching for:', searchTerm);
-    const cards = document.querySelectorAll('.content-card');
-    cards.forEach(card => {
-        const categoryName = card.querySelector('.card-title').textContent.toLowerCase();
-        const shouldShow = categoryName.includes(searchTerm.toLowerCase());
-        card.classList.toggle('d-none', !shouldShow);
-    });
-}
-
-/**
- * 應用篩選器
- */
-function applyFilters() {
-    // 實現篩選功能
-    console.log('Applying filters');
-    const filterValue = document.getElementById('filter-select').value;
-    // 這裡可以添加具體的篩選邏輯
-}
-
-/**
- * 綁定卡片事件
- */
-function bindCardEvents() {
-    // 綁定狀態切換按鈕事件
-    document.querySelectorAll('.status-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-}
-
-// =============================================================================
-// Create 頁面功能 (Create Page Functions)
-// =============================================================================
-
-/**
- * 初始化映射創建頁面
- */
-function initializeMappingCreate() {
-    // 使用通用初始化函數
-    initializeMappingPage({
-        initializationCallback: function() {
-            bindCreateEvents();
-            updateUI();
-        }
-    });
-}
-
-/**
- * 綁定創建頁面事件
- */
-function bindCreateEvents() {
-    // 添加映射按鈕
-    const addMappingBtn = document.getElementById('addMapping');
-    if (addMappingBtn) {
-        addMappingBtn.addEventListener('click', addMapping);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortMappings');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 選擇框 change 事件
-    const categorySelect = document.getElementById('category_id');
-    const subcategorySelect = document.getElementById('subcategory_id');
-
-    if (categorySelect) {
-        categorySelect.addEventListener('change', updateUI);
-    }
-    if (subcategorySelect) {
-        subcategorySelect.addEventListener('change', updateUI);
-    }
-
-    // 刪除映射按鈕事件委託
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            if (!isNaN(index)) {
-                removeMapping(index);
-            }
-        }
-    });
-
-    // 表單提交處理
-    const form = document.getElementById('mappingForm');
-    if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-    }
-}
-
-/**
- * 添加映射
- */
-function addMapping() {
-    if (!validateMappingForm()) {
-        return;
-    }
-
-    const categoryId = document.getElementById('category_id').value;
-    const subcategoryId = document.getElementById('subcategory_id').value;
-
-    // 檢查是否已存在
-    const existingMapping = isMappingExists(categoryId, subcategoryId);
-    if (existingMapping) {
-        window.showAlert('This mapping combination already exists', 'error');
-        highlightExistingMapping(categoryId, subcategoryId);
-        return;
-    }
-
-    // 添加映射到列表
-    addMappingToList(categoryId, subcategoryId);
-
-    // 清空選擇
-    document.getElementById('category_id').value = '';
-    document.getElementById('subcategory_id').value = '';
-    document.getElementById('category_id').focus();
-
-    // 顯示成功添加的alert
-    window.showAlert('Mapping added successfully', 'success');
-}
-
-/**
- * 添加映射到列表
- */
-function addMappingToList(categoryId, subcategoryId) {
-    // 獲取分類和子分類信息
-    const categorySelect = document.getElementById('category_id');
-    const subcategorySelect = document.getElementById('subcategory_id');
-    const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
-    const subcategoryName = subcategorySelect.options[subcategorySelect.selectedIndex].text;
-
-    // 添加到數組
-    const mapping = {
-        categoryId: categoryId,
-        subcategoryId: subcategoryId,
-        categoryName: categoryName,
-        subcategoryName: subcategoryName,
-        status: 'Available' // 默認為 Available
-    };
-
-    mappingList.push(mapping);
-
-    // 更新列表顯示
-    updateMappingList();
-    updateUI();
-
-    // 顯示映射區域（第一次添加時）
-    if (mappingList.length === 1) {
-        showMappingValuesArea();
-    }
-}
-
-/**
- * 從列表中移除映射
- */
-function removeMapping(index) {
-    if (index >= 0 && index < mappingList.length) {
-        // 獲取要刪除的映射信息
-        const mappingToRemove = mappingList[index];
-
-        // 確認刪除
-        if (!confirm(`Are you sure you want to remove mapping "${mappingToRemove.categoryName} - ${mappingToRemove.subcategoryName}"?`)) {
-            return;
-        }
-
-        mappingList.splice(index, 1);
-        updateMappingList();
-
-        // 如果沒有映射了，隱藏區域
-        if (mappingList.length === 0) {
-            hideAllAreas();
-        }
-
-        updateUI();
-        window.showAlert('Mapping removed successfully', 'success');
-    } else {
-        window.showAlert('Failed to remove mapping', 'error');
-    }
-}
-
-/**
- * 更新映射列表顯示
- */
-function updateMappingList() {
-    const mappingListContainer = document.getElementById('mappingValuesList');
-
-    if (mappingList.length === 0) {
-        mappingListContainer.innerHTML = '';
-        return;
-    }
-
-    let html = '';
-    mappingList.forEach((mapping, index) => {
-        // 檢查是否為重複項
-        const isDuplicate = isMappingExists(mapping.categoryId, mapping.subcategoryId) &&
-            mappingList.filter(i => i.categoryId === mapping.categoryId && i.subcategoryId === mapping.subcategoryId).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        html += `
-            <div class="${baseClasses} ${duplicateClasses}" data-category-id="${mapping.categoryId}" data-subcategory-id="${mapping.subcategoryId}">
-                <div class="d-flex align-items-center">
-                    <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">${isDuplicate ? '⚠️' : (index + 1)}</span>
-                    <i class="bi bi-link-45deg text-primary me-2"></i>
-                    <div class="mapping-combination">
-                        <span class="category-badge fw-bold text-dark">${mapping.categoryName}</span>
-                        <span class="text-muted mx-2">-</span>
-                        <span class="subcategory-badge fw-bold text-dark">${mapping.subcategoryName}</span>
-                        ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                    </div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                    <i class="bi bi-trash me-1"></i>Remove
-                </button>
-            </div>
-        `;
-    });
-
-    mappingListContainer.innerHTML = html;
-}
-
-/**
- * 排序映射值列表
- */
-function sortMappingValuesList() {
-    const mappingValuesList = document.getElementById('mappingValuesList');
-    const items = Array.from(mappingValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取映射組合並排序
-    const mappingValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.mapping-combination').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    mappingValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    mappingValues.forEach(({ element }) => {
-        mappingValuesList.appendChild(element);
-    });
-}
-
-/**
- * 顯示映射區域
- */
-function showMappingValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 顯示映射值區域
-    const mappingValuesArea = document.getElementById('mappingValuesArea');
-    if (mappingValuesArea) {
-        mappingValuesArea.classList.remove('d-none');
-    }
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏映射值區域
-    const mappingValuesArea = document.getElementById('mappingValuesArea');
-    if (mappingValuesArea) {
-        mappingValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-/**
- * 更新UI狀態
- */
-function updateUI() {
-    // 更新映射計數
-    updateMappingValuesCount();
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    if (mappingList.length === 0) {
-        window.showAlert('No mappings to clear', 'info');
-        return;
-    }
-
-    if (confirm('Are you sure you want to clear all mappings?')) {
-        // 清空選擇
-        const categorySelect = document.getElementById('category_id');
-        const subcategorySelect = document.getElementById('subcategory_id');
-        if (categorySelect) {
-            categorySelect.value = '';
-        }
-        if (subcategorySelect) {
-            subcategorySelect.value = '';
-        }
-
-        // 清空映射列表
-        mappingList = [];
-        const mappingListElement = document.getElementById('mappingValuesList');
-        if (mappingListElement) {
-            mappingListElement.innerHTML = '';
-        }
-
-        // 隱藏所有區域
-        hideAllAreas();
-
-        // 更新UI
-        updateUI();
-        window.showAlert('All mappings cleared', 'info');
-    }
-}
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortMappings');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortMappingList();
-}
-
-/**
- * 排序映射列表
- */
-function sortMappingList() {
-    const mappingListContainer = document.getElementById('mappingValuesList');
-    const items = Array.from(mappingListContainer.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取映射信息並排序
-    const mappings = items.map(item => ({
-        element: item,
-        categoryName: item.querySelector('.category-badge').textContent.trim(),
-        subcategoryName: item.querySelector('.subcategory-badge').textContent.trim()
-    }));
-
-    // 按分類和子分類名稱排序
-    mappings.sort((a, b) => {
-        const aText = a.categoryName + ' - ' + a.subcategoryName;
-        const bText = b.categoryName + ' - ' + b.subcategoryName;
-
-        if (isAscending) {
-            return aText.localeCompare(bText);
-        } else {
-            return bText.localeCompare(aText);
-        }
-    });
-
-    // 重新排列DOM元素
-    mappings.forEach(({ element }) => {
-        mappingListContainer.appendChild(element);
-    });
-}
-
-/**
- * 表單提交處理
- */
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    if (mappingList.length === 0) {
-        window.showAlert('Please add at least one mapping', 'warning');
-        return;
-    }
-
-    // 獲取狀態（默認為 Available）
-    const status = 'Available';
-
-    // 提交前再次檢查重複組合
-    const duplicates = [];
-    const seen = new Set();
-
-    for (let i = 0; i < mappingList.length; i++) {
-        const mapping = mappingList[i];
-        const combination = `${mapping.categoryId}-${mapping.subcategoryId}`;
-
-        if (seen.has(combination)) {
-            duplicates.push(`${mapping.categoryName} - ${mapping.subcategoryName}`);
-        } else {
-            seen.add(combination);
-        }
-    }
-
-    if (duplicates.length > 0) {
-        window.showAlert('Duplicate combinations found. Please remove duplicates before submitting.', 'error');
-        return;
-    }
-
-    // 準備提交數據
-    const mappingData = mappingList.map(mapping => ({
-        ...mapping,
-        status: status
-    }));
-
-    // 使用通用創建函數
-    createMapping(mappingData,
-        function(data) {
-            window.showAlert(data.message, 'success');
-            setTimeout(() => {
-                window.location.href = window.mappingManagementRoute;
-            }, 2000);
-        },
-        function(error) {
-            window.showAlert(error || 'Some mappings failed to create', 'error');
-        }
-    );
-}
-
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
-
-/**
- * 初始化映射更新頁面
- */
-function initializeMappingUpdate() {
-    // 綁定事件
-    bindEvents();
-
-    // 初始化狀態卡片
-    if (typeof window.initializeMappingStatusCardSelection === 'function') {
-        window.initializeMappingStatusCardSelection();
-    }
-}
-
-/**
- * 綁定更新頁面事件
- */
-function bindEvents() {
-    // 表單提交事件 - 確保只綁定一次
-    if (!updateFormBound) {
-        const form = document.getElementById('updateMappingForm');
-        if (form) {
-            form.addEventListener('submit', handleUpdateFormSubmit);
-            updateFormBound = true; // 標記已綁定
-        }
-    }
-}
-
-/**
- * 更新頁面表單提交處理
- */
-function handleUpdateFormSubmit(e) {
-    e.preventDefault();
-
-    // 防止重複提交
-    if (isUpdating) {
-        return false;
-    }
-
-    // 設置提交標誌
-    isUpdating = true;
-
-    // 獲取表單數據
-    const formData = new FormData(e.target);
-
-    // 獲取當前映射ID
-    const mappingId = window.location.pathname.split('/').pop();
-
-    // 使用通用函數提交
-    handleMappingRequest(
-        window.updateMappingUrl,
-        'POST',
-        formData,
-        function(data) {
-            // 使用後端返回的消息，如果沒有則使用默認消息
-            const message = data.message || 'Mapping updated successfully';
-            window.showAlert(message, 'success');
-            setTimeout(() => {
-                window.location.href = window.mappingManagementRoute;
-            }, 1500);
-        },
-        function(error) {
-            isUpdating = false; // 錯誤時重置標誌
-            window.showAlert(error || 'Failed to update mapping', 'error');
-        }
-    );
-
-    return false; // 防止表單默認提交
-}
-
 // =============================================================================
 // View 頁面功能 (View Page Functions)
 // =============================================================================
@@ -1216,6 +501,9 @@ function initializeMappingView() {
     // 綁定事件監聽器
     bindViewEvents();
 
+    // 綁定 Update Modal 事件
+    bindUpdateMappingModalEvents();
+
     // 初始化狀態
     updateViewUI();
 }
@@ -1224,11 +512,11 @@ function initializeMappingView() {
  * 綁定查看頁面事件
  */
 function bindViewEvents() {
-    // 刪除按鈕事件 - 使用事件委託避免重複綁定
+    // 刪除按鈕事件 - 使用事件委託，只監聽 Delete 按鈕
     document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-mapping-id]')) {
-            const button = e.target.closest('button[data-mapping-id]');
-            const mappingId = button.getAttribute('data-mapping-id');
+        const deleteButton = e.target.closest('button.btn-outline-danger[data-mapping-id][data-action="delete"]');
+        if (deleteButton) {
+            const mappingId = deleteButton.getAttribute('data-mapping-id');
             deleteMappingFromView(mappingId);
         }
     });
@@ -1362,18 +650,11 @@ function checkAndRedirectIfEmpty() {
         return !row.querySelector('td[colspan]');
     });
 
-    // 如果沒有資料行了，跳轉回 index
+    // 如果沒有資料行了，直接跳轉回 index
     if (dataRows.length === 0) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert('All mappings have been deleted. Redirecting to mapping list...', 'info');
-        } else {
-            alert('All mappings have been deleted. Redirecting to mapping list...');
-        }
-
-        // 延遲跳轉，讓用戶看到提示信息
         setTimeout(() => {
             window.location.href = window.mappingManagementRoute;
-        }, 1500);
+        }, 1000);
     }
 }
 
@@ -1385,7 +666,6 @@ function checkAndRedirectIfEmpty() {
  * 切換映射狀態
  */
 function toggleMappingStatus(id, currentStatus) {
-    // 切換映射狀態
     const newStatus = currentStatus === 'Available' ? 'Unavailable' : 'Available';
     updateMappingStatus(id, newStatus);
 }
@@ -1394,7 +674,6 @@ function toggleMappingStatus(id, currentStatus) {
  * 設置映射為可用
  */
 function setMappingAvailable(id) {
-    // 設置映射為可用
     updateMappingStatus(id, 'Available');
 }
 
@@ -1402,8 +681,84 @@ function setMappingAvailable(id) {
  * 設置映射為不可用
  */
 function setMappingUnavailable(id) {
-    // 設置映射為不可用
     updateMappingStatus(id, 'Unavailable');
+}
+
+/**
+ * 更新單個映射狀態顯示（不重新加載所有數據）
+ */
+function updateSingleMappingStatusUI(mappingId, newStatus) {
+    // 找到包含該 mapping 的行（通過查找包含 mappingId 的按鈕）
+    const mappingRows = document.querySelectorAll('.list-container > div');
+    let targetRow = null;
+    let categoryCard = null;
+
+    mappingRows.forEach(row => {
+        const button = row.querySelector('button');
+        if (button && button.getAttribute('onclick')) {
+            const onclickAttr = button.getAttribute('onclick');
+            // 檢查 onclick 是否包含該 mappingId
+            if (onclickAttr.includes(`(${mappingId})`)) {
+                targetRow = row;
+                categoryCard = row.closest('.content-card');
+            }
+        }
+    });
+
+    if (!targetRow || !categoryCard) {
+        // 如果找不到，則重新加載所有數據
+        console.warn('Could not find mapping row, reloading all data');
+        loadMappings();
+        return;
+    }
+
+    // 更新 badge
+    const badge = targetRow.querySelector('.badge');
+    if (badge) {
+        if (newStatus === 'Available') {
+            badge.className = 'badge bg-success px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Available';
+        } else {
+            badge.className = 'badge bg-danger px-3 py-2';
+            badge.innerHTML = '<i class="bi bi-x-circle me-1"></i>Unavailable';
+        }
+    }
+
+    // 更新按鈕
+    const toggleButton = targetRow.querySelector('button');
+    if (toggleButton) {
+        if (newStatus === 'Available') {
+            toggleButton.className = 'btn btn-sm btn-outline-warning';
+            toggleButton.title = 'Deactivate';
+            toggleButton.innerHTML = '<i class="bi bi-slash-circle"></i>';
+            toggleButton.setAttribute('onclick', `setMappingUnavailable(${mappingId})`);
+        } else {
+            toggleButton.className = 'btn btn-sm btn-outline-success';
+            toggleButton.title = 'Activate';
+            toggleButton.innerHTML = '<i class="bi bi-check-circle"></i>';
+            toggleButton.setAttribute('onclick', `setMappingAvailable(${mappingId})`);
+        }
+    }
+
+    // 更新分類卡片中的統計數字
+    const availableCountEl = categoryCard.querySelector('.col-6:first-child .h4');
+    const unavailableCountEl = categoryCard.querySelector('.col-6:last-child .h4');
+
+    if (availableCountEl && unavailableCountEl) {
+        let availableCount = parseInt(availableCountEl.textContent) || 0;
+        let unavailableCount = parseInt(unavailableCountEl.textContent) || 0;
+
+        if (newStatus === 'Available') {
+            availableCount++;
+            unavailableCount--;
+        } else {
+            availableCount--;
+            unavailableCount++;
+        }
+
+        availableCountEl.textContent = availableCount;
+        unavailableCountEl.textContent = unavailableCount;
+    }
 }
 
 /**
@@ -1414,13 +769,6 @@ function updateMappingStatus(id, status) {
         window.availableMappingUrl.replace(':id', id) :
         window.unavailableMappingUrl.replace(':id', id);
 
-    console.log('Updating mapping status:', { id, status, url });
-
-    // 顯示加載提示
-    if (typeof window.showAlert === 'function') {
-        window.showAlert('Updating mapping status...', 'info');
-    }
-
     fetch(url, {
         method: 'PATCH',
         headers: {
@@ -1429,19 +777,16 @@ function updateMappingStatus(id, status) {
             'X-Requested-With': 'XMLHttpRequest',
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
             if (typeof window.showAlert === 'function') {
                 window.showAlert(`Mapping status updated to ${status.toLowerCase()} successfully!`, 'success');
             } else {
                 alert(`Mapping status updated to ${status.toLowerCase()} successfully!`);
             }
-            loadMappings(); // 重新加載數據
+            // 只更新單個映射狀態，不重新加載所有數據
+            updateSingleMappingStatusUI(id, status);
         } else {
             if (typeof window.showAlert === 'function') {
                 window.showAlert(`Failed to update mapping status to ${status.toLowerCase()}`, 'error');
@@ -1470,145 +815,754 @@ function viewCategoryDetails(categoryId) {
 }
 
 /**
- * 編輯分類映射
- */
-function editCategoryMappings(categoryId) {
-    const url = window.editCategoryMappingUrl.replace(':id', categoryId);
-    window.location.href = url;
-}
-
-/**
- * 編輯映射
+ * 編輯映射（跳轉到 view 頁面）
  */
 function editMapping(mappingId) {
-    // 跳轉到單個映射的edit頁面
-    const url = window.editMappingUrl.replace(':id', mappingId);
+    const url = window.viewCategoryMappingUrl.replace(':id', mappingId);
     window.location.href = url;
 }
 
 // =============================================================================
-// 事件綁定功能 (Event Binding Functions)
+// Create Mapping Modal 功能 (Create Mapping Modal Functions)
 // =============================================================================
 
 /**
- * 綁定映射事件
+ * 初始化 Mapping Create Modal
  */
-function bindMappingEvents() {
-    // 分類選擇變化
+function initializeMappingCreateModal() {
+    // 綁定 modal 事件
+    bindMappingModalEvents();
+}
+
+/**
+ * 綁定 Mapping Modal 事件
+ */
+function bindMappingModalEvents() {
+    const modal = document.getElementById('createMappingModal');
+    if (!modal) return;
+
+    // Modal 打開時重置
+    modal.addEventListener('show.bs.modal', function() {
+        resetMappingModal();
+    });
+
+    // Category 選擇變化
     const categorySelect = document.getElementById('category_id');
     if (categorySelect) {
-        categorySelect.addEventListener('change', handleCategoryChange);
+        categorySelect.addEventListener('change', handleCategorySelectChange);
     }
 
-    // 子分類選擇變化
-    const subcategorySelect = document.getElementById('subcategory_id');
-    if (subcategorySelect) {
-        subcategorySelect.addEventListener('change', handleSubcategoryChange);
+    // Select All 按鈕
+    const selectAllBtn = document.getElementById('selectAllSubcategoriesBtn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', selectAllSubcategories);
+    }
+
+    // Clear All 按鈕
+    const clearAllBtn = document.getElementById('clearAllSubcategoriesBtn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', clearAllSubcategories);
+    }
+
+    // 提交按鈕
+    const submitBtn = document.getElementById('submitCreateMappingModal');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitMappingModal);
     }
 }
 
 /**
- * 初始化映射頁面
+ * 處理 Category 選擇變化
  */
-function initializeMappingPage(config) {
-    // 綁定事件監聽器
-    bindMappingEvents();
+function handleCategorySelectChange() {
+    const categoryId = document.getElementById('category_id').value;
 
-    // 初始化狀態
-    updateConfigSummary();
-
-    // 執行初始化回調函數（如果有）
-    if (config && config.initializationCallback && typeof config.initializationCallback === 'function') {
-        config.initializationCallback();
+    if (categoryId) {
+        loadAvailableSubcategories();
+    } else {
+        hideSubcategoryCards();
     }
 }
 
-// =============================================================================
-// 工具函數 (Utility Functions)
-// =============================================================================
-
-
 /**
- * 工具函數：防抖
+ * 加載可用的 Subcategories
  */
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            timeout = null;
-            if (!immediate) func.apply(this, args);
-        };
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func.apply(this, args);
-    };
-}
+function loadAvailableSubcategories() {
+    // 顯示加載狀態
+    showSubcategoryLoading();
 
-/**
- * 工具函數：節流
- */
-function throttle(func, limit) {
-    let inThrottle;
-    return function executedFunction(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+    // 從全局變量獲取可用的 subcategories
+    const subcategories = window.availableSubcategories || [];
+
+    if (subcategories && subcategories.length > 0) {
+        displaySubcategoryCards(subcategories);
+    } else {
+        hideSubcategoryCards();
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No available subcategories found', 'warning');
+        } else {
+            alert('No available subcategories found');
         }
-    };
-}
-
-/**
- * 工具函數：轉義HTML
- */
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, (s) => map[s]);
-}
-
-/**
- * 工具函數：格式化日期
- */
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        return 'N/A';
     }
 }
 
 /**
- * 工具函數：格式化狀態
+ * 顯示 Subcategory 加載狀態
  */
-function formatStatus(status) {
-    const statusMap = {
-        'Available': { class: 'bg-success', icon: 'bi-check-circle' },
-        'Unavailable': { class: 'bg-danger', icon: 'bi-x-circle' }
-    };
+function showSubcategoryLoading() {
+    const selectionArea = document.getElementById('subcategorySelection');
+    const container = document.getElementById('subcategoryCardsContainer');
 
-    const statusInfo = statusMap[status] || { class: 'bg-secondary', icon: 'bi-question-circle' };
+    if (selectionArea) {
+        selectionArea.classList.remove('d-none');
+    }
 
-    return `<span class="badge ${statusInfo.class} px-3 py-2">
-        <i class="bi ${statusInfo.icon} me-1"></i>${status}
-    </span>`;
+    if (container) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading available subcategories...</p>
+            </div>
+        `;
+    }
+
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-subcategory-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
 }
 
+/**
+ * 顯示 Subcategory 卡片
+ */
+function displaySubcategoryCards(subcategories) {
+    const selectionArea = document.getElementById('subcategorySelection');
+    const container = document.getElementById('subcategoryCardsContainer');
+    if (!selectionArea || !container) return;
+
+    // 顯示選擇區域
+    selectionArea.classList.remove('d-none');
+
+    // 隱藏初始消息
+    const initialMessage = document.getElementById('initial-subcategory-message');
+    if (initialMessage) {
+        initialMessage.classList.add('d-none');
+    }
+
+    if (subcategories.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-circle fs-1 text-muted mb-3"></i>
+                <h6 class="text-muted">No Available Subcategories</h6>
+                <p class="text-muted small">No subcategories found for the selected category.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = subcategories.map(subcategory => `
+        <div class="col-6 col-md-4 col-lg-3 mb-3">
+            <div class="card subcategory-card h-100 border-2 border-light shadow-sm position-relative overflow-hidden"
+                 data-subcategory-id="${subcategory.id}"
+                 data-subcategory-name="${subcategory.subcategory_name}"
+                 data-status="${subcategory.subcategory_status}"
+                 style="cursor: pointer; transition: all 0.3s ease; border-radius: 12px;">
+                <input type="checkbox" name="subcategory_ids[]" value="${subcategory.id}"
+                       class="subcategory-checkbox position-absolute opacity-0"
+                       id="subcategory_${subcategory.id}"
+                       style="pointer-events: none;">
+                <label for="subcategory_${subcategory.id}" class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
+                       style="cursor: pointer; min-height: 120px; position: relative;">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <i class="bi bi-check-circle-fill text-success fs-5 d-none subcategory-check-icon" style="text-shadow: 0 0 4px rgba(0,0,0,0.2);"></i>
+                    </div>
+                    <div class="subcategory-name fw-bold text-dark mb-2 fs-5">${subcategory.subcategory_name.toUpperCase()}</div>
+                    <div class="subcategory-status badge ${subcategory.subcategory_status === 'Available' ? 'bg-success-subtle text-success border border-success border-opacity-25' : 'bg-danger-subtle text-danger border border-danger border-opacity-25'} px-3 py-2 rounded-pill">
+                        <i class="bi ${subcategory.subcategory_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${subcategory.subcategory_status}
+                    </div>
+                </label>
+            </div>
+        </div>
+    `).join('');
+
+    // 綁定卡片點擊事件
+    bindSubcategoryCardEvents();
+
+    // 更新選擇計數器
+    updateSubcategorySelectionCounter();
+}
+
+/**
+ * 隱藏 Subcategory 卡片
+ */
+function hideSubcategoryCards() {
+    const selectionArea = document.getElementById('subcategorySelection');
+    if (selectionArea) {
+        selectionArea.classList.add('d-none');
+    }
+
+    // 顯示初始消息
+    const initialMessage = document.getElementById('initial-subcategory-message');
+    if (initialMessage) {
+        initialMessage.classList.remove('d-none');
+    }
+
+    // 重置計數器
+    const counter = document.getElementById('subcategorySelectionCounter');
+    if (counter) {
+        counter.textContent = '0 selected';
+        counter.className = 'badge bg-primary';
+    }
+}
+
+/**
+ * 綁定 Subcategory 卡片事件
+ */
+function bindSubcategoryCardEvents() {
+    const cards = document.querySelectorAll('.subcategory-card');
+    cards.forEach(card => {
+        // 為複選框添加事件監聽
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        const checkIcon = card.querySelector('.subcategory-check-icon');
+
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    card.classList.add('border-success', 'bg-success-subtle');
+                    card.classList.remove('border-light');
+                    card.style.transform = 'scale(1.02)';
+                    card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
+                    if (checkIcon) {
+                        checkIcon.classList.remove('d-none');
+                    }
+                } else {
+                    card.classList.remove('border-success', 'bg-success-subtle');
+                    card.classList.add('border-light');
+                    card.style.transform = 'scale(1)';
+                    card.style.boxShadow = '';
+                    if (checkIcon) {
+                        checkIcon.classList.add('d-none');
+                    }
+                }
+                updateSubcategorySelectionCounter();
+            });
+        }
+
+        // 添加悬停效果
+        card.addEventListener('mouseenter', function() {
+            if (!checkbox.checked) {
+                this.classList.add('border-primary');
+                this.classList.remove('border-light');
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }
+        });
+
+        card.addEventListener('mouseleave', function() {
+            if (!checkbox.checked) {
+                this.classList.remove('border-primary');
+                this.classList.add('border-light');
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = '';
+            }
+        });
+    });
+}
+
+/**
+ * 更新 Subcategory 選擇計數器
+ */
+function updateSubcategorySelectionCounter() {
+    const selectedCount = document.querySelectorAll('#subcategoryCardsContainer input[type="checkbox"]:checked').length;
+    const counter = document.getElementById('subcategorySelectionCounter');
+    const submitBtn = document.getElementById('submitCreateMappingModal');
+
+    if (counter) {
+        counter.textContent = `${selectedCount} selected`;
+
+        if (selectedCount > 0) {
+            counter.className = 'badge bg-success';
+        } else {
+            counter.className = 'badge bg-primary';
+        }
+    }
+
+    // 更新提交按鈕狀態
+    if (submitBtn) {
+        submitBtn.disabled = selectedCount === 0;
+    }
+}
+
+/**
+ * 選擇所有 Subcategories
+ */
+function selectAllSubcategories() {
+    const checkboxes = document.querySelectorAll('#subcategoryCardsContainer input[type="checkbox"]');
+    if (checkboxes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No subcategories available to select', 'warning');
+        } else {
+            alert('No subcategories available to select');
+        }
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        const card = checkbox.closest('.subcategory-card');
+        const checkIcon = card?.querySelector('.subcategory-check-icon');
+        if (card) {
+            card.classList.add('border-success', 'bg-success-subtle');
+            card.classList.remove('border-light');
+            card.style.transform = 'scale(1.02)';
+            card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
+            if (checkIcon) {
+                checkIcon.classList.remove('d-none');
+            }
+        }
+    });
+    updateSubcategorySelectionCounter();
+
+    // 顯示選擇提示
+    const selectedCount = checkboxes.length;
+    if (typeof window.showAlert === 'function') {
+        window.showAlert(`${selectedCount} subcategory${selectedCount > 1 ? 'ies' : ''} selected`, 'success');
+    } else {
+        alert(`${selectedCount} subcategory${selectedCount > 1 ? 'ies' : ''} selected`);
+    }
+}
+
+/**
+ * 清除所有 Subcategories 選擇
+ */
+function clearAllSubcategories() {
+    const checkboxes = document.querySelectorAll('#subcategoryCardsContainer input[type="checkbox"]:checked');
+    if (checkboxes.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('No subcategories selected to clear', 'info');
+        } else {
+            alert('No subcategories selected to clear');
+        }
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.subcategory-card');
+        const checkIcon = card?.querySelector('.subcategory-check-icon');
+        if (card) {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+            if (checkIcon) {
+                checkIcon.classList.add('d-none');
+            }
+        }
+    });
+    updateSubcategorySelectionCounter();
+
+    // 顯示清除提示
+    if (typeof window.showAlert === 'function') {
+        window.showAlert('All selections cleared', 'info');
+    } else {
+        alert('All selections cleared');
+    }
+}
+
+/**
+ * 重置 Mapping Modal
+ */
+function resetMappingModal() {
+    // 重置表單
+    const form = document.getElementById('createMappingModalForm');
+    if (form) {
+        form.reset();
+    }
+
+    // 重置 Category 選擇
+    const categorySelect = document.getElementById('category_id');
+    if (categorySelect) {
+        categorySelect.value = '';
+    }
+
+    // 隱藏 Subcategory 卡片
+    hideSubcategoryCards();
+
+    // 清除所有選擇
+    const checkboxes = document.querySelectorAll('#subcategoryCardsContainer input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.subcategory-card');
+        const checkIcon = card?.querySelector('.subcategory-check-icon');
+        if (card) {
+            card.classList.remove('border-success', 'bg-success-subtle');
+            card.classList.add('border-light');
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = '';
+            if (checkIcon) {
+                checkIcon.classList.add('d-none');
+            }
+        }
+    });
+
+    // 更新計數器
+    const counter = document.getElementById('subcategorySelectionCounter');
+    if (counter) {
+        counter.textContent = '0 selected';
+        counter.className = 'badge bg-primary';
+    }
+
+    // 禁用提交按鈕
+    const submitBtn = document.getElementById('submitCreateMappingModal');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+    }
+}
+
+/**
+ * 提交 Mapping Modal
+ */
+function submitMappingModal() {
+    const categoryId = document.getElementById('category_id').value;
+    const selectedSubcategories = Array.from(document.querySelectorAll('#subcategoryCardsContainer input[type="checkbox"]:checked'))
+        .map(checkbox => checkbox.value);
+
+    // 驗證
+    if (!categoryId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select a category first', 'warning');
+        } else {
+            alert('Please select a category first');
+        }
+        return;
+    }
+
+    if (selectedSubcategories.length === 0) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please select at least one subcategory', 'warning');
+        } else {
+            alert('Please select at least one subcategory');
+        }
+        return;
+    }
+
+    // 準備數據
+    const mappings = selectedSubcategories.map(subcategoryId => ({
+        categoryId: categoryId,
+        subcategoryId: subcategoryId,
+        status: 'Available'
+    }));
+
+    // 顯示加載狀態
+    const submitBtn = document.getElementById('submitCreateMappingModal');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creating...';
+    submitBtn.disabled = true;
+
+    // 提交創建請求
+    createMapping({mappings},
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Mappings created successfully', 'success');
+            } else {
+                alert(data.message || 'Mappings created successfully');
+            }
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createMappingModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to create mappings', 'error');
+            } else {
+                alert(error || 'Failed to create mappings');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    );
+}
+
+// =============================================================================
+// Update Mapping Modal 功能 (Update Mapping Modal Functions)
+// =============================================================================
+
+/**
+ * 綁定 Update Mapping Modal 事件
+ */
+function bindUpdateMappingModalEvents() {
+    // 彈窗打開時初始化狀態卡片
+    $('#updateMappingModal').on('show.bs.modal', function() {
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('mapping_status');
+        }
+    });
+
+    // 彈窗關閉時清理表單
+    $('#updateMappingModal').on('hidden.bs.modal', function() {
+        const form = document.getElementById('updateMappingModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        // 清空 select 選項
+        $('#update_category_id').empty().append('<option value="">Select category</option>');
+        $('#update_subcategory_id').empty().append('<option value="">Select subcategory</option>');
+
+        // 清空當前信息卡片
+        $('#currentMappingInfo').html('');
+
+        // 重置狀態卡片（只清理 modal 內的）
+        const modal = document.getElementById('updateMappingModal');
+        if (modal) {
+            $(modal).find('input[name="mapping_status"]').prop('checked', false);
+            $(modal).find('.status-card').removeClass('selected');
+        }
+
+        // 移除驗證類
+        $('#updateMappingModalForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+
+        // 清除隱藏的 mapping ID
+        $('#updateMappingModalForm').removeAttr('data-mapping-id');
+    });
+}
+
+/**
+ * 打開更新映射彈窗
+ */
+function openUpdateMappingModal(mappingId) {
+    const url = window.editMappingUrl.replace(':id', mappingId);
+
+    // 从按钮或表格行获取mapping数据（如果可用，用于快速填充）
+    let updateButton = $(`button[onclick*="openUpdateMappingModal(${mappingId})"]`);
+    if (updateButton.length === 0) {
+        updateButton = $(`button[data-mapping-id="${mappingId}"]`).first();
+    }
+
+    let mappingData = null;
+
+    if (updateButton.length > 0) {
+        // 快速填充基本数据
+        mappingData = {
+            id: mappingId,
+            category_id: updateButton.attr('data-category-id') || '',
+            subcategory_id: updateButton.attr('data-subcategory-id') || '',
+            mapping_status: updateButton.attr('data-mapping-status') || 'Available',
+            category_name: updateButton.attr('data-category-name') || '',
+            subcategory_name: updateButton.attr('data-subcategory-name') || ''
+        };
+        populateMappingModal(mappingData);
+    } else {
+        // 如果找不到按钮，尝试从表格行获取
+        const mappingRow = $(`tr[data-mapping-id="${mappingId}"]`);
+        if (mappingRow.length > 0) {
+            mappingData = {
+                id: mappingId,
+                category_id: mappingRow.attr('data-category-id') || '',
+                subcategory_id: mappingRow.attr('data-subcategory-id') || '',
+                mapping_status: mappingRow.attr('data-mapping-status') || 'Available',
+                category_name: mappingRow.attr('data-category-name') || '',
+                subcategory_name: mappingRow.attr('data-subcategory-name') || ''
+            };
+            populateMappingModal(mappingData);
+        }
+    }
+
+    // 从 API 获取完整mapping数据
+    $.ajax({
+        url: url,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        success: (response) => {
+            if (response.success && response.data) {
+                populateMappingModal(response.data);
+            } else {
+                if (typeof window.showAlert === 'function') {
+                    window.showAlert(response.message || 'Failed to load mapping data', 'error');
+                } else {
+                    alert(response.message || 'Failed to load mapping data');
+                }
+            }
+        },
+        error: (xhr) => {
+            let errorMessage = 'Failed to load mapping data';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
+        }
+    });
+}
+
+/**
+ * 填充 Mapping Update Modal 的數據
+ */
+function populateMappingModal(mappingData) {
+
+    // 設置隱藏的mapping ID（用於提交）
+    const form = $('#updateMappingModalForm');
+    form.attr('data-mapping-id', mappingData.id);
+
+    // 更新當前Mapping信息卡片
+    const currentInfo = `
+        <div class="mb-1">
+            <i class="bi bi-tag me-2 text-muted"></i>
+            <span>Category: <strong>${mappingData.category_name || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-tags me-2 text-muted"></i>
+            <span>Subcategory: <strong>${mappingData.subcategory_name || 'N/A'}</strong></span>
+        </div>
+        <div class="mb-1">
+            <i class="bi bi-shield-check me-2 text-muted"></i>
+            <span>Status: <strong>${mappingData.mapping_status || 'N/A'}</strong></span>
+        </div>
+    `;
+    $('#currentMappingInfo').html(currentInfo);
+
+    // 填充 Category 選項
+    const categorySelect = $('#update_category_id');
+    categorySelect.empty();
+    categorySelect.append('<option value="">Select category</option>');
+    if (window.availableCategories && Array.isArray(window.availableCategories)) {
+        window.availableCategories.forEach(category => {
+            const selected = category.id == mappingData.category_id ? 'selected' : '';
+            categorySelect.append(`<option value="${category.id}" ${selected}>${category.category_name}</option>`);
+        });
+    }
+
+    // 填充 Subcategory 選項
+    const subcategorySelect = $('#update_subcategory_id');
+    subcategorySelect.empty();
+    subcategorySelect.append('<option value="">Select subcategory</option>');
+    if (window.availableSubcategories && Array.isArray(window.availableSubcategories)) {
+        window.availableSubcategories.forEach(subcategory => {
+            const selected = subcategory.id == mappingData.subcategory_id ? 'selected' : '';
+            subcategorySelect.append(`<option value="${subcategory.id}" ${selected}>${subcategory.subcategory_name}</option>`);
+        });
+    }
+
+    // 設置狀態（交給 status-management 初始化後，直接設置單選值）
+    const targetStatus = mappingData.mapping_status === 'Unavailable' ? 'Unavailable' : 'Available';
+    const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+    $(radioSelector).prop('checked', true);
+
+    // 初始化状态卡片（在打开 modal 前）
+    if (typeof window.initializeStatusCardSelection === 'function') {
+        window.initializeStatusCardSelection('mapping_status');
+    }
+
+    // 打開彈窗
+    const modal = new bootstrap.Modal(document.getElementById('updateMappingModal'));
+    modal.show();
+
+    // 綁定提交事件（如果還沒綁定）
+    if (!form.data('submit-bound')) {
+        $('#submitUpdateMappingModal').off('click').on('click', function() {
+            submitUpdateMappingModal();
+        });
+        form.data('submit-bound', true);
+    }
+}
+
+/**
+ * 提交更新映射彈窗
+ */
+function submitUpdateMappingModal() {
+    const form = $('#updateMappingModalForm');
+    const mappingId = form.attr('data-mapping-id');
+
+    if (!mappingId) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Mapping ID not found', 'error');
+        } else {
+            alert('Mapping ID not found');
+        }
+        return;
+    }
+
+    // 驗證表單
+    const categoryId = $('#update_category_id').val();
+    const subcategoryId = $('#update_subcategory_id').val();
+    const status = $('input[name="mapping_status"]:checked').val();
+
+    if (!categoryId || !subcategoryId || !status) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Please fill in all required fields', 'warning');
+        } else {
+            alert('Please fill in all required fields');
+        }
+        return;
+    }
+
+    // 準備表單數據
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    formData.append('_method', 'PUT');
+    formData.append('category_id', categoryId);
+    formData.append('subcategory_id', subcategoryId);
+    formData.append('mapping_status', status);
+
+    // 顯示加載狀態
+    const submitBtn = $('#submitUpdateMappingModal');
+    const originalText = submitBtn.html();
+    submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+    submitBtn.prop('disabled', true);
+
+    // 提交更新請求
+    updateMapping(mappingId, formData,
+        function(data) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(data.message || 'Mapping updated successfully', 'success');
+            } else {
+                alert(data.message || 'Mapping updated successfully');
+            }
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('updateMappingModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        },
+        function(error) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(error || 'Failed to update mapping', 'error');
+            } else {
+                alert(error || 'Failed to update mapping');
+            }
+
+            // 恢復按鈕狀態
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        }
+    );
+}
 
 // =============================================================================
 // DOM 內容加載完成後的事件綁定 (DOM Content Loaded Event Binding)
@@ -1617,19 +1571,17 @@ function formatStatus(status) {
 document.addEventListener('DOMContentLoaded', function() {
     // 檢查當前頁面類型並初始化相應功能
     const dashboardCardsContainer = document.getElementById('dashboard-cards-container');
-    const mappingForm = document.getElementById('mappingForm');
-    const updateMappingForm = document.getElementById('updateMappingForm');
     const viewTable = document.querySelector('table tbody');
+    const createMappingModal = document.getElementById('createMappingModal');
 
     if (dashboardCardsContainer) {
         // Dashboard 頁面
         initializeMappingDashboard();
-    } else if (mappingForm) {
-        // Create 頁面
-        initializeMappingCreate();
-    } else if (updateMappingForm) {
-        // Update 頁面
-        initializeMappingUpdate();
+
+        // 初始化 Create Mapping Modal
+        if (createMappingModal) {
+            initializeMappingCreateModal();
+        }
     } else if (viewTable) {
         // View 頁面
         initializeMappingView();
@@ -1637,15 +1589,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // =============================================================================
-// 全局實例初始化 (Global Instance Initialization)
+// 全局函數導出 (Global Function Exports)
 // =============================================================================
 
-// 導出函數供全局使用
-window.editCategoryMappings = editCategoryMappings;
+// 導出主要函數到全局作用域（用於 HTML onclick 屬性）
 window.editMapping = editMapping;
-window.deleteMapping = deleteMapping;
-window.toggleMappingStatus = toggleMappingStatus;
 window.setMappingAvailable = setMappingAvailable;
 window.setMappingUnavailable = setMappingUnavailable;
-window.updateMappingStatus = updateMappingStatus;
 window.viewCategoryDetails = viewCategoryDetails;
+window.openUpdateMappingModal = openUpdateMappingModal;
+window.submitUpdateMappingModal = submitUpdateMappingModal;

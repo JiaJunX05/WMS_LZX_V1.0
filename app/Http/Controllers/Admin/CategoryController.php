@@ -12,60 +12,64 @@ use Carbon\Carbon;
 
 /**
  * 分类管理控制器
+ * Category Management Controller
  *
  * 功能模块：
  * - 分类列表展示：搜索、筛选、分页
  * - 分类操作：创建、编辑、删除、状态管理
  * - 图片管理：上传、更新、删除
+ * - 数据导出：Excel 导出功能
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class CategoryController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_CATEGORIES = 10;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 分类验证规则
+     */
     private const CATEGORY_RULES = [
         'category_name' => 'required|string|max:255',
     ];
 
+    /**
+     * 分类图片验证规则
+     */
     private const CATEGORY_IMAGE_RULES = [
         'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ];
 
-    /**
-     * Normalize category data from frontend
-     */
-    private function normalizeCategoryData(array $categoryData): array
-    {
-        // Convert camelCase to snake_case
-        if (isset($categoryData['categoryName']) && !isset($categoryData['category_name'])) {
-            $categoryData['category_name'] = $categoryData['categoryName'];
-        }
-        if (isset($categoryData['categoryStatus']) && !isset($categoryData['category_status'])) {
-            $categoryData['category_status'] = $categoryData['categoryStatus'];
-        }
-
-        return $categoryData;
-    }
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -80,7 +84,11 @@ class CategoryController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -94,11 +102,16 @@ class CategoryController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -107,8 +120,17 @@ class CategoryController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
     /**
      * 显示分类列表页面
+     * Display category list page
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -154,32 +176,14 @@ class CategoryController extends Controller
     }
 
     /**
-     * 显示创建分类表单
-     */
-    public function create()
-    {
-        return view('admin.category.create');
-    }
-
-    /**
      * 存储新分类
+     * Store new category
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        // 与 SizeLibrary 的实现保持一致：有数组走批量，否则走单个
-        if ($request->has('categories') && is_array($request->input('categories'))) {
-            return $this->storeMultipleCategories($request);
-        }
-
-        return $this->storeSingleCategory($request);
-    }
-
-    /**
-     * 单个存储分类
-     */
-    private function storeSingleCategory(Request $request)
-    {
-        // 校验
         $rules = array_merge(self::CATEGORY_RULES, self::CATEGORY_IMAGE_RULES);
         $rules['category_name'] .= '|unique:categories,category_name';
 
@@ -188,25 +192,26 @@ class CategoryController extends Controller
         try {
             $categoryData = [
                 'category_name' => $request->input('category_name') ?? $request->input('categoryName'),
-                'category_status' => 'Available', // 默认为 Available
+                'category_status' => 'Available',
             ];
 
             // 处理文件上传
             if ($request->hasFile('category_image')) {
-                // 文件上传（确保目录存在）
                 $image = $request->file('category_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/categories');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $categoryData['category_image'] = 'categories/' . $imageName;
             }
 
             $category = Category::create($categoryData);
 
-            $this->logOperation('created (single)', [
+            $this->logOperation('created', [
                 'category_id' => $category->id,
                 'category_name' => $categoryData['category_name']
             ]);
@@ -230,119 +235,53 @@ class CategoryController extends Controller
     }
 
     /**
-     * 批量存储分类（统一入口）
+     * 显示分类编辑表单（用于 Modal）
+     * Show category edit form (for Modal)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    private function storeMultipleCategories(Request $request)
+    public function showEditForm(Request $request, $id)
     {
-        // 仅处理批量数组
-        $categories = $request->input('categories', []);
+        try {
+            $category = Category::findOrFail($id);
 
-        // 限制批量创建数量
-        if (count($categories) > self::MAX_BULK_CATEGORIES) {
-            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_CATEGORIES . ' categories at once');
-        }
-
-        $createdCategories = [];
-        $errors = [];
-
-        // 预处理：收集所有分类名称进行批量检查
-        $categoryNamesToCheck = [];
-        foreach ($categories as $index => $categoryData) {
-            $categoryData = $this->normalizeCategoryData($categoryData);
-            if (isset($categoryData['category_name'])) {
-                $categoryNamesToCheck[] = $categoryData['category_name'];
-            }
-        }
-
-        $existingCategoryNames = Category::whereIn('category_name', $categoryNamesToCheck)->pluck('category_name')->toArray();
-
-        foreach ($categories as $index => $categoryData) {
-            $categoryData = $this->normalizeCategoryData($categoryData);
-
-            $validator = \Validator::make($categoryData, self::CATEGORY_RULES);
-
-            if ($validator->fails()) {
-                $errors[] = "Category " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
-                continue;
-            }
-
-            // 检查分类名称是否已存在
-            if (in_array($categoryData['category_name'], $existingCategoryNames)) {
-                $errors[] = "Category " . ($index + 1) . ": Category name '{$categoryData['category_name']}' already exists";
-                continue;
-            }
-
-            try {
-                $categoryRecord = [
-                    'category_name' => $categoryData['category_name'],
-                    'category_status' => 'Available', // 默认为 Available
-                ];
-
-                // 处理图片上传 - 使用文件数组
-                $files = $request->file('images');
-                if (is_array($files) && isset($files[$index]) && $files[$index] && $files[$index]->isValid()) {
-                    $image = $files[$index];
-                    $directory = public_path('assets/images/categories');
-                    if (!file_exists($directory)) {
-                        mkdir($directory, 0777, true);
-                    }
-                    $imageName = time() . '_' . $index . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move($directory, $imageName);
-                    $categoryRecord['category_image'] = 'categories/' . $imageName;
-                }
-
-                $category = Category::create($categoryRecord);
-                $createdCategories[] = $category;
-
-                $this->logOperation('created (batch)', [
-                    'category_id' => $category->id,
-                    'category_name' => $categoryData['category_name']
-                ]);
-            } catch (\Exception $e) {
-                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
-                $errorMessage = $simplifiedError ?: $e->getMessage();
-                $errors[] = "Category " . ($index + 1) . ": " . $errorMessage;
-            }
-        }
-
-        if ($request->ajax()) {
-            if (count($errors) > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some categories failed to create',
-                    'errors' => $errors,
-                    'created_count' => count($createdCategories)
-                ], 422);
-            } else {
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => count($createdCategories) . ' categories created successfully',
-                    'data' => $createdCategories
+                    'message' => 'Category data fetched successfully',
+                    'data' => [
+                        'id' => $category->id,
+                        'category_name' => $category->category_name,
+                        'category_status' => $category->category_status,
+                        'category_image' => $category->category_image
+                    ]
                 ]);
             }
+
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.category_mapping.category.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load category data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('admin.category_mapping.category.index')
+                ->with('error', 'Category not found');
         }
-
-        if (count($errors) > 0) {
-            return back()->withErrors(['error' => implode('; ', $errors)])
-                ->withInput();
-        }
-
-        return redirect()->route('admin.category_mapping.category.index')
-            ->with('success', count($createdCategories) . ' categories created successfully');
-    }
-
-
-    /**
-     * 显示编辑分类表单
-     */
-    public function edit($id)
-    {
-        $category = Category::findOrFail($id);
-        return view('admin.category.update', compact('category'));
     }
 
     /**
      * 更新分类信息
+     * Update category information
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -399,9 +338,11 @@ class CategoryController extends Controller
                 $image = $request->file('category_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/categories');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $categoryData['category_image'] = 'categories/' . $imageName;
             } elseif ($request->has('remove_image') && $request->input('remove_image') === '1') {
@@ -424,6 +365,7 @@ class CategoryController extends Controller
 
             if ($request->ajax()) {
                 $freshCategory = $category->fresh();
+
                 Log::info('AJAX response data', [
                     'success' => true,
                     'message' => $message,
@@ -464,6 +406,10 @@ class CategoryController extends Controller
 
     /**
      * 设置分类为可用状态
+     * Set category to available status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function setAvailable($id)
     {
@@ -473,7 +419,6 @@ class CategoryController extends Controller
 
             $this->logOperation('set to available', ['category_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -492,6 +437,10 @@ class CategoryController extends Controller
 
     /**
      * 设置分类为不可用状态
+     * Set category to unavailable status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function setUnavailable($id)
     {
@@ -501,7 +450,6 @@ class CategoryController extends Controller
 
             $this->logOperation('set to unavailable', ['category_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -520,6 +468,10 @@ class CategoryController extends Controller
 
     /**
      * 删除分类
+     * Delete category
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
@@ -535,7 +487,6 @@ class CategoryController extends Controller
 
             $this->logOperation('deleted', ['category_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -556,12 +507,16 @@ class CategoryController extends Controller
     }
 
     /**
-     * 導出分類數據到Excel
+     * 导出分类数据到 Excel
+     * Export categories data to Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function exportCategories(Request $request)
     {
         try {
-            // 獲取篩選條件
+            // 获取筛选条件
             $filters = [
                 'search' => $request->get('search'),
                 'status_filter' => $request->get('status_filter'),
@@ -572,7 +527,7 @@ class CategoryController extends Controller
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
             $filename = "categories_export_{$timestamp}.xlsx";
 
-            // 使用Laravel Excel導出
+            // 使用 Laravel Excel 导出
             return Excel::download(new CategoryExport($filters), $filename);
 
         } catch (\Exception $e) {

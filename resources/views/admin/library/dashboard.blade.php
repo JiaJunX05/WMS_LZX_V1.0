@@ -16,22 +16,19 @@
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.library-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.library.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.library-metric-cards')
+    @include('admin.library.components.metric-cards')
 
     {{-- 主要内容区域 --}}
-    <div id="dashboard-cards-container" class="row g-4">
-        {{-- 按类别分组的尺码库卡片将通过JavaScript动态加载 --}}
-    </div>
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.library-empty-list')
+    @include('admin.library.components.data-cards')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.library-pagination-nav')
+    @include('admin.library.components.pagination-nav')
+
+    {{-- Library Create Modal --}}
+    @include('admin.library.create-model')
 </div>
 
 @endsection
@@ -42,6 +39,7 @@
     // 设置尺码库管理相关路由
     window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
     window.createSizeLibraryUrl = "{{ route('admin.library.create') }}";
+    window.storeSizeLibraryUrl = "{{ route('admin.library.store') }}";
     window.editSizeLibraryUrl = "{{ route('admin.library.edit', ['id' => ':id']) }}";
     window.viewSizeLibraryUrl = "{{ route('admin.library.view', ['id' => ':id']) }}";
     window.deleteSizeLibraryUrl = "{{ route('admin.library.destroy', ['id' => ':id']) }}";

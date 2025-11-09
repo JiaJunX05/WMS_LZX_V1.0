@@ -3,24 +3,14 @@
  * 品牌管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、圖片處理、表單提交
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
-
-// =============================================================================
-// 全局變量和狀態管理 (Global Variables and State Management)
-// =============================================================================
-
-// 品牌列表數組（用於 Create 頁面）
-let brandList = [];
-
-// 排序狀態：true = 升序，false = 降序
-let isAscending = false; // 默認降序（最新的在上面）
 
 // =============================================================================
 // Dashboard 頁面功能 (Dashboard Page Functions)
@@ -108,6 +98,10 @@ class BrandDashboard {
         $('#export-brands-btn').on('click', () => {
             this.exportSelectedBrands();
         });
+
+        // Modal 事件绑定
+        this.bindModalEvents();
+        this.bindUpdateModalEvents();
     }
 
     // =============================================================================
@@ -233,12 +227,12 @@ class BrandDashboard {
 
     createBrandRow(brand) {
         const statusMenuItem = brand.brand_status === 'Unavailable'
-            ? `<a class="dropdown-item" href="javascript:void(0)" onclick="brandDashboard.setAvailable(${brand.id})">
-                   <i class="bi bi-check-circle me-2"></i> Activate Brand
-               </a>`
-            : `<a class="dropdown-item" href="javascript:void(0)" onclick="brandDashboard.setUnavailable(${brand.id})">
-                   <i class="bi bi-slash-circle me-2"></i> Deactivate Brand
-               </a>`;
+            ? `<button type="button" class="dropdown-item" onclick="brandDashboard.setAvailable(${brand.id})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="brandDashboard.setUnavailable(${brand.id})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
 
         const actionButtons = `
             <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="brandDashboard.editBrand(${brand.id})">
@@ -253,16 +247,19 @@ class BrandDashboard {
                         ${statusMenuItem}
                     </li>
                     <li>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="brandDashboard.deleteBrand(${brand.id})">
-                            <i class="bi bi-trash me-2"></i> Delete Brand
-                        </a>
+                        <button type="button" class="dropdown-item text-danger" onclick="brandDashboard.deleteBrand(${brand.id})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
                     </li>
                 </ul>
             </div>
         `;
 
         return `
-            <tr>
+            <tr data-brand-id="${brand.id}"
+                data-brand-name="${brand.brand_name || ''}"
+                data-brand-status="${brand.brand_status || 'Available'}"
+                data-brand-image="${brand.brand_image || ''}">
                 <td class="ps-4">
                     <input class="brand-checkbox form-check-input" type="checkbox" value="${brand.id}" id="brand-${brand.id}">
                 </td>
@@ -357,7 +354,43 @@ class BrandDashboard {
      */
     editBrand(brandId) {
         const url = window.editBrandUrl.replace(':id', brandId);
-        window.location.href = url;
+
+        // 从表格行获取brand数据（如果可用，用于快速填充）
+        const row = document.querySelector(`tr[data-brand-id="${brandId}"]`);
+        if (row) {
+            // 快速填充基本数据
+            const brandData = {
+                id: brandId,
+                brand_name: row.getAttribute('data-brand-name') || '',
+                brand_status: row.getAttribute('data-brand-status') || 'Available',
+                brand_image: row.getAttribute('data-brand-image') || ''
+            };
+            this.openUpdateModal(brandData);
+        }
+
+        // 从 API 获取完整brand数据
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            success: (response) => {
+                if (response.success && response.data) {
+                    this.openUpdateModal(response.data);
+                } else {
+                    this.showAlert(response.message || 'Failed to load brand data', 'error');
+                }
+            },
+            error: (xhr) => {
+                let errorMessage = 'Failed to load brand data';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                this.showAlert(errorMessage, 'error');
+            }
+        });
     }
 
     /**
@@ -406,6 +439,69 @@ class BrandDashboard {
     }
 
     /**
+     * 更新表格行的狀態顯示和 data 屬性
+     * @param {number} brandId 品牌ID
+     * @param {string} newStatus 新狀態 ('Available' 或 'Unavailable')
+     */
+    updateBrandRowStatus(brandId, newStatus) {
+        const brandRow = $(`tr[data-brand-id="${brandId}"]`);
+        if (brandRow.length === 0) return;
+
+        // 更新 data 屬性
+        brandRow.attr('data-brand-status', newStatus);
+
+        // 更新狀態菜單項（與 createBrandRow 中的格式完全一致）
+        const statusMenuItem = newStatus === 'Unavailable'
+            ? `<button type="button" class="dropdown-item" onclick="brandDashboard.setAvailable(${brandId})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="brandDashboard.setUnavailable(${brandId})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
+
+        // 更新操作按鈕區域（與 createBrandRow 中的格式完全一致）
+        const actionButtons = `
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="brandDashboard.editBrand(${brandId})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        ${statusMenuItem}
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item text-danger" onclick="brandDashboard.deleteBrand(${brandId})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        `;
+
+        // 更新操作按鈕列
+        const actionsCell = brandRow.find('td:last-child');
+        actionsCell.html(actionButtons);
+
+        // 更新狀態標籤顯示（與 createBrandRow 中的格式完全一致）
+        const statusBadge = newStatus === 'Available'
+            ? `<span class="badge bg-success px-3 py-2">
+                <i class="bi bi-check-circle me-1"></i>${newStatus}
+            </span>`
+            : `<span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-x-circle me-1"></i>${newStatus}
+            </span>`;
+
+        // 更新狀態列顯示
+        const statusCell = brandRow.find('td').eq(-2); // 倒數第二列是狀態列
+        if (statusCell.length > 0) {
+            statusCell.html(statusBadge);
+        }
+    }
+
+    /**
      * 激活品牌
      * @param {number} brandId 品牌ID
      */
@@ -430,17 +526,8 @@ class BrandDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Brand has been set to available status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchBrands(1);
-                } else {
-                    // 重新載入當前頁面的品牌列表
-                    this.fetchBrands(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateBrandRowStatus(brandId, 'Available');
             } else {
                 this.showAlert(data.message || 'Failed to set brand available', 'error');
             }
@@ -475,17 +562,8 @@ class BrandDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Brand has been set to unavailable status', 'success');
-
-                // 檢查當前頁面是否還有數據
-                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
-
-                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
-                if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchBrands(1);
-                } else {
-                    // 重新載入當前頁面的品牌列表
-                    this.fetchBrands(this.currentPage);
-                }
+                // 更新 DOM 而不是刷新頁面
+                this.updateBrandRowStatus(brandId, 'Unavailable');
             } else {
                 this.showAlert(data.message || 'Failed to set brand unavailable', 'error');
             }
@@ -616,856 +694,583 @@ class BrandDashboard {
             }, 5000);
         }
     }
-}
 
-// =============================================================================
-// Create 頁面功能 (Create Page Functions)
-// =============================================================================
+    // =============================================================================
+    // Create Brand 彈窗模塊 (Create Brand Modal Module)
+    // =============================================================================
 
-/**
- * 添加品牌到數組
- * @param {string} brandName 品牌名稱
- * @param {string} brandStatus 品牌狀態
- * @param {File} brandImageFile 圖片文件
- */
-function addBrandToArray(brandName, brandStatus, brandImageFile) {
-    // 調試信息：檢查傳入的數據
-    console.log('addBrandToArray called with:', { brandName, brandStatus, brandImageFile });
+    /**
+     * 綁定彈窗事件
+     */
+    bindModalEvents() {
+        // 彈窗打開時重置表單並初始化圖片處理
+        $('#createBrandModal').on('show.bs.modal', () => {
+            this.resetModalForm();
+            this.initModalImageSystem();
+        });
 
-    // 添加品牌到數組
-    const brandData = {
-        brandName: brandName,
-        brandStatus: brandStatus,
-        brandImageFile: brandImageFile // 存儲文件對象而不是base64
-    };
+        // 彈窗完全顯示後設置焦點
+        $('#createBrandModal').on('shown.bs.modal', () => {
+            const brandNameInput = document.getElementById('brand_name');
+            if (brandNameInput) {
+                brandNameInput.focus();
+            }
+        });
 
-    brandList.push(brandData);
+        // 彈窗關閉時清理
+        $('#createBrandModal').on('hidden.bs.modal', () => {
+            this.resetModalForm();
+        });
 
-    // 更新UI
-    updateBrandList();
-    updateUI();
+        // 提交按鈕事件
+        $('#submitCreateBrandModal').on('click', () => {
+            this.submitModalBrand();
+        });
 
-    // 顯示右邊的品牌表格
-    showBrandValuesArea();
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#createBrandModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'brand_image') {
+                    return;
+                }
 
-    // 清空輸入框
-    const brandNameInput = document.getElementById('brand_name');
-    if (brandNameInput) {
-        brandNameInput.value = '';
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button') {
+                    e.preventDefault();
+                    // brand 只有一個輸入框，直接提交
+                    this.submitModalBrand();
+                }
+            }
+        });
     }
 
-    // 清空圖片（不顯示消息）
-    resetImageWithoutMessage('brand');
+    /**
+     * 初始化彈窗中的圖片處理系統
+     */
+    initModalImageSystem() {
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('createBrandModal');
+            if (!modal) return;
 
-    // 調試信息：檢查添加後的狀態選擇
-    const currentStatus = document.querySelector('input[name="brand_status"]:checked');
-    console.log('After adding brand, current status selection:', currentStatus ? currentStatus.value : 'No status selected');
-}
+            const imageInput = modal.querySelector('#brand_image');
+            const imageUploadArea = modal.querySelector('#imageUploadArea');
 
-/**
- * 檢查品牌名稱是否已存在（簡化版本，用於當前頁面）
- * @param {string} brandName 品牌名稱
- * @returns {boolean} 是否存在
- */
-function isBrandExists(brandName) {
-    return brandList.some(item => item.brandName.toLowerCase() === brandName.toLowerCase());
-}
-
-/**
- * 添加品牌
- */
-function addBrand() {
-    const brandNameInput = document.getElementById('brand_name');
-
-    const brandName = brandNameInput.value.trim();
-
-    // 驗證輸入
-    if (!brandName) {
-        showAlert('Please enter brand name', 'warning');
-        brandNameInput.focus();
-        return;
+            if (imageInput && imageUploadArea) {
+                window.ImageSystem.bindImageUploadEvents({
+                    createImageInputId: 'brand_image',
+                    createImageUploadAreaId: 'imageUploadArea',
+                    createPreviewImageId: 'img-preview',
+                    createPreviewIconId: 'preview-icon',
+                    createImageUploadContentId: 'imageUploadContent'
+                });
+            }
+        }
     }
 
-    // 檢查是否已存在
-    if (isBrandExists(brandName)) {
-        showAlert(`Brand name "${brandName}" already exists in the list`, 'error');
-        highlightExistingBrand(brandName);
-        brandNameInput.focus();
-        return;
+    /**
+     * 重置彈窗表單
+     */
+    resetModalForm() {
+        const form = document.getElementById('createBrandModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
+            window.ImageSystem.resetImage('imageUploadArea', {
+                imageInputId: 'brand_image',
+                previewImageId: 'img-preview',
+                previewIconId: 'preview-icon',
+                imageUploadContentId: 'imageUploadContent'
+            });
+        }
+
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
     }
 
-    // 獲取當前圖片文件
-    const imageInput = document.getElementById('brand_image');
-    let brandImageFile = null;
-    if (imageInput && imageInput.files && imageInput.files[0]) {
-        brandImageFile = imageInput.files[0];
+    /**
+     * 提交彈窗中的Brand
+     */
+    submitModalBrand() {
+        const brandNameInput = document.getElementById('brand_name');
+        const imageInput = document.getElementById('brand_image');
+        const submitBtn = $('#submitCreateBrandModal');
+
+        const brandName = brandNameInput ? brandNameInput.value.trim() : '';
+
+        let isValid = true;
+
+        if (!brandName) {
+            if (brandNameInput) {
+                brandNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
+        } else {
+            if (brandNameInput) {
+                brandNameInput.classList.remove('is-invalid');
+                brandNameInput.classList.add('is-valid');
+            }
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('brand_name', brandName);
+
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('brand_image', imageInput.files[0]);
+        }
+
+        // 檢查是否有圖片
+        const hasImage = imageInput && imageInput.files && imageInput.files[0];
+
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Creating...');
+        submitBtn.prop('disabled', true);
+
+        fetch(window.createBrandUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to create brand');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Brand created successfully', 'success');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createBrandModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 如果有圖片，刷新整個頁面；否則只更新 DOM
+                if (hasImage) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片，重新載入當前頁面以顯示新記錄
+                    this.fetchBrands(this.currentPage);
+                }
+            } else {
+                this.showAlert(data.message || 'Failed to create brand', 'error');
+            }
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to create brand';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+        });
     }
 
-    // 添加到品牌數組（狀態默認為 Available）
-    addBrandToArray(brandName, 'Available', brandImageFile);
+    // =============================================================================
+    // Update Brand 彈窗模塊 (Update Brand Modal Module)
+    // =============================================================================
 
-    // 顯示成功提示
-    showAlert('Brand added successfully', 'success');
-}
+    /**
+     * 綁定更新彈窗事件
+     */
+    bindUpdateModalEvents() {
+        $('#updateBrandModal').on('show.bs.modal', () => {
+            this.initUpdateModalImageSystem();
+            if (typeof window.initializeStatusCardSelection === 'function') {
+                window.initializeStatusCardSelection('brand_status');
+            }
+        });
 
-/**
- * 移除品牌
- * @param {number} index 索引
- */
-function removeBrand(index) {
-    console.log('Removing brand at index:', index);
-    console.log('Brand list before removal:', brandList);
+        // 彈窗完全顯示後設置焦點
+        $('#updateBrandModal').on('shown.bs.modal', () => {
+            const brandNameInput = document.getElementById('update_brand_name');
+            if (brandNameInput) {
+                brandNameInput.focus();
+            }
+        });
 
-    // 確認機制
-    if (!confirm('Are you sure you want to remove this brand?')) {
-        return;
+        $('#updateBrandModal').on('hidden.bs.modal', () => {
+            this.resetUpdateModalForm();
+        });
+
+        $('#submitUpdateBrandModal').on('click', () => {
+            this.submitUpdateModalBrand();
+        });
+
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#updateBrandModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'input_image') {
+                    return;
+                }
+
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button' && target.type !== 'radio') {
+                    e.preventDefault();
+                    // brand 只有一個輸入框，直接提交
+                    this.submitUpdateModalBrand();
+                }
+            }
+        });
     }
 
-    if (index >= 0 && index < brandList.length) {
-        brandList.splice(index, 1);
-        console.log('Brand list after removal:', brandList);
-        updateBrandList();
-        updateUI();
+    /**
+     * 打開更新彈窗並填充數據
+     */
+    openUpdateModal(brandData) {
+        $('#update_brand_name').val(brandData.brand_name || '');
 
-        // 顯示成功移除的 alert
-        showAlert('Brand removed successfully', 'success');
-    } else {
-        console.error('Invalid index:', index);
-        showAlert('Failed to remove brand', 'error');
-    }
-}
+        const targetStatus = brandData.brand_status === 'Unavailable' ? 'Unavailable' : 'Available';
+        const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+        $(radioSelector).prop('checked', true);
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('brand_status');
+        }
 
-/**
- * 更新品牌列表
- */
-function updateBrandList() {
-    const container = document.getElementById('brandValuesList');
-    if (!container) return;
+        const form = $('#updateBrandModalForm');
+        form.attr('data-brand-id', brandData.id);
 
-    container.innerHTML = '';
-
-    brandList.forEach((item, index) => {
-        // 檢查是否為重複項
-        const isDuplicate = isBrandExists(item.brandName) &&
-            brandList.filter(i => i.brandName.toLowerCase() === item.brandName.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        const brandItem = document.createElement('div');
-        brandItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        brandItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                <div class="me-3 flex-shrink-0">
-                    ${item.brandImageFile ?
-                        `<img src="${URL.createObjectURL(item.brandImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Brand Image">` :
-                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
-                            <i class="bi bi-tag text-muted fs-5"></i>
-                        </div>`
-                    }
-                </div>
-                <div class="flex-grow-1 min-width-0">
-                    <div class="fw-bold text-dark mb-1 text-truncate">
-                        <i class="bi bi-tag me-2 text-primary"></i>${item.brandName}
-                    </div>
-                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                </div>
+        const currentInfo = `
+            <div class="mb-1">
+                <i class="bi bi-tag me-2 text-muted"></i>
+                <span>Name: <strong>${brandData.brand_name || 'N/A'}</strong></span>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
+            <div class="mb-1">
+                <i class="bi bi-shield-check me-2 text-muted"></i>
+                <span>Status: <strong>${brandData.brand_status || 'N/A'}</strong></span>
+            </div>
         `;
+        $('#currentBrandInfo').html(currentInfo);
 
-        container.appendChild(brandItem);
-    });
-}
-
-/**
- * 高亮顯示列表中已存在的品牌名稱
- * @param {string} brandName 品牌名稱
- */
-function highlightExistingBrand(brandName) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.fw-bold').textContent.trim();
-        if (value.toLowerCase() === brandName.toLowerCase()) {
-            // 添加 Bootstrap 高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
-        }
-    }
-}
-
-/**
- * 顯示品牌值區域
- */
-function showBrandValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 顯示品牌值區域
-    const brandValuesArea = document.getElementById('brandValuesArea');
-    if (brandValuesArea) {
-        brandValuesArea.classList.remove('d-none');
-    }
-
-    // 更新品牌名稱顯示
-    updateBrandNameDisplay();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏品牌值區域
-    const brandValuesArea = document.getElementById('brandValuesArea');
-    if (brandValuesArea) {
-        brandValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    // 檢查是否有數據需要清除
-    if (brandList.length === 0) {
-        showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 確認清除
-    if (!confirm('Are you sure you want to clear all brands?')) {
-        return;
-    }
-
-    // 清空數組
-    brandList = [];
-
-    // 清空輸入框
-    const brandNameInput = document.getElementById('brand_name');
-    if (brandNameInput) {
-        brandNameInput.value = '';
-    }
-
-    // 更新UI
-    updateBrandList();
-    updateUI();
-
-    // 顯示成功提示
-    showAlert('All brands cleared successfully', 'success');
-
-    // 隱藏所有區域
-    hideAllAreas();
-}
-
-// =============================================================================
-// UI 更新功能 (UI Update Functions)
-// =============================================================================
-
-/**
- * 更新UI（簡化版本，用於當前頁面）
- */
-function updateUI() {
-    // 更新品牌值計數
-    updateBrandValuesCount();
-
-    // 更新品牌範圍顯示
-    updateBrandRangeDisplay();
-
-    // 更新品牌名稱顯示
-    updateBrandNameDisplay();
-
-    // 如果沒有品牌，隱藏所有區域並顯示初始狀態
-    if (brandList.length === 0) {
-        hideAllAreas();
-    }
-}
-
-/**
- * 更新品牌值計數
- */
-function updateBrandValuesCount() {
-    const count = brandList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('brandValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} brands`;
-    }
-}
-
-
-function updateBrandNameDisplay() {
-    const brandNameSpan = document.getElementById('brandName');
-    if (brandNameSpan) {
-        if (brandList.length > 0) {
-            // 顯示品牌數量
-            brandNameSpan.textContent = `- ${brandList.length} brands`;
+        if (brandData.brand_image) {
+            const imageUrl = `/assets/images/${brandData.brand_image}`;
+            this.setUpdateModalImage(imageUrl);
         } else {
-            brandNameSpan.textContent = '';
+            this.resetUpdateModalImage();
         }
-    }
-}
 
-function updateBrandRangeDisplay() {
-    const brandNames = brandList.map(item => item.brandName);
+        $('#remove_image').val('0');
 
-    const selectedBrandSpan = document.getElementById('selectedBrand');
-    if (selectedBrandSpan) {
-        if (brandNames.length === 0) {
-            selectedBrandSpan.textContent = 'None';
-        } else if (brandNames.length === 1) {
-            selectedBrandSpan.textContent = brandNames[0];
-        } else {
-            // 按字母順序排序
-            const sortedNames = brandNames.sort();
-            const minBrand = sortedNames[0];
-            const maxBrand = sortedNames[sortedNames.length - 1];
-            selectedBrandSpan.textContent = `${minBrand} - ${maxBrand}`;
-        }
-    }
-}
-
-// =============================================================================
-// 排序功能 (Sorting Functions)
-// =============================================================================
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortBrands');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
+        const modal = new bootstrap.Modal(document.getElementById('updateBrandModal'));
+        modal.show();
     }
 
-    // 重新排序列表
-    sortBrandValuesList();
-}
+    /**
+     * 初始化更新彈窗中的圖片處理系統
+     */
+    initUpdateModalImageSystem() {
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('updateBrandModal');
+            if (!modal) return;
 
-/**
- * 排序品牌值列表
- */
-function sortBrandValuesList() {
-    const brandValuesList = document.getElementById('brandValuesList');
-    const items = Array.from(brandValuesList.querySelectorAll('.value-item'));
+            const imageInput = modal.querySelector('#input_image');
+            const previewContainer = modal.querySelector('#image-preview');
+            const removeImageBtn = modal.querySelector('#removeImage');
 
-    if (items.length <= 1) return;
+            if (imageInput && previewContainer) {
+                window.ImageSystem.bindImageUploadEvents({
+                    updateImageInputId: 'input_image',
+                    updatePreviewContainerId: 'image-preview'
+                });
 
-    // 獲取品牌名稱並排序
-    const brandValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.fw-bold').textContent.trim()
-    }));
+                previewContainer.addEventListener('click', function(e) {
+                    if (e.target.closest('.img-remove-btn')) {
+                        return;
+                    }
+                    imageInput.click();
+                });
 
-    // 按字母順序排序
-    brandValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
+                if (removeImageBtn) {
+                    const newRemoveBtn = removeImageBtn.cloneNode(true);
+                    removeImageBtn.parentNode.replaceChild(newRemoveBtn, removeImageBtn);
+                    const freshRemoveBtn = modal.querySelector('#removeImage');
 
-    // 重新排列DOM元素
-    brandValues.forEach(({ element }) => {
-        brandValuesList.appendChild(element);
-    });
-}
+                    freshRemoveBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
 
-// =============================================================================
-// 批量添加功能 (Batch Add Functions)
-// =============================================================================
+                        if (freshRemoveBtn.hasAttribute('data-processing')) {
+                            return;
+                        }
+                        freshRemoveBtn.setAttribute('data-processing', 'true');
 
+                        const modal = document.getElementById('updateBrandModal');
+                        const form = modal ? document.getElementById('updateBrandModalForm') : null;
 
-/**
- * 添加多個品牌
- * @param {Array} brands 品牌數組
- */
-function addMultipleBrands(brands) {
-    let addedCount = 0;
-    let skippedCount = 0;
+                        if (!confirm('Are you sure you want to remove this image?')) {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                            return;
+                        }
 
-    brands.forEach(brand => {
-        if (!isBrandExists(brand)) {
-            addBrandToList(brand, 'Available'); // 默認為 Available
-            addedCount++;
-        } else {
-            skippedCount++;
-        }
-    });
+                        const imageInput = modal?.querySelector('#input_image');
+                        const previewContainer = modal?.querySelector('#image-preview');
+                        const imageUploadContent = modal?.querySelector('#imageUploadContent');
+                        const removeImageInput = modal?.querySelector('#remove_image');
 
-    // 顯示結果
-    if (addedCount > 0 && skippedCount === 0) {
-        showAlert(`Successfully added ${addedCount} brands`, 'success');
-    } else if (addedCount > 0 && skippedCount > 0) {
-        showAlert(`Added ${addedCount} brands, ${skippedCount} already existed`, 'info');
-    } else if (skippedCount > 0) {
-        showAlert('All brands already exist in the list', 'warning');
-    }
+                        if (imageInput && previewContainer && form) {
+                            imageInput.value = '';
 
-    // 更新UI
-    updateUI();
+                            if (removeImageInput) {
+                                removeImageInput.value = '1';
+                            }
 
-    // 如果有添加品牌，顯示右邊的表格
-    if (addedCount > 0) {
-        showBrandValuesArea();
-    }
-}
+                            const previewImg = previewContainer.querySelector('#preview-image') || previewContainer.querySelector('#img-preview');
+                            if (previewImg) {
+                                previewImg.remove();
+                            }
 
-/**
- * 添加品牌到列表
- * @param {string} brandName 品牌名稱
- * @param {string} brandStatus 狀態（默認為 Available）
- * @param {File} brandImageFile 圖片文件
- */
-function addBrandToList(brandName, brandStatus = 'Available', brandImageFile = null) {
-    // 檢查是否為重複項
-    if (isBrandExists(brandName)) {
-        console.log('Duplicate detected in batch add, skipping:', brandName);
-        return; // 跳過重複項，不添加到列表
-    }
+                            const originalContent = previewContainer.getAttribute('data-original-content');
+                            if (originalContent) {
+                                previewContainer.innerHTML = originalContent;
 
-    // 添加到 brandList 數組
-    brandList.push({
-        brandName: brandName,
-        brandStatus: brandStatus,
-        brandImageFile: brandImageFile
-    });
+                                const restoredPreviewImg = previewContainer.querySelector('#preview-image');
+                                if (restoredPreviewImg) {
+                                    restoredPreviewImg.classList.add('d-none');
+                                }
 
-    // 重新渲染整個列表
-    updateBrandList();
-    updateUI();
+                                const restoredRemoveBtn = previewContainer.querySelector('#removeImage');
+                                if (restoredRemoveBtn) {
+                                    restoredRemoveBtn.classList.add('d-none');
+                                }
 
-    // 顯示品牌值區域
-    showBrandValuesArea();
-}
+                                const restoredImageUploadContent = previewContainer.querySelector('#imageUploadContent');
+                                if (restoredImageUploadContent) {
+                                    restoredImageUploadContent.classList.remove('d-none');
+                                    restoredImageUploadContent.style.display = '';
+                                }
+                            } else {
+                                if (imageUploadContent) {
+                                    imageUploadContent.classList.remove('d-none');
+                                    imageUploadContent.style.display = '';
+                                }
+                            }
 
-// =============================================================================
-// Update 頁面功能 (Update Page Functions)
-// =============================================================================
+                            freshRemoveBtn.classList.add('d-none');
+                            freshRemoveBtn.removeAttribute('data-processing');
 
-/**
- * Update 頁面表單提交處理
- * @param {HTMLFormElement} form 表單元素
- */
-function handleUpdateFormSubmit(form) {
-    // 驗證表單
-    if (!validateUpdateForm()) {
-        return;
-    }
-
-    // 顯示加載狀態
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
-    submitBtn.disabled = true;
-
-    // 準備表單數據
-    const formData = new FormData(form);
-
-    // 提交數據
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            const message = data.message || 'Brand updated successfully';
-            showAlert(message, 'success');
-
-            // 延遲重定向到列表頁面
-            setTimeout(() => {
-                window.location.href = window.brandManagementRoute || '/admin/management-tool/brand/index';
-            }, 2000);
-        } else {
-            isBrandUpdating = false; // 錯誤時重置標誌
-            showAlert(data.message || 'Failed to update brand', 'error');
-        }
-    })
-    .catch(error => {
-        isBrandUpdating = false; // 錯誤時重置標誌
-        showAlert('Failed to update brand', 'error');
-    })
-    .finally(() => {
-        // 恢復按鈕狀態
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
-
-/**
- * Update 頁面表單驗證
- * @returns {boolean} 驗證結果
- */
-function validateUpdateForm() {
-    const brandNameInput = document.getElementById('brand_name');
-
-    // 驗證品牌名稱
-    if (!brandNameInput.value.trim()) {
-        showAlert('Please enter brand name', 'warning');
-        brandNameInput.focus();
-        return false;
-    }
-
-    // 驗證狀態選擇
-    const selectedStatus = document.querySelector('input[name="brand_status"]:checked');
-    if (!selectedStatus) {
-        showAlert('Please select brand status', 'warning');
-        return false;
-    }
-
-    return true;
-}
-
-// 图片处理函数已移至 image-system.js
-
-// =============================================================================
-// 圖片預覽功能 (Image Preview Functions)
-// =============================================================================
-
-/**
- * 圖片預覽函數 - 用於模態框顯示
- * @param {string} src 圖片源
- */
-
-// resetImageWithoutMessage 函数已移至 image-system.js
-
-// =============================================================================
-// 表單驗證和提交 (Form Validation & Submission)
-// =============================================================================
-
-/**
- * 驗證品牌數據
- * @returns {boolean} 驗證結果
- */
-function validateBrandData() {
-    // 檢查是否有重複的品牌名稱
-    const duplicates = [];
-    const seen = new Set();
-    for (const item of brandList) {
-        const combination = item.brandName.toLowerCase();
-        if (seen.has(combination)) {
-            duplicates.push(item.brandName);
-        } else {
-            seen.add(combination);
-        }
-    }
-
-    if (duplicates.length > 0) {
-        showAlert('Duplicate brand names found. Please remove duplicates before submitting.', 'error');
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * 提交品牌表單
- */
-function submitBrandForm() {
-    // 調試信息：檢查要提交的數據
-    console.log('Submitting brand data:', brandList);
-
-    // 準備提交數據
-    const formData = new FormData();
-    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-
-    // 添加品牌數據
-    brandList.forEach((item, index) => {
-        // 調試信息：檢查每個品牌的狀態
-        console.log(`Brand ${index + 1}:`, { brandName: item.brandName, brandStatus: item.brandStatus });
-
-        // 添加品牌文本數據
-        formData.append(`brands[${index}][brandName]`, item.brandName);
-        formData.append(`brands[${index}][brandStatus]`, item.brandStatus);
-
-        // 添加圖片文件（如果有）
-        if (item.brandImageFile) {
-            formData.append(`images[${index}]`, item.brandImageFile);
-        }
-    });
-
-    // 提交數據
-    fetch(window.createBrandUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message || 'Brands created successfully', 'success');
-
-            // 延遲重定向到dashboard，讓用戶看到成功消息
-            setTimeout(() => {
-                window.location.href = window.brandManagementRoute || '/admin/management-tool/brand/index';
-            }, 2000);
-        } else {
-            showAlert(data.message || 'Failed to create brands', 'error');
-        }
-    })
-    .catch(error => {
-        showAlert('Some brands failed to create', 'error');
-    });
-}
-
-// =============================================================================
-// 頁面初始化功能 (Page Initialization Functions)
-// =============================================================================
-
-/**
- * 綁定品牌事件
- */
-function bindBrandEvents() {
-    // Create 頁面事件綁定
-    bindBrandCreateEvents();
-
-    // 使用統一的圖片處理模組（避免重複綁定）
-    if (typeof window.ImageSystem !== 'undefined' && !window.ImageSystem._brandEventsBound) {
-        window.ImageSystem.bindModuleImageEvents('brand');
-        window.ImageSystem._brandEventsBound = true; // 標記已綁定
-    } else if (typeof window.ImageSystem === 'undefined') {
-        console.warn('ImageSystem not available, image functionality may not work properly');
-    }
-
-    // 表單提交事件監聽器
-    const brandForm = document.getElementById('brandForm');
-    if (brandForm) {
-        brandForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // 檢查是否有品牌
-            if (brandList.length === 0) {
-                showAlert('Please add at least one brand', 'warning');
-                return;
+                            if (typeof window.showAlert === 'function') {
+                                window.showAlert('Image removed successfully', 'success');
+                            }
+                        } else {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                        }
+                    });
+                }
             }
-
-            // 驗證所有品牌數據
-            if (!validateBrandData()) {
-                return;
-            }
-
-            // 提交表單
-            submitBrandForm();
-        });
-    }
-}
-
-/**
- * 綁定品牌創建頁面事件
- */
-function bindBrandCreateEvents() {
-    // 品牌名稱輸入框回車事件
-    const brandNameInput = document.getElementById('brand_name');
-    if (brandNameInput) {
-        brandNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addBrand();
-            }
-        });
-    }
-
-    // 添加品牌按鈕
-    const addBrandBtn = document.getElementById('addBrand');
-    if (addBrandBtn) {
-        addBrandBtn.addEventListener('click', addBrand);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 事件委托：刪除品牌按鈕
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            removeBrand(index);
-        }
-    });
-
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortBrands');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-}
-
-/**
- * Update 頁面狀態卡片初始化
- */
-function initializeUpdateStatusCards() {
-    // 狀態卡片選擇
-    const statusCards = document.querySelectorAll('.status-card');
-    statusCards.forEach(card => {
-        card.addEventListener('click', function() {
-            selectUpdateStatusCard(this);
-        });
-    });
-}
-
-/**
- * Update 頁面狀態卡片選擇
- * @param {HTMLElement} card 狀態卡片元素
- */
-function selectUpdateStatusCard(card) {
-    // 移除所有選中狀態
-    const allCards = document.querySelectorAll('.status-card');
-    allCards.forEach(c => c.classList.remove('selected'));
-
-    // 添加選中狀態到當前卡片
-    card.classList.add('selected');
-
-    // 更新對應的單選按鈕
-    const radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-        radio.checked = true;
-    }
-}
-
-// 全局變量防止重複請求
-let isBrandUpdating = false;
-let brandUpdateFormBound = false;
-
-/**
- * 初始化品牌更新頁面
- */
-function initializeBrandUpdate() {
-    bindBrandEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!brandUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isBrandUpdating) return false;
-                isBrandUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            brandUpdateFormBound = true;
         }
     }
 
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
+    /**
+     * 設置更新彈窗中的圖片
+     */
+    setUpdateModalImage(imageUrl) {
+        const modal = document.getElementById('updateBrandModal');
+        if (!modal) return;
 
-    // Update 頁面圖片上傳區域點擊事件
-    const imagePreviewArea = document.getElementById('image-preview');
-    if (imagePreviewArea && updateImageInput) {
-        imagePreviewArea.addEventListener('click', function(e) {
-            // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.img-remove-btn')) {
-                return; // 不觸發文件選擇
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+
+        if (previewContainer && previewImg && imageUploadContent) {
+            previewImg.src = imageUrl;
+            previewImg.classList.remove('d-none');
+            previewImg.style.display = 'block';
+            imageUploadContent.classList.add('d-none');
+            imageUploadContent.style.display = 'none';
+
+            if (removeBtn) {
+                removeBtn.classList.remove('d-none');
             }
-            updateImageInput.click();
-        });
+        }
     }
 
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
+    /**
+     * 重置更新彈窗中的圖片
+     */
+    resetUpdateModalImage() {
+        const modal = document.getElementById('updateBrandModal');
+        if (!modal) return;
 
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image') || modal.querySelector('#img-preview');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+        const imageInput = modal.querySelector('#input_image');
+
         if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
+            if (previewImg) {
+                previewImg.classList.add('d-none');
+                previewImg.style.display = 'none';
+            }
+            if (imageUploadContent) {
+                imageUploadContent.classList.remove('d-none');
+                imageUploadContent.style.display = '';
+            }
+            if (removeBtn) {
+                removeBtn.classList.add('d-none');
+            }
+            if (imageInput) {
+                imageInput.value = '';
             }
         }
     }
 
-    // Update 頁面狀態卡片初始化
-    initializeUpdateStatusCards();
-}
+    /**
+     * 重置更新彈窗表單
+     */
+    resetUpdateModalForm() {
+        const form = document.getElementById('updateBrandModalForm');
+        if (form) {
+            form.reset();
+        }
 
-/**
- * 初始化品牌頁面
- * @param {Object} config 配置對象
- */
-function initializeBrandPage(config) {
-    bindBrandEvents();
+        this.resetUpdateModalImage();
 
-    if (config && config.events) {
-        // 綁定自定義事件
-        Object.keys(config.events).forEach(eventName => {
-            if (typeof config.events[eventName] === 'function') {
-                // 這裡可以根據需要綁定特定事件
-                console.log(`Custom event ${eventName} registered`);
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        $('#remove_image').val('0');
+    }
+
+    /**
+     * 提交更新彈窗中的Brand
+     */
+    submitUpdateModalBrand() {
+        const form = document.getElementById('updateBrandModalForm');
+        const brandId = form?.getAttribute('data-brand-id');
+        const brandNameInput = document.getElementById('update_brand_name');
+        const imageInput = document.getElementById('input_image');
+        const removeImageInput = document.getElementById('remove_image');
+        const submitBtn = $('#submitUpdateBrandModal');
+
+        if (!brandId) {
+            this.showAlert('Brand ID not found', 'error');
+            return;
+        }
+
+        const brandName = brandNameInput ? brandNameInput.value.trim() : '';
+        const brandStatus = form?.querySelector('input[name="brand_status"]:checked')?.value || 'Available';
+
+        let isValid = true;
+
+        if (!brandName) {
+            if (brandNameInput) {
+                brandNameInput.classList.add('is-invalid');
             }
+            isValid = false;
+        } else {
+            if (brandNameInput) {
+                brandNameInput.classList.remove('is-invalid');
+                brandNameInput.classList.add('is-valid');
+            }
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PUT');
+        formData.append('brand_name', brandName);
+        formData.append('brand_status', brandStatus);
+
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('brand_image', imageInput.files[0]);
+        }
+
+        if (removeImageInput && removeImageInput.value === '1') {
+            formData.append('remove_image', '1');
+        }
+
+        // 檢查是否有圖片相關的更改
+        const hasImageChange = (imageInput && imageInput.files && imageInput.files[0]) ||
+                               (removeImageInput && removeImageInput.value === '1');
+
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+        submitBtn.prop('disabled', true);
+
+        const updateUrl = window.updateBrandUrl.replace(':id', brandId);
+
+        fetch(updateUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update brand');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Brand updated successfully', 'success');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateBrandModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 如果有圖片更改，刷新整個頁面；否則只更新 DOM
+                if (hasImageChange) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片更改，重新載入當前頁面
+                    this.fetchBrands(this.currentPage);
+                }
+            } else {
+                this.showAlert(data.message || 'Failed to update brand', 'error');
+            }
+        })
+        .catch(error => {
+            let errorMessage = 'Failed to update brand';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
         });
     }
 }
@@ -1477,266 +1282,13 @@ function initializeBrandPage(config) {
 let brandDashboard;
 
 $(document).ready(function() {
-    // 檢查當前頁面是否是dashboard頁面（有table-body元素）
     if ($("#table-body").length > 0) {
         brandDashboard = new BrandDashboard();
+
+        // 導出方法到全局作用域
+        window.setBrandAvailable = (brandId) => brandDashboard.setAvailable(brandId);
+        window.setBrandUnavailable = (brandId) => brandDashboard.setUnavailable(brandId);
+        window.editBrand = (brandId) => brandDashboard.editBrand(brandId);
+        window.deleteBrand = (brandId) => brandDashboard.deleteBrand(brandId);
     }
 });
-
-// =============================================================================
-// 品牌操作功能 (Brand Operations)
-// =============================================================================
-
-/**
- * 處理品牌請求
- * @param {string} url 請求URL
- * @param {string} method HTTP方法
- * @param {Object} data 請求數據
- * @param {Object} options 選項
- */
-function handleBrandRequest(url, method, data, options = {}) {
-    const {
-        successMessage = 'Operation completed successfully',
-        errorMessage = 'Operation failed',
-        redirect = null,
-        onSuccess = null,
-        onError = null
-    } = options;
-
-    const requestOptions = {
-        method: method,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    };
-
-    // 添加數據到請求
-    if (data) {
-        if (data instanceof FormData) {
-            requestOptions.body = data;
-        } else {
-            requestOptions.headers['Content-Type'] = 'application/json';
-            requestOptions.body = JSON.stringify(data);
-        }
-    }
-
-    fetch(url, requestOptions)
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message || successMessage, 'success');
-
-                if (onSuccess) {
-                    onSuccess(data);
-                }
-
-                if (redirect) {
-                    setTimeout(() => {
-                        window.location.href = redirect;
-                    }, 2000);
-                }
-            } else {
-                showAlert(data.message || errorMessage, 'error');
-                if (onError) {
-                    onError(data);
-                }
-            }
-        })
-        .catch(error => {
-            showAlert('Error: ' + error.message, 'error');
-            if (onError) {
-                onError(error);
-            }
-        });
-}
-
-/**
- * 創建品牌
- * @param {Object} brandData 品牌數據
- * @param {Object} options 選項
- */
-function createBrand(brandData, options = {}) {
-    const url = options.url || window.createBrandUrl;
-    const method = 'POST';
-
-    handleBrandRequest(url, method, brandData, {
-        successMessage: 'Brand created successfully',
-        errorMessage: 'Failed to create brand',
-        redirect: window.brandManagementRoute,
-        ...options
-    });
-}
-
-/**
- * 更新品牌
- * @param {number} brandId 品牌ID
- * @param {Object} brandData 品牌數據
- * @param {Object} options 選項
- */
-function updateBrand(brandId, brandData, options = {}) {
-    const url = (options.url || window.updateBrandUrl).replace(':id', brandId);
-    const method = 'POST';
-
-    handleBrandRequest(url, method, brandData, {
-        successMessage: 'Brand updated successfully',
-        errorMessage: 'Failed to update brand',
-        redirect: window.brandManagementRoute,
-        ...options
-    });
-}
-
-/**
- * 刪除品牌
- * @param {number} brandId 品牌ID
- * @param {Object} options 選項
- */
-function deleteBrand(brandId, options = {}) {
-    const url = (options.url || window.deleteBrandUrl).replace(':id', brandId);
-    const method = 'DELETE';
-
-    if (!confirm('Are you sure you want to delete this brand?')) {
-        return;
-    }
-
-    handleBrandRequest(url, method, null, {
-        successMessage: 'Brand deleted successfully',
-        errorMessage: 'Failed to delete brand',
-        redirect: null,
-        onSuccess: () => {
-            // 重新加載頁面或刷新數據
-            if (window.brandDashboard && window.brandDashboard.fetchBrands) {
-                window.brandDashboard.fetchBrands();
-            } else {
-                window.location.reload();
-            }
-        },
-        ...options
-    });
-}
-
-/**
- * 設置品牌可用
- * @param {number} brandId 品牌ID
- * @param {Object} options 選項
- */
-function setBrandAvailable(brandId, options = {}) {
-    const url = (options.url || window.availableBrandUrl).replace(':id', brandId);
-    const method = 'PATCH';
-
-    if (!confirm('Are you sure you want to activate this brand?')) {
-        return;
-    }
-
-    handleBrandRequest(url, method, null, {
-        successMessage: 'Brand activated successfully',
-        errorMessage: 'Failed to activate brand',
-        redirect: null,
-        onSuccess: () => {
-            if (window.brandDashboard && window.brandDashboard.fetchBrands) {
-                window.brandDashboard.fetchBrands();
-            } else {
-                window.location.reload();
-            }
-        },
-        ...options
-    });
-}
-
-/**
- * 設置品牌不可用
- * @param {number} brandId 品牌ID
- * @param {Object} options 選項
- */
-function setBrandUnavailable(brandId, options = {}) {
-    const url = (options.url || window.unavailableBrandUrl).replace(':id', brandId);
-    const method = 'PATCH';
-
-    if (!confirm('Are you sure you want to deactivate this brand?')) {
-        return;
-    }
-
-    handleBrandRequest(url, method, null, {
-        successMessage: 'Brand deactivated successfully',
-        errorMessage: 'Failed to deactivate brand',
-        redirect: null,
-        onSuccess: () => {
-            if (window.brandDashboard && window.brandDashboard.fetchBrands) {
-                window.brandDashboard.fetchBrands();
-            } else {
-                window.location.reload();
-            }
-        },
-        ...options
-    });
-}
-
-// =============================================================================
-// DOM 內容加載完成後的事件綁定 (DOM Content Loaded Event Binding)
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化品牌事件（包括圖片上傳功能）
-    bindBrandEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!brandUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isBrandUpdating) return false;
-                isBrandUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            brandUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
-
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
-            }
-        }
-    }
-
-    // Update 頁面狀態卡片初始化
-    initializeUpdateStatusCards();
-});
-
-// =============================================================================
-// 全局函數導出 (Global Function Exports)
-// =============================================================================
-
-// 導出主要函數到全局作用域
-window.addBrand = addBrand;
-window.removeBrand = removeBrand;
-window.clearForm = clearForm;
-window.toggleBrandStatus = toggleBrandStatus;
-window.setBrandAvailable = setBrandAvailable;
-window.setBrandUnavailable = setBrandUnavailable;
-window.updateBrandStatus = updateBrandStatus;
-window.viewBrandDetails = viewBrandDetails;
-window.handleRemoveImageButton = handleRemoveImageButton;
-window.removeUpdateImage = removeUpdateImage;

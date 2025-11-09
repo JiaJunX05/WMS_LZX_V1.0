@@ -16,7 +16,7 @@ use App\Models\User;
  * 处理密码重置相关功能
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class ResetPasswordController extends Controller
 {

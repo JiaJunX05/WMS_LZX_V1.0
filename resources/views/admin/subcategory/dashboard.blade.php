@@ -11,29 +11,33 @@
 {{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 {{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.subcategory-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.subcategory.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.subcategory-metric-cards')
+    @include('admin.subcategory.components.metric-cards')
 
     {{-- 搜索筛选区域 --}}
-    @include('components.search-filters.subcategory-search-filters')
+    @include('admin.subcategory.components.search-filters')
 
     {{-- 子分类列表表格 --}}
-    @include('components.data-tables.subcategory-data-tables')
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.subcategory-empty-list')
+    @include('admin.subcategory.components.data-table')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.subcategory-pagination-nav')
+    @include('admin.subcategory.components.pagination-nav')
 </div>
+
+    {{-- Create Subcategory 弹窗模态框 --}}
+    @include('admin.subcategory.create-model')
+
+    {{-- Update Subcategory 弹窗模态框 --}}
+    @include('admin.subcategory.update-model')
 
 @endsection
 
@@ -42,7 +46,9 @@
 <script>
     // 设置子分类管理相关URL
     window.subcategoryManagementRoute = "{{ route('admin.subcategory.index') }}";
-    window.editSubcategoryUrl = "{{ route('admin.subcategory.edit', ['id' => ':id']) }}";
+    window.createSubcategoryUrl = "{{ route('admin.subcategory.store') }}";
+    window.updateSubcategoryUrl = "{{ route('admin.subcategory.update', ['id' => ':id']) }}";
+    window.editSubcategoryUrl = "{{ route('admin.subcategory.edit', ':id') }}";
     window.deleteSubcategoryUrl = "{{ route('admin.subcategory.destroy', ['id' => ':id']) }}";
     window.availableSubcategoryUrl = "{{ route('admin.subcategory.available', ['id' => ':id']) }}";
     window.unavailableSubcategoryUrl = "{{ route('admin.subcategory.unavailable', ['id' => ':id']) }}";
@@ -54,5 +60,6 @@
 
 {{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
+<script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/subcategory-management.js') }}"></script>
 @endsection

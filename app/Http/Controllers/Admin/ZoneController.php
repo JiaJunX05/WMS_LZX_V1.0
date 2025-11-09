@@ -10,52 +10,67 @@ use App\Exports\ZoneExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 
+/**
+ * 区域管理控制器
+ * Zone Management Controller
+ *
+ * 功能模块：
+ * - 区域列表展示：搜索、筛选、分页
+ * - 区域操作：创建、编辑、删除、状态管理
+ * - 图片管理：上传、更新、删除
+ * - 数据导出：Excel 导出功能
+ *
+ * @author WMS Team
+ * @version 3.0.0
+ */
 class ZoneController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_ZONES = 10;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 区域验证规则
+     */
     private const ZONE_RULES = [
         'zone_name' => 'required|string|max:255',
         'location' => 'required|string|max:255',
     ];
 
+    /**
+     * 区域图片验证规则
+     */
     private const ZONE_IMAGE_RULES = [
         'zone_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ];
 
-    /**
-     * Normalize zone data from frontend
-     */
-    private function normalizeZoneData(array $zoneData): array
-    {
-        // Convert camelCase to snake_case
-        if (isset($zoneData['zoneName']) && !isset($zoneData['zone_name'])) {
-            $zoneData['zone_name'] = $zoneData['zoneName'];
-        }
-        if (isset($zoneData['zoneStatus']) && !isset($zoneData['zone_status'])) {
-            $zoneData['zone_status'] = $zoneData['zoneStatus'];
-        }
-
-        return $zoneData;
-    }
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -70,7 +85,11 @@ class ZoneController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -84,11 +103,16 @@ class ZoneController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -97,12 +121,25 @@ class ZoneController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
+    /**
+     * 显示区域列表页面
+     * Display zone list page
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
     public function index(Request $request)
     {
         if ($request->ajax()) {
             try {
                 $query = Zone::query();
 
+                // 搜索功能
                 if ($request->has('search') && $request->search) {
                     $search = $request->search;
                     $query->where(function($q) use ($search) {
@@ -111,6 +148,7 @@ class ZoneController extends Controller
                     });
                 }
 
+                // 状态筛选
                 if ($request->has('status_filter') && $request->status_filter) {
                     $query->where('zone_status', $request->status_filter);
                 }
@@ -138,30 +176,15 @@ class ZoneController extends Controller
         return view('admin.zone.dashboard');
     }
 
-    public function create()
-    {
-        return view('admin.zone.create');
-    }
-
     /**
      * 存储新区域
+     * Store new zone
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        // 与 CategoryController 的实现保持一致：有数组走批量，否则走单个
-        if ($request->has('zones') && is_array($request->input('zones'))) {
-            return $this->storeMultipleZones($request);
-        }
-
-        return $this->storeSingleZone($request);
-    }
-
-    /**
-     * 单个存储区域
-     */
-    private function storeSingleZone(Request $request)
-    {
-        // 校验
         $rules = array_merge(self::ZONE_RULES, self::ZONE_IMAGE_RULES);
         $rules['zone_name'] .= '|unique:zones,zone_name';
 
@@ -171,25 +194,26 @@ class ZoneController extends Controller
             $zoneData = [
                 'zone_name' => $request->input('zone_name') ?? $request->input('zoneName'),
                 'location' => $request->input('location'),
-                'zone_status' => 'Available', // 默认为 Available
+                'zone_status' => 'Available',
             ];
 
             // 处理文件上传
             if ($request->hasFile('zone_image')) {
-                // 文件上传（确保目录存在）
                 $image = $request->file('zone_image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $directory = public_path('assets/images/zones');
+
                 if (!file_exists($directory)) {
                     mkdir($directory, 0777, true);
                 }
+
                 $image->move($directory, $imageName);
                 $zoneData['zone_image'] = 'zones/' . $imageName;
             }
 
             $zone = Zone::create($zoneData);
 
-            $this->logOperation('created (single)', [
+            $this->logOperation('created', [
                 'zone_id' => $zone->id,
                 'zone_name' => $zoneData['zone_name']
             ]);
@@ -213,116 +237,55 @@ class ZoneController extends Controller
     }
 
     /**
-     * 批量存储区域（统一入口）
+     * 显示区域编辑表单（用于 Modal）
+     * Show zone edit form (for Modal)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    private function storeMultipleZones(Request $request)
+    public function showEditForm(Request $request, $id)
     {
-        // 仅处理批量数组
-        $zones = $request->input('zones', []);
+        try {
+            $zone = Zone::findOrFail($id);
 
-        // 限制批量创建数量
-        if (count($zones) > self::MAX_BULK_ZONES) {
-            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_ZONES . ' zones at once');
-        }
-
-        $createdZones = [];
-        $errors = [];
-
-        // 预处理：收集所有区域名称进行批量检查
-        $zoneNamesToCheck = [];
-        foreach ($zones as $index => $zoneData) {
-            $zoneData = $this->normalizeZoneData($zoneData);
-            if (isset($zoneData['zone_name'])) {
-                $zoneNamesToCheck[] = $zoneData['zone_name'];
-            }
-        }
-
-        // 批量检查区域名称是否已存在
-        $existingZoneNames = Zone::whereIn('zone_name', $zoneNamesToCheck)->pluck('zone_name')->toArray();
-
-        foreach ($zones as $index => $zoneData) {
-            // 先标准化数据，再进行验证
-            $zoneData = $this->normalizeZoneData($zoneData);
-
-            $validator = \Validator::make($zoneData, self::ZONE_RULES);
-
-            if ($validator->fails()) {
-                $errors[] = "Zone " . ($index + 1) . ": " . implode(', ', $validator->errors()->all());
-                continue;
-            }
-
-            // 检查区域名称是否已存在
-            if (in_array($zoneData['zone_name'], $existingZoneNames)) {
-                $errors[] = "Zone " . ($index + 1) . ": Zone name '{$zoneData['zone_name']}' already exists";
-                continue;
-            }
-
-            try {
-                $zoneRecord = [
-                    'zone_name' => $zoneData['zone_name'],
-                    'location' => $zoneData['location'],
-                    'zone_status' => 'Available', // 默认为 Available
-                ];
-
-                // 处理图片上传 - 使用文件数组
-                $files = $request->file('images');
-                if (is_array($files) && isset($files[$index]) && $files[$index] && $files[$index]->isValid()) {
-                    $image = $files[$index];
-                    $directory = public_path('assets/images/zones');
-                    if (!file_exists($directory)) {
-                        mkdir($directory, 0777, true);
-                    }
-                    $imageName = time() . '_' . $index . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move($directory, $imageName);
-                    $zoneRecord['zone_image'] = 'zones/' . $imageName;
-                }
-
-                $zone = Zone::create($zoneRecord);
-                $createdZones[] = $zone;
-
-                $this->logOperation('created (batch)', [
-                    'zone_id' => $zone->id,
-                    'zone_name' => $zoneData['zone_name']
-                ]);
-            } catch (\Exception $e) {
-                $simplifiedError = $this->simplifyErrorMessage($e->getMessage());
-                $errorMessage = $simplifiedError ?: $e->getMessage();
-                $errors[] = "Zone " . ($index + 1) . ": " . $errorMessage;
-            }
-        }
-
-        if ($request->ajax()) {
-            if (count($errors) > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some zones failed to create',
-                    'errors' => $errors,
-                    'created_count' => count($createdZones)
-                ], 422);
-            } else {
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => count($createdZones) . ' zones created successfully',
-                    'data' => $createdZones
+                    'message' => 'Zone data fetched successfully',
+                    'data' => [
+                        'id' => $zone->id,
+                        'zone_name' => $zone->zone_name,
+                        'location' => $zone->location,
+                        'zone_status' => $zone->zone_status,
+                        'zone_image' => $zone->zone_image
+                    ]
                 ]);
             }
-        }
 
-        if (count($errors) > 0) {
-            return back()->withErrors(['error' => implode('; ', $errors)])
-                ->withInput();
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.storage_locations.zone.index');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load zone data: ' . $e->getMessage()
+                ], 404);
+            }
+            return redirect()->route('admin.storage_locations.zone.index')
+                ->with('error', 'Zone not found');
         }
-
-        return redirect()->route('admin.storage_locations.zone.index')
-            ->with('success', count($createdZones) . ' zones created successfully');
     }
 
-    public function edit($id)
-    {
-        $zone = Zone::findOrFail($id);
-        return view('admin.zone.update', compact('zone'));
-    }
-
+    /**
+     * 更新区域信息
+     * Update zone information
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, $id)
     {
         try {
@@ -400,6 +363,7 @@ class ZoneController extends Controller
 
             if ($request->ajax()) {
                 $freshZone = $zone->fresh();
+
                 Log::info('AJAX response data', [
                     'success' => true,
                     'message' => $message,
@@ -438,6 +402,13 @@ class ZoneController extends Controller
         }
     }
 
+    /**
+     * 设置区域为可用状态
+     * Set zone to available status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function setAvailable($id)
     {
         try {
@@ -446,7 +417,6 @@ class ZoneController extends Controller
 
             $this->logOperation('set to available', ['zone_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -463,6 +433,13 @@ class ZoneController extends Controller
         }
     }
 
+    /**
+     * 设置区域为不可用状态
+     * Set zone to unavailable status
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function setUnavailable($id)
     {
         try {
@@ -471,7 +448,6 @@ class ZoneController extends Controller
 
             $this->logOperation('set to unavailable', ['zone_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -488,11 +464,19 @@ class ZoneController extends Controller
         }
     }
 
+    /**
+     * 删除区域
+     * Delete zone
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function destroy($id)
     {
         try {
             $zone = Zone::findOrFail($id);
 
+            // 删除区域图片
             if ($zone->zone_image && file_exists(public_path('assets/images/' . $zone->zone_image))) {
                 unlink(public_path('assets/images/' . $zone->zone_image));
             }
@@ -501,7 +485,6 @@ class ZoneController extends Controller
 
             $this->logOperation('deleted', ['zone_id' => $id]);
 
-            // 返回 JSON 响应
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -522,12 +505,16 @@ class ZoneController extends Controller
     }
 
     /**
-     * 導出區域數據到Excel
+     * 导出区域数据到 Excel
+     * Export zones data to Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function exportZones(Request $request)
     {
         try {
-            // 獲取篩選條件
+            // 获取筛选条件
             $filters = [
                 'search' => $request->get('search'),
                 'status_filter' => $request->get('status_filter'),
@@ -538,7 +525,7 @@ class ZoneController extends Controller
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
             $filename = "zones_export_{$timestamp}.xlsx";
 
-            // 使用Laravel Excel導出
+            // 使用 Laravel Excel 导出
             return Excel::download(new ZoneExport($filters), $filename);
 
         } catch (\Exception $e) {

@@ -1,21 +1,16 @@
 /**
  * Category Management JavaScript
- * 分類管理統一 JavaScript 文件
+ * 分類管理統一交互邏輯
  *
  * 功能模塊：
- * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作
- * - Create 頁面：批量創建、表單驗證、狀態管理
- * - Update 頁面：編輯更新、圖片處理、表單提交
- * - 通用功能：API 請求、UI 更新、事件綁定
+ * - Dashboard 頁面：搜索、篩選、分頁、CRUD 操作、狀態切換
+ * - Create Modal：批量創建、表單驗證、狀態管理
+ * - Update Modal：編輯更新、表單提交
+ * - 通用功能：API 請求、UI 更新、事件綁定、工具函數
+ *
+ * @author WMS Team
+ * @version 3.0.0
  */
-
-// =============================================================================
-// 全局變量和配置 (Global Variables and Configuration)
-// =============================================================================
-
-// Category 列表數組（用於 Create 頁面）
-let categoryList = [];
-let isAscending = false; // 排序狀態：true = 升序，false = 降序
 
 // =============================================================================
 // Category Dashboard 類 (Category Dashboard Class)
@@ -105,6 +100,12 @@ class CategoryDashboard {
         $('#export-categories-btn').on('click', () => {
             this.exportSelectedCategories();
         });
+
+        // Add Category 彈窗事件
+        this.bindModalEvents();
+
+        // Update Category 彈窗事件
+        this.bindUpdateModalEvents();
     }
 
     // =============================================================================
@@ -233,12 +234,12 @@ class CategoryDashboard {
 
     createCategoryRow(category) {
         const statusMenuItem = category.category_status === 'Unavailable'
-            ? `<a class="dropdown-item" href="javascript:void(0)" onclick="categoryDashboard.setAvailable(${category.id})">
-                   <i class="bi bi-check-circle me-2"></i> Activate Category
-               </a>`
-            : `<a class="dropdown-item" href="javascript:void(0)" onclick="categoryDashboard.setUnavailable(${category.id})">
-                   <i class="bi bi-slash-circle me-2"></i> Deactivate Category
-               </a>`;
+            ? `<button type="button" class="dropdown-item" onclick="categoryDashboard.setAvailable(${category.id})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="categoryDashboard.setUnavailable(${category.id})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
 
         const actionButtons = `
             <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="categoryDashboard.editCategory(${category.id})">
@@ -253,16 +254,19 @@ class CategoryDashboard {
                         ${statusMenuItem}
                     </li>
                     <li>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="categoryDashboard.deleteCategory(${category.id})">
-                            <i class="bi bi-trash me-2"></i> Delete Category
-                        </a>
+                        <button type="button" class="dropdown-item text-danger" onclick="categoryDashboard.deleteCategory(${category.id})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
                     </li>
                 </ul>
             </div>
         `;
 
         return `
-            <tr>
+            <tr data-category-id="${category.id}"
+                data-category-name="${category.category_name || ''}"
+                data-category-status="${category.category_status || 'Available'}"
+                data-category-image="${category.category_image || ''}">
                 <td class="ps-4">
                     <input class="category-checkbox form-check-input" type="checkbox" value="${category.id}" id="category-${category.id}">
                 </td>
@@ -293,7 +297,8 @@ class CategoryDashboard {
     }
 
     getStatusClass(status) {
-        return getCategoryStatusClass(status);
+        const statusMap = { 'Available': 'available', 'Unavailable': 'unavailable' };
+        return statusMap[status] || 'default';
     }
 
     showNoResults() {
@@ -351,12 +356,48 @@ class CategoryDashboard {
     // =============================================================================
 
     /**
-     * 編輯分類
+     * 編輯分類（打開更新彈窗）
      * @param {number} categoryId 分類ID
      */
     editCategory(categoryId) {
         const url = window.editCategoryUrl.replace(':id', categoryId);
-        window.location.href = url;
+
+        // 从表格行获取category数据（如果可用，用于快速填充）
+        const categoryRow = $(`tr[data-category-id="${categoryId}"]`);
+        if (categoryRow.length > 0) {
+            // 快速填充基本数据
+            const categoryData = {
+                id: categoryId,
+                category_name: categoryRow.attr('data-category-name') || '',
+                category_status: categoryRow.attr('data-category-status') || 'Available',
+                category_image: categoryRow.attr('data-category-image') || ''
+            };
+            this.openUpdateModal(categoryData);
+        }
+
+        // 从 API 获取完整category数据
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            success: (response) => {
+                if (response.success && response.data) {
+                    this.openUpdateModal(response.data);
+                } else {
+                    this.showAlert(response.message || 'Failed to load category data', 'error');
+                }
+            },
+            error: (xhr) => {
+                let errorMessage = 'Failed to load category data';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                this.showAlert(errorMessage, 'error');
+            }
+        });
     }
 
     /**
@@ -364,11 +405,107 @@ class CategoryDashboard {
      * @param {number} categoryId 分類ID
      */
     deleteCategory(categoryId) {
-        deleteCategory(categoryId, {
-            onSuccess: () => {
+        if (!confirm('Are you sure you want to delete this category?')) return;
+
+        fetch(window.deleteCategoryUrl.replace(':id', categoryId), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Category deleted successfully', 'success');
+
+                // 檢查當前頁面是否還有數據
+                const currentPageData = $('#table-body tr').not(':has(.text-center)').length;
+
+                // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
+                if (currentPageData <= 1 && this.currentPage > 1) {
+                    this.fetchCategories(1);
+                } else {
+                    // 重新載入當前頁面的分類列表
                 this.fetchCategories(this.currentPage);
             }
+            } else {
+                this.showAlert(data.message || 'Failed to delete category', 'error');
+            }
+        })
+        .catch(error => {
+            this.showAlert('Failed to delete category', 'error');
         });
+    }
+
+    /**
+     * 更新表格行的狀態顯示和 data 屬性
+     * @param {number} categoryId 分類ID
+     * @param {string} newStatus 新狀態 ('Available' 或 'Unavailable')
+     */
+    updateCategoryRowStatus(categoryId, newStatus) {
+        const categoryRow = $(`tr[data-category-id="${categoryId}"]`);
+        if (categoryRow.length === 0) return;
+
+        // 更新 data 屬性
+        categoryRow.attr('data-category-status', newStatus);
+
+        // 更新狀態菜單項（與 createCategoryRow 中的格式完全一致）
+        const statusMenuItem = newStatus === 'Unavailable'
+            ? `<button type="button" class="dropdown-item" onclick="categoryDashboard.setAvailable(${categoryId})">
+                   <i class="bi bi-check-circle me-2"></i> Activate
+               </button>`
+            : `<button type="button" class="dropdown-item" onclick="categoryDashboard.setUnavailable(${categoryId})">
+                   <i class="bi bi-slash-circle me-2"></i> Deactivate
+               </button>`;
+
+        // 更新操作按鈕區域（與 createCategoryRow 中的格式完全一致）
+        const actionButtons = `
+            <button class="btn btn-sm btn-outline-primary me-1" title="Edit" onclick="categoryDashboard.editCategory(${categoryId})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        ${statusMenuItem}
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item text-danger" onclick="categoryDashboard.deleteCategory(${categoryId})">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        `;
+
+        // 更新操作按鈕列
+        const actionsCell = categoryRow.find('td:last-child');
+        actionsCell.html(actionButtons);
+
+        // 更新狀態標籤顯示（與 createCategoryRow 中的格式完全一致）
+        const statusBadge = newStatus === 'Available'
+            ? `<span class="badge bg-success px-3 py-2">
+                <i class="bi bi-check-circle me-1"></i>${newStatus}
+            </span>`
+            : `<span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-x-circle me-1"></i>${newStatus}
+            </span>`;
+
+        // 更新狀態列顯示
+        const statusCell = categoryRow.find('td').eq(-2); // 倒數第二列是狀態列
+        if (statusCell.length > 0) {
+            statusCell.html(statusBadge);
+        }
     }
 
     /**
@@ -376,10 +513,34 @@ class CategoryDashboard {
      * @param {number} categoryId 分類ID
      */
     setAvailable(categoryId) {
-        setCategoryAvailable(categoryId, {
-            onSuccess: () => {
-                this.fetchCategories(this.currentPage);
+        if (!confirm('Are you sure you want to activate this category?')) return;
+
+        fetch(window.availableCategoryUrl.replace(':id', categoryId), {
+            method: 'PATCH',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
             }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Category has been set to available status', 'success');
+                // 更新 DOM 而不是刷新頁面
+                this.updateCategoryRowStatus(categoryId, 'Available');
+            } else {
+                this.showAlert(data.message || 'Failed to set category available', 'error');
+            }
+        })
+        .catch(error => {
+            this.showAlert('Failed to set category available', 'error');
         });
     }
 
@@ -388,10 +549,34 @@ class CategoryDashboard {
      * @param {number} categoryId 分類ID
      */
     setUnavailable(categoryId) {
-        setCategoryUnavailable(categoryId, {
-            onSuccess: () => {
-                this.fetchCategories(this.currentPage);
+        if (!confirm('Are you sure you want to deactivate this category?')) return;
+
+        fetch(window.unavailableCategoryUrl.replace(':id', categoryId), {
+            method: 'PATCH',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
             }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                this.showAlert(data.message || 'Category has been set to unavailable status', 'success');
+                // 更新 DOM 而不是刷新頁面
+                this.updateCategoryRowStatus(categoryId, 'Unavailable');
+            } else {
+                this.showAlert(data.message || 'Failed to set category unavailable', 'error');
+            }
+        })
+        .catch(error => {
+            this.showAlert('Failed to set category unavailable', 'error');
         });
     }
 
@@ -506,477 +691,153 @@ class CategoryDashboard {
                 </div>
             `;
             alertContainer.insertAdjacentHTML('afterbegin', alertHtml);
-        }
     }
 }
 
 // =============================================================================
-// Category Create 頁面功能 (Category Create Page Functions)
+    // Add Category 彈窗模塊 (Add Category Modal Module)
 // =============================================================================
 
 /**
- * 綁定 Category Create 頁面事件
- */
-function bindCategoryCreateEvents() {
-    // 分類名稱輸入框回車事件
-    const categoryNameInput = document.getElementById('category_name');
-    if (categoryNameInput) {
-        categoryNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addCategory();
+     * 綁定彈窗事件
+     */
+    bindModalEvents() {
+        // 彈窗打開時重置表單並初始化圖片處理
+        $('#createCategoryModal').on('show.bs.modal', () => {
+            this.resetModalForm();
+            this.initModalImageSystem();
+        });
+
+        // 彈窗完全顯示後設置焦點
+        $('#createCategoryModal').on('shown.bs.modal', () => {
+            const categoryNameInput = document.getElementById('category_name');
+            if (categoryNameInput) {
+                categoryNameInput.focus();
+            }
+        });
+
+        // 彈窗關閉時清理
+        $('#createCategoryModal').on('hidden.bs.modal', () => {
+            this.resetModalForm();
+        });
+
+        // 提交按鈕事件
+        $('#submitCreateCategoryModal').on('click', () => {
+            this.submitModalCategory();
+        });
+
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#createCategoryModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'category_image') {
+                    return;
+                }
+
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button') {
+                    e.preventDefault();
+                    // category 只有一個輸入框，直接提交
+                    this.submitModalCategory();
+                }
             }
         });
     }
 
-    // 添加分類按鈕
-    const addCategoryBtn = document.getElementById('addCategory');
-    if (addCategoryBtn) {
-        addCategoryBtn.addEventListener('click', addCategory);
-    }
+/**
+     * 初始化彈窗中的圖片處理系統
+     */
+    initModalImageSystem() {
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('createCategoryModal');
+            if (!modal) return;
 
+            const imageInput = modal.querySelector('#category_image');
+            const imageUploadArea = modal.querySelector('#imageUploadArea');
 
-    // 排序按鈕
-    const sortBtn = document.getElementById('sortCategories');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleSortOrder);
-    }
-
-    // 清除表單按鈕
-    const clearFormBtn = document.getElementById('clearForm');
-    if (clearFormBtn) {
-        clearFormBtn.addEventListener('click', clearForm);
-    }
-
-    // 事件委托：刪除分類按鈕
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button[data-index]')) {
-            const button = e.target.closest('button[data-index]');
-            const index = parseInt(button.getAttribute('data-index'));
-            removeCategory(index);
+            if (imageInput && imageUploadArea) {
+                window.ImageSystem.bindImageUploadEvents({
+                    createImageInputId: 'category_image',
+                    createImageUploadAreaId: 'imageUploadArea',
+                    createPreviewImageId: 'img-preview',
+                    createPreviewIconId: 'preview-icon',
+                    createImageUploadContentId: 'imageUploadContent'
+                });
+            }
         }
-    });
+    }
+
+    /**
+     * 重置彈窗表單
+     */
+    resetModalForm() {
+        const form = document.getElementById('createCategoryModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        if (typeof window.ImageSystem !== 'undefined' && window.ImageSystem.resetImage) {
+            window.ImageSystem.resetImage('imageUploadArea', {
+                imageInputId: 'category_image',
+                previewImageId: 'img-preview',
+                previewIconId: 'preview-icon',
+                imageUploadContentId: 'imageUploadContent'
+            });
+        }
+
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+    }
 }
 
 /**
- * 添加分類
- */
-function addCategory() {
-    const categoryNameInput = document.getElementById('category_name');
+     * 提交彈窗中的Category
+     */
+    submitModalCategory() {
+        const categoryNameInput = document.getElementById('category_name');
+        const imageInput = document.getElementById('category_image');
+        const submitBtn = $('#submitCreateCategoryModal');
 
-    const categoryName = categoryNameInput.value.trim();
+        const categoryName = categoryNameInput ? categoryNameInput.value.trim() : '';
 
-    // 驗證輸入
-    if (!categoryName) {
-        showAlert('Please enter category name', 'warning');
-        categoryNameInput.focus();
-        return;
-    }
+        let isValid = true;
 
-    // 檢查是否已存在
-    if (isCategoryExists(categoryList, categoryName)) {
-        showAlert(`Category name "${categoryName}" already exists in the list`, 'error');
-        highlightExistingCategory(categoryName);
-        categoryNameInput.focus();
-        return;
-    }
-
-    // 獲取當前圖片文件
-    const imageInput = document.getElementById('category_image');
-    let categoryImageFile = null;
-    if (imageInput && imageInput.files && imageInput.files[0]) {
-        categoryImageFile = imageInput.files[0];
-    }
-
-    // 添加到分類數組（狀態默認為 Available）
-    addCategoryToArray(categoryName, 'Available', categoryImageFile);
-
-    // 顯示成功提示
-    showAlert('Category added successfully', 'success');
-}
-
-/**
- * 添加分類到數組
- * @param {string} categoryName 分類名稱
- * @param {string} categoryStatus 分類狀態
- * @param {File} categoryImageFile 分類圖片文件
- */
-function addCategoryToArray(categoryName, categoryStatus, categoryImageFile) {
-    // 調試信息：檢查傳入的數據
-    console.log('addCategoryToArray called with:', { categoryName, categoryStatus, categoryImageFile });
-
-    // 添加分類到數組
-    const categoryData = {
-        categoryName: categoryName,
-        categoryStatus: categoryStatus,
-        categoryImageFile: categoryImageFile // 存儲文件對象而不是base64
-    };
-
-    categoryList.push(categoryData);
-
-    // 更新UI
-    updateCategoryList();
-    updateUI();
-
-    // 顯示右邊的分類表格
-    showCategoryValuesArea();
-
-    // 清空輸入框
-    const categoryNameInput = document.getElementById('category_name');
+        if (!categoryName) {
     if (categoryNameInput) {
-        categoryNameInput.value = '';
-    }
-
-    // 清空圖片（不顯示消息）
-    resetImageWithoutMessage('category');
-
-    // 調試信息：檢查添加後的狀態選擇
-    console.log('After adding category, current status selection:', categoryStatus);
-}
-
-/**
- * 移除分類
- * @param {number} index 索引
- */
-function removeCategory(index) {
-    console.log('Removing category at index:', index);
-    console.log('Category list before removal:', categoryList);
-
-    // 確認機制
-    if (!confirm('Are you sure you want to remove this category?')) {
-        return;
-    }
-
-    if (index >= 0 && index < categoryList.length) {
-        categoryList.splice(index, 1);
-        console.log('Category list after removal:', categoryList);
-        updateCategoryList();
-        updateUI();
-
-        // 顯示成功移除的 alert
-        showAlert('Category removed successfully', 'success');
-    } else {
-        console.error('Invalid index:', index);
-        showAlert('Failed to remove category', 'error');
-    }
-}
-
-/**
- * 更新分類列表顯示
- */
-function updateCategoryList() {
-    const container = document.getElementById('categoryValuesList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    categoryList.forEach((item, index) => {
-        // 檢查是否為重複項
-        const isDuplicate = isCategoryExists(categoryList, item.categoryName) &&
-            categoryList.filter(i => i.categoryName.toLowerCase() === item.categoryName.toLowerCase()).length > 1;
-
-        // 根據是否為重複項設置不同的樣式
-        const baseClasses = 'value-item d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded border fade-in';
-        const duplicateClasses = isDuplicate ? 'border-warning' : '';
-
-        const categoryItem = document.createElement('div');
-        categoryItem.className = `${baseClasses} ${duplicateClasses}`;
-
-        categoryItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge ${isDuplicate ? 'bg-warning text-dark' : 'bg-primary'} me-3">
-                    ${isDuplicate ? '⚠️' : (index + 1)}
-                </span>
-                <div class="me-3 flex-shrink-0">
-                    ${item.categoryImageFile ?
-                        `<img src="${URL.createObjectURL(item.categoryImageFile)}" class="img-thumbnail" style="width: 3.125rem; height: 3.125rem; object-fit: cover;" alt="Category Image">` :
-                        `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 3.125rem; height: 3.125rem;">
-                            <i class="bi bi-tags text-muted fs-5"></i>
-                        </div>`
-                    }
-                </div>
-                <div class="flex-grow-1 min-width-0">
-                    <div class="fw-bold text-dark mb-1 text-truncate">
-                        <i class="bi bi-tags me-2 text-primary"></i>${item.categoryName}
-                    </div>
-                    ${isDuplicate ? '<span class="badge bg-warning text-dark ms-2 mt-1">Duplicate</span>' : ''}
-                </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-index="${index}">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
-        `;
-
-        container.appendChild(categoryItem);
-    });
-}
-
-/**
- * 顯示分類值區域
- */
-function showCategoryValuesArea() {
-    // 隱藏初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.add('d-none');
-    }
-
-    // 顯示分類值區域
-    const categoryValuesArea = document.getElementById('categoryValuesArea');
-    if (categoryValuesArea) {
-        categoryValuesArea.classList.remove('d-none');
-    }
-
-    // 更新分類名稱顯示
-    updateCategoryNameDisplay();
-
-    // 顯示提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.remove('d-none');
-    }
-}
-
-/**
- * 隱藏所有區域
- */
-function hideAllAreas() {
-    // 隱藏分類值區域
-    const categoryValuesArea = document.getElementById('categoryValuesArea');
-    if (categoryValuesArea) {
-        categoryValuesArea.classList.add('d-none');
-    }
-
-    // 隱藏提交按鈕
-    const submitSection = document.getElementById('submitSection');
-    if (submitSection) {
-        submitSection.classList.add('d-none');
-    }
-
-    // 顯示初始消息
-    const initialMessage = document.getElementById('initial-message');
-    if (initialMessage) {
-        initialMessage.classList.remove('d-none');
-    }
-}
-
-/**
- * 清除表單
- */
-function clearForm() {
-    // 檢查是否有數據需要清除
-    if (categoryList.length === 0) {
-        showAlert('No data to clear', 'info');
-        return;
-    }
-
-    // 確認清除
-    if (!confirm('Are you sure you want to clear all categories?')) {
-        return;
-    }
-
-    // 清空數組
-    categoryList = [];
-
-    // 清空輸入框
-    const categoryNameInput = document.getElementById('category_name');
-    if (categoryNameInput) {
-        categoryNameInput.value = '';
-    }
-
-    // 更新UI
-    updateCategoryList();
-    updateUI();
-
-    // 顯示成功提示
-    showAlert('All categories cleared successfully', 'success');
-
-    // 隱藏所有區域
-    hideAllAreas();
-}
-
-/**
- * 更新UI
- */
-function updateUI() {
-    // 更新分類值計數
-    updateCategoryValuesCount();
-
-    // 更新分類範圍顯示
-    updateCategoryRangeDisplay();
-
-    // 更新分類名稱顯示
-    updateCategoryNameDisplay();
-
-    // 如果沒有分類，隱藏所有區域並顯示初始狀態
-    if (categoryList.length === 0) {
-        hideAllAreas();
-    }
-}
-
-/**
- * 更新分類值計數
- */
-function updateCategoryValuesCount() {
-    const count = categoryList.length;
-
-    // 更新右側計數徽章
-    const countBadge = document.getElementById('categoryValuesCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} categories`;
-    }
-}
-
-/**
- * 更新分類名稱顯示
- */
-function updateCategoryNameDisplay() {
-    const categoryNameSpan = document.getElementById('categoryName');
-    if (categoryNameSpan) {
-        if (categoryList.length > 0) {
-            // 顯示分類數量
-            categoryNameSpan.textContent = `- ${categoryList.length} categories`;
+                categoryNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
         } else {
-            categoryNameSpan.textContent = '';
+            if (categoryNameInput) {
+                categoryNameInput.classList.remove('is-invalid');
+                categoryNameInput.classList.add('is-valid');
+            }
         }
-    }
-}
 
-/**
- * 更新分類範圍顯示
- */
-function updateCategoryRangeDisplay() {
-    const categoryNames = categoryList.map(item => item.categoryName);
-
-    const selectedCategorySpan = document.getElementById('selectedCategory');
-    if (selectedCategorySpan) {
-        if (categoryNames.length === 0) {
-            selectedCategorySpan.textContent = 'None';
-        } else if (categoryNames.length === 1) {
-            selectedCategorySpan.textContent = categoryNames[0];
-        } else {
-            // 按字母順序排序
-            const sortedNames = categoryNames.sort();
-            const minCategory = sortedNames[0];
-            const maxCategory = sortedNames[sortedNames.length - 1];
-            selectedCategorySpan.textContent = `${minCategory} - ${maxCategory}`;
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+            return;
         }
-    }
-}
 
-
-/**
- * 切換排序順序
- */
-function toggleSortOrder() {
-    isAscending = !isAscending;
-    const sortIcon = document.getElementById('sortIcon');
-    const sortBtn = document.getElementById('sortCategories');
-
-    // 更新圖標
-    if (isAscending) {
-        sortIcon.className = 'bi bi-sort-up';
-        sortBtn.title = 'Sort ascending (A-Z)';
-    } else {
-        sortIcon.className = 'bi bi-sort-down';
-        sortBtn.title = 'Sort descending (Z-A)';
-    }
-
-    // 重新排序列表
-    sortCategoryValuesList();
-}
-
-/**
- * 排序分類值列表
- */
-function sortCategoryValuesList() {
-    const categoryValuesList = document.getElementById('categoryValuesList');
-    const items = Array.from(categoryValuesList.querySelectorAll('.value-item'));
-
-    if (items.length <= 1) return;
-
-    // 獲取分類名稱並排序
-    const categoryValues = items.map(item => ({
-        element: item,
-        value: item.querySelector('.fw-bold').textContent.trim()
-    }));
-
-    // 按字母順序排序
-    categoryValues.sort((a, b) => {
-        if (isAscending) {
-            return a.value.localeCompare(b.value);
-        } else {
-            return b.value.localeCompare(a.value);
-        }
-    });
-
-    // 重新排列DOM元素
-    categoryValues.forEach(({ element }) => {
-        categoryValuesList.appendChild(element);
-    });
-}
-
-
-/**
- * 添加分類到列表
- * @param {string} categoryName 分類名稱
- * @param {string} categoryStatus 分類狀態
- * @param {File} categoryImageFile 分類圖片文件
- */
-function addCategoryToList(categoryName, categoryStatus = 'Available', categoryImageFile = null) {
-    // 檢查是否為重複項
-    if (isCategoryExists(categoryList, categoryName)) {
-        console.log('Duplicate detected in batch add, skipping:', categoryName);
-        return; // 跳過重複項，不添加到列表
-    }
-
-    // 添加到 categoryList 數組
-    categoryList.push({
-        categoryName: categoryName,
-        categoryStatus: categoryStatus,
-        categoryImageFile: categoryImageFile
-    });
-
-    // 重新渲染整個列表
-    updateCategoryList();
-    updateUI();
-
-    // 顯示分類值區域
-    showCategoryValuesArea();
-}
-
-/**
- * 重置圖片（不顯示消息）
- */
-// resetImageWithoutMessage 函数已移至 image-system.js
-
-/**
- * 提交分類表單
- */
-function submitCategoryForm() {
-    // 調試信息：檢查要提交的數據
-    console.log('Submitting category data:', categoryList);
-
-    // 準備提交數據
     const formData = new FormData();
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('category_name', categoryName);
 
-    // 添加分類數據
-    categoryList.forEach((item, index) => {
-        // 調試信息：檢查每個分類的狀態
-        console.log(`Category ${index + 1}:`, { categoryName: item.categoryName, categoryStatus: item.categoryStatus });
-
-        // 添加分類文本數據
-        formData.append(`categories[${index}][categoryName]`, item.categoryName);
-        formData.append(`categories[${index}][categoryStatus]`, item.categoryStatus);
-
-        // 添加圖片文件（如果有）
-        if (item.categoryImageFile) {
-            formData.append(`images[${index}]`, item.categoryImageFile);
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('category_image', imageInput.files[0]);
         }
-    });
 
-    // 提交數據
+        // 檢查是否有圖片
+        const hasImage = imageInput && imageInput.files && imageInput.files[0];
+
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Creating...');
+        submitBtn.prop('disabled', true);
+
     fetch(window.createCategoryUrl, {
         method: 'POST',
         body: formData,
@@ -986,668 +847,459 @@ function submitCategoryForm() {
     })
     .then(response => {
         if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to create category');
             });
         }
         return response.json();
     })
     .then(data => {
         if (data.success) {
-            showAlert(data.message || 'Categories created successfully', 'success');
+                this.showAlert(data.message || 'Category created successfully', 'success');
 
-            // 延遲重定向到dashboard，讓用戶看到成功消息
-            setTimeout(() => {
-                window.location.href = window.categoryManagementRoute || '/admin/category-mapping/category/index';
-            }, 2000);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createCategoryModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 如果有圖片，刷新整個頁面；否則只更新 DOM
+                if (hasImage) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片，重新載入當前頁面以顯示新記錄
+                    this.fetchCategories(this.currentPage);
+                }
         } else {
-            showAlert(data.message || 'Failed to create categories', 'error');
+                this.showAlert(data.message || 'Failed to create category', 'error');
         }
     })
     .catch(error => {
-        showAlert('Some categories failed to create', 'error');
-    });
-}
-
-// =============================================================================
-// Category Update 頁面功能 (Category Update Page Functions)
-// =============================================================================
-
-/**
- * Update 頁面表單提交處理
- * @param {HTMLFormElement} form 表單元素
- */
-function handleUpdateFormSubmit(form) {
-    // 驗證表單
-    if (!validateUpdateForm()) {
-        return;
-    }
-
-    // 顯示加載狀態
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
-    submitBtn.disabled = true;
-
-    // 準備表單數據
-    const formData = new FormData(form);
-
-    // 提交數據
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            const message = data.message || 'Category updated successfully';
-            showAlert(message, 'success');
-
-            // 延遲重定向到列表頁面
-            setTimeout(() => {
-                window.location.href = window.categoryManagementRoute || '/admin/category-mapping/category/index';
-            }, 2000);
-        } else {
-            isCategoryUpdating = false; // 錯誤時重置標誌
-            showAlert(data.message || 'Failed to update category', 'error');
-        }
-    })
-    .catch(error => {
-        isCategoryUpdating = false; // 錯誤時重置標誌
-        showAlert('Failed to update category', 'error');
-    })
-    .finally(() => {
-        // 恢復按鈕狀態
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
-
-/**
- * Update 頁面表單驗證
- * @returns {boolean} 驗證結果
- */
-function validateUpdateForm() {
-    const categoryNameInput = document.getElementById('category_name');
-
-    // 驗證分類名稱
-    if (!categoryNameInput.value.trim()) {
-        showAlert('Please enter category name', 'warning');
-        categoryNameInput.focus();
-        return false;
-    }
-
-    // 驗證狀態選擇
-    const selectedStatus = document.querySelector('input[name="category_status"]:checked');
-    if (!selectedStatus) {
-        showAlert('Please select category status', 'warning');
-        return false;
-    }
-
-    return true;
-}
-
-// 图片处理函数已移至 image-system.js
-
-/**
- * 初始化分類更新頁面
- */
-// 全局變量防止重複請求
-let isCategoryUpdating = false;
-let categoryUpdateFormBound = false;
-
-function initializeCategoryUpdate() {
-    bindCategoryEvents();
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!categoryUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isCategoryUpdating) return false;
-                isCategoryUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            categoryUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面圖片上傳區域點擊事件
-    const imagePreviewArea = document.getElementById('image-preview');
-    if (imagePreviewArea && updateImageInput) {
-        imagePreviewArea.addEventListener('click', function(e) {
-            // 只檢查是否點擊了移除按鈕
-            if (e.target.closest('.img-remove-btn')) {
-                return; // 不觸發文件選擇
+            let errorMessage = 'Failed to create category';
+            if (error.message) {
+                errorMessage = error.message;
             }
-            updateImageInput.click();
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
+    });
+}
+
+// =============================================================================
+    // Update Category 彈窗模塊 (Update Category Modal Module)
+// =============================================================================
+
+/**
+     * 綁定更新彈窗事件
+     */
+    bindUpdateModalEvents() {
+        $('#updateCategoryModal').on('show.bs.modal', () => {
+            this.initUpdateModalImageSystem();
+            if (typeof window.initializeStatusCardSelection === 'function') {
+                window.initializeStatusCardSelection('category_status');
+            }
+        });
+
+        // 彈窗完全顯示後設置焦點
+        $('#updateCategoryModal').on('shown.bs.modal', () => {
+            const categoryNameInput = document.getElementById('update_category_name');
+            if (categoryNameInput) {
+                categoryNameInput.focus();
+            }
+        });
+
+        $('#updateCategoryModal').on('hidden.bs.modal', () => {
+            this.resetUpdateModalForm();
+        });
+
+        $('#submitUpdateCategoryModal').on('click', () => {
+            this.submitUpdateModalCategory();
+        });
+
+        // Enter鍵自動跳轉到下一個輸入框或提交表單
+        $('#updateCategoryModal').on('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const target = e.target;
+                // 排除 image 輸入框
+                if (target.type === 'file' || target.id === 'input_image') {
+                    return;
+                }
+
+                // 如果當前在輸入框中
+                if (target.tagName === 'INPUT' && target.type !== 'submit' && target.type !== 'button' && target.type !== 'radio') {
+                    e.preventDefault();
+                    // category 只有一個輸入框，直接提交
+                    this.submitUpdateModalCategory();
+                }
+            }
         });
     }
 
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
+    /**
+     * 打開更新彈窗並填充數據
+     */
+    openUpdateModal(categoryData) {
+        $('#update_category_name').val(categoryData.category_name || '');
 
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
+        const targetStatus = categoryData.category_status === 'Unavailable' ? 'Unavailable' : 'Available';
+        const radioSelector = targetStatus === 'Available' ? '#update_status_available' : '#update_status_unavailable';
+        $(radioSelector).prop('checked', true);
+        if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('category_status');
+        }
+
+        const form = $('#updateCategoryModalForm');
+        form.attr('data-category-id', categoryData.id);
+
+        const currentInfo = `
+            <div class="mb-1">
+                <i class="bi bi-tag me-2 text-muted"></i>
+                <span>Name: <strong>${categoryData.category_name || 'N/A'}</strong></span>
+            </div>
+            <div class="mb-1">
+                <i class="bi bi-shield-check me-2 text-muted"></i>
+                <span>Status: <strong>${categoryData.category_status || 'N/A'}</strong></span>
+            </div>
+        `;
+        $('#currentCategoryInfo').html(currentInfo);
+
+        if (categoryData.category_image) {
+            const imageUrl = `/assets/images/${categoryData.category_image}`;
+            this.setUpdateModalImage(imageUrl);
+        } else {
+            this.resetUpdateModalImage();
+        }
+
+        $('#remove_image').val('0');
+
+        const modal = new bootstrap.Modal(document.getElementById('updateCategoryModal'));
+        modal.show();
+    }
+
+    /**
+     * 初始化更新彈窗中的圖片處理系統
+     */
+    initUpdateModalImageSystem() {
+        if (typeof window.ImageSystem !== 'undefined') {
+            const modal = document.getElementById('updateCategoryModal');
+            if (!modal) return;
+
+            const imageInput = modal.querySelector('#input_image');
+            const previewContainer = modal.querySelector('#image-preview');
+            const removeImageBtn = modal.querySelector('#removeImage');
+
+            if (imageInput && previewContainer) {
+                window.ImageSystem.bindImageUploadEvents({
+                    updateImageInputId: 'input_image',
+                    updatePreviewContainerId: 'image-preview'
+                });
+
+                previewContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.img-remove-btn')) {
+                        return;
+            }
+                    imageInput.click();
+        });
+
+    if (removeImageBtn) {
+                    const newRemoveBtn = removeImageBtn.cloneNode(true);
+                    removeImageBtn.parentNode.replaceChild(newRemoveBtn, removeImageBtn);
+                    const freshRemoveBtn = modal.querySelector('#removeImage');
+
+                    freshRemoveBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        if (freshRemoveBtn.hasAttribute('data-processing')) {
+                            return;
+                        }
+                        freshRemoveBtn.setAttribute('data-processing', 'true');
+
+                        const modal = document.getElementById('updateCategoryModal');
+                        const form = modal ? document.getElementById('updateCategoryModalForm') : null;
+
+                        if (!confirm('Are you sure you want to remove this image?')) {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                            return;
+                        }
+
+                        const imageInput = modal?.querySelector('#input_image');
+                        const previewContainer = modal?.querySelector('#image-preview');
+                        const imageUploadContent = modal?.querySelector('#imageUploadContent');
+                        const removeImageInput = modal?.querySelector('#remove_image');
+
+                        if (imageInput && previewContainer && form) {
+                            imageInput.value = '';
+
+                            if (removeImageInput) {
+                                removeImageInput.value = '1';
+                            }
+
+                            const previewImg = previewContainer.querySelector('#preview-image') || previewContainer.querySelector('#img-preview');
+                            if (previewImg) {
+                                previewImg.remove();
+                            }
+
+                            const originalContent = previewContainer.getAttribute('data-original-content');
+                            if (originalContent) {
+                                previewContainer.innerHTML = originalContent;
+
+                                const restoredPreviewImg = previewContainer.querySelector('#preview-image');
+                                if (restoredPreviewImg) {
+                                    restoredPreviewImg.classList.add('d-none');
+                                }
+
+                                const restoredRemoveBtn = previewContainer.querySelector('#removeImage');
+                                if (restoredRemoveBtn) {
+                                    restoredRemoveBtn.classList.add('d-none');
+                                }
+
+                                const restoredImageUploadContent = previewContainer.querySelector('#imageUploadContent');
+                                if (restoredImageUploadContent) {
+                                    restoredImageUploadContent.classList.remove('d-none');
+                                    restoredImageUploadContent.style.display = '';
+                                }
+        } else {
+                                if (imageUploadContent) {
+                                    imageUploadContent.classList.remove('d-none');
+                                    imageUploadContent.style.display = '';
+                                }
+                            }
+
+                            freshRemoveBtn.classList.add('d-none');
+                            freshRemoveBtn.removeAttribute('data-processing');
+
+                            if (typeof window.showAlert === 'function') {
+                                window.showAlert('Image removed successfully', 'success');
+                }
+            } else {
+                            freshRemoveBtn.removeAttribute('data-processing');
+                        }
+                    });
+                }
             }
         }
     }
 
-    // Update 頁面狀態卡片初始化
-    initializeStatusCards();
-}
+    /**
+     * 設置更新彈窗中的圖片
+     */
+    setUpdateModalImage(imageUrl) {
+        const modal = document.getElementById('updateCategoryModal');
+        if (!modal) return;
 
-// =============================================================================
-// 通用工具函數 (Common Utility Functions)
-// =============================================================================
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
 
-/**
- * 獲取狀態CSS類
- * @param {string} status 狀態
- * @returns {string} CSS類名
- */
-function getCategoryStatusClass(status) {
-    const statusMap = {
-        'Available': 'available',
-        'Unavailable': 'unavailable'
-    };
-    return statusMap[status] || 'default';
-}
+        if (previewContainer && previewImg && imageUploadContent) {
+            previewImg.src = imageUrl;
+            previewImg.classList.remove('d-none');
+            previewImg.style.display = 'block';
+            imageUploadContent.classList.add('d-none');
+            imageUploadContent.style.display = 'none';
 
-/**
- * 檢查分類是否存在
- * @param {Array} categoryList 分類列表
- * @param {string} categoryName 分類名稱
- * @returns {boolean} 是否存在
- */
-function isCategoryExists(categoryList, categoryName) {
-    return categoryList.some(item => item.categoryName.toLowerCase() === categoryName.toLowerCase());
-}
-
-/**
- * 高亮現有分類
- * @param {string} categoryName 分類名稱
- */
-function highlightExistingCategory(categoryName) {
-    const existingValues = document.querySelectorAll('.value-item');
-    for (let item of existingValues) {
-        const value = item.querySelector('.fw-bold').textContent.trim();
-        if (value.toLowerCase() === categoryName.toLowerCase()) {
-            // 添加 Bootstrap 高亮樣式
-            item.classList.add('border-warning');
-
-            // 滾動到該元素
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 3秒後移除高亮
-            setTimeout(() => {
-                item.classList.remove('border-warning');
-            }, 3000);
-            break;
+            if (removeBtn) {
+                removeBtn.classList.remove('d-none');
+            }
         }
     }
-}
 
-/**
- * 驗證分類表單
- * @param {Object} formData 表單數據
- * @param {Object} options 驗證選項
- * @returns {Object} 驗證結果
- */
-function validateCategoryForm(formData, options = {}) {
-    const errors = [];
-    const { requireStatus = true } = options;
+    /**
+     * 重置更新彈窗中的圖片
+     */
+    resetUpdateModalImage() {
+        const modal = document.getElementById('updateCategoryModal');
+        if (!modal) return;
 
-    // 驗證分類名稱
-    if (!formData.category_name || formData.category_name.trim() === '') {
-        errors.push('Category name is required');
-    }
+        const previewContainer = modal.querySelector('#image-preview');
+        const previewImg = modal.querySelector('#preview-image') || modal.querySelector('#img-preview');
+        const imageUploadContent = modal.querySelector('#imageUploadContent');
+        const removeBtn = modal.querySelector('#removeImage');
+        const imageInput = modal.querySelector('#input_image');
 
-    // 驗證狀態
-    if (requireStatus && (!formData.category_status || formData.category_status === '')) {
-        errors.push('Category status is required');
-    }
+        if (previewContainer) {
+            if (previewImg) {
+                previewImg.classList.add('d-none');
+                previewImg.style.display = 'none';
+                previewImg.src = '';
+            }
 
-    return {
-        isValid: errors.length === 0,
-        errors: errors
-    };
-}
+            if (imageUploadContent) {
+                imageUploadContent.classList.remove('d-none');
+                imageUploadContent.style.display = '';
+            }
 
+            if (removeBtn) {
+                removeBtn.classList.add('d-none');
+            }
 
-/**
- * 處理分類請求
- * @param {string} url 請求URL
- * @param {string} method HTTP方法
- * @param {Object} data 請求數據
- * @param {Object} options 選項
- */
-function handleCategoryRequest(url, method, data, options = {}) {
-    const {
-        successMessage = 'Operation completed successfully',
-        errorMessage = 'Operation failed',
-        redirect = null,
-        onSuccess = null,
-        onError = null
-    } = options;
-
-    const requestOptions = {
-        method: method,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            if (imageInput) {
+                imageInput.value = '';
+            }
         }
-    };
+    }
 
-    // 添加數據到請求
-    if (data) {
-        if (data instanceof FormData) {
-            requestOptions.body = data;
+    /**
+     * 重置更新彈窗表單
+     */
+    resetUpdateModalForm() {
+        const form = document.getElementById('updateCategoryModalForm');
+        if (form) {
+            form.reset();
+        }
+
+        this.resetUpdateModalImage();
+        $('#remove_image').val('0');
+
+        const inputs = form?.querySelectorAll('.form-control');
+        if (inputs) {
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        $('#updateCategoryModal .status-card').removeClass('selected');
+    }
+
+    /**
+     * 提交更新彈窗中的Category
+     */
+    submitUpdateModalCategory() {
+        const form = document.getElementById('updateCategoryModalForm');
+        const categoryId = form.getAttribute('data-category-id');
+
+        if (!categoryId) {
+            this.showAlert('Category ID not found', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('updateCategoryModal');
+        const categoryNameInput = modal ? modal.querySelector('#update_category_name') : null;
+        const statusInput = modal ? modal.querySelector('input[name="category_status"]:checked') : null;
+        const imageInput = modal ? modal.querySelector('#input_image') : null;
+        const removeImageInput = modal ? modal.querySelector('#remove_image') : null;
+        const submitBtn = $('#submitUpdateCategoryModal');
+
+        const categoryName = categoryNameInput ? categoryNameInput.value.trim() : '';
+        const categoryStatus = statusInput ? statusInput.value : '';
+
+        let isValid = true;
+
+        if (!categoryName) {
+            if (categoryNameInput) {
+                categoryNameInput.classList.add('is-invalid');
+            }
+            isValid = false;
         } else {
-            requestOptions.headers['Content-Type'] = 'application/json';
-            requestOptions.body = JSON.stringify(data);
+            if (categoryNameInput) {
+                categoryNameInput.classList.remove('is-invalid');
+                categoryNameInput.classList.add('is-valid');
+            }
         }
+
+        if (!categoryStatus) {
+            this.showAlert('Please select category status', 'warning');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PUT');
+        formData.append('category_name', categoryName);
+        formData.append('category_status', categoryStatus);
+
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('category_image', imageInput.files[0]);
     }
 
-    fetch(url, requestOptions)
+if (removeImageInput && removeImageInput.value === '1') {
+        formData.append('remove_image', '1');
+    }
+
+        // 檢查是否有圖片相關的更改
+        const hasImageChange = (imageInput && imageInput.files && imageInput.files[0]) ||
+                               (removeImageInput && removeImageInput.value === '1');
+
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...');
+        submitBtn.prop('disabled', true);
+
+        const updateUrl = window.updateCategoryUrl.replace(':id', categoryId);
+        fetch(updateUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${text}`);
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update category');
                 });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                showAlert(data.message || successMessage, 'success');
+                this.showAlert(data.message || 'Category updated successfully', 'success');
 
-                if (onSuccess) {
-                    onSuccess(data);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateCategoryModal'));
+                if (modal) {
+                    modal.hide();
                 }
 
-                if (redirect) {
+                // 如果有圖片更改，刷新整個頁面；否則只更新 DOM
+                if (hasImageChange) {
                     setTimeout(() => {
-                        window.location.href = redirect;
-                    }, 2000);
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // 沒有圖片更改，重新載入當前頁面
+                    this.fetchCategories(this.currentPage);
                 }
             } else {
-                showAlert(data.message || errorMessage, 'error');
-                if (onError) {
-                    onError(data);
-                }
+                this.showAlert(data.message || 'Failed to update category', 'error');
             }
         })
         .catch(error => {
-            showAlert('Operation failed', 'error');
-            if (onError) {
-                onError(error);
+            let errorMessage = 'Failed to update category';
+            if (error.message) {
+                errorMessage = error.message;
             }
-        });
-}
-
-/**
- * 創建分類
- * @param {Object} categoryData 分類數據
- * @param {Object} options 選項
- */
-function createCategory(categoryData, options = {}) {
-    const url = options.url || window.createCategoryUrl;
-    const method = 'POST';
-
-    handleCategoryRequest(url, method, categoryData, {
-        successMessage: 'Category created successfully',
-        errorMessage: 'Failed to create category',
-        redirect: window.categoryManagementRoute || '/admin/categories/index',
-        ...options
-    });
-}
-
-/**
- * 更新分類
- * @param {number} categoryId 分類ID
- * @param {Object} categoryData 分類數據
- * @param {Object} options 選項
- */
-function updateCategory(categoryId, categoryData, options = {}) {
-    const url = (options.url || window.updateCategoryUrl).replace(':id', categoryId);
-    const method = 'POST';
-
-    handleCategoryRequest(url, method, categoryData, {
-        successMessage: 'Category updated successfully',
-        errorMessage: 'Failed to update category',
-        redirect: window.categoryManagementRoute || '/admin/categories/index',
-        ...options
-    });
-}
-
-/**
- * 刪除分類
- * @param {number} categoryId 分類ID
- * @param {Object} options 選項
- */
-function deleteCategory(categoryId, options = {}) {
-    const url = (options.url || window.deleteCategoryUrl).replace(':id', categoryId);
-    const method = 'DELETE';
-
-    if (!confirm('Are you sure you want to delete this category?')) {
-        return;
-    }
-
-    handleCategoryRequest(url, method, null, {
-        successMessage: 'Category deleted successfully',
-        errorMessage: 'Failed to delete category',
-        redirect: null,
-        onSuccess: () => {
-            // 重新加載頁面或刷新數據
-            if (window.categoryDashboard && window.categoryDashboard.fetchCategories) {
-                window.categoryDashboard.fetchCategories();
-            } else {
-                window.location.reload();
-            }
-        },
-        ...options
-    });
-}
-
-/**
- * 設置分類可用
- * @param {number} categoryId 分類ID
- * @param {Object} options 選項
- */
-function setCategoryAvailable(categoryId, options = {}) {
-    const url = (options.url || window.availableCategoryUrl).replace(':id', categoryId);
-    const method = 'PATCH';
-
-    if (!confirm('Are you sure you want to activate this category?')) {
-        return;
-    }
-
-    handleCategoryRequest(url, method, null, {
-        successMessage: 'Category activated successfully',
-        errorMessage: 'Failed to activate category',
-        redirect: null,
-        onSuccess: () => {
-            if (window.categoryDashboard && window.categoryDashboard.fetchCategories) {
-                window.categoryDashboard.fetchCategories();
-            } else {
-                window.location.reload();
-            }
-        },
-        ...options
-    });
-}
-
-/**
- * 設置分類不可用
- * @param {number} categoryId 分類ID
- * @param {Object} options 選項
- */
-function setCategoryUnavailable(categoryId, options = {}) {
-    const url = (options.url || window.unavailableCategoryUrl).replace(':id', categoryId);
-    const method = 'PATCH';
-
-    if (!confirm('Are you sure you want to deactivate this category?')) {
-        return;
-    }
-
-    handleCategoryRequest(url, method, null, {
-        successMessage: 'Category deactivated successfully',
-        errorMessage: 'Failed to deactivate category',
-        redirect: null,
-        onSuccess: () => {
-            if (window.categoryDashboard && window.categoryDashboard.fetchCategories) {
-                window.categoryDashboard.fetchCategories();
-            } else {
-                window.location.reload();
-            }
-        },
-        ...options
-    });
-}
-
-/**
- * 綁定分類相關事件
- * @param {Object} config 配置選項
- */
-function bindCategoryEvents(config = {}) {
-    const {
-        statusCardSelector = '.status-card',
-        imageInputSelector = '#category_image',
-        imageUploadAreaSelector = '#imageUploadArea'
-    } = config;
-
-    // Create 頁面事件綁定
-    bindCategoryCreateEvents();
-
-    // 使用統一的圖片處理模組（避免重複綁定）
-    if (typeof window.ImageSystem !== 'undefined' && !window.ImageSystem._categoryEventsBound) {
-        window.ImageSystem.bindModuleImageEvents('category');
-        window.ImageSystem._categoryEventsBound = true; // 標記已綁定
-    } else if (typeof window.ImageSystem === 'undefined') {
-        console.warn('ImageSystem not available, image functionality may not work properly');
-    }
-
-    // 表單提交事件監聽器
-    const categoryForm = document.getElementById('categoryForm');
-    if (categoryForm) {
-        categoryForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // 檢查是否有分類
-            if (categoryList.length === 0) {
-                showAlert('Please add at least one category', 'warning');
-                return;
-            }
-
-            // 預提交重複檢查
-            const duplicates = [];
-            const seen = new Set();
-            for (const item of categoryList) {
-                const combination = item.categoryName.toLowerCase();
-                if (seen.has(combination)) {
-                    duplicates.push(item.categoryName);
-                } else {
-                    seen.add(combination);
-                }
-            }
-
-            if (duplicates.length > 0) {
-                showAlert('Duplicate category names found. Please remove duplicates before submitting.', 'error');
-                return;
-            }
-
-            submitCategoryForm();
-        });
-    }
-
-    // 狀態卡片選擇事件
-    if (statusCardSelector) {
-        $(document).on('click', statusCardSelector, function(e) {
-            if (!$(e.target).is('input[type="radio"]')) {
-                selectStatusCard(this);
-            }
+            this.showAlert(errorMessage, 'error');
+        })
+        .finally(() => {
+            submitBtn.html(originalText);
+            submitBtn.prop('disabled', false);
         });
     }
 }
-
-/**
- * 初始化分類頁面
- * @param {Object} config 配置選項
- */
-function initializeCategoryPage(config = {}) {
-    const {
-        events = {},
-        onInit = null
-    } = config;
-
-    // 綁定通用事件
-    bindCategoryEvents();
-
-    // 初始化狀態卡片選擇
-    if (typeof window.StatusSystem !== 'undefined') {
-        window.StatusSystem.initializeStatusCardSelection();
-    }
-
-    // 執行自定義初始化
-    if (onInit) {
-        onInit();
-    }
-
-    // 綁定自定義事件
-    Object.keys(events).forEach(eventName => {
-        const handler = events[eventName];
-        if (typeof handler === 'function') {
-            // 根據事件名稱綁定到相應元素
-            switch (eventName) {
-                case 'formSubmit':
-                    const form = document.getElementById('categoryForm');
-                    if (form) {
-                        form.addEventListener('submit', handler);
-                    }
-                    break;
-                default:
-                    console.warn(`Unknown event: ${eventName}`);
-            }
-        }
-    });
-}
-
-/**
- * 選擇狀態卡片
- * @param {HTMLElement} cardElement 卡片元素
- */
-function selectStatusCard(cardElement) {
-    if (typeof window.StatusSystem !== 'undefined' && window.StatusSystem.selectStatusCard) {
-        window.StatusSystem.selectStatusCard(cardElement);
-    }
-}
-
-/**
- * 預覽圖片
- * @param {string} imageSrc 圖片源
- */
 
 // =============================================================================
-// 頁面初始化 (Page Initialization)
+// 全局實例初始化 (Global Instance Initialization)
 // =============================================================================
 
-/**
- * 綁定所有事件
- */
-function bindEvents() {
-    // 根據頁面類型綁定不同的事件
-    if (document.getElementById('categoryForm')) {
-        // Create 頁面
-        bindCategoryEvents();
-    }
+let categoryDashboard;
 
-    if (document.getElementById('input_image')) {
-        // Update 頁面
-        initializeCategoryUpdate();
-    }
-}
-
-// 全局初始化
-document.addEventListener('DOMContentLoaded', function() {
-    // 綁定事件
-    bindEvents();
-
-    // 初始化 Dashboard（如果存在）
-    if (document.getElementById('table-body')) {
-        window.categoryDashboard = new CategoryDashboard();
-    }
-
-    // Update 頁面表單提交 - 確保只綁定一次
-    if (!categoryUpdateFormBound) {
-        const updateForm = document.querySelector('form[action*="update"]');
-        if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (isCategoryUpdating) return false;
-                isCategoryUpdating = true;
-                handleUpdateFormSubmit(this);
-            });
-            categoryUpdateFormBound = true;
-        }
-    }
-
-    // Update 頁面圖片預覽
-    const updateImageInput = document.getElementById('input_image');
-    if (updateImageInput) {
-        updateImageInput.addEventListener('change', handleUpdateImagePreview);
-    }
-
-    // Update 頁面移除圖片按鈕
-    const removeImageBtn = document.getElementById('removeImage');
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', handleRemoveImageButton);
-
-        // 檢查初始狀態：如果沒有圖片，隱藏按鈕
-        const previewContainer = document.getElementById('image-preview');
-        if (previewContainer) {
-            const hasImage = previewContainer.querySelector('img');
-            if (!hasImage) {
-                removeImageBtn.classList.add('d-none');
-            }
-        }
-    }
-
-    // 初始化 Create 頁面
-    if (document.getElementById('categoryForm')) {
-        // 如果已有分類數據，顯示分類區域
-        if (categoryList.length > 0) {
-            showCategoryValuesArea();
-        }
-        updateUI();
-    }
-});
-
-// jQuery 備用初始化
 $(document).ready(function() {
-    // 如果是update頁面（有input_image元素）
-    if ($("#input_image").length > 0) {
-        console.log('Initializing category update page');
-        initializeCategoryUpdate();
+    if ($("#table-body").length > 0) {
+        categoryDashboard = new CategoryDashboard();
+
+        // 導出方法到全局作用域
+        window.setCategoryAvailable = (categoryId) => categoryDashboard.setAvailable(categoryId);
+        window.setCategoryUnavailable = (categoryId) => categoryDashboard.setUnavailable(categoryId);
+        window.editCategory = (categoryId) => categoryDashboard.editCategory(categoryId);
+        window.deleteCategory = (categoryId) => categoryDashboard.deleteCategory(categoryId);
     }
 });
-
-// =============================================================================
-// 全局函數導出 (Global Function Exports)
-// =============================================================================
-
-// 導出主要函數到全局作用域
-window.addCategory = addCategory;
-window.removeCategory = removeCategory;
-window.clearForm = clearForm;
-window.toggleCategoryStatus = toggleCategoryStatus;
-window.setCategoryAvailable = setCategoryAvailable;
-window.setCategoryUnavailable = setCategoryUnavailable;
-window.updateCategoryStatus = updateCategoryStatus;
-window.viewCategoryDetails = viewCategoryDetails;
-window.handleRemoveImageButton = handleRemoveImageButton;
-window.removeUpdateImage = removeUpdateImage;

@@ -11,29 +11,33 @@
 {{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 {{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.rack-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.rack.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.rack-metric-cards')
+    @include('admin.rack.components.metric-cards')
 
     {{-- 搜索筛选区域 --}}
-    @include('components.search-filters.rack-search-filters')
+    @include('admin.rack.components.search-filters')
 
     {{-- 货架列表表格 --}}
-    @include('components.data-tables.rack-data-tables')
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.rack-empty-list')
+    @include('admin.rack.components.data-table')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.rack-pagination-nav')
+    @include('admin.rack.components.pagination-nav')
 </div>
+
+    {{-- Add Rack 弹窗模态框 --}}
+    @include('admin.rack.create-model')
+
+    {{-- Update Rack 弹窗模态框 --}}
+    @include('admin.rack.update-model')
 
 @endsection
 
@@ -42,7 +46,9 @@
 <script>
     // 设置货架管理相关URL
     window.rackManagementRoute = "{{ route('admin.rack.index') }}";
-    window.editRackUrl = "{{ route('admin.rack.edit', ['id' => ':id']) }}";
+    window.createRackUrl = "{{ route('admin.rack.store') }}";
+    window.updateRackUrl = "{{ route('admin.rack.update', ['id' => ':id']) }}";
+    window.editRackUrl = "{{ route('admin.rack.edit', ':id') }}";
     window.deleteRackUrl = "{{ route('admin.rack.destroy', ['id' => ':id']) }}";
     window.availableRackUrl = "{{ route('admin.rack.available', ['id' => ':id']) }}";
     window.unavailableRackUrl = "{{ route('admin.rack.unavailable', ['id' => ':id']) }}";
@@ -54,5 +60,6 @@
 
 {{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
+<script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/rack-management.js') }}"></script>
 @endsection

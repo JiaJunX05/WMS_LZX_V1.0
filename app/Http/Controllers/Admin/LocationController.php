@@ -10,34 +10,59 @@ use App\Models\Zone;
 use App\Models\Rack;
 
 /**
- * 位置管理控制器 (Location Management Controller)
+ * 位置管理控制器
+ * Location Management Controller
  *
- * 功能：
- * - 位置数据管理：创建、读取、更新、删除
- * - 位置搜索和分页
- * - 统计数据计算
+ * 功能模块：
+ * - 位置列表展示：搜索、筛选、分页
+ * - 位置操作：创建、编辑、删除、状态管理
+ * - 批量创建：支持批量创建位置
+ * - 统计数据：计算位置相关统计数据
  *
  * @author WMS Team
- * @version 1.0.0
+ * @version 3.0.0
  */
 class LocationController extends Controller
 {
-    // Constants for better maintainability
-    private const MAX_BULK_LOCATIONS = 10;
+    // =============================================================================
+    // 常量定义 (Constants)
+    // =============================================================================
+
+    /**
+     * 批量创建最大数量
+     */
+    private const MAX_BULK_LOCATIONS = 100; // 增加到 100，如果需要移除限制可以设置为 PHP_INT_MAX
+
+    /**
+     * 状态常量
+     */
     private const STATUSES = ['Available', 'Unavailable'];
 
-    // Validation rules
+    /**
+     * 位置验证规则
+     */
     private const LOCATION_RULES = [
         'zone_id' => 'required|exists:zones,id',
         'rack_id' => 'required|exists:racks,id',
     ];
 
+    /**
+     * 位置状态验证规则
+     */
     private const LOCATION_STATUS_RULES = [
         'location_status' => 'required|in:Available,Unavailable',
     ];
 
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
+
     /**
+     * 标准化位置数据
      * Normalize location data from frontend
+     *
+     * @param array $locationData
+     * @return array
      */
     private function normalizeLocationData(array $locationData): array
     {
@@ -56,19 +81,23 @@ class LocationController extends Controller
     }
 
     /**
+     * 统一错误处理
      * Handle errors consistently
+     *
+     * @param Request $request
+     * @param string $message
+     * @param \Exception|null $e
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function handleError(Request $request, string $message, \Exception $e = null): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if ($e) {
-            // 简化错误信息
             $simplifiedMessage = $this->simplifyErrorMessage($e->getMessage());
 
             Log::error($message . ': ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // 使用简化的错误信息
             $message = $simplifiedMessage ?: $message;
         }
 
@@ -83,7 +112,11 @@ class LocationController extends Controller
     }
 
     /**
+     * 简化数据库错误信息
      * Simplify database error messages
+     *
+     * @param string $errorMessage
+     * @return string|null
      */
     private function simplifyErrorMessage(string $errorMessage): ?string
     {
@@ -97,11 +130,16 @@ class LocationController extends Controller
             return 'Data validation failed. Please check your input.';
         }
 
-        return null; // 返回 null 表示不简化，使用原始消息
+        return null;
     }
 
     /**
+     * 记录操作日志
      * Log operation for audit trail
+     *
+     * @param string $action
+     * @param array $data
+     * @return void
      */
     private function logOperation(string $action, array $data = []): void
     {
@@ -110,8 +148,14 @@ class LocationController extends Controller
             'ip' => request()->ip(),
         ], $data));
     }
+
+    // =============================================================================
+    // 公共方法 (Public Methods)
+    // =============================================================================
+
     /**
      * 显示位置管理页面
+     * Display location management page
      *
      * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
@@ -122,7 +166,7 @@ class LocationController extends Controller
             try {
                 $locations = Location::with(['zone', 'rack'])->get();
 
-                // 計算統計數據
+                // 计算统计数据
                 $totalZones = Zone::where('zone_status', 'Available')->count();
                 $totalRacks = Rack::where('rack_status', 'Available')->count();
                 $totalLocations = $locations->count();
@@ -144,176 +188,54 @@ class LocationController extends Controller
                 ]);
             } catch (\Exception $e) {
                 Log::error('Location management error: ' . $e->getMessage());
-                return response()->json(['error' => 'Failed to fetch locations'], 500);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch locations: ' . $e->getMessage()
+                ], 500);
             }
         }
 
         $zones = Zone::where('zone_status', 'Available')->get();
         $racks = Rack::where('rack_status', 'Available')->get();
         $locations = Location::with(['zone', 'rack'])->get();
+
         return view('admin.location.dashboard', compact('zones', 'racks', 'locations'));
     }
 
     /**
-     * 显示创建位置页面
+     * 获取创建位置数据（现在通过 modal，只返回 JSON）
+     * Get create location data (now through modal, returns JSON only)
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\JsonResponse
      */
     public function create()
     {
         $zones = Zone::where('zone_status', 'Available')->get();
         $racks = Rack::where('rack_status', 'Available')->get();
-        return view('admin.location.create', compact('zones', 'racks'));
+
+        return response()->json([
+            'success' => true,
+            'zones' => $zones,
+            'racks' => $racks
+        ]);
     }
 
     /**
      * 存储新位置
+     * Store new location
      *
      * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
         try {
             // 检查是否为批量创建模式
             if ($request->has('locations') && is_array($request->locations)) {
-                // 批量创建模式
-                $locations = $request->input('locations', []);
-
-                // 限制批量创建数量
-                if (count($locations) > self::MAX_BULK_LOCATIONS) {
-                    return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_LOCATIONS . ' locations at once');
-                }
-
-                $validatedData = $request->validate([
-                    'locations' => 'required|array|min:1',
-                    'locations.*.zone_id' => 'required|exists:zones,id',
-                    'locations.*.rack_id' => 'required|exists:racks,id',
-                    // 'locations.*.location_status' => 'required|in:Available,Unavailable', // 移除驗證，默認為 Available
-                ]);
-
-                $locations = $validatedData['locations'];
-
-                // 预处理：收集所有位置组合进行批量检查
-                $locationCombinationsToCheck = [];
-                foreach ($locations as $locationData) {
-                    $locationData = $this->normalizeLocationData($locationData);
-                    $locationCombinationsToCheck[] = [
-                        'zone_id' => $locationData['zone_id'],
-                        'rack_id' => $locationData['rack_id']
-                    ];
-                }
-
-                // 批量检查位置组合是否已存在
-                $existingLocations = [];
-                foreach ($locationCombinationsToCheck as $combination) {
-                    $existing = Location::where('zone_id', $combination['zone_id'])
-                        ->where('rack_id', $combination['rack_id'])
-                        ->first();
-
-                    if ($existing) {
-                        $zone = Zone::find($combination['zone_id']);
-                        $rack = Rack::find($combination['rack_id']);
-                        $existingLocations[] = $zone->zone_name . ' - ' . $rack->rack_number;
-                    }
-                }
-
-                if (!empty($existingLocations)) {
-                    if ($request->ajax()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Some locations failed to create',
-                            'errors' => [
-                                'locations' => ['These location combinations already exist: ' . implode(', ', $existingLocations)]
-                            ]
-                        ], 422);
-                    }
-
-                    return back()->withErrors(['locations' => 'These location combinations already exist: ' . implode(', ', $existingLocations)])
-                        ->withInput();
-                }
-
-                // 批量创建位置记录
-                $createdLocations = [];
-                foreach ($locations as $locationData) {
-                    $locationData = $this->normalizeLocationData($locationData);
-                    $location = Location::create([
-                        'zone_id' => $locationData['zone_id'],
-                        'rack_id' => $locationData['rack_id'],
-                        'location_status' => 'Available', // 默認為 Available
-                    ]);
-                    $createdLocations[] = $location;
-
-                    $this->logOperation('created (batch)', [
-                        'location_id' => $location->id,
-                        'zone_id' => $locationData['zone_id'],
-                        'rack_id' => $locationData['rack_id']
-                    ]);
-                }
-
-                $count = count($createdLocations);
-                $message = "Successfully created {$count} location(s)!";
-
-                if ($request->ajax()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => $message,
-                        'data' => $createdLocations
-                    ]);
-                }
-
-                return redirect()->route('admin.storage_locations.location.index')
-                    ->with('success', $message);
-
-            } else {
-                // 单个创建模式
-                $rules = array_merge(self::LOCATION_RULES, self::LOCATION_STATUS_RULES);
-                $request->validate($rules);
-
-                // 检查位置组合是否已存在
-                $existing = Location::where('zone_id', $request->zone_id)
-                    ->where('rack_id', $request->rack_id)
-                    ->first();
-
-                if ($existing) {
-                    $zone = Zone::find($request->zone_id);
-                    $rack = Rack::find($request->rack_id);
-                    $errorMessage = "Location combination {$zone->zone_name} - {$rack->rack_number} already exists";
-
-                    if ($request->ajax()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => $errorMessage,
-                            'errors' => ['location' => [$errorMessage]]
-                        ], 422);
-                    }
-
-                    return back()->withErrors(['location' => $errorMessage])->withInput();
-                }
-
-                $location = Location::create([
-                    'zone_id' => $request->zone_id,
-                    'rack_id' => $request->rack_id,
-                    'location_status' => 'Available', // 默認為 Available
-                ]);
-
-                $this->logOperation('created (single)', [
-                    'location_id' => $location->id,
-                    'zone_id' => $request->zone_id,
-                    'rack_id' => $request->rack_id,
-                    'location_status' => $request->location_status
-                ]);
-
-                if ($request->ajax()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Location created successfully!'
-                    ]);
-                }
-
-                return redirect()->route('admin.storage_locations.location.index')
-                    ->with('success', 'Location created successfully!');
+                return $this->storeMultipleLocations($request);
             }
+
+            return $this->storeSingleLocation($request);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::warning('Location validation failed', [
@@ -337,6 +259,7 @@ class LocationController extends Controller
 
     /**
      * 显示位置详情页面
+     * Display location details page
      *
      * @param int $id
      * @return \Illuminate\View\View
@@ -344,11 +267,11 @@ class LocationController extends Controller
     public function view($id)
     {
         try {
-            // 首先检查是否是zoneId
+            // 首先检查是否是 zoneId
             $zone = Zone::find($id);
 
             if ($zone) {
-                // 如果是zoneId，获取该区域下的所有位置
+                // 如果是 zoneId，获取该区域下的所有位置
                 $locations = Location::where('zone_id', $id)->with(['zone', 'rack'])->get();
                 $zones = Zone::where('zone_status', 'Available')->get();
                 $racks = Rack::where('rack_status', 'Available')->get();
@@ -356,7 +279,7 @@ class LocationController extends Controller
                 return view('admin.location.view', compact('locations', 'zones', 'racks', 'zone'));
             }
 
-            // 如果不是zoneId，检查是否是locationId
+            // 如果不是 zoneId，检查是否是 locationId
             $location = Location::with(['zone', 'rack'])->find($id);
 
             if ($location) {
@@ -365,7 +288,7 @@ class LocationController extends Controller
                 return view('admin.location.view', compact('location', 'zones', 'racks'));
             }
 
-            // 如果既不是zone也不是location，返回404
+            // 如果既不是 zone 也不是 location，返回 404
             abort(404, 'Zone or location not found');
 
         } catch (\Exception $e) {
@@ -380,36 +303,55 @@ class LocationController extends Controller
     }
 
     /**
-     * 显示编辑位置页面
+     * 显示位置编辑表单（用于 Modal）
+     * Show location edit form (for Modal)
      *
+     * @param Request $request
      * @param int $id
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function edit($id)
+    public function showEditForm(Request $request, $id)
     {
         try {
             $location = Location::with(['zone', 'rack'])->findOrFail($id);
-            $zones = Zone::where('zone_status', 'Available')->get();
-            $racks = Rack::where('rack_status', 'Available')->get();
 
-            return view('admin.location.update', compact('location', 'zones', 'racks'));
+            // 如果是 AJAX 请求，返回 JSON 数据（用于 Modal）
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Location data fetched successfully',
+                    'data' => [
+                        'id' => $location->id,
+                        'zone_id' => $location->zone_id,
+                        'rack_id' => $location->rack_id,
+                        'location_status' => $location->location_status,
+                        'zone_name' => $location->zone->zone_name ?? '',
+                        'rack_number' => $location->rack->rack_number ?? ''
+                    ]
+                ]);
+            }
+
+            // 非 AJAX 请求重定向到管理页面
+            return redirect()->route('admin.storage_locations.location.index');
         } catch (\Exception $e) {
-            Log::error('Failed to load edit form: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load location data: ' . $e->getMessage()
+                ], 404);
+            }
             return redirect()->route('admin.storage_locations.location.index')
-                ->with('error', 'Failed to load edit form');
+                ->with('error', 'Location not found');
         }
     }
 
     /**
      * 更新位置信息
+     * Update location information
      *
      * @param Request $request
      * @param int $id
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -468,6 +410,7 @@ class LocationController extends Controller
 
             if ($request->ajax()) {
                 $freshLocation = $location->fresh(['zone', 'rack']);
+
                 Log::info('AJAX response data', [
                     'success' => true,
                     'message' => $message,
@@ -508,9 +451,10 @@ class LocationController extends Controller
 
     /**
      * 设置位置为可用状态
+     * Set location to available status
      *
      * @param int $id
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function setAvailable($id)
     {
@@ -542,9 +486,10 @@ class LocationController extends Controller
 
     /**
      * 设置位置为不可用状态
+     * Set location to unavailable status
      *
      * @param int $id
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function setUnavailable($id)
     {
@@ -576,9 +521,10 @@ class LocationController extends Controller
 
     /**
      * 删除位置
+     * Delete location
      *
      * @param int $id
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
@@ -601,5 +547,162 @@ class LocationController extends Controller
         } catch (\Exception $e) {
             return $this->handleError(request(), 'Failed to delete location: ' . $e->getMessage(), $e);
         }
+    }
+
+    // =============================================================================
+    // 私有辅助方法 (Private Helper Methods)
+    // =============================================================================
+
+    /**
+     * 批量创建位置
+     * Store multiple locations
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    private function storeMultipleLocations(Request $request)
+    {
+        $locations = $request->input('locations', []);
+
+        // 限制批量创建数量
+        if (count($locations) > self::MAX_BULK_LOCATIONS) {
+            return $this->handleError($request, 'Cannot create more than ' . self::MAX_BULK_LOCATIONS . ' locations at once');
+        }
+
+        $validatedData = $request->validate([
+            'locations' => 'required|array|min:1',
+            'locations.*.zone_id' => 'required|exists:zones,id',
+            'locations.*.rack_id' => 'required|exists:racks,id',
+        ]);
+
+        $locations = $validatedData['locations'];
+
+        // 预处理：收集所有位置组合进行批量检查
+        $locationCombinationsToCheck = [];
+        foreach ($locations as $locationData) {
+            $locationData = $this->normalizeLocationData($locationData);
+            $locationCombinationsToCheck[] = [
+                'zone_id' => $locationData['zone_id'],
+                'rack_id' => $locationData['rack_id']
+            ];
+        }
+
+        // 批量检查位置组合是否已存在
+        $existingLocations = [];
+        foreach ($locationCombinationsToCheck as $combination) {
+            $existing = Location::where('zone_id', $combination['zone_id'])
+                ->where('rack_id', $combination['rack_id'])
+                ->first();
+
+            if ($existing) {
+                $zone = Zone::find($combination['zone_id']);
+                $rack = Rack::find($combination['rack_id']);
+                $existingLocations[] = $zone->zone_name . ' - ' . $rack->rack_number;
+            }
+        }
+
+        if (!empty($existingLocations)) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Some locations failed to create',
+                    'errors' => [
+                        'locations' => ['These location combinations already exist: ' . implode(', ', $existingLocations)]
+                    ]
+                ], 422);
+            }
+
+            return back()->withErrors(['locations' => 'These location combinations already exist: ' . implode(', ', $existingLocations)])
+                ->withInput();
+        }
+
+        // 批量创建位置记录
+        $createdLocations = [];
+        foreach ($locations as $locationData) {
+            $locationData = $this->normalizeLocationData($locationData);
+            $location = Location::create([
+                'zone_id' => $locationData['zone_id'],
+                'rack_id' => $locationData['rack_id'],
+                'location_status' => 'Available',
+            ]);
+            $createdLocations[] = $location;
+
+            $this->logOperation('created (batch)', [
+                'location_id' => $location->id,
+                'zone_id' => $locationData['zone_id'],
+                'rack_id' => $locationData['rack_id']
+            ]);
+        }
+
+        $count = count($createdLocations);
+        $message = "Successfully created {$count} location(s)!";
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'data' => $createdLocations
+            ]);
+        }
+
+        return redirect()->route('admin.storage_locations.location.index')
+            ->with('success', $message);
+    }
+
+    /**
+     * 单个创建位置
+     * Store single location
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    private function storeSingleLocation(Request $request)
+    {
+        $rules = array_merge(self::LOCATION_RULES, self::LOCATION_STATUS_RULES);
+        $request->validate($rules);
+
+        // 检查位置组合是否已存在
+        $existing = Location::where('zone_id', $request->zone_id)
+            ->where('rack_id', $request->rack_id)
+            ->first();
+
+        if ($existing) {
+            $zone = Zone::find($request->zone_id);
+            $rack = Rack::find($request->rack_id);
+            $errorMessage = "Location combination {$zone->zone_name} - {$rack->rack_number} already exists";
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'errors' => ['location' => [$errorMessage]]
+                ], 422);
+            }
+
+            return back()->withErrors(['location' => $errorMessage])->withInput();
+        }
+
+        $location = Location::create([
+            'zone_id' => $request->zone_id,
+            'rack_id' => $request->rack_id,
+            'location_status' => 'Available',
+        ]);
+
+        $this->logOperation('created (single)', [
+            'location_id' => $location->id,
+            'zone_id' => $request->zone_id,
+            'rack_id' => $request->rack_id,
+            'location_status' => $request->location_status
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Location created successfully!'
+            ]);
+        }
+
+        return redirect()->route('admin.storage_locations.location.index')
+            ->with('success', 'Location created successfully!');
     }
 }

@@ -16,22 +16,19 @@
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.template-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.template.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.template-metric-cards')
+    @include('admin.template.components.metric-cards')
 
     {{-- 主要内容区域 --}}
-    <div id="dashboard-cards-container" class="row g-4">
-        {{-- 按类别分组的模板卡片将通过JavaScript动态加载 --}}
-    </div>
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.template-empty-list')
+    @include('admin.template.components.data-cards')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.template-pagination-nav')
+    @include('admin.template.components.pagination-nav')
+
+    {{-- Create Template Modal --}}
+    @include('admin.template.create-model')
 </div>
 
 @endsection
@@ -42,11 +39,14 @@
     // 设置尺码模板管理相关路由
     window.templateManagementRoute = "{{ route('admin.template.index') }}";
     window.createTemplateUrl = "{{ route('admin.template.create') }}";
+    window.storeTemplateUrl = "{{ route('admin.template.store') }}";
     window.editTemplateUrl = "{{ route('admin.template.edit', ['id' => ':id']) }}";
     window.viewTemplateUrl = "{{ route('admin.template.view', ['id' => ':id']) }}";
     window.deleteTemplateUrl = "{{ route('admin.template.destroy', ['id' => ':id']) }}";
     window.availableTemplateUrl = "{{ route('admin.template.available', ['id' => ':id']) }}";
     window.unavailableTemplateUrl = "{{ route('admin.template.unavailable', ['id' => ':id']) }}";
+    window.getAvailableSizeLibrariesUrl = "{{ route('admin.template.available-size-libraries') }}";
+    window.availableSizeLibrariesUrl = "{{ route('admin.template.available-size-libraries') }}";
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}

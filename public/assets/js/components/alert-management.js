@@ -4,7 +4,41 @@
  *
  * 提供统一的提示消息样式和功能
  * 所有页面都可以使用这个统一的 alert 系统
+ *
+ * @author WMS Team
+ * @version 3.0.0
  */
+
+// 防止重复显示的机制
+const alertHistory = {
+    messages: new Set(),
+    lastMessage: null,
+    lastMessageTime: 0,
+    DEBOUNCE_TIME: 1000 // 1秒内相同的消息不重复显示
+};
+
+/**
+ * 检查消息是否有效且不重复
+ * @param {string} message - 消息内容
+ * @returns {boolean}
+ */
+function isValidMessage(message) {
+    // 检查消息是否为空、null、undefined 或只包含空白字符
+    if (!message || typeof message !== 'string' || message.trim() === '') {
+        return false;
+    }
+
+    // 检查是否在防抖时间内重复
+    const now = Date.now();
+    const trimmedMessage = message.trim();
+
+    if (alertHistory.lastMessage === trimmedMessage &&
+        (now - alertHistory.lastMessageTime) < alertHistory.DEBOUNCE_TIME) {
+        return false;
+    }
+
+    return true;
+}
 
 /**
  * 显示提示消息
@@ -13,6 +47,11 @@
  * @param {Object} options - 配置选项
  */
 function showAlert(message, type = 'info', options = {}) {
+    // 验证消息有效性
+    if (!isValidMessage(message)) {
+        return;
+    }
+
     const defaultOptions = {
         container: 'globalAlertContainer', // 默认使用全局容器
         duration: 4000,
@@ -23,8 +62,20 @@ function showAlert(message, type = 'info', options = {}) {
 
     const config = { ...defaultOptions, ...options };
 
+    // 记录消息和时间，防止重复
+    const trimmedMessage = message.trim();
+    alertHistory.lastMessage = trimmedMessage;
+    alertHistory.lastMessageTime = Date.now();
+
+    // 清理历史记录（保留最近50条）
+    if (alertHistory.messages.size > 50) {
+        const firstMessage = Array.from(alertHistory.messages)[0];
+        alertHistory.messages.delete(firstMessage);
+    }
+    alertHistory.messages.add(trimmedMessage);
+
     // 创建 alert 元素
-    const alertElement = createAlertElement(message, type, config);
+    const alertElement = createAlertElement(trimmedMessage, type, config);
 
     // 根据位置选择显示方式
     if (config.position === 'header' || config.container === 'globalAlertContainer') {
@@ -63,12 +114,12 @@ function createAlertElement(message, type, config) {
     const div = document.createElement('div');
     div.innerHTML = alertHtml.trim();
     const alertElement = div.firstChild;
-    
+
     // 添加动画类
     alertElement.style.opacity = '0';
     alertElement.style.transform = 'translateY(-20px)';
     alertElement.style.transition = 'all 0.3s ease';
-    
+
     return alertElement;
 }
 
@@ -166,7 +217,7 @@ function hideAlert(alertElement, animation = true) {
         // 触发淡出动画
         alertElement.style.opacity = '0';
         alertElement.style.transform = 'translateY(-20px)';
-        
+
         // 等待动画完成后移除
         setTimeout(() => {
             if (alertElement.parentNode) {
@@ -189,7 +240,7 @@ function clearAllAlerts() {
     if (globalContainer) {
         globalContainer.innerHTML = '';
     }
-    
+
     // 清除页面内联容器（兼容旧代码）
     const inlineContainer = document.getElementById('alertContainer');
     if (inlineContainer) {
@@ -225,9 +276,38 @@ function showInfo(message, options = {}) {
     showAlert(message, 'info', options);
 }
 
+/**
+ * 安全的 alert 包装函数（用于向后兼容）
+ * 确保不会显示空内容或重复的 alert
+ * @param {string} message - 消息内容
+ */
+function safeAlert(message) {
+    // 验证消息有效性
+    if (!message || typeof message !== 'string' || message.trim() === '') {
+        return;
+    }
+
+    const trimmedMessage = message.trim();
+
+    // 检查是否在防抖时间内重复
+    const now = Date.now();
+    if (alertHistory.lastMessage === trimmedMessage &&
+        (now - alertHistory.lastMessageTime) < alertHistory.DEBOUNCE_TIME) {
+        return;
+    }
+
+    // 记录消息
+    alertHistory.lastMessage = trimmedMessage;
+    alertHistory.lastMessageTime = now;
+
+    // 显示 alert
+    alert(trimmedMessage);
+}
+
 // 將函數暴露到全局 window 對象
 window.showAlert = showAlert;
 window.showSuccess = showSuccess;
 window.showError = showError;
 window.showWarning = showWarning;
 window.showInfo = showInfo;
+window.safeAlert = safeAlert;

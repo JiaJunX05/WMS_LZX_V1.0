@@ -11,29 +11,33 @@
 {{-- 页面样式文件引入 --}}
 <link rel="stylesheet" href="{{ asset('assets/css/components/variables.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/css/dashboard-header.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-image.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/form-status.css') }}">
 
 {{-- 页面主体内容 --}}
 <div class="container-fluid py-4">
 
     {{-- 页面头部导航 --}}
-    @include('components.dashboard-header.zone-dashboard-header', ['type' => 'dashboard'])
-
+    @include('admin.zone.components.dashboard-header')
 
     {{-- 统计卡片区域 --}}
-    @include('components.metric-cards.zone-metric-cards')
+    @include('admin.zone.components.metric-cards')
 
     {{-- 搜索筛选区域 --}}
-    @include('components.search-filters.zone-search-filters')
+    @include('admin.zone.components.search-filters')
 
     {{-- 区域列表表格 --}}
-    @include('components.data-tables.zone-data-tables')
-
-    {{-- 空状态显示 --}}
-    @include('components.empty-list.zone-empty-list')
+    @include('admin.zone.components.data-table')
 
     {{-- 分页导航区域 --}}
-    @include('components.pagination-nav.zone-pagination-nav')
+    @include('admin.zone.components.pagination-nav')
 </div>
+
+    {{-- Add Zone 弹窗模态框 --}}
+    @include('admin.zone.create-model')
+
+    {{-- Update Zone 弹窗模态框 --}}
+    @include('admin.zone.update-model')
 
 @endsection
 
@@ -42,7 +46,9 @@
 <script>
     // 设置区域管理相关URL
     window.zoneManagementRoute = "{{ route('admin.zone.index') }}";
-    window.editZoneUrl = "{{ route('admin.zone.edit', ['id' => ':id']) }}";
+    window.createZoneUrl = "{{ route('admin.zone.store') }}";
+    window.updateZoneUrl = "{{ route('admin.zone.update', ['id' => ':id']) }}";
+    window.editZoneUrl = "{{ route('admin.zone.edit', ':id') }}";
     window.deleteZoneUrl = "{{ route('admin.zone.destroy', ['id' => ':id']) }}";
     window.availableZoneUrl = "{{ route('admin.zone.available', ['id' => ':id']) }}";
     window.unavailableZoneUrl = "{{ route('admin.zone.unavailable', ['id' => ':id']) }}";
@@ -54,6 +60,7 @@
 
 {{-- 引入必要的 JavaScript 文件 --}}
 <script src="{{ asset('assets/js/components/image-management.js') }}"></script>
+<script src="{{ asset('assets/js/components/status-management.js') }}"></script>
 <script src="{{ asset('assets/js/zone-management.js') }}"></script>
 @endsection
 

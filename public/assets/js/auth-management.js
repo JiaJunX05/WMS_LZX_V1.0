@@ -816,12 +816,24 @@ class AuthDashboard {
 
     // 顯示角色更改模態框
     showRoleChangeModal(userId) {
+        // 設置當前用戶ID
+        $('#confirmRoleChange').data('user-id', userId);
+
+        // 從表格行獲取用戶當前角色
+        const userRow = $(`tr[data-user-id="${userId}"]`);
+        let currentRole = 'Staff';
+        
+        if (userRow.length > 0) {
+            currentRole = userRow.attr('data-role') || userRow.data('role') || 'Staff';
+        }
+
         // 重置角色選擇
         $('input[name="new_role"]').prop('checked', false);
         $('.role-card').removeClass('selected');
 
-        // 設置當前用戶ID
-        $('#confirmRoleChange').data('user-id', userId);
+        // 設置當前用戶的角色為選中狀態
+        $(`input[name="new_role"][value="${currentRole}"]`).prop('checked', true);
+        $(`.role-card[data-role="${currentRole}"]`).addClass('selected');
 
         // 顯示模態框
         const modal = new bootstrap.Modal(document.getElementById('roleChangeModal'));
@@ -1086,11 +1098,16 @@ class AuthDashboard {
             this.initCreateModalImageSystem();
         });
 
-        // Modal 完全显示后设置焦点
+        // Modal 完全显示后设置焦点并初始化角色选择
         $('#createUserModal').on('shown.bs.modal', () => {
             const usernameInput = document.getElementById('create-username');
             if (usernameInput) {
                 usernameInput.focus();
+            }
+            
+            // 初始化角色选择事件（仅在 create modal 中）
+            if (typeof window.initializeRoleCardSelection === 'function') {
+                window.initializeRoleCardSelection('account_role');
             }
         });
 

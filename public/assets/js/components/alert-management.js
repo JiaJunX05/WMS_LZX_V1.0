@@ -227,9 +227,73 @@ function showModalAlert(alertElement, modal) {
  * 显示全局 alert（在header位置或在modal内部）
  */
 function showGlobalAlert(alertElement) {
-    // 首先检查是否有打开的 modal
-    const activeModal = getActiveModal();
+    // 检查 alert 类型和消息内容
+    const isSuccess = alertElement.classList.contains('alert-success');
+    const alertText = alertElement.textContent || '';
 
+    // 检查是否是图片相关的消息（图片添加、移除等操作）
+    const isImageRelated = /image|图片|uploaded|removed|added|removal/i.test(alertText);
+
+    // 检查是否是选择相关的消息（选择、选中等操作）
+    const isSelectionRelated = /selected|选择|select|rack.*selected|zone.*selected|product.*selected/i.test(alertText);
+
+    // 检查是否是 stock 中间操作的消息（增加数量、添加产品等，但不是最终提交）
+    const isStockIntermediate = /increased quantity|added.*to.*stock|added.*stock.*list|removed.*from.*stock|cleared|clear all/i.test(alertText);
+
+    // 检查是否是最终提交成功的消息
+    const isFinalSubmission = /successfully submitted|submitted.*successfully|submit.*success|stock in.*success|stock out.*success|stock return.*success/i.test(alertText);
+
+    // 图片相关的消息（包括成功消息）总是显示在 modal 内部（如果有打开的 modal）
+    const activeModal = getActiveModal();
+    if (isImageRelated && activeModal) {
+        showModalAlert(alertElement, activeModal);
+        return;
+    }
+
+    // 选择相关的消息（包括成功消息）总是显示在 modal 内部（如果有打开的 modal）
+    if (isSelectionRelated && activeModal) {
+        showModalAlert(alertElement, activeModal);
+        return;
+    }
+
+    // Stock 中间操作的消息（增加数量、添加产品等）显示在 modal 内部（如果有打开的 modal）
+    if (isStockIntermediate && activeModal) {
+        showModalAlert(alertElement, activeModal);
+        return;
+    }
+
+    // 最终提交成功的消息显示在全局容器（即使有打开的 modal），这样即使 modal 关闭了也能看到
+    // 非图片、非选择、非 stock 中间操作的成功消息也显示在全局容器
+    if (isSuccess && (isFinalSubmission || (!isImageRelated && !isSelectionRelated && !isStockIntermediate))) {
+        // 成功消息显示在全局容器
+        const container = document.getElementById('globalAlertContainer');
+        if (!container) {
+            console.warn('Global alert container not found.');
+            return;
+        }
+
+        // 清除现有 alert
+        const existingAlerts = container.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            setTimeout(() => alert.remove(), 300);
+        });
+
+        // 添加新 alert（延迟添加以确保动画效果）
+        setTimeout(() => {
+            container.appendChild(alertElement);
+            // 触发显示动画
+            setTimeout(() => {
+                alertElement.classList.add('show');
+                alertElement.style.opacity = '1';
+                alertElement.style.transform = 'translateY(0)';
+            }, 10);
+        }, existingAlerts.length > 0 ? 300 : 0);
+        return;
+    }
+
+    // 对于错误、警告、信息类型的消息，如果有打开的 modal，在 modal 内部显示
     if (activeModal) {
         // 如果有打开的 modal，在 modal 内部显示
         showModalAlert(alertElement, activeModal);

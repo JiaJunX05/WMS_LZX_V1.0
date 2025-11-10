@@ -241,7 +241,7 @@ class StockDashboard {
                                  style="width: 50px; height: 50px; object-fit: cover;"
                                  onerror="this.src='${window.defaultProductImage}'">
                             <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
-                                <div class="fw-medium" style="line-height: 1.4;">${product.name}</div>
+                                <div class="fw-medium " style="line-height: 1.4;">${product.name}</div>
                                 <div class="d-flex align-items-center gap-2 mt-1">
                                     <span class="text-muted small">${product.category?.category_name || 'N/A'}</span>
                                 </div>

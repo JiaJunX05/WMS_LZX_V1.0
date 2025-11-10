@@ -121,7 +121,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/stock-in', [StockController::class, 'stockIn'])->name('stock_in');
         Route::post('/stock-out', [StockController::class, 'stockOut'])->name('stock_out');
         Route::post('/stock-return', [StockController::class, 'stockReturn'])->name('stock_return');
-        Route::get('/stock-history/{id}', [StockController::class, 'getUserStockHistory'])->name('staff.stock_history');
+        Route::get('/stock-history/{id}', [StockController::class, 'getUserStockHistory'])->name('stock_history');
     });
 
     // 公共库存历史报告功能 - 所有认证用户都可以访问

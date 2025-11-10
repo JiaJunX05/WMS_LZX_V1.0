@@ -38,9 +38,9 @@
 <script>
     // 库存管理相关 URL
     window.stockManagementRoute = "{{ route('staff.stock_management') }}";
-    window.stockInPageRoute = "{{ route('staff.stock_in_page') }}";
-    window.stockOutPageRoute = "{{ route('staff.stock_out_page') }}";
-    window.stockHistoryRoute = "{{ route('staff.staff.stock_history', ['id' => ':id']) }}";
+    window.stockInPageRoute = "{{ route('staff.stock_management') }}";
+    window.stockOutPageRoute = "{{ route('staff.stock_management') }}";
+    window.stockHistoryRoute = "{{ route('staff.stock_history', ['id' => ':id']) }}";
     window.stockExportUrl = "{{ route('staff.stock_management.export') }}";
     window.productImagePath = "{{ asset('assets/images') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";

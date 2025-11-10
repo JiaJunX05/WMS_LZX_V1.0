@@ -62,7 +62,7 @@
                         <span>Stock Movement</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'staff.stock_in_page', 'staff.stock_out_page', 'staff.stock_return_page', 'stock_history']) ? 'show' : '' }}"
+                    <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'show' : '' }}"
                         id="stockMovementCollapse">
                         <ul class="nav-list sub-nav">
                             <li>
@@ -227,7 +227,7 @@
 
                 <!-- Stock Movement -->
                 <li class="nav-item">
-                    <button class="nav-link {{ request()->routeIs(['staff.stock_management', 'staff.stock_in_page', 'staff.stock_out_page', 'staff.stock_return_page', 'stock_history']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                    <button class="nav-link {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'active' : '' }} has-dropdown w-100 text-start"
                             type="button" data-bs-toggle="collapse" data-bs-target="#stockMovementCollapse">
                         <i class="bi bi-box-seam-fill menu-icon me-2"></i>
                         <span>Stock Movement</span>
@@ -492,13 +492,13 @@
 
                     <!-- Stock Movement -->
                     <li class="nav-item">
-                        <button class="nav-link {{ request()->routeIs(['staff.stock_management', 'staff.stock_in_page', 'staff.stock_out_page', 'staff.stock_return_page', 'stock_history']) ? 'active' : '' }} has-dropdown w-100 text-start"
+                        <button class="nav-link {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'active' : '' }} has-dropdown w-100 text-start"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#mobileStockMovementCollapse">
                             <i class="bi bi-box-seam-fill menu-icon me-2"></i>
                             <span>Stock Movement</span>
                             <i class="bi bi-chevron-down ms-auto"></i>
                         </button>
-                        <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'staff.stock_in_page', 'staff.stock_out_page', 'staff.stock_return_page', 'stock_history']) ? 'show' : '' }}"
+                        <div class="collapse nav-collapse {{ request()->routeIs(['staff.stock_management', 'stock_history']) ? 'show' : '' }}"
                             id="mobileStockMovementCollapse">
                             <ul class="nav-list sub-nav">
                                 <li>
@@ -514,19 +514,19 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('staff.stock_in_page') }}" class="nav-link {{ request()->routeIs('staff.stock_in_page') ? 'active' : '' }}">
+                                    <a href="{{ route('staff.stock_management') }}" class="nav-link {{ request()->routeIs('staff.stock_management') ? 'active' : '' }}">
                                         <i class="bi bi-box-arrow-in-down me-2"></i>
                                         <span>Scan In</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('staff.stock_out_page') }}" class="nav-link {{ request()->routeIs('staff.stock_out_page') ? 'active' : '' }}">
+                                    <a href="{{ route('staff.stock_management') }}" class="nav-link {{ request()->routeIs('staff.stock_management') ? 'active' : '' }}">
                                         <i class="bi bi-box-arrow-up me-2"></i>
                                         <span>Scan Out</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('staff.stock_return_page') }}" class="nav-link {{ request()->routeIs('staff.stock_return_page') ? 'active' : '' }}">
+                                    <a href="{{ route('staff.stock_management') }}" class="nav-link {{ request()->routeIs('staff.stock_management') ? 'active' : '' }}">
                                         <i class="bi bi-arrow-return-left me-2"></i>
                                         <span>Scan Return</span>
                                     </a>

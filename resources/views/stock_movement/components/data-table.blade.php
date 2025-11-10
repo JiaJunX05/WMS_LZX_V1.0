@@ -28,28 +28,19 @@
                                 <div class="fw-bold text-muted small text-uppercase"></div>
                                 <input type="checkbox" name="select-all" id="select-all" class="form-check-input">
                             </th>
-                            <th style="width: 40%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
-                            <th style="width: 15%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
-                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">CURRENT STOCK</div></th>
+                            <th style="width: 55%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">CURRENT STOCK</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ACTIONS</div>
                             </th>
                         @else
-                            <th class="ps-4" style="width: 10%">
-                                <div class="fw-bold text-muted small text-uppercase">ID</div>
-                            </th>
-                            <th style="width: 40%">
-                                <div class="fw-bold text-muted small text-uppercase">PRODUCT</div>
-                            </th>
-                            <th style="width: 15%">
-                                <div class="fw-bold text-muted small text-uppercase">SKU CODE</div>
-                            </th>
-                            <th style="width: 10%">
-                                <div class="fw-bold text-muted small text-uppercase">STOCK</div>
-                            </th>
-                            <th style="width: 10%">
-                                <div class="fw-bold text-muted small text-uppercase">STATUS</div>
-                            </th>
+                            <th class="ps-4" style="width: 5%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
+                            <th style="width: 55%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">CURRENT STOCK</div></th>
+                            <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ACTIONS</div>
                             </th>
@@ -78,7 +69,7 @@
     </div>
     <h4 class="text-secondary fw-semibold mb-3">No Stock Data</h4>
     <p class="text-muted small mb-4">No stock movements have been recorded in the system yet</p>
-    <a href="{{ route('staff.stock_in_page') }}" class="btn btn-primary btn-lg">
+    <a href="{{ route('staff.stock_management') }}" class="btn btn-primary btn-lg">
         <i class="bi bi-plus-circle-fill me-2"></i>Create First Stock Movement
     </a>
 </div>

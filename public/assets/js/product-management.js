@@ -606,30 +606,55 @@ class ProductDashboard {
      * @param {string} type 提示類型
      */
     showAlert(message, type) {
-        // 使用統一的 alert 系統
+        // 使用統一的 alert 系統（在 header 顯示）
         if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 備用實現 - 修復 Bootstrap 5 的 alert 類名
-            const alertClass = type === 'danger' ? 'alert-danger' : `alert-${type}`;
-            const alertHtml = `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
 
-            // 插入到頁面頂部
-            const container = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
-            container.insertAdjacentHTML('afterbegin', alertHtml);
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
 
-            // 自動消失
-            setTimeout(() => {
-                const alertElement = container.querySelector('.alert');
-                if (alertElement) {
-                    alertElement.remove();
-                }
-            }, 5000);
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
+
+                // 自動消失
+                setTimeout(() => {
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
+                }, 5000);
+            } else {
+                // 如果 globalAlertContainer 不存在，回退到頁面頂部
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                fallbackContainer.insertAdjacentHTML('afterbegin', alertHtml);
+                setTimeout(() => {
+                    const alertElement = fallbackContainer.querySelector('.alert');
+                    if (alertElement) alertElement.remove();
+                }, 5000);
+            }
         }
     }
 }
@@ -1801,9 +1826,89 @@ function populateCreateProductSelects(data) {
 }
 
 /**
+ * 清除所有验证错误
+ */
+function clearProductValidationErrors() {
+    const form = document.getElementById('createProductForm');
+    if (!form) return;
+
+    const inputs = form.querySelectorAll('.form-control, select');
+    inputs.forEach(input => {
+        input.classList.remove('is-invalid', 'is-valid');
+        const feedback = input.parentElement.querySelector('.invalid-feedback') ||
+                        input.closest('.col-12, .col-md-6, .col-md-4')?.querySelector('.invalid-feedback');
+        if (feedback) {
+            feedback.textContent = '';
+        }
+    });
+}
+
+/**
+ * 显示字段级验证错误
+ */
+function displayProductValidationErrors(errors) {
+    // 清除之前的错误
+    clearProductValidationErrors();
+
+    // 为每个字段显示错误
+    Object.keys(errors).forEach(field => {
+        // 尝试多种可能的字段名格式
+        let input = null;
+
+        // 先尝试通过 id 查找（处理 create_xxx 格式）
+        const fieldName = field.replace('create_', '');
+        input = document.getElementById(`create_${fieldName}`) ||
+                document.getElementById(fieldName) ||
+                document.getElementById(field);
+
+        // 如果通过 id 找不到，尝试通过 name 属性查找
+        if (!input) {
+            input = document.querySelector(`[name="${field}"]`) ||
+                    document.querySelector(`[name="${fieldName}"]`);
+        }
+
+        if (input) {
+            input.classList.add('is-invalid');
+            input.classList.remove('is-valid');
+
+            // 显示错误消息 - 查找最近的 invalid-feedback
+            let feedback = input.parentElement.querySelector('.invalid-feedback');
+            if (!feedback) {
+                // 尝试在父容器中查找
+                const parentContainer = input.closest('.col-12, .col-md-6, .col-md-4, .mb-4');
+                if (parentContainer) {
+                    feedback = parentContainer.querySelector('.invalid-feedback');
+                }
+            }
+
+            if (feedback) {
+                feedback.textContent = errors[field][0] || `Please enter ${field}.`;
+                feedback.style.display = 'block';
+            } else {
+                // 如果没有 invalid-feedback div，创建一个
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'invalid-feedback';
+                feedbackDiv.textContent = errors[field][0] || `Please enter ${field}.`;
+                feedbackDiv.style.display = 'block';
+
+                // 添加到输入框的父容器中
+                const parentContainer = input.closest('.col-12, .col-md-6, .col-md-4, .mb-4') || input.parentElement;
+                if (parentContainer) {
+                    parentContainer.appendChild(feedbackDiv);
+                }
+            }
+        } else {
+            console.warn(`Field not found for validation error: ${field}`);
+        }
+    });
+}
+
+/**
  * 重置 Create Product Modal
  */
 function resetCreateProductModal() {
+    // 清除验证错误
+    clearProductValidationErrors();
     const form = document.getElementById('createProductForm');
     if (form) {
         form.reset();
@@ -1871,7 +1976,25 @@ function submitCreateProductModal() {
             'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // 先检查响应状态
+        if (!response.ok) {
+            // 如果是 422 验证错误，返回错误数据
+            if (response.status === 422) {
+                return response.json().then(data => {
+                    throw { status: 422, errors: data.errors || {}, message: data.message || 'Validation failed' };
+                });
+            }
+            // 其他错误，尝试解析 JSON
+            return response.json().then(data => {
+                throw { status: response.status, message: data.message || 'Request failed' };
+            }).catch(() => {
+                throw { status: response.status, message: 'Request failed' };
+            });
+        }
+        // 成功响应，解析 JSON
+        return response.json();
+    })
     .then(data => {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -1897,8 +2020,20 @@ function submitCreateProductModal() {
         console.error('Error:', error);
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
-        if (typeof showAlert === 'function') {
-            showAlert('An error occurred while creating the product', 'error');
+
+        // 处理验证错误 (422)
+        if (error.status === 422 && error.errors) {
+            console.log('Displaying validation errors:', error.errors);
+            displayProductValidationErrors(error.errors);
+            if (typeof showAlert === 'function') {
+                showAlert('Please fill in all required fields', 'warning');
+            }
+        } else {
+            // 显示错误消息
+            const errorMessage = error.message || 'An error occurred while creating the product';
+            if (typeof showAlert === 'function') {
+                showAlert(errorMessage, 'error');
+            }
         }
     });
 }
@@ -2097,6 +2232,8 @@ function initUpdateProductModal() {
     // Modal 关闭时清理
     $(modal).on('hidden.bs.modal', function() {
         resetUpdateProductModal();
+        // 手动清理 backdrop，确保 modal 完全关闭
+        cleanupModalBackdrop();
     });
 
     // 提交按钮事件
@@ -2601,4 +2738,18 @@ $(document).ready(function() {
         initUpdateProductModal();
     }
 });
+
+/**
+ * 清理 modal backdrop
+ */
+function cleanupModalBackdrop() {
+    // 移除所有 modal backdrop
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+
+    // 移除 body 上的 modal 相关类
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
 

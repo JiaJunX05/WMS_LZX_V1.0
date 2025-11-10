@@ -679,18 +679,55 @@ class CategoryDashboard {
      * @param {string} type 消息類型
      */
     showAlert(message, type) {
-        if (typeof window.showAlert !== 'undefined') {
+        // 使用統一的 alert 系統（在 header 顯示）
+        if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 備用實現
-            const alertContainer = document.getElementById('alertContainer') || document.body;
-            const alertHtml = `
-                <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            alertContainer.insertAdjacentHTML('afterbegin', alertHtml);
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
+            
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
+                
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
+                
+                // 自動消失
+                setTimeout(() => {
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
+                }, 5000);
+            } else {
+                // 如果 globalAlertContainer 不存在，回退到頁面頂部
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.getElementById('alertContainer') || document.body;
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                fallbackContainer.insertAdjacentHTML('afterbegin', alertHtml);
+                setTimeout(() => {
+                    const alertElement = fallbackContainer.querySelector('.alert');
+                    if (alertElement) alertElement.remove();
+                }, 5000);
+            }
     }
 }
 
@@ -794,6 +831,57 @@ class CategoryDashboard {
     }
 }
 
+    /**
+     * 显示字段级验证错误
+     */
+    displayValidationErrors(errors) {
+        // 清除之前的错误
+        const createForm = document.getElementById('createCategoryModalForm');
+        if (createForm) {
+            const inputs = createForm.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+                const feedback = input.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
+            });
+        }
+
+        const updateForm = document.getElementById('updateCategoryModalForm');
+        if (updateForm) {
+            const inputs = updateForm.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+                const feedback = input.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
+            });
+        }
+
+        // 为每个字段显示错误
+        Object.keys(errors).forEach(field => {
+            // 尝试多种可能的字段名格式（先尝试 update，再尝试 create，最后尝试通用）
+            let input = document.getElementById(`update_${field}`) ||
+                       document.getElementById(`update-${field}`) ||
+                       document.getElementById(field) ||
+                       document.querySelector(`[name="${field}"]`);
+            
+            if (input) {
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+                
+                // 显示错误消息
+                const feedback = input.parentElement.querySelector('.invalid-feedback') ||
+                               input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = errors[field][0] || `Please enter ${field}.`;
+                }
+            }
+        });
+    }
+
 /**
      * 提交彈窗中的Category
      */
@@ -847,8 +935,13 @@ class CategoryDashboard {
     })
     .then(response => {
         if (!response.ok) {
+            if (response.status === 422) {
                 return response.json().then(data => {
-                    throw new Error(data.message || 'Failed to create category');
+                    throw { status: 422, errors: data.errors || {} };
+                });
+            }
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to create category');
             });
         }
         return response.json();
@@ -876,12 +969,18 @@ class CategoryDashboard {
         }
     })
     .catch(error => {
+        // 处理验证错误 (422)
+        if (error.status === 422 && error.errors) {
+            this.displayValidationErrors(error.errors);
+            this.showAlert('Please fill in all required fields', 'warning');
+        } else {
             let errorMessage = 'Failed to create category';
             if (error.message) {
                 errorMessage = error.message;
             }
             this.showAlert(errorMessage, 'error');
-        })
+        }
+    })
         .finally(() => {
             submitBtn.html(originalText);
             submitBtn.prop('disabled', false);
@@ -913,6 +1012,8 @@ class CategoryDashboard {
 
         $('#updateCategoryModal').on('hidden.bs.modal', () => {
             this.resetUpdateModalForm();
+            // 手动清理 backdrop，确保 modal 完全关闭
+            this.cleanupModalBackdrop();
         });
 
         $('#submitUpdateCategoryModal').on('click', () => {
@@ -997,12 +1098,20 @@ class CategoryDashboard {
                     updatePreviewContainerId: 'image-preview'
                 });
 
-                previewContainer.addEventListener('click', function(e) {
-            if (e.target.closest('.img-remove-btn')) {
-                        return;
-            }
-                    imageInput.click();
-        });
+                // 移除旧的事件监听器（通过克隆节点）
+                const newPreviewContainer = previewContainer.cloneNode(true);
+                previewContainer.parentNode.replaceChild(newPreviewContainer, previewContainer);
+                const freshPreviewContainer = modal.querySelector('#image-preview');
+                const freshImageInput = modal.querySelector('#input_image');
+
+                if (freshPreviewContainer && freshImageInput) {
+                    freshPreviewContainer.addEventListener('click', function(e) {
+                        if (e.target.closest('.img-remove-btn')) {
+                            return;
+                        }
+                        freshImageInput.click();
+                    });
+                }
 
     if (removeImageBtn) {
                     const newRemoveBtn = removeImageBtn.cloneNode(true);
@@ -1167,6 +1276,20 @@ class CategoryDashboard {
     }
 
     /**
+     * 清理 modal backdrop
+     */
+    cleanupModalBackdrop() {
+        // 移除所有 modal backdrop
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // 移除 body 上的 modal 相关类
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+
+    /**
      * 提交更新彈窗中的Category
      */
     submitUpdateModalCategory() {
@@ -1244,6 +1367,11 @@ if (removeImageInput && removeImageInput.value === '1') {
         })
         .then(response => {
             if (!response.ok) {
+                if (response.status === 422) {
+                    return response.json().then(data => {
+                        throw { status: 422, errors: data.errors || {} };
+                    });
+                }
                 return response.json().then(data => {
                     throw new Error(data.message || 'Failed to update category');
                 });
@@ -1273,11 +1401,17 @@ if (removeImageInput && removeImageInput.value === '1') {
             }
         })
         .catch(error => {
-            let errorMessage = 'Failed to update category';
-            if (error.message) {
-                errorMessage = error.message;
+            // 处理验证错误 (422)
+            if (error.status === 422 && error.errors) {
+                this.displayValidationErrors(error.errors);
+                this.showAlert('Please fill in all required fields', 'warning');
+            } else {
+                let errorMessage = 'Failed to update category';
+                if (error.message) {
+                    errorMessage = error.message;
+                }
+                this.showAlert(errorMessage, 'error');
             }
-            this.showAlert(errorMessage, 'error');
         })
         .finally(() => {
             submitBtn.html(originalText);

@@ -961,29 +961,20 @@ function displayRackCards(racks) {
     }
 
     container.innerHTML = racks.map(rack => `
-        <div class="col-6 col-md-4 col-lg-3 mb-3">
-            <div class="card rack-card h-100 border-2 border-light shadow-sm position-relative overflow-hidden"
+        <div class="col-md-3 col-sm-4 col-6 mb-3">
+            <div class="card rack-card h-100 border border-light position-relative"
                  data-rack-id="${rack.id}"
                  data-rack-number="${rack.rack_number}"
                  data-status="${rack.rack_status}"
-                 style="cursor: pointer; transition: all 0.3s ease; border-radius: 12px;">
+                 style="cursor: pointer; transition: all 0.3s ease;">
                 <input type="checkbox" name="rack_ids[]" value="${rack.id}"
                        class="rack-checkbox position-absolute opacity-0"
                        id="rack_${rack.id}"
                        style="pointer-events: none;">
-                <label for="rack_${rack.id}" class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
-                       style="cursor: pointer; min-height: 120px; position: relative;">
-                    <div class="position-absolute top-0 end-0 m-2">
-                        <i class="bi bi-check-circle-fill text-success fs-5 d-none rack-check-icon" style="text-shadow: 0 0 4px rgba(0,0,0,0.2);"></i>
-                    </div>
-                    <div class="rack-number fw-bold text-dark mb-2 fs-5">${rack.rack_number.toUpperCase()}</div>
-                    <div class="rack-capacity text-muted small mb-3">
-                        <i class="bi bi-boxes me-1"></i>Capacity: ${rack.capacity || 'N/A'}
-                    </div>
-                    <div class="rack-status badge ${rack.rack_status === 'Available' ? 'bg-success-subtle text-success border border-success border-opacity-25' : 'bg-danger-subtle text-danger border border-danger border-opacity-25'} px-3 py-2 rounded-pill">
-                        <i class="bi ${rack.rack_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${rack.rack_status}
-                    </div>
-                </label>
+                <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
+                     style="cursor: pointer; min-height: 80px; position: relative;">
+                    <div class="size-value fw-bold text-dark mb-0 fs-5">${rack.rack_number.toUpperCase()}</div>
+                </div>
             </div>
         </div>
     `).join('');
@@ -1026,26 +1017,29 @@ function bindRackCardEvents() {
     cards.forEach(card => {
         // 為複選框添加事件監聽
         const checkbox = card.querySelector('input[type="checkbox"]');
-        const checkIcon = card.querySelector('.rack-check-icon');
+
+        // 直接點擊卡片切換選擇狀態（與 library 一致）
+        card.addEventListener('click', function(e) {
+            // 防止點擊 checkbox 時觸發兩次
+            if (e.target.tagName === 'INPUT') {
+                return;
+            }
+            toggleRackCardSelection(card, checkbox);
+        });
 
         if (checkbox) {
             checkbox.addEventListener('change', function() {
-                if (this.checked) {
+                const isSelected = this.checked;
+                if (isSelected) {
                     card.classList.add('border-success', 'bg-success-subtle');
                     card.classList.remove('border-light');
-                    card.style.transform = 'scale(1.02)';
-                    card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
-                    if (checkIcon) {
-                        checkIcon.classList.remove('d-none');
-                    }
+                    card.style.transform = 'scale(1.05)';
+                    card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
                 } else {
                     card.classList.remove('border-success', 'bg-success-subtle');
                     card.classList.add('border-light');
                     card.style.transform = 'scale(1)';
                     card.style.boxShadow = '';
-                    if (checkIcon) {
-                        checkIcon.classList.add('d-none');
-                    }
                 }
                 updateRackSelectionCounter();
             });
@@ -1070,6 +1064,33 @@ function bindRackCardEvents() {
             }
         });
     });
+}
+
+/**
+ * 切換 Rack 卡片選擇狀態（與 library 的 toggleSizeCardSelection 一致）
+ */
+function toggleRackCardSelection(card, checkbox) {
+    if (!checkbox) return;
+
+    const isSelected = checkbox.checked;
+
+    if (isSelected) {
+        // 取消選擇
+        checkbox.checked = false;
+        card.classList.remove('border-success', 'bg-success-subtle');
+        card.classList.add('border-light');
+        card.style.transform = 'scale(1)';
+        card.style.boxShadow = '';
+    } else {
+        // 選擇
+        checkbox.checked = true;
+        card.classList.remove('border-light');
+        card.classList.add('border-success', 'bg-success-subtle');
+        card.style.transform = 'scale(1.05)';
+        card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+    }
+
+    updateRackSelectionCounter();
 }
 
 /**
@@ -1113,15 +1134,11 @@ function selectAllRacks() {
     checkboxes.forEach(checkbox => {
         checkbox.checked = true;
         const card = checkbox.closest('.rack-card');
-        const checkIcon = card?.querySelector('.rack-check-icon');
         if (card) {
             card.classList.add('border-success', 'bg-success-subtle');
             card.classList.remove('border-light');
-            card.style.transform = 'scale(1.02)';
-            card.style.boxShadow = '0 4px 12px rgba(25, 135, 84, 0.3)';
-            if (checkIcon) {
-                checkIcon.classList.remove('d-none');
-            }
+            card.style.transform = 'scale(1.05)';
+            card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
         }
     });
     updateRackSelectionCounter();
@@ -1152,15 +1169,11 @@ function clearAllRacks() {
     checkboxes.forEach(checkbox => {
         checkbox.checked = false;
         const card = checkbox.closest('.rack-card');
-        const checkIcon = card?.querySelector('.rack-check-icon');
         if (card) {
             card.classList.remove('border-success', 'bg-success-subtle');
             card.classList.add('border-light');
             card.style.transform = 'scale(1)';
             card.style.boxShadow = '';
-            if (checkIcon) {
-                checkIcon.classList.add('d-none');
-            }
         }
     });
     updateRackSelectionCounter();
@@ -1197,15 +1210,11 @@ function resetLocationModal() {
     checkboxes.forEach(checkbox => {
         checkbox.checked = false;
         const card = checkbox.closest('.rack-card');
-        const checkIcon = card?.querySelector('.rack-check-icon');
         if (card) {
             card.classList.remove('border-success', 'bg-success-subtle');
             card.classList.add('border-light');
             card.style.transform = 'scale(1)';
             card.style.boxShadow = '';
-            if (checkIcon) {
-                checkIcon.classList.add('d-none');
-            }
         }
     });
 
@@ -1322,6 +1331,9 @@ function bindUpdateLocationModalEvents() {
         // 清空 select 選項
         $('#update_zone_id').empty().append('<option value="">Select zone</option>');
         $('#update_rack_id').empty().append('<option value="">Select rack</option>');
+
+        // 手动清理 backdrop，确保 modal 完全关闭
+        cleanupModalBackdrop();
 
         // 清空當前信息卡片
         $('#currentLocationInfo').html('');
@@ -1591,6 +1603,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // =============================================================================
 // 全局函數導出 (Global Function Exports)
 // =============================================================================
+
+/**
+ * 清理 modal backdrop
+ */
+function cleanupModalBackdrop() {
+    // 移除所有 modal backdrop
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+
+    // 移除 body 上的 modal 相关类
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
 
 // 導出主要函數到全局作用域（用於 HTML onclick 屬性）
 window.editLocation = editLocation;

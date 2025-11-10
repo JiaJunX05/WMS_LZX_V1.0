@@ -431,6 +431,13 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        // 验证请求数据（在 try 块外面，让 Laravel 自动处理验证异常）
+        $rules = array_merge(self::PRODUCT_RULES, self::PRODUCT_IMAGE_RULES);
+        $rules['sku_code'] = 'nullable|string|max:255|unique:product_variants,sku_code';
+        $rules['barcode_number'] = 'required|string|max:255|unique:product_variants,barcode_number';
+
+        $request->validate($rules);
+
         try {
             // 调试信息
             \Log::info('=== PRODUCT STORE DEBUG START ===');
@@ -441,13 +448,6 @@ class ProductController extends Controller
             \Log::info('Request has rack_id: ' . ($request->has('rack_id') ? 'YES' : 'NO'));
             \Log::info('Request filled rack_id: ' . ($request->filled('rack_id') ? 'YES' : 'NO'));
             \Log::info('=== PRODUCT STORE DEBUG END ===');
-
-            // 验证请求数据
-            $rules = array_merge(self::PRODUCT_RULES, self::PRODUCT_IMAGE_RULES);
-            $rules['sku_code'] = 'nullable|string|max:255|unique:product_variants,sku_code';
-            $rules['barcode_number'] = 'required|string|max:255|unique:product_variants,barcode_number';
-
-            $request->validate($rules);
 
             // 自动生成SKU（如果用户没有提供）
             $skuCode = $request->sku_code;

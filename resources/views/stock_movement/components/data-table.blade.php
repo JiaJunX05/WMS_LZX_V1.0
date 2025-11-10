@@ -28,18 +28,20 @@
                                 <div class="fw-bold text-muted small text-uppercase"></div>
                                 <input type="checkbox" name="select-all" id="select-all" class="form-check-input">
                             </th>
-                            <th style="width: 55%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                            <th style="width: 35%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">CURRENT STOCK</div></th>
+                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">Last Movement / Created By</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ACTIONS</div>
                             </th>
                         @else
                             <th class="ps-4" style="width: 5%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
-                            <th style="width: 55%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                            <th style="width: 35%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">SKU CODE</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">CURRENT STOCK</div></th>
+                            <th style="width: 20%"><div class="fw-bold text-muted small text-uppercase">Last Movement / Created By</div></th>
                             <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">STATUS</div></th>
                             <th class="text-end pe-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ACTIONS</div>
@@ -49,7 +51,7 @@
                 </thead>
                 <tbody id="products-table-body">
                     <tr>
-                        <td colspan="{{ in_array(Auth::user()->getAccountRole(), ['SuperAdmin', 'Admin']) ? '6' : '6' }}" class="text-center py-4">
+                        <td colspan="{{ in_array(Auth::user()->getAccountRole(), ['SuperAdmin', 'Admin']) ? '7' : '7' }}" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>

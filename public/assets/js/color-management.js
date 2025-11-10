@@ -676,30 +676,55 @@ class ColorDashboard {
 
     // 顯示提示信息
     showAlert(message, type) {
-        // 使用統一的 alert 系統
+        // 使用統一的 alert 系統（在 header 顯示）
         if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 備用實現 - 修復 Bootstrap 5 的 alert 類名
-            const alertClass = type === 'danger' ? 'alert-danger' : `alert-${type}`;
-            const alertHtml = `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-
-            // 插入到頁面頂部
-            const container = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
-            container.insertAdjacentHTML('afterbegin', alertHtml);
-
-            // 自動消失
-            setTimeout(() => {
-                const alertElement = container.querySelector('.alert');
-                if (alertElement) {
-                    alertElement.remove();
-                }
-            }, 5000);
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
+            
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
+                
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
+                
+                // 自動消失
+                setTimeout(() => {
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
+                }, 5000);
+            } else {
+                // 如果 globalAlertContainer 不存在，回退到頁面頂部
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                fallbackContainer.insertAdjacentHTML('afterbegin', alertHtml);
+                setTimeout(() => {
+                    const alertElement = fallbackContainer.querySelector('.alert');
+                    if (alertElement) alertElement.remove();
+                }, 5000);
+            }
         }
     }
 
@@ -958,6 +983,57 @@ class ColorDashboard {
     }
 
     /**
+     * 显示字段级验证错误
+     */
+    displayValidationErrors(errors) {
+        // 清除之前的错误
+        const createForm = document.getElementById('createColorModalForm');
+        if (createForm) {
+            const inputs = createForm.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+                const feedback = input.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
+            });
+        }
+
+        const updateForm = document.getElementById('updateColorModalForm');
+        if (updateForm) {
+            const inputs = updateForm.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+                const feedback = input.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
+            });
+        }
+
+        // 为每个字段显示错误
+        Object.keys(errors).forEach(field => {
+            // 尝试多种可能的字段名格式（先尝试 update，再尝试 create，最后尝试通用）
+            let input = document.getElementById(`update_${field}`) ||
+                       document.getElementById(`update-${field}`) ||
+                       document.getElementById(field) ||
+                       document.querySelector(`[name="${field}"]`);
+            
+            if (input) {
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+                
+                // 显示错误消息
+                const feedback = input.parentElement.querySelector('.invalid-feedback') ||
+                               input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = errors[field][0] || `Please enter ${field}.`;
+                }
+            }
+        });
+    }
+
+    /**
      * 提交彈窗中的Color
      */
     submitModalColor() {
@@ -1041,6 +1117,11 @@ class ColorDashboard {
         })
         .then(response => {
             if (!response.ok) {
+                if (response.status === 422) {
+                    return response.json().then(data => {
+                        throw { status: 422, errors: data.errors || {} };
+                    });
+                }
                 return response.json().then(data => {
                     throw new Error(data.message || 'Failed to create color');
                 });
@@ -1064,11 +1145,17 @@ class ColorDashboard {
             }
         })
         .catch(error => {
-            let errorMessage = 'Failed to create color';
-            if (error.message) {
-                errorMessage = error.message;
+            // 处理验证错误 (422)
+            if (error.status === 422 && error.errors) {
+                this.displayValidationErrors(error.errors);
+                this.showAlert('Please fill in all required fields', 'warning');
+            } else {
+                let errorMessage = 'Failed to create color';
+                if (error.message) {
+                    errorMessage = error.message;
+                }
+                this.showAlert(errorMessage, 'error');
             }
-            this.showAlert(errorMessage, 'error');
         })
         .finally(() => {
             submitBtn.html(originalText);
@@ -1108,6 +1195,8 @@ class ColorDashboard {
 
         $('#updateColorModal').on('hidden.bs.modal', () => {
             this.resetUpdateModalForm();
+            // 手动清理 backdrop，确保 modal 完全关闭
+            this.cleanupModalBackdrop();
         });
 
         $('#submitUpdateColorModal').on('click', () => {
@@ -1218,6 +1307,20 @@ class ColorDashboard {
     }
 
     /**
+     * 清理 modal backdrop
+     */
+    cleanupModalBackdrop() {
+        // 移除所有 modal backdrop
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // 移除 body 上的 modal 相关类
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+
+    /**
      * 提交更新彈窗中的Color
      */
     submitUpdateModalColor() {
@@ -1313,6 +1416,11 @@ class ColorDashboard {
         })
         .then(response => {
             if (!response.ok) {
+                if (response.status === 422) {
+                    return response.json().then(data => {
+                        throw { status: 422, errors: data.errors || {} };
+                    });
+                }
                 return response.json().then(data => {
                     throw new Error(data.message || 'Failed to update color');
                 });
@@ -1336,11 +1444,17 @@ class ColorDashboard {
             }
         })
         .catch(error => {
-            let errorMessage = 'Failed to update color';
-            if (error.message) {
-                errorMessage = error.message;
+            // 处理验证错误 (422)
+            if (error.status === 422 && error.errors) {
+                this.displayValidationErrors(error.errors);
+                this.showAlert('Please fill in all required fields', 'warning');
+            } else {
+                let errorMessage = 'Failed to update color';
+                if (error.message) {
+                    errorMessage = error.message;
+                }
+                this.showAlert(errorMessage, 'error');
             }
-            this.showAlert(errorMessage, 'error');
         })
         .finally(() => {
             submitBtn.html(originalText);

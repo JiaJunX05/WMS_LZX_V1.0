@@ -152,9 +152,91 @@ function getIconClass(type) {
 }
 
 /**
- * 显示全局 alert（在header位置）
+ * 检测是否有打开的 modal
+ */
+function getActiveModal() {
+    // 查找所有可见的 modal（Bootstrap 5 使用 aria-hidden="false" 表示可见）
+    const visibleModals = document.querySelectorAll('.modal.show, .modal[aria-hidden="false"]');
+
+    // 或者检查是否有 modal 实例正在显示
+    const modals = document.querySelectorAll('.modal');
+    for (let modal of modals) {
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal && modal.classList.contains('show')) {
+            return modal;
+        }
+    }
+
+    // 回退到检查 aria-hidden 属性
+    for (let modal of modals) {
+        if (modal.getAttribute('aria-hidden') === 'false' || modal.classList.contains('show')) {
+            return modal;
+        }
+    }
+
+    return visibleModals.length > 0 ? visibleModals[0] : null;
+}
+
+/**
+ * 在 modal 内部显示 alert（弹出方式，类似全局 alert）
+ */
+function showModalAlert(alertElement, modal) {
+    // 查找或创建 modal 内的 alert 容器（固定定位，类似全局 alert）
+    let modalAlertContainer = modal.querySelector('.modal-alert-container');
+
+    if (!modalAlertContainer) {
+        // 创建 alert 容器（固定定位在 modal 顶部中央）
+        modalAlertContainer = document.createElement('div');
+        modalAlertContainer.className = 'modal-alert-container position-absolute top-0 start-50 translate-middle-x mt-3';
+        modalAlertContainer.style.zIndex = '1060';
+        modalAlertContainer.style.width = '90%';
+        modalAlertContainer.style.maxWidth = '600px';
+        modalAlertContainer.style.pointerEvents = 'none';
+
+        // 插入到 modal-content 中（在 modal-header 之后）
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.appendChild(modalAlertContainer);
+        } else {
+            // 如果没有 modal-content，插入到 modal 中
+            modal.appendChild(modalAlertContainer);
+        }
+    }
+
+    // 清除现有 alert
+    const existingAlerts = modalAlertContainer.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => {
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-20px)';
+        setTimeout(() => alert.remove(), 300);
+    });
+
+    // 添加新 alert
+    setTimeout(() => {
+        modalAlertContainer.appendChild(alertElement);
+        // 触发显示动画
+        setTimeout(() => {
+            alertElement.classList.add('show');
+            alertElement.style.opacity = '1';
+            alertElement.style.transform = 'translateY(0)';
+        }, 10);
+    }, existingAlerts.length > 0 ? 300 : 0);
+}
+
+/**
+ * 显示全局 alert（在header位置或在modal内部）
  */
 function showGlobalAlert(alertElement) {
+    // 首先检查是否有打开的 modal
+    const activeModal = getActiveModal();
+
+    if (activeModal) {
+        // 如果有打开的 modal，在 modal 内部显示
+        showModalAlert(alertElement, activeModal);
+        return;
+    }
+
+    // 如果没有打开的 modal，在 header 显示
     const container = document.getElementById('globalAlertContainer');
 
     if (!container) {
@@ -311,3 +393,26 @@ window.showError = showError;
 window.showWarning = showWarning;
 window.showInfo = showInfo;
 window.safeAlert = safeAlert;
+
+// 监听所有 modal 的关闭事件，清理 modal 内的 alert
+document.addEventListener('DOMContentLoaded', function() {
+    // 监听所有 modal 的 hidden.bs.modal 事件
+    document.addEventListener('hidden.bs.modal', function(event) {
+        const modal = event.target;
+        const modalAlertContainer = modal.querySelector('.modal-alert-container');
+        if (modalAlertContainer) {
+            // 清理 modal 内的所有 alert
+            modalAlertContainer.innerHTML = '';
+        }
+    });
+
+    // 也监听 show.bs.modal 事件，确保在打开时清理旧的 alert
+    document.addEventListener('show.bs.modal', function(event) {
+        const modal = event.target;
+        const modalAlertContainer = modal.querySelector('.modal-alert-container');
+        if (modalAlertContainer) {
+            // 清理 modal 内的所有 alert
+            modalAlertContainer.innerHTML = '';
+        }
+    });
+});

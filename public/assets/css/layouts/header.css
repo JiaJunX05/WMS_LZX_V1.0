@@ -129,16 +129,49 @@
 }
 
 /* ======================
-   10. 全局提示信息容器样式
+   10. 全局提示信息容器样式（Header 和 Modal 共用）
 ====================== */
 .global-alert-container {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 1.25rem;
+    width: 90%;
+    max-width: 600px;
+    z-index: 9999;
     pointer-events: none;
 }
 
-.global-alert-container .alert {
+.modal-alert-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0.75rem;
+    width: 90%;
+    max-width: 600px;
+    z-index: 1060;
+    pointer-events: none;
+}
+
+/* 确保 modal-content 有相对定位，以便 alert 容器正确定位 */
+.modal-content {
+    position: relative;
+}
+
+/* 共享的 Alert 样式 */
+.global-alert-container .alert,
+.modal-alert-container .alert {
     pointer-events: all;
     animation: slideDown 0.3s ease-out;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 0.5rem;
+}
+
+.global-alert-container .alert:last-child,
+.modal-alert-container .alert:last-child {
+    margin-bottom: 0;
 }
 
 @keyframes slideDown {
@@ -152,31 +185,36 @@
     }
 }
 
-.global-alert-container .alert-success {
+.global-alert-container .alert-success,
+.modal-alert-container .alert-success {
     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
     border-left: 4px solid #10b981;
     color: #065f46;
 }
 
-.global-alert-container .alert-info {
+.global-alert-container .alert-info,
+.modal-alert-container .alert-info {
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
     border-left: 4px solid #3b82f6;
     color: #1e40af;
 }
 
-.global-alert-container .alert-warning {
+.global-alert-container .alert-warning,
+.modal-alert-container .alert-warning {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     border-left: 4px solid #f59e0b;
     color: #92400e;
 }
 
-.global-alert-container .alert-danger {
+.global-alert-container .alert-danger,
+.modal-alert-container .alert-danger {
     background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
     border-left: 4px solid #ef4444;
     color: #991b1b;
 }
 
-.global-alert-container .btn-close {
+.global-alert-container .btn-close,
+.modal-alert-container .btn-close {
     filter: brightness(0) saturate(100%);
 }
 

@@ -44,6 +44,7 @@
     window.stockExportUrl = "{{ route('staff.stock_management.export') }}";
     window.productImagePath = "{{ asset('assets/images') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
+    window.authImagePath = "{{ asset('assets/images/auth') }}";
     window.currentUserRole = "{{ Auth::user()->getAccountRole() }}";
 </script>
 

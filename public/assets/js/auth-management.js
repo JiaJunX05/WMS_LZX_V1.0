@@ -1020,30 +1020,55 @@ class AuthDashboard {
 
     // 顯示提示信息
     showAlert(message, type) {
-        // 使用統一的 alert 系統
+        // 使用統一的 alert 系統（在 header 顯示）
         if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 備用實現 - 修復 Bootstrap 5 的 alert 類名
-            const alertClass = type === 'danger' ? 'alert-danger' : `alert-${type}`;
-            const alertHtml = `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
 
-            // 插入到頁面頂部
-            const container = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
-            container.insertAdjacentHTML('afterbegin', alertHtml);
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
 
-            // 自動消失
-            setTimeout(() => {
-                const alertElement = container.querySelector('.alert');
-                if (alertElement) {
-                    alertElement.remove();
-                }
-            }, 5000);
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
+
+                // 自動消失
+                setTimeout(() => {
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
+                }, 5000);
+            } else {
+                // 如果 globalAlertContainer 不存在，回退到頁面頂部
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.querySelector('.container-fluid') || document.querySelector('.container') || document.body;
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                fallbackContainer.insertAdjacentHTML('afterbegin', alertHtml);
+                setTimeout(() => {
+                    const alertElement = fallbackContainer.querySelector('.alert');
+                    if (alertElement) alertElement.remove();
+                }, 5000);
+            }
         }
     }
 
@@ -1269,6 +1294,8 @@ class AuthDashboard {
         // 彈窗關閉時清理
         $('#updateUserModal').on('hidden.bs.modal', () => {
             this.resetUpdateModalForm();
+            // 手动清理 backdrop，确保 modal 完全关闭
+            this.cleanupModalBackdrop();
         });
 
         // 提交按鈕事件
@@ -1660,13 +1687,21 @@ class AuthDashboard {
                     updatePreviewContainerId: 'update-user-image-preview'
                 });
 
-                // 为 Update modal 点击预览区域触发文件选择
-                previewContainer.addEventListener('click', function(e) {
-                    if (e.target.closest('.img-remove-btn')) {
-                        return; // 不触发文件选择
-                    }
-                    imageInput.click();
-                });
+                // 移除旧的事件监听器（通过克隆节点）
+                const newPreviewContainer = previewContainer.cloneNode(true);
+                previewContainer.parentNode.replaceChild(newPreviewContainer, previewContainer);
+                const freshPreviewContainer = modal.querySelector('#update-user-image-preview');
+                const freshImageInput = modal.querySelector('#update_user_image');
+
+                if (freshPreviewContainer && freshImageInput) {
+                    // 为 Update modal 点击预览区域触发文件选择
+                    freshPreviewContainer.addEventListener('click', function(e) {
+                        if (e.target.closest('.img-remove-btn')) {
+                            return; // 不触发文件选择
+                        }
+                        freshImageInput.click();
+                    });
+                }
 
                 // 绑定静态移除按钮事件（参考 zone 的实现方式）
                 if (removeImageBtn) {
@@ -1893,15 +1928,217 @@ class AuthDashboard {
         const removeImageInput = document.getElementById('remove_image');
         if (removeImageInput) {
             removeImageInput.value = '0';
-    }
-}
+        }
 
-/**
+        // 清除验证错误
+        this.clearValidationErrors();
+    }
+
+    /**
+     * 清理 modal backdrop
+     */
+    cleanupModalBackdrop() {
+        // 移除所有 modal backdrop
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+
+        // 移除 body 上的 modal 相关类
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+
+    /**
+     * 清除所有验证错误（支持 create 和 update 表单）
+     */
+    clearValidationErrors() {
+        // 清除 create 表单的错误
+        const createForm = document.getElementById('createUserForm');
+        if (createForm) {
+            const createInputs = createForm.querySelectorAll('.form-control');
+            createInputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+                const feedback = input.parentElement.querySelector('.invalid-feedback') ||
+                               input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
+            });
+        }
+
+        // 清除 update 表单的错误
+        const updateForm = document.getElementById('updateUserForm');
+        if (updateForm) {
+            const updateInputs = updateForm.querySelectorAll('.form-control');
+            updateInputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+                const feedback = input.parentElement.querySelector('.invalid-feedback') ||
+                               input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
+            });
+        }
+    }
+
+    /**
+     * 显示字段级验证错误（支持 create 和 update 表单）
+     */
+    displayValidationErrors(errors) {
+        // 清除之前的错误
+        this.clearValidationErrors();
+
+        // 显示全局提示
+        if (Object.keys(errors).length > 0) {
+            this.showAlert('Please fill in all required fields', 'warning');
+        }
+
+        // 为每个字段显示错误
+        Object.keys(errors).forEach(field => {
+            // 尝试多种可能的字段名格式（先尝试 update，再尝试 create，最后尝试通用）
+            let input = document.getElementById(`update-${field}`) ||
+                       document.getElementById(`create-${field}`) ||
+                       document.getElementById(field) ||
+                       document.querySelector(`[name="${field}"]`);
+
+            if (input) {
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+
+                // 显示错误消息
+                const feedback = input.parentElement.querySelector('.invalid-feedback') ||
+                               input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = errors[field][0] || `Please enter ${field}.`;
+                }
+            }
+        });
+    }
+
+    /**
+     * 前端验证
+     */
+    validateCreateUserForm() {
+        const form = document.getElementById('createUserForm');
+        if (!form) return false;
+
+        // 清除之前的错误
+        this.clearValidationErrors();
+
+        let isValid = true;
+        const errors = {};
+
+        // 验证用户名
+        const username = document.getElementById('create-username');
+        if (!username || !username.value.trim()) {
+            if (username) {
+                username.classList.add('is-invalid');
+                const feedback = username.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter username.';
+            }
+            isValid = false;
+        } else {
+            if (username) username.classList.remove('is-invalid');
+        }
+
+        // 验证名字
+        const firstName = document.getElementById('create-first_name');
+        if (!firstName || !firstName.value.trim()) {
+            if (firstName) {
+                firstName.classList.add('is-invalid');
+                const feedback = firstName.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter first name.';
+            }
+            isValid = false;
+        } else {
+            if (firstName) firstName.classList.remove('is-invalid');
+        }
+
+        // 验证姓氏
+        const lastName = document.getElementById('create-last_name');
+        if (!lastName || !lastName.value.trim()) {
+            if (lastName) {
+                lastName.classList.add('is-invalid');
+                const feedback = lastName.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter last name.';
+            }
+            isValid = false;
+        } else {
+            if (lastName) lastName.classList.remove('is-invalid');
+        }
+
+        // 验证邮箱
+        const email = document.getElementById('create-email');
+        if (!email || !email.value.trim()) {
+            if (email) {
+                email.classList.add('is-invalid');
+                const feedback = email.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter email address.';
+            }
+            isValid = false;
+        } else if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+            email.classList.add('is-invalid');
+            const feedback = email.parentElement.querySelector('.invalid-feedback');
+            if (feedback) feedback.textContent = 'Please enter a valid email address.';
+            isValid = false;
+        } else {
+            if (email) email.classList.remove('is-invalid');
+        }
+
+        // 验证密码
+        const password = document.getElementById('create-password');
+        if (!password || !password.value) {
+            if (password) {
+                password.classList.add('is-invalid');
+                const feedback = password.closest('.col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter password.';
+            }
+            isValid = false;
+        } else if (password && password.value.length < 6) {
+            password.classList.add('is-invalid');
+            const feedback = password.closest('.col-md-6')?.querySelector('.invalid-feedback');
+            if (feedback) feedback.textContent = 'Password must be at least 6 characters.';
+            isValid = false;
+        } else {
+            if (password) password.classList.remove('is-invalid');
+        }
+
+        // 验证确认密码
+        const passwordConfirmation = document.getElementById('create-password_confirmation');
+        if (!passwordConfirmation || !passwordConfirmation.value) {
+            if (passwordConfirmation) {
+                passwordConfirmation.classList.add('is-invalid');
+                const feedback = passwordConfirmation.closest('.col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please confirm password.';
+            }
+            isValid = false;
+        } else if (password && passwordConfirmation && password.value !== passwordConfirmation.value) {
+            passwordConfirmation.classList.add('is-invalid');
+            const feedback = passwordConfirmation.closest('.col-md-6')?.querySelector('.invalid-feedback');
+            if (feedback) feedback.textContent = 'Passwords do not match.';
+            isValid = false;
+        } else {
+            if (passwordConfirmation) passwordConfirmation.classList.remove('is-invalid');
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields', 'warning');
+        }
+
+        return isValid;
+    }
+
+    /**
      * 提交创建用户
      */
     submitCreateUser() {
         const form = document.getElementById('createUserForm');
         if (!form) return;
+
+        // 前端验证
+        if (!this.validateCreateUserForm()) {
+            return;
+        }
 
         const formData = new FormData(form);
         const submitBtn = $('#submitCreateUser');
@@ -1941,14 +2178,19 @@ class AuthDashboard {
                 }
             },
             error: (xhr) => {
-                let errorMessage = 'An error occurred while creating user';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    const errors = Object.values(xhr.responseJSON.errors).flat();
-                    errorMessage = errors.join('<br>');
+                // 处理验证错误 (422)
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    this.displayValidationErrors(xhr.responseJSON.errors);
+                } else {
+                    let errorMessage = 'An error occurred while creating user';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join('<br>');
+                    }
+                    this.showAlert(errorMessage, 'error');
                 }
-                this.showAlert(errorMessage, 'error');
             },
             complete: () => {
                 submitBtn.prop('disabled', false).html(originalText);
@@ -1956,24 +2198,142 @@ class AuthDashboard {
     });
 }
 
-/**
+    /**
+     * 验证更新用户表单
+     */
+    validateUpdateUserForm() {
+        const form = document.getElementById('updateUserForm');
+        if (!form) return false;
+
+        // 清除之前的错误
+        this.clearValidationErrors();
+
+        let isValid = true;
+
+        // 验证用户名
+        const username = document.getElementById('update-username');
+        if (!username || !username.value.trim()) {
+            if (username) {
+                username.classList.add('is-invalid');
+                const feedback = username.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter username.';
+            }
+            isValid = false;
+        } else {
+            if (username) username.classList.remove('is-invalid');
+        }
+
+        // 验证名字
+        const firstName = document.getElementById('update-first_name');
+        if (!firstName || !firstName.value.trim()) {
+            if (firstName) {
+                firstName.classList.add('is-invalid');
+                const feedback = firstName.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter first name.';
+            }
+            isValid = false;
+        } else {
+            if (firstName) firstName.classList.remove('is-invalid');
+        }
+
+        // 验证姓氏
+        const lastName = document.getElementById('update-last_name');
+        if (!lastName || !lastName.value.trim()) {
+            if (lastName) {
+                lastName.classList.add('is-invalid');
+                const feedback = lastName.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter last name.';
+            }
+            isValid = false;
+        } else {
+            if (lastName) lastName.classList.remove('is-invalid');
+        }
+
+        // 验证邮箱
+        const email = document.getElementById('update-email');
+        if (!email || !email.value.trim()) {
+            if (email) {
+                email.classList.add('is-invalid');
+                const feedback = email.parentElement.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please enter email address.';
+            }
+            isValid = false;
+        } else if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+            email.classList.add('is-invalid');
+            const feedback = email.parentElement.querySelector('.invalid-feedback');
+            if (feedback) feedback.textContent = 'Please enter a valid email address.';
+            isValid = false;
+        } else {
+            if (email) email.classList.remove('is-invalid');
+        }
+
+        // 验证密码（可选 - 如果输入了才验证）
+        const password = document.getElementById('update-password');
+        const passwordConfirmation = document.getElementById('update-password_confirmation');
+        const hasPassword = password && password.value.trim();
+        const hasPasswordConfirmation = passwordConfirmation && passwordConfirmation.value.trim();
+
+        // 如果输入了密码，则必须验证
+        if (hasPassword) {
+            if (password.value.length < 6) {
+                password.classList.add('is-invalid');
+                const feedback = password.closest('.col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Password must be at least 6 characters.';
+                isValid = false;
+            } else {
+                password.classList.remove('is-invalid');
+            }
+
+            // 如果输入了密码，确认密码也必须输入且匹配
+            if (!hasPasswordConfirmation) {
+                passwordConfirmation.classList.add('is-invalid');
+                const feedback = passwordConfirmation.closest('.col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Please confirm password.';
+                isValid = false;
+            } else if (password.value !== passwordConfirmation.value) {
+                passwordConfirmation.classList.add('is-invalid');
+                const feedback = passwordConfirmation.closest('.col-md-6')?.querySelector('.invalid-feedback');
+                if (feedback) feedback.textContent = 'Passwords do not match.';
+                isValid = false;
+            } else {
+                passwordConfirmation.classList.remove('is-invalid');
+            }
+        } else {
+            // 如果没有输入密码，清除验证状态
+            if (password) password.classList.remove('is-invalid');
+            if (passwordConfirmation) passwordConfirmation.classList.remove('is-invalid');
+        }
+
+        if (!isValid) {
+            this.showAlert('Please fill in all required fields correctly', 'warning');
+        }
+
+        return isValid;
+    }
+
+    /**
      * 提交更新用户
      */
     submitUpdateUser() {
         const form = document.getElementById('updateUserForm');
         if (!form) return;
 
+        // 前端验证
+        if (!this.validateUpdateUserForm()) {
+            return;
+        }
+
         const userId = form.getAttribute('data-user-id');
         if (!userId) {
             this.showAlert('User ID not found', 'error');
-                        return;
-                    }
+            return;
+        }
 
         const updateUrl = window.updateUserUrl || window.editUserUrl;
         if (!updateUrl) {
             this.showAlert('Update URL not configured', 'error');
-                return;
-            }
+            return;
+        }
 
         const url = updateUrl.replace(':id', userId);
         const formData = new FormData(form);
@@ -2019,14 +2379,19 @@ class AuthDashboard {
                 }
             },
             error: (xhr) => {
-                let errorMessage = 'An error occurred while updating user';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    const errors = Object.values(xhr.responseJSON.errors).flat();
-                    errorMessage = errors.join('<br>');
+                // 处理验证错误 (422)
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    this.displayValidationErrors(xhr.responseJSON.errors);
+                } else {
+                    let errorMessage = 'An error occurred while updating user';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join('<br>');
+                    }
+                    this.showAlert(errorMessage, 'error');
                 }
-                this.showAlert(errorMessage, 'error');
             },
             complete: () => {
                 submitBtn.prop('disabled', false).html(originalText);

@@ -241,7 +241,7 @@ class StockDashboard {
                                  style="width: 50px; height: 50px; object-fit: cover;"
                                  onerror="this.src='${window.defaultProductImage}'">
                             <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
-                                <div class="fw-medium " style="line-height: 1.4;">${product.name}</div>
+                                <div class="fw-medium" style="line-height: 1.4; white-space: normal; word-break: break-word;">${product.name}</div>
                                 <div class="d-flex align-items-center gap-2 mt-1">
                                     <span class="text-muted small">${product.category?.category_name || 'N/A'}</span>
                                 </div>
@@ -255,6 +255,45 @@ class StockDashboard {
                         <span class="fw-bold ${currentStock > 10 ? 'text-success' : (currentStock > 0 ? 'text-warning' : 'text-danger')}">
                             ${currentStock}
                         </span>
+                    </td>
+                    <td>
+                        ${product.last_movement ? `
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="flex-shrink-0">
+                                    ${product.last_movement.user_image ? `
+                                        <img src="${window.authImagePath || '/assets/images/auth'}/${product.last_movement.user_image}"
+                                             alt="${product.last_movement.user_name || 'User'}"
+                                             class="rounded-circle"
+                                             style="width: 32px; height: 32px; object-fit: cover;"
+                                             onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 32 32\'%3E%3Ccircle cx=\'16\' cy=\'16\' r=\'16\' fill=\'%23e9ecef\'/%3E%3Cpath d=\'M16 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 10c-3.3 0-6 1.3-6 3v1h12v-1c0-1.7-2.7-3-6-3z\' fill=\'%236c757d\'/%3E%3C/svg%3E';">
+                                    ` : `
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="bi bi-person-fill text-muted"></i>
+                                        </div>
+                                    `}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex flex-column gap-1">
+                                        <div>
+                                            <span class="fw-medium ${product.last_movement.type === 'stock_out' ? 'text-danger' : (product.last_movement.type === 'stock_in' ? 'text-success' : 'text-warning')}">
+                                                ${product.last_movement.type === 'stock_out' ? '-' : (product.last_movement.type === 'stock_in' ? '+' : '±')}${Math.abs(product.last_movement.quantity)}
+                                            </span>
+                                            ${product.last_movement.date ? `
+                                                <small class="text-muted ms-2">${new Date(product.last_movement.date).toLocaleDateString()}</small>
+                                            ` : ''}
+                                        </div>
+                                        ${product.last_movement.user_name ? `
+                                            <div>
+                                                <span class="fw-medium small">${product.last_movement.user_name}</span>
+                                                ${product.last_movement.user_email ? `
+                                                    <small class="text-muted ms-2">${product.last_movement.user_email}</small>
+                                                ` : ''}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : '<span class="text-muted">-</span>'}
                     </td>
                     <td>
                         <span class="badge ${product.product_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
@@ -779,27 +818,56 @@ class StockDashboard {
      * @param {string} type 消息类型
      */
     showAlert(message, type = 'success') {
+        // 使用統一的 alert 系統（在 header 顯示）
         if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 备用方案 - 使用 alertContainer
-            const alertContainer = document.getElementById('alertContainer');
-            if (alertContainer) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-                alertDiv.innerHTML = `
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
+
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
+
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
                 `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
 
-                alertContainer.appendChild(alertDiv);
-
+                // 自動消失
                 setTimeout(() => {
-                    alertDiv.remove();
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
                 }, 5000);
             } else {
-                console.error('Alert container not found');
+                // 如果 globalAlertContainer 不存在，回退到 alertContainer
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.getElementById('alertContainer');
+                if (fallbackContainer) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+                    alertDiv.innerHTML = `
+                        <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    fallbackContainer.appendChild(alertDiv);
+                    setTimeout(() => alertDiv.remove(), 5000);
+                } else {
+                    console.error('Alert container not found');
+                }
             }
         }
     }
@@ -1262,27 +1330,56 @@ class StockHistory {
      * @param {string} type 消息類型
      */
     showAlert(message, type = 'success') {
+        // 使用統一的 alert 系統（在 header 顯示）
         if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 備用方案 - 使用 alertContainer
-            const alertContainer = document.getElementById('alertContainer');
-            if (alertContainer) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-                alertDiv.innerHTML = `
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
+
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
+
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
                 `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
 
-                alertContainer.appendChild(alertDiv);
-
+                // 自動消失
                 setTimeout(() => {
-                    alertDiv.remove();
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
                 }, 5000);
             } else {
-                console.error('Alert container not found');
+                // 如果 globalAlertContainer 不存在，回退到 alertContainer
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.getElementById('alertContainer');
+                if (fallbackContainer) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+                    alertDiv.innerHTML = `
+                        <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    fallbackContainer.appendChild(alertDiv);
+                    setTimeout(() => alertDiv.remove(), 5000);
+                } else {
+                    console.error('Alert container not found');
+                }
             }
         }
     }
@@ -3094,27 +3191,56 @@ class StockDetail {
      * @param {string} type 消息類型
      */
     showAlert(message, type = 'success') {
+        // 使用統一的 alert 系統（在 header 顯示）
         if (typeof window.showAlert === 'function') {
             window.showAlert(message, type);
         } else {
-            // 備用方案 - 使用 alertContainer
-            const alertContainer = document.getElementById('alertContainer');
-            if (alertContainer) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-                alertDiv.innerHTML = `
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            // 備用實現 - 直接使用 globalAlertContainer
+            const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const container = document.getElementById('globalAlertContainer');
+
+            if (container) {
+                // 清除現有 alert
+                const existingAlerts = container.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
+
+                // 創建新 alert
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' || type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3 fs-5"></i>
+                            <div class="flex-grow-1">${message}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
                 `;
+                container.insertAdjacentHTML('beforeend', alertHtml);
 
-                alertContainer.appendChild(alertDiv);
-
+                // 自動消失
                 setTimeout(() => {
-                    alertDiv.remove();
+                    const alertElement = container.querySelector('.alert');
+                    if (alertElement) {
+                        alertElement.style.opacity = '0';
+                        setTimeout(() => alertElement.remove(), 300);
+                    }
                 }, 5000);
             } else {
-                console.error('Alert container not found');
+                // 如果 globalAlertContainer 不存在，回退到 alertContainer
+                console.warn('Global alert container not found. Using fallback.');
+                const fallbackContainer = document.getElementById('alertContainer');
+                if (fallbackContainer) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+                    alertDiv.innerHTML = `
+                        <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    fallbackContainer.appendChild(alertDiv);
+                    setTimeout(() => alertDiv.remove(), 5000);
+                } else {
+                    console.error('Alert container not found');
+                }
             }
         }
     }
@@ -3254,6 +3380,9 @@ function initStockModals() {
                 window.stockIn.scannedProducts = [];
                 window.stockIn = null; // 清除实例，下次打开时重新创建
             }
+
+            // 手动清理 backdrop，确保 modal 完全关闭
+            cleanupModalBackdrop();
         });
     }
 
@@ -3321,6 +3450,9 @@ function initStockModals() {
                 window.stockOut.scannedProducts = [];
                 window.stockOut = null; // 清除实例，下次打开时重新创建
             }
+
+            // 手动清理 backdrop，确保 modal 完全关闭
+            cleanupModalBackdrop();
         });
     }
 
@@ -3388,8 +3520,34 @@ function initStockModals() {
                 window.stockReturn.scannedProducts = [];
                 window.stockReturn = null; // 清除实例，下次打开时重新创建
             }
+
+            // 手动清理 backdrop，确保 modal 完全关闭
+            cleanupModalBackdrop();
         });
     }
+
+    // Stock Detail Modal
+    const stockDetailModal = document.getElementById('stockDetailModal');
+    if (stockDetailModal) {
+        stockDetailModal.addEventListener('hidden.bs.modal', function() {
+            // 手动清理 backdrop，确保 modal 完全关闭
+            cleanupModalBackdrop();
+        });
+    }
+}
+
+/**
+ * 清理 modal backdrop
+ */
+function cleanupModalBackdrop() {
+    // 移除所有 modal backdrop
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+
+    // 移除 body 上的 modal 相关类
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
 }
 
 // =============================================================================

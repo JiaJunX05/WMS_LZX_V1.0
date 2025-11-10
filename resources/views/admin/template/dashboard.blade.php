@@ -38,7 +38,7 @@
 <script>
     // 设置尺码模板管理相关路由
     window.templateManagementRoute = "{{ route('admin.template.index') }}";
-    window.createTemplateUrl = "{{ route('admin.template.create') }}";
+    window.createTemplateUrl = "{{ route('admin.template.store') }}";
     window.storeTemplateUrl = "{{ route('admin.template.store') }}";
     window.editTemplateUrl = "{{ route('admin.template.edit', ['id' => ':id']) }}";
     window.viewTemplateUrl = "{{ route('admin.template.view', ['id' => ':id']) }}";
@@ -47,6 +47,9 @@
     window.unavailableTemplateUrl = "{{ route('admin.template.unavailable', ['id' => ':id']) }}";
     window.getAvailableSizeLibrariesUrl = "{{ route('admin.template.available-size-libraries') }}";
     window.availableSizeLibrariesUrl = "{{ route('admin.template.available-size-libraries') }}";
+
+    // 设置可用的 categories 数据（从后端传递）
+    window.availableCategories = @json($categories);
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}

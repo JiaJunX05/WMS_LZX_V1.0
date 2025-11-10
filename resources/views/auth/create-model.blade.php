@@ -95,6 +95,9 @@
                                                 <i class="bi bi-info-circle me-1"></i>
                                                 Enter the user's username
                                             </div>
+                                            <div class="invalid-feedback">
+                                                Please enter username.
+                                            </div>
                                         </div>
 
                                         {{-- 姓名输入 --}}
@@ -109,6 +112,9 @@
                                                     <i class="bi bi-info-circle me-1"></i>
                                                     Enter the user's first name.
                                                 </div>
+                                                <div class="invalid-feedback">
+                                                    Please enter first name.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
@@ -119,6 +125,9 @@
                                                 <div class="form-text">
                                                     <i class="bi bi-info-circle me-1"></i>
                                                     Enter the user's last name.
+                                                </div>
+                                                <div class="invalid-feedback">
+                                                    Please enter last name.
                                                 </div>
                                             </div>
                                         </div>
@@ -133,6 +142,9 @@
                                             <div class="form-text">
                                                 <i class="bi bi-info-circle me-1"></i>
                                                 Enter a valid email address
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                Please enter a valid email address.
                                             </div>
                                         </div>
 
@@ -153,6 +165,9 @@
                                                     <i class="bi bi-info-circle me-1"></i>
                                                     Enter a secure password
                                                 </div>
+                                                <div class="invalid-feedback">
+                                                    Please enter password.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
@@ -168,6 +183,9 @@
                                                 <div class="form-text">
                                                     <i class="bi bi-info-circle me-1"></i>
                                                     Enter the password again
+                                                </div>
+                                                <div class="invalid-feedback">
+                                                    Please confirm password.
                                                 </div>
                                             </div>
                                         </div>

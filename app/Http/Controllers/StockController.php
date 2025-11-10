@@ -193,9 +193,61 @@ class StockController extends Controller
      */
     private function buildPaginatedResponse($paginator)
     {
+        $products = $paginator->items();
+        
+        // 获取所有产品ID
+        $productIds = collect($products)->pluck('id')->toArray();
+        
+        // 获取每个产品的最后一次库存变动（包含用户信息）
+        $lastMovements = StockMovement::with([
+            'user:id,first_name,last_name,email',
+            'user.account:id,user_id,username,user_image'
+        ])
+            ->whereIn('product_id', $productIds)
+            ->select('product_id', 'quantity', 'movement_type', 'movement_date', 'user_id')
+            ->orderBy('movement_date', 'desc')
+            ->get()
+            ->groupBy('product_id')
+            ->map(function ($movements) {
+                return $movements->first();
+            });
+        
+        // 为每个产品添加最后一次库存变动信息
+        $productsWithLastMovement = collect($products)->map(function ($product) use ($lastMovements) {
+            $lastMovement = $lastMovements->get($product->id);
+            if ($lastMovement) {
+                // 获取用户信息
+                $user = $lastMovement->user;
+                $userName = 'Unknown User';
+                $userImage = null;
+                if ($user) {
+                    if ($user->account && $user->account->username) {
+                        $userName = $user->account->username;
+                    } else if ($user->first_name || $user->last_name) {
+                        $userName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                    }
+                    if ($user->account && $user->account->user_image) {
+                        $userImage = $user->account->user_image;
+                    }
+                }
+                
+                $product->last_movement = [
+                    'quantity' => $lastMovement->quantity ?? 0,
+                    'type' => $lastMovement->movement_type ?? null,
+                    'date' => $lastMovement->movement_date ?? null,
+                    'user_name' => $userName,
+                    'user_email' => $user->email ?? null,
+                    'user_image' => $userImage
+                ];
+            } else {
+                $product->last_movement = null;
+            }
+            return $product;
+        });
+        
         return response()->json([
             'success' => true,
-            'data' => $paginator->items(),
+            'data' => $productsWithLastMovement->values()->all(),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),

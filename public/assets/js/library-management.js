@@ -924,34 +924,24 @@ function loadCategoriesForModal() {
     const categorySelect = document.getElementById('create_category_id');
     if (!categorySelect) return;
 
-    // 從 API 獲取 categories
-    fetch(window.createSizeLibraryUrl, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.categories) {
-            categorySelect.innerHTML = '<option value="">Select category</option>';
-            data.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.category_name;
-                categorySelect.appendChild(option);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error loading categories:', error);
+    // 使用從後端傳遞的 categories 數據（與 location/mapping 一致）
+    if (window.availableCategories && Array.isArray(window.availableCategories)) {
+        categorySelect.innerHTML = '<option value="">Select category</option>';
+        window.availableCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.category_name;
+            categorySelect.appendChild(option);
+        });
+    } else {
+        console.error('Available categories not found. Make sure window.availableCategories is set in the dashboard view.');
+        categorySelect.innerHTML = '<option value="">No categories available</option>';
         if (typeof window.showAlert === 'function') {
             window.showAlert('Failed to load categories', 'error');
         } else {
             alert('Failed to load categories');
         }
-    });
+    }
 }
 
 /**
@@ -1118,8 +1108,9 @@ function createSizeCard(size, type) {
     card.style.transition = 'all 0.3s ease';
 
     card.innerHTML = `
-        <div class="card-body text-center p-3">
-            <h6 class="card-title mb-0">${size}</h6>
+        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
+             style="cursor: pointer; min-height: 80px; position: relative;">
+            <div class="size-value fw-bold text-dark mb-0 fs-5">${size}</div>
         </div>
     `;
 
@@ -1603,6 +1594,8 @@ function bindUpdateLibraryModalEvents() {
             form.reset();
             form.removeAttribute('data-size-library-id');
         }
+        // 手动清理 backdrop，确保 modal 完全关闭
+        cleanupModalBackdrop();
     });
 }
 
@@ -1858,6 +1851,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // =============================================================================
 // 全局函數導出 (Global Function Exports)
 // =============================================================================
+
+/**
+ * 清理 modal backdrop
+ */
+function cleanupModalBackdrop() {
+    // 移除所有 modal backdrop
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+
+    // 移除 body 上的 modal 相关类
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
 
 // 導出主要函數到全局作用域（用於 HTML onclick 屬性）
 window.editLibrary = editLibrary;

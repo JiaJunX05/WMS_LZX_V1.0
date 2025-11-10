@@ -38,13 +38,16 @@
 <script>
     // 设置尺码库管理相关路由
     window.sizeLibraryManagementRoute = "{{ route('admin.library.index') }}";
-    window.createSizeLibraryUrl = "{{ route('admin.library.create') }}";
+    window.createSizeLibraryUrl = "{{ route('admin.library.store') }}";
     window.storeSizeLibraryUrl = "{{ route('admin.library.store') }}";
     window.editSizeLibraryUrl = "{{ route('admin.library.edit', ['id' => ':id']) }}";
     window.viewSizeLibraryUrl = "{{ route('admin.library.view', ['id' => ':id']) }}";
     window.deleteSizeLibraryUrl = "{{ route('admin.library.destroy', ['id' => ':id']) }}";
     window.availableSizeLibraryUrl = "{{ route('admin.library.available', ['id' => ':id']) }}";
     window.unavailableSizeLibraryUrl = "{{ route('admin.library.unavailable', ['id' => ':id']) }}";
+
+    // 设置可用的 categories 数据（从后端传递）
+    window.availableCategories = @json($categories);
 </script>
 
 {{-- 引入必要的 JavaScript 文件 --}}

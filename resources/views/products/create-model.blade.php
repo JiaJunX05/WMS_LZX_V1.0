@@ -90,7 +90,10 @@
                                             <label class="form-label fw-bold text-dark mb-2">
                                                 <i class="bi bi-box me-2 text-primary"></i>Product Name
                                             </label>
-                                            <input type="text" class="form-control" name="name" placeholder="Enter product name" required>
+                                            <input type="text" class="form-control" name="name" id="name" placeholder="Enter product name" required>
+                                            <div class="invalid-feedback">
+                                                Please enter product name.
+                                            </div>
                                         </div>
 
                                         {{-- 价格和数量 --}}
@@ -99,13 +102,19 @@
                                                 <label class="form-label fw-bold text-dark mb-2">
                                                     <i class="bi bi-currency-dollar me-2 text-primary"></i>Price (RM)
                                                 </label>
-                                                <input type="number" class="form-control" name="price" placeholder="0.00" step="0.01" min="0" required>
+                                                <input type="number" class="form-control" name="price" id="price" placeholder="0.00" step="0.01" min="0" required>
+                                                <div class="invalid-feedback">
+                                                    Please enter price.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
                                                     <i class="bi bi-box-seam me-2 text-primary"></i>Quantity (Unit)
                                                 </label>
-                                                <input type="number" class="form-control" name="quantity" placeholder="0" min="1" required>
+                                                <input type="number" class="form-control" name="quantity" id="quantity" placeholder="0" min="1" required>
+                                                <div class="invalid-feedback">
+                                                    Please enter quantity.
+                                                </div>
                                             </div>
                                         </div>
 
@@ -164,6 +173,9 @@
                                                 <select class="form-select" name="zone_id" id="create_zone_id" required>
                                                     <option value="">Select Zone</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select zone.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
@@ -172,6 +184,9 @@
                                                 <select class="form-select" name="rack_id" id="create_rack_id" required disabled>
                                                     <option value="">Select Rack</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select rack.
+                                                </div>
                                                 {{-- 货架容量错误提示 --}}
                                                 <div id="create-rack-capacity-error" class="invalid-feedback d-none">
                                                     <i class="bi bi-exclamation-triangle-fill me-1"></i>
@@ -189,6 +204,9 @@
                                                 <select class="form-select" name="category_id" id="create_category_id" required>
                                                     <option value="">Select Category</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select category.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
@@ -197,6 +215,9 @@
                                                 <select class="form-select" name="subcategory_id" id="create_subcategory_id" required disabled>
                                                     <option value="">Select Subcategory</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select subcategory.
+                                                </div>
                                             </div>
                                         </div>
 
@@ -209,6 +230,9 @@
                                                 <select class="form-select" name="brand_id" id="create_brand_id" required>
                                                     <option value="">Select Brand</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select brand.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
@@ -217,6 +241,9 @@
                                                 <select class="form-select" name="color_id" id="create_color_id" required>
                                                     <option value="">Select Color</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select color.
+                                                </div>
                                             </div>
                                         </div>
 
@@ -232,6 +259,9 @@
                                                     <option value="Kids">Kids</option>
                                                     <option value="Unisex">Unisex</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select gender.
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold text-dark mb-2">
@@ -240,6 +270,9 @@
                                                 <select class="form-select" name="size_id" id="create_size_id" required>
                                                     <option value="">Select Size</option>
                                                 </select>
+                                                <div class="invalid-feedback">
+                                                    Please select size.
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

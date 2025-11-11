@@ -1617,12 +1617,20 @@ function populateTemplateModal(templateData) {
 
     // 填充 Size Library 選項（需要根據 category 和 gender 動態加載）
     const sizeLibrarySelect = $('#update_size_library_id');
-    sizeLibrarySelect.empty();
-    sizeLibrarySelect.append('<option value="">Loading...</option>');
-    sizeLibrarySelect.prop('disabled', true);
 
-    // 如果 category 和 gender 都有值，加載對應的 size libraries
+    // 如果 category 和 gender 都有值，直接加載對應的 size libraries（不顯示 loading）
     if (templateData.category_id && templateData.gender) {
+        // 先設置當前選中的值（如果有的話），避免顯示 loading
+        if (templateData.size_library_id) {
+            sizeLibrarySelect.empty();
+            sizeLibrarySelect.append(`<option value="${templateData.size_library_id}" selected>${templateData.size_value || 'Loading...'}</option>`);
+            sizeLibrarySelect.prop('disabled', false);
+        } else {
+            sizeLibrarySelect.empty();
+            sizeLibrarySelect.append('<option value="">Select size library</option>');
+            sizeLibrarySelect.prop('disabled', true);
+        }
+        // 在後台加載完整的 size libraries 列表
         loadSizeLibrariesForUpdateModal(templateData.category_id, templateData.gender, templateData.size_library_id);
     } else {
         sizeLibrarySelect.empty().append('<option value="">Select category and gender first</option>');
@@ -1680,9 +1688,17 @@ function populateTemplateModal(templateData) {
  */
 function loadSizeLibrariesForUpdateModal(categoryId, gender, selectedSizeLibraryId = null) {
     const sizeLibrarySelect = $('#update_size_library_id');
-    sizeLibrarySelect.empty();
-    sizeLibrarySelect.append('<option value="">Loading...</option>');
-    sizeLibrarySelect.prop('disabled', true);
+
+    // 如果已經有選中的值，保留它，不顯示 loading
+    const currentValue = sizeLibrarySelect.val();
+    const currentText = sizeLibrarySelect.find('option:selected').text();
+
+    // 只有在沒有當前值時才顯示 loading
+    if (!currentValue || currentText === 'Select size library' || currentText === 'Select category and gender first') {
+        sizeLibrarySelect.empty();
+        sizeLibrarySelect.append('<option value="">Loading...</option>');
+        sizeLibrarySelect.prop('disabled', true);
+    }
 
     const url = window.getAvailableSizeLibrariesUrl || window.availableSizeLibrariesUrl;
 

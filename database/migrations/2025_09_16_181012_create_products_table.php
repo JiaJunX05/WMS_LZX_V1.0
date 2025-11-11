@@ -20,7 +20,6 @@ return new class extends Migration
             $table->unsignedInteger('quantity')->default(0);
             $table->foreignId('category_id')->nullable()->constrained('categories')->onDelete('set null');
             $table->foreignId('subcategory_id')->nullable()->constrained('subcategories')->onDelete('set null');
-            $table->foreignId('brand_id')->nullable()->constrained('brands')->onDelete('set null');
             $table->foreignId('zone_id')->nullable()->constrained('zones')->onDelete('set null');
             $table->foreignId('rack_id')->nullable()->constrained('racks')->onDelete('set null');
             $table->enum('product_status', ['Available', 'Unavailable'])->default('Available');

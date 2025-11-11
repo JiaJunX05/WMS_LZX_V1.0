@@ -14,7 +14,7 @@
                             <i class="bi bi-diagram-2-fill text-white display-6"></i>
                         </div>
                         <div>
-                            <h2 class="h3 fw-bold mb-1">Category Mapping Management</h2>
+                            <h2 class="h3 fw-bold mb-1">Mapping Management</h2>
                             <p class="text-muted mb-0" id="dashboard-subtitle">Manage and organize category mappings</p>
                         </div>
                     </div>

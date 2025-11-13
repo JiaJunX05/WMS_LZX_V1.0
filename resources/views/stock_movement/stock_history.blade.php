@@ -145,7 +145,7 @@
                             <span class="input-group-text">
                                 <i class="bi bi-search"></i>
                             </span>
-                            <input type="text" class="form-control" id="search-input" placeholder="Search by product name or SKU...">
+                            <input type="text" class="form-control" id="product-search" placeholder="Search by product name or SKU...">
                         </div>
                     </div>
                     <div class="col-lg-2">

@@ -442,7 +442,23 @@ class StockDashboard {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.data && data.data.length > 0) {
-                    const productData = data.data[0];
+                    // 如果搜索的是数字 ID，确保找到的是正确的产品
+                    let productData = data.data[0];
+                    if (isNaN(productId) === false) {
+                        // 查找 ID 完全匹配的产品
+                        const exactMatch = data.data.find(p => p.id == productId);
+                        if (exactMatch) {
+                            productData = exactMatch;
+                        } else {
+                            console.warn(`Product ID ${productId} not found in results, using first result`);
+                        }
+                    }
+
+                    // 验证产品 ID 是否匹配
+                    if (productData.id != productId) {
+                        console.error(`Product ID mismatch: expected ${productId}, got ${productData.id}`);
+                    }
+
                     window.currentProductId = productId;
                     window.currentProductData = productData;
 
@@ -466,57 +482,61 @@ class StockDashboard {
      * 渲染模态框中的产品详情
      */
     renderModalProductDetail(product) {
+        if (!product) {
+            console.error('No product data provided to renderModalProductDetail');
+            return;
+        }
+
         const currentStock = parseInt(product.quantity) || 0;
 
         // 更新产品图片
         const productImage = document.getElementById('modal-product-image');
-        if (!productImage) {
-            console.error('Modal product image element not found');
-            return;
-        }
+        if (productImage) {
+            if (product.cover_image) {
+                // 确保图片路径正确
+                let imagePath;
+                if (product.cover_image.startsWith('http://') || product.cover_image.startsWith('https://')) {
+                    imagePath = product.cover_image;
+                } else if (product.cover_image.startsWith('/')) {
+                    imagePath = product.cover_image;
+                } else {
+                    imagePath = `${window.productImagePath}/${product.cover_image}`;
+                }
 
-        if (product.cover_image) {
-            // 确保图片路径正确
-            let imagePath;
-            if (product.cover_image.startsWith('http://') || product.cover_image.startsWith('https://')) {
-                imagePath = product.cover_image;
-            } else if (product.cover_image.startsWith('/')) {
-                imagePath = product.cover_image;
+                productImage.src = imagePath;
+                // 添加错误处理，如果图片加载失败则使用默认图片
+                productImage.onerror = function() {
+                    console.error('Failed to load product image:', imagePath);
+                    this.src = window.defaultProductImage;
+                    this.onerror = null; // 防止无限循环
+                };
             } else {
-                imagePath = `${window.productImagePath}/${product.cover_image}`;
+                productImage.src = window.defaultProductImage;
             }
-
-            console.log('Setting product image:', {
-                cover_image: product.cover_image,
-                imagePath: imagePath,
-                productImagePath: window.productImagePath
-            });
-
-            productImage.src = imagePath;
-            // 添加错误处理，如果图片加载失败则使用默认图片
-            productImage.onerror = function() {
-                console.error('Failed to load product image:', imagePath);
-                this.src = window.defaultProductImage;
-                this.onerror = null; // 防止无限循环
-            };
         } else {
-            console.log('No cover_image for product:', product.id);
-            productImage.src = window.defaultProductImage;
+            console.error('Modal product image element not found');
         }
 
-        // 更新产品信息
-        document.getElementById('modal-product-name').textContent = product.name;
-        document.getElementById('modal-current-stock').textContent = currentStock;
+        // 更新产品名称
+        const nameElement = document.getElementById('modal-product-name');
+        if (nameElement) {
+            nameElement.textContent = product.name || '-';
+        }
 
-        // 更新库存状态
+        // 更新库存数量
         const stockElement = document.getElementById('modal-current-stock');
-        stockElement.className = `fs-3 fw-bold me-2 ${currentStock > 10 ? 'text-success' : (currentStock > 0 ? 'text-warning' : 'text-danger')}`;
+        if (stockElement) {
+            stockElement.textContent = currentStock;
+            stockElement.className = `fs-3 fw-bold me-2 ${currentStock > 10 ? 'text-success' : (currentStock > 0 ? 'text-warning' : 'text-danger')}`;
+        }
 
         // 更新状态徽章
         const statusElement = document.getElementById('modal-product-status');
-        const status = product.product_status || 'Available';
-        statusElement.textContent = status;
-        statusElement.className = `badge fs-6 ${status === 'Available' ? 'bg-success' : 'bg-danger'}`;
+        if (statusElement) {
+            const status = product.product_status || 'Available';
+            statusElement.textContent = status;
+            statusElement.className = `badge fs-6 ${status === 'Available' ? 'bg-success' : 'bg-danger'}`;
+        }
     }
 
     /**
@@ -3529,7 +3549,20 @@ function initStockModals() {
     // Stock Detail Modal
     const stockDetailModal = document.getElementById('stockDetailModal');
     if (stockDetailModal) {
+        stockDetailModal.addEventListener('shown.bs.modal', function() {
+            // 确保 product ID 已设置，如果没有则从 window.currentProductId 获取
+            if (window.currentProductId && window.stockManagement) {
+                // 如果产品数据已加载，确保历史记录也加载
+                if (window.currentProductData) {
+                    window.stockManagement.loadModalStockHistory(window.currentProductId, 1);
+                }
+            }
+        });
+
         stockDetailModal.addEventListener('hidden.bs.modal', function() {
+            // 清理数据
+            window.currentProductId = null;
+            window.currentProductData = null;
             // 手动清理 backdrop，确保 modal 完全关闭
             cleanupModalBackdrop();
         });

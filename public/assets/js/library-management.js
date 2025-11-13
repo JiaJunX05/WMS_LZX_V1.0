@@ -20,6 +20,11 @@
 // 全局變量防止重複請求
 let isDeleting = false;
 
+// 分頁相關變量
+let currentPage = 1;
+const itemsPerPage = 3; // 每頁顯示 3 個卡片
+let allCategoryGroups = []; // 存儲所有分組數據
+
 // =============================================================================
 // API 請求函數 (API Request Functions)
 // =============================================================================
@@ -164,8 +169,33 @@ function initializeLibraryDashboard() {
     // 檢查URL參數中的成功消息
     checkUrlParams();
 
+    // 綁定分頁按鈕事件
+    bindPaginationEvents();
+
     // 加載尺碼庫數據
     loadLibraries();
+}
+
+/**
+ * 綁定分頁按鈕事件
+ */
+function bindPaginationEvents() {
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToPreviousPage();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToNextPage();
+        });
+    }
 }
 
 /**
@@ -263,6 +293,8 @@ function renderCategoryCards(groupedData) {
     if (!groupedData || groupedData.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('d-none');
+        allCategoryGroups = [];
+        updatePaginationInfoByCategory(groupedData, null);
         return;
     }
 
@@ -271,23 +303,51 @@ function renderCategoryCards(groupedData) {
     // 按分類分組
     const groupedByCategory = groupByCategory(groupedData);
 
+    // 將分組轉換為數組並存儲
+    allCategoryGroups = Object.keys(groupedByCategory).map(categoryId => {
+        const categoryData = groupedByCategory[categoryId];
+        return {
+            categoryId: categoryId,
+            category: categoryData.category,
+            libraries: categoryData.libraries
+        };
+    });
+
+    // 渲染當前頁的卡片
+    renderCurrentPage();
+}
+
+/**
+ * 渲染當前頁的卡片
+ */
+function renderCurrentPage() {
+    const container = document.getElementById('dashboard-cards-container');
+    if (!container) return;
+
+    // 計算當前頁的起始和結束索引
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPageGroups = allCategoryGroups.slice(startIndex, endIndex);
+
     // 生成卡片HTML
     let cardsHTML = '';
 
-    Object.keys(groupedByCategory).forEach(categoryId => {
-        const categoryData = groupedByCategory[categoryId];
-        const category = categoryData.category;
-        const libraries = categoryData.libraries;
+    currentPageGroups.forEach(group => {
+        const category = group.category;
+        const libraries = group.libraries;
 
         // 確保category數據存在
         if (category && category.category_name) {
             cardsHTML += generateCategoryCard(category, libraries);
         } else {
-            console.warn(`Category data missing for category ID ${categoryId}:`, category);
+            console.warn(`Category data missing for category ID ${group.categoryId}:`, category);
         }
     });
 
     container.innerHTML = cardsHTML;
+
+    // 更新分頁信息
+    updatePaginationInfo();
 }
 
 /**
@@ -461,52 +521,90 @@ function updateStatistics(data) {
  * 按分類更新分頁信息
  */
 function updatePaginationInfoByCategory(groupedData, pagination) {
-    // 按分類分組計算
-    const groupedByCategory = groupByCategory(groupedData || []);
-    const categoryCount = Object.keys(groupedByCategory).length;
+    // 這個函數保留用於兼容性，實際分頁信息由 updatePaginationInfo 更新
+    updatePaginationInfo();
+}
 
-    // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
+/**
+ * 更新分頁信息
+ */
+function updatePaginationInfo() {
+    const totalCount = allCategoryGroups.length;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalCount);
+
+    // 更新分頁信息顯示
     const showingStartEl = document.getElementById('showing-start');
     const showingEndEl = document.getElementById('showing-end');
     const totalCountEl = document.getElementById('total-count');
 
-    if (showingStartEl) showingStartEl.textContent = 1;
-    if (showingEndEl) showingEndEl.textContent = categoryCount;
-    if (totalCountEl) totalCountEl.textContent = categoryCount;
+    if (showingStartEl) showingStartEl.textContent = totalCount > 0 ? startIndex + 1 : 0;
+    if (showingEndEl) showingEndEl.textContent = endIndex;
+    if (totalCountEl) totalCountEl.textContent = totalCount;
 
     // 更新分頁按鈕狀態
-    updatePaginationButtons(categoryCount);
+    updatePaginationButtons(totalCount);
 }
 
 /**
  * 更新分頁按鈕狀態
  */
-function updatePaginationButtons(categoryCount) {
+function updatePaginationButtons(totalCount) {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
     const currentPageElement = document.getElementById('current-page');
     const pageNumberElement = document.getElementById('page-number');
 
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+
     // 更新頁碼顯示
     if (pageNumberElement) {
-        pageNumberElement.textContent = '1'; // 當前總是第1頁
+        pageNumberElement.textContent = currentPage;
     }
 
-    // 如果只有一個類別或沒有類別，禁用分頁按鈕
-    if (categoryCount <= 1) {
-        if (prevBtn) prevBtn.classList.add('disabled');
-        if (nextBtn) nextBtn.classList.add('disabled');
-    } else {
-        // 這裡可以根據需要實現真正的分頁邏輯
-        // 目前顯示所有類別，所以按鈕保持禁用狀態
-        if (prevBtn) prevBtn.classList.add('disabled');
-        if (nextBtn) nextBtn.classList.add('disabled');
+    // 更新上一頁按鈕
+    if (prevBtn) {
+        if (currentPage <= 1) {
+            prevBtn.classList.add('disabled');
+        } else {
+            prevBtn.classList.remove('disabled');
+        }
+    }
+
+    // 更新下一頁按鈕
+    if (nextBtn) {
+        if (currentPage >= totalPages || totalPages === 0) {
+            nextBtn.classList.add('disabled');
+        } else {
+            nextBtn.classList.remove('disabled');
+        }
     }
 
     // 確保當前頁面始終顯示為活動狀態
     if (currentPageElement) {
         currentPageElement.classList.add('active');
         currentPageElement.classList.remove('disabled');
+    }
+}
+
+/**
+ * 切換到上一頁
+ */
+function goToPreviousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderCurrentPage();
+    }
+}
+
+/**
+ * 切換到下一頁
+ */
+function goToNextPage() {
+    const totalPages = Math.ceil(allCategoryGroups.length / itemsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderCurrentPage();
     }
 }
 
@@ -593,6 +691,19 @@ function updateTableStatus() {
 }
 
 /**
+ * 更新表格序号
+ */
+function updateTableRowNumbers() {
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach((row, index) => {
+        const numberCell = row.querySelector('td:first-child span');
+        if (numberCell) {
+            numberCell.textContent = index + 1;
+        }
+    });
+}
+
+/**
  * 從查看頁面刪除尺碼庫
  */
 function deleteLibraryFromView(libraryId) {
@@ -631,6 +742,9 @@ function deleteLibraryFromView(libraryId) {
             if (deletedRow) {
                 deletedRow.remove();
             }
+
+            // 更新表格序号
+            updateTableRowNumbers();
 
             // 更新統計信息
             updateViewStatistics();

@@ -20,6 +20,11 @@
 // 全局變量防止重複請求
 let isDeleting = false;
 
+// 分頁相關變量
+let currentPage = 1;
+const itemsPerPage = 3; // 每頁顯示 3 個卡片
+let allZoneGroups = []; // 存儲所有分組數據
+
 // =============================================================================
 // API 請求函數 (API Request Functions)
 // =============================================================================
@@ -158,8 +163,33 @@ function initializeLocationDashboard() {
     // 檢查URL參數中的成功消息
     checkUrlParams();
 
+    // 綁定分頁按鈕事件
+    bindPaginationEvents();
+
     // 加載位置數據
     loadLocations();
+}
+
+/**
+ * 綁定分頁按鈕事件
+ */
+function bindPaginationEvents() {
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToPreviousPage();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToNextPage();
+        });
+    }
 }
 
 /**
@@ -257,6 +287,8 @@ function renderZoneCards(locations) {
     if (!locations || locations.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('d-none');
+        allZoneGroups = [];
+        updatePaginationInfoByZone(locations, null);
         return;
     }
 
@@ -265,23 +297,51 @@ function renderZoneCards(locations) {
     // 按區域分組
     const groupedByZone = groupByZone(locations);
 
+    // 將分組轉換為數組並存儲
+    allZoneGroups = Object.keys(groupedByZone).map(zoneId => {
+        const zoneData = groupedByZone[zoneId];
+        return {
+            zoneId: zoneId,
+            zone: zoneData.zone,
+            racks: zoneData.racks
+        };
+    });
+
+    // 渲染當前頁的卡片
+    renderCurrentPage();
+}
+
+/**
+ * 渲染當前頁的卡片
+ */
+function renderCurrentPage() {
+    const container = document.getElementById('dashboard-cards-container');
+    if (!container) return;
+
+    // 計算當前頁的起始和結束索引
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPageGroups = allZoneGroups.slice(startIndex, endIndex);
+
     // 生成卡片HTML
     let cardsHTML = '';
 
-    Object.keys(groupedByZone).forEach(zoneId => {
-        const zoneData = groupedByZone[zoneId];
-        const zone = zoneData.zone;
-        const racks = zoneData.racks;
+    currentPageGroups.forEach(group => {
+        const zone = group.zone;
+        const racks = group.racks;
 
         // 確保zone數據存在
         if (zone && zone.zone_name) {
             cardsHTML += generateZoneCard(zone, racks);
         } else {
-            console.warn(`Zone data missing for zone ID ${zoneId}:`, zone);
+            console.warn(`Zone data missing for zone ID ${group.zoneId}:`, zone);
         }
     });
 
     container.innerHTML = cardsHTML;
+
+    // 更新分頁信息
+    updatePaginationInfo();
 }
 
 /**
@@ -442,52 +502,90 @@ function updateStatistics(data) {
  * 更新分頁信息
  */
 function updatePaginationInfoByZone(locations, pagination) {
-    // 按區域分組計算
-    const groupedByZone = groupByZone(locations);
-    const zoneCount = Object.keys(groupedByZone).length;
+    // 這個函數保留用於兼容性，實際分頁信息由 updatePaginationInfo 更新
+    updatePaginationInfo();
+}
 
-    // 更新分頁信息顯示 - 添加 DOM 元素存在性檢查
+/**
+ * 更新分頁信息
+ */
+function updatePaginationInfo() {
+    const totalCount = allZoneGroups.length;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalCount);
+
+    // 更新分頁信息顯示
     const showingStartEl = document.getElementById('showing-start');
     const showingEndEl = document.getElementById('showing-end');
     const totalCountEl = document.getElementById('total-count');
 
-    if (showingStartEl) showingStartEl.textContent = 1;
-    if (showingEndEl) showingEndEl.textContent = zoneCount;
-    if (totalCountEl) totalCountEl.textContent = zoneCount;
+    if (showingStartEl) showingStartEl.textContent = totalCount > 0 ? startIndex + 1 : 0;
+    if (showingEndEl) showingEndEl.textContent = endIndex;
+    if (totalCountEl) totalCountEl.textContent = totalCount;
 
     // 更新分頁按鈕狀態
-    updatePaginationButtons(zoneCount);
+    updatePaginationButtons(totalCount);
 }
 
 /**
  * 更新分頁按鈕
  */
-function updatePaginationButtons(zoneCount) {
+function updatePaginationButtons(totalCount) {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
     const currentPageElement = document.getElementById('current-page');
     const pageNumberElement = document.getElementById('page-number');
 
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+
     // 更新頁碼顯示
     if (pageNumberElement) {
-        pageNumberElement.textContent = '1'; // 當前總是第1頁
+        pageNumberElement.textContent = currentPage;
     }
 
-    // 如果只有一個區域或沒有區域，禁用分頁按鈕
-    if (zoneCount <= 1) {
-        if (prevBtn) prevBtn.classList.add('disabled');
-        if (nextBtn) nextBtn.classList.add('disabled');
-    } else {
-        // 這裡可以根據需要實現真正的分頁邏輯
-        // 目前顯示所有區域，所以按鈕保持禁用狀態
-        if (prevBtn) prevBtn.classList.add('disabled');
-        if (nextBtn) nextBtn.classList.add('disabled');
+    // 更新上一頁按鈕
+    if (prevBtn) {
+        if (currentPage <= 1) {
+            prevBtn.classList.add('disabled');
+        } else {
+            prevBtn.classList.remove('disabled');
+        }
+    }
+
+    // 更新下一頁按鈕
+    if (nextBtn) {
+        if (currentPage >= totalPages || totalPages === 0) {
+            nextBtn.classList.add('disabled');
+        } else {
+            nextBtn.classList.remove('disabled');
+        }
     }
 
     // 確保當前頁面始終顯示為活動狀態
     if (currentPageElement) {
         currentPageElement.classList.add('active');
         currentPageElement.classList.remove('disabled');
+    }
+}
+
+/**
+ * 切換到上一頁
+ */
+function goToPreviousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderCurrentPage();
+    }
+}
+
+/**
+ * 切換到下一頁
+ */
+function goToNextPage() {
+    const totalPages = Math.ceil(allZoneGroups.length / itemsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderCurrentPage();
     }
 }
 
@@ -574,6 +672,19 @@ function updateTableStatus() {
 }
 
 /**
+ * 更新表格序号
+ */
+function updateTableRowNumbers() {
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach((row, index) => {
+        const numberCell = row.querySelector('td:first-child span');
+        if (numberCell) {
+            numberCell.textContent = index + 1;
+        }
+    });
+}
+
+/**
  * 從查看頁面刪除位置
  */
 function deleteLocationFromView(locationId) {
@@ -612,6 +723,9 @@ function deleteLocationFromView(locationId) {
             if (deletedRow) {
                 deletedRow.remove();
             }
+
+            // 更新表格序号
+            updateTableRowNumbers();
 
             // 更新統計信息
             updateViewStatistics();

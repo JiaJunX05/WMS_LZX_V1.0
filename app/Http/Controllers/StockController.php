@@ -158,11 +158,18 @@ class StockController extends Controller
         if (!$search) return $query;
 
         return $query->where(function($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-              ->orWhereHas('variants', function($variant) use ($search) {
-                  $variant->where('sku_code', 'like', "%{$search}%")
-                          ->orWhere('barcode_number', 'like', "%{$search}%");
-              });
+            // 如果搜索项是纯数字，优先按 ID 精确匹配
+            if (is_numeric($search) && ctype_digit($search)) {
+                // 纯数字时，优先精确匹配 ID
+                $q->where('id', $search);
+            } else {
+                // 非纯数字或包含其他字符时，按名称、SKU、条形码搜索
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhereHas('variants', function($variant) use ($search) {
+                      $variant->where('sku_code', 'like', "%{$search}%")
+                              ->orWhere('barcode_number', 'like', "%{$search}%");
+                  });
+            }
         });
     }
 
@@ -194,10 +201,10 @@ class StockController extends Controller
     private function buildPaginatedResponse($paginator)
     {
         $products = $paginator->items();
-        
+
         // 获取所有产品ID
         $productIds = collect($products)->pluck('id')->toArray();
-        
+
         // 获取每个产品的最后一次库存变动（包含用户信息）
         $lastMovements = StockMovement::with([
             'user:id,first_name,last_name,email',
@@ -211,7 +218,7 @@ class StockController extends Controller
             ->map(function ($movements) {
                 return $movements->first();
             });
-        
+
         // 为每个产品添加最后一次库存变动信息
         $productsWithLastMovement = collect($products)->map(function ($product) use ($lastMovements) {
             $lastMovement = $lastMovements->get($product->id);
@@ -230,7 +237,7 @@ class StockController extends Controller
                         $userImage = $user->account->user_image;
                     }
                 }
-                
+
                 $product->last_movement = [
                     'quantity' => $lastMovement->quantity ?? 0,
                     'type' => $lastMovement->movement_type ?? null,
@@ -244,7 +251,7 @@ class StockController extends Controller
             }
             return $product;
         });
-        
+
         return response()->json([
             'success' => true,
             'data' => $productsWithLastMovement->values()->all(),

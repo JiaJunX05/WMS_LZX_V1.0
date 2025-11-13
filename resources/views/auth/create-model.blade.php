@@ -198,8 +198,8 @@
                                         <div class="mb-4">
                                             <label class="form-label fw-bold text-dark mb-3">User Role</label>
                                             <div class="row g-3">
-                                                {{-- 员工角色选项（默认选中） --}}
-                                                <div class="col-lg-4 col-md-6 col-sm-12">
+                                                {{-- 员工角色选项（默认选中），如果只有 Staff 选项（Admin 或 Staff 用户），则占满一行 --}}
+                                                <div class="{{ $currentUserRole === 'SuperAdmin' ? 'col-lg-4 col-md-6 col-sm-12' : 'col-12' }}">
                                                     <div class="card h-100 border role-card selected" data-role="Staff">
                                                         <label class="card-body d-flex align-items-center" style="cursor: pointer;">
                                                             <input type="radio" name="account_role" value="Staff" class="form-check-input me-3" checked>

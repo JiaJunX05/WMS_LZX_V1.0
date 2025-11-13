@@ -41,6 +41,7 @@
     window.stockInPageRoute = "{{ route('staff.stock_management') }}";
     window.stockOutPageRoute = "{{ route('staff.stock_management') }}";
     window.stockHistoryRoute = "{{ route('staff.stock_history', ['id' => ':id']) }}";
+    window.stockHistoryApiRoute = "{{ route('api.stock_history') }}";
     window.stockExportUrl = "{{ route('staff.stock_management.export') }}";
     window.productImagePath = "{{ asset('assets/images') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";

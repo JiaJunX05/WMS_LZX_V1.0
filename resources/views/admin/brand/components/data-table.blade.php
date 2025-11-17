@@ -25,15 +25,8 @@
                             <div class="fw-bold text-muted small text-uppercase"></div>
                             <input type="checkbox" name="select-all" id="select-all" class="form-check-input">
                         </th>
-                        <th style="width: 10%">
-                            <div class="fw-bold text-muted small text-uppercase">BRAND IMAGE</div>
-                        </th>
-                        <th style="width: 60%">
-                            <div class="fw-bold text-muted small text-uppercase">BRAND NAME</div>
-                        </th>
-                        <th style="width: 15%">
-                            <div class="fw-bold text-muted small text-uppercase">BRAND STATUS</div>
-                        </th>
+                        <th><div class="fw-bold text-muted small text-uppercase">BRAND INFORMATION</div></th>
+                        <th class="text-end pe-4" style="width: 20%"><div class="fw-bold text-muted small text-uppercase">BRAND STATUS</div></th>
                         <th class="text-end pe-4" style="width: 10%">
                             <div class="fw-bold text-muted small text-uppercase">ACTIONS</div>
                         </th>
@@ -41,7 +34,7 @@
                 </thead>
                 <tbody id="table-body">
                     <tr>
-                        <td colspan="5" class="text-center py-4">
+                        <td colspan="4" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>

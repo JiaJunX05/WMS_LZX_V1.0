@@ -448,6 +448,21 @@ class AuthController extends Controller
                 $perPage = min($request->input('perPage', self::DEFAULT_PER_PAGE), self::MAX_PER_PAGE);
                 $users = $query->paginate($perPage);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = $this->buildUserQuery();
+                $baseQuery = $this->applyUserFilters($baseQuery, $request);
+
+                $totalUsers = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->whereHas('account', function($q) {
+                    $q->where('account_status', 'Available');
+                })->count();
+                $unavailableCount = (clone $baseQuery)->whereHas('account', function($q) {
+                    $q->where('account_status', 'Unavailable');
+                })->count();
+                $adminCount = (clone $baseQuery)->whereHas('account', function($q) {
+                    $q->whereIn('account_role', ['Admin', 'SuperAdmin']);
+                })->count();
+
                 // 优化数据转换，减少内存使用
                 $userData = $users->map(function ($user) {
                     return [
@@ -473,6 +488,12 @@ class AuthController extends Controller
                         'from' => $users->firstItem(),
                         'to' => $users->lastItem(),
                     ],
+                    'statistics' => [
+                        'total' => $totalUsers,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'admin' => $adminCount,
+                    ]
                 ]);
             } catch (\Exception $e) {
                 return $this->handleError($request, 'Failed to fetch users', $e);

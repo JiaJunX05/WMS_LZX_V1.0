@@ -182,18 +182,16 @@ class ZoneDashboard {
      * @param {Object} response API響應數據
      */
     updateStatistics(response) {
-        const total = response.pagination?.total || 0;
-        $('#total-zones').text(total);
-
-        // 計算活躍和非活躍區域數量
-        if (response.data) {
-            const activeCount = response.data.filter(zone => zone.zone_status === 'Available').length;
-            const inactiveCount = response.data.filter(zone => zone.zone_status === 'Unavailable').length;
-            const withImageCount = response.data.filter(zone => zone.zone_image).length;
-
-            $('#active-zones').text(activeCount);
-            $('#inactive-zones').text(inactiveCount);
-            $('#zones-with-image').text(withImageCount);
+        // 使用後端返回的統計信息（全部數據，不受分頁影響）
+        if (response.statistics) {
+            $('#total-zones').text(response.statistics.total || 0);
+            $('#active-zones').text(response.statistics.available || 0);
+            $('#inactive-zones').text(response.statistics.unavailable || 0);
+            $('#zones-with-image').text(response.statistics.with_image || 0);
+        } else {
+            // 後備方案：使用分頁總數
+            const total = response.pagination?.total || 0;
+            $('#total-zones').text(total);
         }
     }
 
@@ -218,6 +216,13 @@ class ZoneDashboard {
         const $tableBody = $('#table-body');
         const html = zones.map(zone => this.createZoneRow(zone)).join('');
         $tableBody.html(html);
+
+        // 初始化所有 Bootstrap dropdown（确保 dropdown-menu-end 类生效）
+        if (typeof bootstrap !== 'undefined') {
+            $tableBody.find('[data-bs-toggle="dropdown"]').each(function() {
+                new bootstrap.Dropdown(this);
+            });
+        }
 
         // 重置勾選框狀態
         this.updateSelectAllCheckbox();
@@ -244,7 +249,7 @@ class ZoneDashboard {
                 <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         ${statusMenuItem}
                     </li>
@@ -267,26 +272,26 @@ class ZoneDashboard {
                     <input class="zone-checkbox form-check-input" type="checkbox" value="${zone.id}" id="zone-${zone.id}">
                 </td>
                 <td>
-                    ${zone.zone_image ? `
-                        <img src="/assets/images/${zone.zone_image}" alt="Zone Image"
-                             class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
-                    ` : `
-                        <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
-                            <i class="bi bi-image text-muted"></i>
-                        </div>
-                    `}
-                </td>
-                <td>
-                    <div class="d-flex flex-column">
-                        <div class="fw-bold text-dark mb-1">
-                            <i class="bi bi-geo-alt me-2 text-primary"></i>${zone.zone_name}
-                        </div>
-                        <div class="text-muted small">
-                            <i class="bi bi-geo me-1"></i>${zone.location || 'No location specified'}
+                    <div class="d-flex align-items-center gap-3">
+                        ${zone.zone_image ? `
+                            <img src="/assets/images/${zone.zone_image}" alt="Zone Image"
+                                 class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
+                        ` : `
+                            <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                        `}
+                        <div class="d-flex flex-column">
+                            <div class="fw-bold text-dark mb-1">
+                                <i class="bi bi-geo-alt me-2 text-primary"></i>${zone.zone_name}
+                            </div>
+                            <div class="text-muted small">
+                                <i class="bi bi-geo me-1"></i>${zone.location || 'No location specified'}
+                            </div>
                         </div>
                     </div>
                 </td>
-                <td>
+                <td class="text-end pe-4">
                     <span class="badge ${zone.zone_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
                         <i class="bi ${zone.zone_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${zone.zone_status}
                     </span>
@@ -468,36 +473,26 @@ class ZoneDashboard {
         zoneRow.removeData('zone-status');
         zoneRow.removeData('zone-image');
 
-        // 更新圖片顯示
-        const imageCell = zoneRow.find('td').eq(1);
-        if (imageCell.length > 0) {
-            if (zoneImage && zoneImage.trim() !== '') {
-                // 確保圖片路徑格式正確（如果已經是完整路徑則直接使用，否則添加前綴）
-                const imagePath = zoneImage.startsWith('/') ? zoneImage : `/assets/images/${zoneImage}`;
-                imageCell.html(`
-                    <img src="${imagePath}" alt="Zone Image"
-                         class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
-                `);
-            } else {
-                // 沒有圖片時顯示占位符
-                imageCell.html(`
-                    <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+        // 更新 ZONE INFORMATION 列（包含图片和信息）
+        const infoCell = zoneRow.find('td').eq(1);
+        if (infoCell.length > 0) {
+            const imageHtml = zoneImage && zoneImage.trim() !== ''
+                ? `<img src="/assets/images/${zoneImage}" alt="Zone Image"
+                         class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">`
+                : `<div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
                         <i class="bi bi-image text-muted"></i>
-                    </div>
-                `);
-            }
-        }
+                    </div>`;
 
-        // 更新名稱和位置顯示
-        const nameCell = zoneRow.find('td').eq(2);
-        if (nameCell.length > 0) {
-            nameCell.html(`
-                <div class="d-flex flex-column">
-                    <div class="fw-bold text-dark mb-1">
-                        <i class="bi bi-geo-alt me-2 text-primary"></i>${zoneData.zone_name || ''}
-                    </div>
-                    <div class="text-muted small">
-                        <i class="bi bi-geo me-1"></i>${zoneData.location || 'No location specified'}
+            infoCell.html(`
+                <div class="d-flex align-items-center gap-3">
+                    ${imageHtml}
+                    <div class="d-flex flex-column">
+                        <div class="fw-bold text-dark mb-1">
+                            <i class="bi bi-geo-alt me-2 text-primary"></i>${zoneData.zone_name || ''}
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-geo me-1"></i>${zoneData.location || 'No location specified'}
+                        </div>
                     </div>
                 </div>
             `);
@@ -537,7 +532,7 @@ class ZoneDashboard {
                 <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         ${statusMenuItem}
                     </li>
@@ -553,6 +548,18 @@ class ZoneDashboard {
         // 更新操作按鈕列
         const actionsCell = zoneRow.find('td:last-child');
         actionsCell.html(actionButtons);
+
+        // 重新初始化 Bootstrap dropdown（确保 dropdown-menu-end 类生效）
+        const dropdownElement = actionsCell.find('[data-bs-toggle="dropdown"]')[0];
+        if (dropdownElement && typeof bootstrap !== 'undefined') {
+            // 销毁旧的 dropdown 实例（如果存在）
+            const existingDropdown = bootstrap.Dropdown.getInstance(dropdownElement);
+            if (existingDropdown) {
+                existingDropdown.dispose();
+            }
+            // 创建新的 dropdown 实例
+            new bootstrap.Dropdown(dropdownElement);
+        }
 
         // 更新狀態標籤顯示（與 createZoneRow 中的格式完全一致）
         const statusBadge = newStatus === 'Available'
@@ -595,8 +602,10 @@ class ZoneDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Zone has been set to available status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateZoneRowStatus(zoneId, 'Available');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set zone available', 'error');
             }
@@ -631,8 +640,10 @@ class ZoneDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Zone has been set to unavailable status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateZoneRowStatus(zoneId, 'Unavailable');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set zone unavailable', 'error');
             }
@@ -773,11 +784,11 @@ class ZoneDashboard {
                        document.getElementById(`update-${field}`) ||
                        document.getElementById(field) ||
                        document.querySelector(`[name="${field}"]`);
-            
+
             if (input) {
                 input.classList.add('is-invalid');
                 input.classList.remove('is-valid');
-                
+
                 // 显示错误消息
                 const feedback = input.parentElement.querySelector('.invalid-feedback') ||
                                input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
@@ -797,12 +808,12 @@ class ZoneDashboard {
             // 備用實現 - 直接使用 globalAlertContainer
             const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
             const container = document.getElementById('globalAlertContainer');
-            
+
             if (container) {
                 // 清除現有 alert
                 const existingAlerts = container.querySelectorAll('.alert');
                 existingAlerts.forEach(alert => alert.remove());
-                
+
                 // 創建新 alert
                 const alertHtml = `
                     <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
@@ -814,7 +825,7 @@ class ZoneDashboard {
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', alertHtml);
-                
+
                 // 自動消失
                 setTimeout(() => {
                     const alertElement = container.querySelector('.alert');
@@ -1056,15 +1067,10 @@ class ZoneDashboard {
                     modal.hide();
                 }
 
-                // 如果有圖片，刷新整個頁面；否則只更新 DOM
-                if (hasImage) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // 沒有圖片，重新載入當前頁面以顯示新記錄
-                    this.fetchZones(this.currentPage);
-                }
+                // 刷新頁面以確保所有數據正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to create zone', 'error');
             }
@@ -1466,7 +1472,7 @@ class ZoneDashboard {
         // 移除所有 modal backdrop
         const backdrops = document.querySelectorAll('.modal-backdrop');
         backdrops.forEach(backdrop => backdrop.remove());
-        
+
         // 移除 body 上的 modal 相关类
         document.body.classList.remove('modal-open');
         document.body.style.overflow = '';
@@ -1594,20 +1600,10 @@ class ZoneDashboard {
                     modal.hide();
                 }
 
-                // 如果有圖片更改，刷新整個頁面；否則只更新 DOM
-                if (hasImageChange) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // 沒有圖片更改，只更新 DOM
-                    if (data.data) {
-                        this.updateZoneRow(zoneId, data.data);
-                    } else {
-                        // 如果沒有返回數據，重新載入當前頁面
-                        this.fetchZones(this.currentPage);
-                    }
-                }
+                // 刷新頁面以確保所有數據正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to update zone', 'error');
             }

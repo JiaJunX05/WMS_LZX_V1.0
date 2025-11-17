@@ -48,6 +48,12 @@ class ProductDashboard {
             status: ''
         };
 
+        // 搜索防抖和请求控制
+        this.searchDebounceTimer = null;
+        this.searchAbortController = null;
+        this.lastInputTime = 0;
+        this.isScannerInput = false;
+
         // 初始化
         this.init();
     }
@@ -74,10 +80,55 @@ class ProductDashboard {
     // 事件綁定模塊 (Event Binding Module)
     // =============================================================================
     bindEvents() {
-        // 搜索功能
-        $('#search-input').on('keyup', (e) => {
-            this.filters.search = $(e.target).val().trim();
-            this.handleSearch();
+        // 搜索功能 - 支持扫描器输入
+        const searchInput = $('#search-input');
+
+        // 检测扫描器输入（快速连续输入）
+        searchInput.on('keydown', (e) => {
+            const currentTime = Date.now();
+            const timeDiff = currentTime - this.lastInputTime;
+            this.lastInputTime = currentTime;
+
+            // 如果输入间隔很短（< 50ms），可能是扫描器
+            if (timeDiff > 0 && timeDiff < 50) {
+                this.isScannerInput = true;
+            } else if (timeDiff > 200) {
+                // 如果间隔较长，可能是手动输入
+                this.isScannerInput = false;
+            }
+
+            // 如果是回车键，立即执行搜索（扫描器通常以回车结束）
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // 清除防抖定时器
+                if (this.searchDebounceTimer) {
+                    clearTimeout(this.searchDebounceTimer);
+                    this.searchDebounceTimer = null;
+                }
+                // 立即执行搜索
+                this.filters.search = searchInput.val().trim();
+                this.handleSearch();
+            }
+        });
+
+        // 普通输入事件 - 使用防抖
+        searchInput.on('input', (e) => {
+            const value = $(e.target).val().trim();
+            this.filters.search = value;
+
+            // 清除之前的防抖定时器
+            if (this.searchDebounceTimer) {
+                clearTimeout(this.searchDebounceTimer);
+            }
+
+            // 如果是扫描器输入，等待更短时间（扫描器输入很快）
+            const debounceDelay = this.isScannerInput ? 300 : 500;
+
+            // 设置新的防抖定时器
+            this.searchDebounceTimer = setTimeout(() => {
+                this.handleSearch();
+                this.searchDebounceTimer = null;
+            }, debounceDelay);
         });
 
         // 分類篩選
@@ -164,6 +215,14 @@ class ProductDashboard {
      * @param {number} page 頁碼
      */
     async fetchProducts(page = 1) {
+        // 取消之前的请求
+        if (this.searchAbortController) {
+            this.searchAbortController.abort();
+        }
+
+        // 创建新的 AbortController
+        this.searchAbortController = new AbortController();
+
         this.currentPage = page;
         const params = this.getSearchParams(page);
         const apiRoute = window.productManagementRoute;
@@ -182,7 +241,8 @@ class ProductDashboard {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
-                }
+                },
+                signal: this.searchAbortController.signal
             });
 
             if (!response.ok) {
@@ -190,6 +250,11 @@ class ProductDashboard {
             }
 
             const data = await response.json();
+
+            // 检查请求是否已被取消
+            if (this.searchAbortController.signal.aborted) {
+                return;
+            }
 
             if (data.data && data.data.length > 0) {
                 this.renderProducts(data.data);
@@ -200,6 +265,10 @@ class ProductDashboard {
             this.updateResultsCount(data);
             this.generatePagination(data);
         } catch (error) {
+            // 忽略被取消的请求错误
+            if (error.name === 'AbortError') {
+                return;
+            }
             console.error('Error loading products:', error);
             this.showAlert('Failed to load products, please try again', 'danger');
         }
@@ -303,6 +372,12 @@ class ProductDashboard {
      * 清除搜索
      */
     clearSearch() {
+        // 清除防抖定时器
+        if (this.searchDebounceTimer) {
+            clearTimeout(this.searchDebounceTimer);
+            this.searchDebounceTimer = null;
+        }
+
         this.filters.search = '';
         $('#search-input').val('');
         this.handleSearch();
@@ -410,27 +485,14 @@ class ProductDashboard {
         $('#prev-page').toggleClass('disabled', pagination.current_page <= 1);
 
         if (pagination.last_page > 7) {
-            const startPage = Math.max(1, pagination.current_page - 2);
-            const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
-
-            if (startPage > 1) {
-                paginationHTML += `<li class="page-item"><a class="page-link pagination-btn" href="#" data-page="1">1</a></li>`;
-                if (startPage > 2) {
+            for (let i = 1; i <= pagination.last_page; i++) {
+                if (i === 1 || i === pagination.last_page || (i >= pagination.current_page - 1 && i <= pagination.current_page + 1)) {
+                    paginationHTML += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                        <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                    </li>`;
+                } else if (i === pagination.current_page - 2 || i === pagination.current_page + 2) {
                     paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
                 }
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                paginationHTML += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
-                    <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
-                </li>`;
-            }
-
-            if (endPage < pagination.last_page) {
-                if (endPage < pagination.last_page - 1) {
-                    paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                }
-                paginationHTML += `<li class="page-item"><a class="page-link pagination-btn" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a></li>`;
             }
         } else {
             for (let i = 1; i <= pagination.last_page; i++) {
@@ -1131,17 +1193,17 @@ function bindCascadingSelectEvents() {
         });
     }
 
-    if (subcategorySelect && sizeSelect) {
-        subcategorySelect.addEventListener('change', function() {
-            const categoryId = categorySelect.value;
-            const subcategoryId = this.value;
-            updateSizeOptions(categoryId, subcategoryId, sizeSelect);
-        });
-    }
-
     // Update页面或Update Modal特殊处理
     const isUpdatePage = window.location.pathname.includes('/edit/') || window.location.pathname.includes('/update/');
     const isUpdateModal = categorySelect && categorySelect.id && categorySelect.id.includes('update');
+
+    // Subcategory 改变时，不应该影响 size（size 只基于 category）
+    // 在 update modal 中，改变 subcategory 不应该重置 size
+    if (subcategorySelect && sizeSelect) {
+        // 移除 subcategory 改变时对 size 的影响
+        // size 应该只基于 category，而不是 subcategory
+        // 所以不需要监听 subcategory 的 change 事件来更新 size
+    }
 
     if ((isUpdatePage || isUpdateModal) && rackSelect && subcategorySelect) {
         const selectedRackId = rackSelect.value;
@@ -2143,7 +2205,8 @@ function fillUpdateProductModal(data) {
             $('#update_category_id').trigger('change');
             setTimeout(() => {
                 if (data.subcategory_id) {
-                    $('#update_subcategory_id').val(data.subcategory_id).trigger('change');
+                    // 设置 subcategory 值，但不触发 change 事件，避免影响 size
+                    $('#update_subcategory_id').val(data.subcategory_id);
                 }
             }, 500);
         }

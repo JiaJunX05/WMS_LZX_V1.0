@@ -182,18 +182,16 @@ class SubcategoryDashboard {
      * @param {Object} response API響應數據
      */
     updateStatistics(response) {
-        const total = response.pagination?.total || 0;
-        $('#total-subcategories').text(total);
-
-        // 計算活躍和非活躍子分類數量
-        if (response.data) {
-            const activeCount = response.data.filter(sub => sub.subcategory_status === 'Available').length;
-            const inactiveCount = response.data.filter(sub => sub.subcategory_status === 'Unavailable').length;
-            const withImageCount = response.data.filter(sub => sub.subcategory_image).length;
-
-            $('#active-subcategories').text(activeCount);
-            $('#inactive-subcategories').text(inactiveCount);
-            $('#subcategories-with-image').text(withImageCount);
+        // 使用後端返回的統計信息（全部數據，不受分頁影響）
+        if (response.statistics) {
+            $('#total-subcategories').text(response.statistics.total || 0);
+            $('#active-subcategories').text(response.statistics.available || 0);
+            $('#inactive-subcategories').text(response.statistics.unavailable || 0);
+            $('#subcategories-with-image').text(response.statistics.with_image || 0);
+        } else {
+            // 後備方案：使用分頁總數
+            const total = response.pagination?.total || 0;
+            $('#total-subcategories').text(total);
         }
     }
 
@@ -218,6 +216,13 @@ class SubcategoryDashboard {
         const $tableBody = $('#table-body');
         const html = subcategories.map(subcategory => this.createSubcategoryRow(subcategory)).join('');
         $tableBody.html(html);
+
+        // 初始化所有 Bootstrap dropdown（确保 dropdown-menu-end 类生效）
+        if (typeof bootstrap !== 'undefined') {
+            $tableBody.find('[data-bs-toggle="dropdown"]').each(function() {
+                new bootstrap.Dropdown(this);
+            });
+        }
 
         // 重置勾選框狀態
         this.updateSelectAllCheckbox();
@@ -244,7 +249,7 @@ class SubcategoryDashboard {
                 <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         ${statusMenuItem}
                     </li>
@@ -266,22 +271,22 @@ class SubcategoryDashboard {
                     <input class="subcategory-checkbox form-check-input" type="checkbox" value="${subcategory.id}" id="subcategory-${subcategory.id}">
                 </td>
                 <td>
-                    ${subcategory.subcategory_image ? `
-                        <img src="/assets/images/${subcategory.subcategory_image}" alt="Subcategory Image"
-                             class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
-                    ` : `
-                        <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
-                            <i class="bi bi-image text-muted"></i>
+                    <div class="d-flex align-items-center gap-3">
+                        ${subcategory.subcategory_image ? `
+                            <img src="/assets/images/${subcategory.subcategory_image}" alt="Subcategory Image"
+                                 class="rounded border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
+                        ` : `
+                            <div class="rounded border border-2 border-white shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                        `}
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-collection me-2 text-primary"></i>
+                            <h6 class="mb-0 fw-bold">${subcategory.subcategory_name}</h6>
                         </div>
-                    `}
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-collection me-2 text-primary"></i>
-                        <h6 class="mb-0 fw-bold">${subcategory.subcategory_name}</h6>
                     </div>
                 </td>
-                <td>
+                <td class="text-end pe-4">
                     <span class="badge ${subcategory.subcategory_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
                         <i class="bi ${subcategory.subcategory_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${subcategory.subcategory_status}
                     </span>
@@ -470,7 +475,7 @@ class SubcategoryDashboard {
                 <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         ${statusMenuItem}
                     </li>
@@ -486,6 +491,18 @@ class SubcategoryDashboard {
         // 更新操作按鈕列
         const actionsCell = subcategoryRow.find('td:last-child');
         actionsCell.html(actionButtons);
+
+        // 重新初始化 Bootstrap dropdown（确保 dropdown-menu-end 类生效）
+        const dropdownElement = actionsCell.find('[data-bs-toggle="dropdown"]')[0];
+        if (dropdownElement && typeof bootstrap !== 'undefined') {
+            // 销毁旧的 dropdown 实例（如果存在）
+            const existingDropdown = bootstrap.Dropdown.getInstance(dropdownElement);
+            if (existingDropdown) {
+                existingDropdown.dispose();
+            }
+            // 创建新的 dropdown 实例
+            new bootstrap.Dropdown(dropdownElement);
+        }
 
         // 更新狀態標籤顯示（與 createSubcategoryRow 中的格式完全一致）
         const statusBadge = newStatus === 'Available'
@@ -528,8 +545,10 @@ class SubcategoryDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Subcategory has been set to available status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateSubcategoryRowStatus(subcategoryId, 'Available');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set subcategory available', 'error');
             }
@@ -564,8 +583,10 @@ class SubcategoryDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Subcategory has been set to unavailable status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateSubcategoryRowStatus(subcategoryId, 'Unavailable');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set subcategory unavailable', 'error');
             }
@@ -677,12 +698,12 @@ class SubcategoryDashboard {
             // 備用實現 - 直接使用 globalAlertContainer
             const alertClass = type === 'danger' || type === 'error' ? 'alert-danger' : `alert-${type}`;
             const container = document.getElementById('globalAlertContainer');
-            
+
             if (container) {
                 // 清除現有 alert
                 const existingAlerts = container.querySelectorAll('.alert');
                 existingAlerts.forEach(alert => alert.remove());
-                
+
                 // 創建新 alert
                 const alertHtml = `
                     <div class="alert ${alertClass} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 0.75rem;">
@@ -694,7 +715,7 @@ class SubcategoryDashboard {
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', alertHtml);
-                
+
                 // 自動消失
                 setTimeout(() => {
                     const alertElement = container.querySelector('.alert');
@@ -846,11 +867,11 @@ class SubcategoryDashboard {
                        document.getElementById(`update-${field}`) ||
                        document.getElementById(field) ||
                        document.querySelector(`[name="${field}"]`);
-            
+
             if (input) {
                 input.classList.add('is-invalid');
                 input.classList.remove('is-valid');
-                
+
                 // 显示错误消息
                 const feedback = input.parentElement.querySelector('.invalid-feedback') ||
                                input.closest('.col-12, .col-md-6')?.querySelector('.invalid-feedback');
@@ -913,7 +934,11 @@ class SubcategoryDashboard {
             if (!response.ok) {
                 if (response.status === 422) {
                     return response.json().then(data => {
-                        throw { status: 422, errors: data.errors || {} };
+                        throw {
+                            status: 422,
+                            errors: data.errors || {},
+                            message: data.message || null
+                        };
                     });
                 }
                 return response.json().then(data => {
@@ -931,15 +956,10 @@ class SubcategoryDashboard {
                     modal.hide();
                 }
 
-                // 如果有圖片，刷新整個頁面；否則只更新 DOM
-                if (hasImage) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // 沒有圖片，重新載入當前頁面以顯示新記錄
-                    this.fetchSubcategories(this.currentPage);
-                }
+                // 刷新頁面以確保所有數據正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to create subcategory', 'error');
             }
@@ -948,7 +968,18 @@ class SubcategoryDashboard {
             // 处理验证错误 (422)
             if (error.status === 422 && error.errors) {
                 this.displayValidationErrors(error.errors);
-                this.showAlert('Please fill in all required fields', 'warning');
+                // 显示后端返回的具体错误消息（如果有）
+                if (error.message) {
+                    this.showAlert(error.message, 'danger');
+                } else {
+                    // 尝试从 errors 中获取第一个错误消息
+                    const firstError = Object.values(error.errors)[0];
+                    if (firstError && firstError[0]) {
+                        this.showAlert(firstError[0], 'danger');
+                    } else {
+                        this.showAlert('Please fill in all required fields', 'warning');
+                    }
+                }
             } else {
                 let errorMessage = 'Failed to create subcategory';
                 if (error.message) {
@@ -1240,7 +1271,7 @@ class SubcategoryDashboard {
         // 移除所有 modal backdrop
         const backdrops = document.querySelectorAll('.modal-backdrop');
         backdrops.forEach(backdrop => backdrop.remove());
-        
+
         // 移除 body 上的 modal 相关类
         document.body.classList.remove('modal-open');
         document.body.style.overflow = '';
@@ -1324,7 +1355,11 @@ class SubcategoryDashboard {
             if (!response.ok) {
                 if (response.status === 422) {
                     return response.json().then(data => {
-                        throw { status: 422, errors: data.errors || {} };
+                        throw {
+                            status: 422,
+                            errors: data.errors || {},
+                            message: data.message || null
+                        };
                     });
                 }
                 return response.json().then(data => {
@@ -1342,15 +1377,10 @@ class SubcategoryDashboard {
                     modal.hide();
                 }
 
-                // 如果有圖片更改，刷新整個頁面；否則只更新 DOM
-                if (hasImageChange) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // 沒有圖片更改，重新載入當前頁面
-                    this.fetchSubcategories(this.currentPage);
-                }
+                // 刷新頁面以確保所有數據正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to update subcategory', 'error');
             }
@@ -1359,7 +1389,18 @@ class SubcategoryDashboard {
             // 处理验证错误 (422)
             if (error.status === 422 && error.errors) {
                 this.displayValidationErrors(error.errors);
-                this.showAlert('Please fill in all required fields', 'warning');
+                // 显示后端返回的具体错误消息（如果有）
+                if (error.message) {
+                    this.showAlert(error.message, 'danger');
+                } else {
+                    // 尝试从 errors 中获取第一个错误消息
+                    const firstError = Object.values(error.errors)[0];
+                    if (firstError && firstError[0]) {
+                        this.showAlert(firstError[0], 'danger');
+                    } else {
+                        this.showAlert('Please fill in all required fields', 'warning');
+                    }
+                }
             } else {
                 let errorMessage = 'Failed to update subcategory';
                 if (error.message) {

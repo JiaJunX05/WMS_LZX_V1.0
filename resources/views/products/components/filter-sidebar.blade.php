@@ -15,6 +15,8 @@
         </button>
     </div>
 
+    {{-- 可滾動的篩選內容區域 --}}
+    <div class="filter-sidebar-content">
     {{-- 分類篩選 --}}
     <div class="filter-group">
         <div class="filter-group-header"
@@ -80,6 +82,17 @@
                                class="filter-checkbox-input">
                         <label for="filter-subcategory-{{ $subcategory->id }}"
                                class="filter-checkbox-label">
+                            <div class="filter-checkbox-icon">
+                                @if($subcategory->subcategory_image)
+                                    <img src="{{ asset('assets/images/' . $subcategory->subcategory_image) }}"
+                                         alt="{{ $subcategory->subcategory_name }}"
+                                         class="filter-checkbox-image"
+                                         onerror="this.onerror=null; this.src='{{ asset('assets/images/placeholder.png') }}';"
+                                         title="Image: {{ $subcategory->subcategory_image }}">
+                                @else
+                                    <i class="bi bi-tag-fill" title="No image for {{ $subcategory->subcategory_name }}"></i>
+                                @endif
+                            </div>
                             <span class="filter-checkbox-text">{{ $subcategory->subcategory_name }}</span>
                             <span class="filter-checkbox-count">{{ $subcategory->products_count ?? '0' }}</span>
                         </label>
@@ -111,6 +124,17 @@
                                class="filter-checkbox-input">
                         <label for="filter-brand-{{ $brand->id }}"
                                class="filter-checkbox-label">
+                            <div class="filter-checkbox-icon">
+                                @if($brand->brand_image)
+                                    <img src="{{ asset('assets/images/' . $brand->brand_image) }}"
+                                         alt="{{ $brand->brand_name }}"
+                                         class="filter-checkbox-image"
+                                         onerror="this.onerror=null; this.src='{{ asset('assets/images/placeholder.png') }}';"
+                                         title="Image: {{ $brand->brand_image }}">
+                                @else
+                                    <i class="bi bi-award-fill" title="No image for {{ $brand->brand_name }}"></i>
+                                @endif
+                            </div>
                             <span class="filter-checkbox-text">{{ $brand->brand_name }}</span>
                             <span class="filter-checkbox-count">{{ $brand->products_count ?? '0' }}</span>
                         </label>
@@ -118,6 +142,7 @@
                 @endforeach
             </div>
         </div>
+    </div>
     </div>
 </div>
 

@@ -153,6 +153,23 @@ class SubcategoryController extends Controller
 
                 $subcategories = $query->paginate(10);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = Subcategory::query();
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $baseQuery->where(function($q) use ($search) {
+                        $q->where('subcategory_name', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $baseQuery->where('subcategory_status', $request->status_filter);
+                }
+
+                $totalSubcategories = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->where('subcategory_status', 'Available')->count();
+                $unavailableCount = (clone $baseQuery)->where('subcategory_status', 'Unavailable')->count();
+                $withImageCount = (clone $baseQuery)->whereNotNull('subcategory_image')->count();
+
                 return response()->json([
                     'success' => true,
                     'data' => $subcategories->items(),
@@ -163,6 +180,12 @@ class SubcategoryController extends Controller
                         'total' => $subcategories->total(),
                         'from' => $subcategories->firstItem(),
                         'to' => $subcategories->lastItem(),
+                    ],
+                    'statistics' => [
+                        'total' => $totalSubcategories,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'with_image' => $withImageCount,
                     ]
                 ]);
             } catch (\Exception $e) {

@@ -150,6 +150,25 @@ class ColorController extends Controller
 
                 $colors = $query->paginate(10);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = Color::query();
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $baseQuery->where(function($q) use ($search) {
+                        $q->where('color_name', 'like', "%{$search}%")
+                          ->orWhere('color_hex', 'like', "%{$search}%")
+                          ->orWhere('color_rgb', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $baseQuery->where('color_status', $request->status_filter);
+                }
+
+                $totalColors = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->where('color_status', 'Available')->count();
+                $unavailableCount = (clone $baseQuery)->where('color_status', 'Unavailable')->count();
+                $hexCount = (clone $baseQuery)->whereNotNull('color_hex')->count();
+
                 return response()->json([
                     'success' => true,
                     'data' => $colors->items(),
@@ -160,6 +179,12 @@ class ColorController extends Controller
                         'total' => $colors->total(),
                         'from' => $colors->firstItem(),
                         'to' => $colors->lastItem(),
+                    ],
+                    'statistics' => [
+                        'total' => $totalColors,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'hex' => $hexCount,
                     ]
                 ]);
             } catch (\Exception $e) {

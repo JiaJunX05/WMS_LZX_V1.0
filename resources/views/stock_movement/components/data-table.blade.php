@@ -71,8 +71,5 @@
     </div>
     <h4 class="text-secondary fw-semibold mb-3">No Stock Data</h4>
     <p class="text-muted small mb-4">No stock movements have been recorded in the system yet</p>
-    <a href="{{ route('staff.stock_management') }}" class="btn btn-primary btn-lg">
-        <i class="bi bi-plus-circle-fill me-2"></i>Create First Stock Movement
-    </a>
 </div>
 

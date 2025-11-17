@@ -153,6 +153,23 @@ class BrandController extends Controller
 
                 $brands = $query->paginate(10);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = Brand::query();
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $baseQuery->where(function($q) use ($search) {
+                        $q->where('brand_name', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $baseQuery->where('brand_status', $request->status_filter);
+                }
+
+                $totalBrands = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->where('brand_status', 'Available')->count();
+                $unavailableCount = (clone $baseQuery)->where('brand_status', 'Unavailable')->count();
+                $withImageCount = (clone $baseQuery)->whereNotNull('brand_image')->count();
+
                 return response()->json([
                     'success' => true,
                     'data' => $brands->items(),
@@ -163,6 +180,12 @@ class BrandController extends Controller
                         'total' => $brands->total(),
                         'from' => $brands->firstItem(),
                         'to' => $brands->lastItem(),
+                    ],
+                    'statistics' => [
+                        'total' => $totalBrands,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'with_image' => $withImageCount,
                     ]
                 ]);
             } catch (\Exception $e) {

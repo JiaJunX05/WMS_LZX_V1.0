@@ -182,6 +182,7 @@ function initializeLibraryDashboard() {
 function bindPaginationEvents() {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
+    const pagination = document.getElementById('pagination');
 
     if (prevBtn) {
         prevBtn.addEventListener('click', function(e) {
@@ -194,6 +195,20 @@ function bindPaginationEvents() {
         nextBtn.addEventListener('click', function(e) {
             e.preventDefault();
             goToNextPage();
+        });
+    }
+
+    // 綁定頁碼按鈕點擊事件（與 subcategory 一致）
+    if (pagination) {
+        pagination.addEventListener('click', function(e) {
+            if (e.target.classList.contains('pagination-btn')) {
+                e.preventDefault();
+                const page = parseInt(e.target.getAttribute('data-page'));
+                if (page && page !== currentPage) {
+                    currentPage = page;
+                    renderCurrentPage();
+                }
+            }
         });
     }
 }
@@ -550,17 +565,18 @@ function updatePaginationInfo() {
  * 更新分頁按鈕狀態
  */
 function updatePaginationButtons(totalCount) {
-    const prevBtn = document.getElementById('prev-page');
-    const nextBtn = document.getElementById('next-page');
-    const currentPageElement = document.getElementById('current-page');
-    const pageNumberElement = document.getElementById('page-number');
+    const pagination = document.getElementById('pagination');
+    if (!pagination) return;
+
+    // 移除所有中間的頁碼按鈕（保留 prev-page 和 next-page）
+    const paginationItems = pagination.querySelectorAll('li:not(#prev-page):not(#next-page)');
+    paginationItems.forEach(item => item.remove());
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
+    if (totalPages === 0) return;
 
-    // 更新頁碼顯示
-    if (pageNumberElement) {
-        pageNumberElement.textContent = currentPage;
-    }
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
 
     // 更新上一頁按鈕
     if (prevBtn) {
@@ -571,19 +587,46 @@ function updatePaginationButtons(totalCount) {
         }
     }
 
+    // 生成頁碼按鈕
+    let paginationHTML = '';
+    if (totalPages > 7) {
+        // 超過7頁時，顯示省略號
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                paginationHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            } else if (i === currentPage - 2 || i === currentPage + 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+    } else {
+        // 7頁以內，顯示所有頁碼
+        for (let i = 1; i <= totalPages; i++) {
+            paginationHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+            </li>`;
+        }
+    }
+
     // 更新下一頁按鈕
     if (nextBtn) {
-        if (currentPage >= totalPages || totalPages === 0) {
+        if (currentPage >= totalPages) {
             nextBtn.classList.add('disabled');
         } else {
             nextBtn.classList.remove('disabled');
         }
     }
 
-    // 確保當前頁面始終顯示為活動狀態
-    if (currentPageElement) {
-        currentPageElement.classList.add('active');
-        currentPageElement.classList.remove('disabled');
+    // 插入頁碼按鈕
+    if (nextBtn && prevBtn) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = paginationHTML;
+        const fragment = document.createDocumentFragment();
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+        }
+        nextBtn.parentNode.insertBefore(fragment, nextBtn);
     }
 }
 

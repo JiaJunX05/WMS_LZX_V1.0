@@ -176,6 +176,7 @@ function initializeLocationDashboard() {
 function bindPaginationEvents() {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
+    const pagination = document.getElementById('pagination');
 
     if (prevBtn) {
         prevBtn.addEventListener('click', function(e) {
@@ -188,6 +189,20 @@ function bindPaginationEvents() {
         nextBtn.addEventListener('click', function(e) {
             e.preventDefault();
             goToNextPage();
+        });
+    }
+
+    // 綁定頁碼按鈕點擊事件（與 subcategory 一致）
+    if (pagination) {
+        pagination.addEventListener('click', function(e) {
+            if (e.target.classList.contains('pagination-btn')) {
+                e.preventDefault();
+                const page = parseInt(e.target.getAttribute('data-page'));
+                if (page && page !== currentPage) {
+                    currentPage = page;
+                    renderCurrentPage();
+                }
+            }
         });
     }
 }
@@ -531,17 +546,18 @@ function updatePaginationInfo() {
  * 更新分頁按鈕
  */
 function updatePaginationButtons(totalCount) {
-    const prevBtn = document.getElementById('prev-page');
-    const nextBtn = document.getElementById('next-page');
-    const currentPageElement = document.getElementById('current-page');
-    const pageNumberElement = document.getElementById('page-number');
+    const pagination = document.getElementById('pagination');
+    if (!pagination) return;
+
+    // 移除所有中間的頁碼按鈕（保留 prev-page 和 next-page）
+    const paginationItems = pagination.querySelectorAll('li:not(#prev-page):not(#next-page)');
+    paginationItems.forEach(item => item.remove());
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
+    if (totalPages === 0) return;
 
-    // 更新頁碼顯示
-    if (pageNumberElement) {
-        pageNumberElement.textContent = currentPage;
-    }
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
 
     // 更新上一頁按鈕
     if (prevBtn) {
@@ -552,19 +568,46 @@ function updatePaginationButtons(totalCount) {
         }
     }
 
+    // 生成頁碼按鈕
+    let paginationHTML = '';
+    if (totalPages > 7) {
+        // 超過7頁時，顯示省略號
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                paginationHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            } else if (i === currentPage - 2 || i === currentPage + 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+    } else {
+        // 7頁以內，顯示所有頁碼
+        for (let i = 1; i <= totalPages; i++) {
+            paginationHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+            </li>`;
+        }
+    }
+
     // 更新下一頁按鈕
     if (nextBtn) {
-        if (currentPage >= totalPages || totalPages === 0) {
+        if (currentPage >= totalPages) {
             nextBtn.classList.add('disabled');
         } else {
             nextBtn.classList.remove('disabled');
         }
     }
 
-    // 確保當前頁面始終顯示為活動狀態
-    if (currentPageElement) {
-        currentPageElement.classList.add('active');
-        currentPageElement.classList.remove('disabled');
+    // 插入頁碼按鈕
+    if (nextBtn && prevBtn) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = paginationHTML;
+        const fragment = document.createDocumentFragment();
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+        }
+        nextBtn.parentNode.insertBefore(fragment, nextBtn);
     }
 }
 
@@ -1074,7 +1117,24 @@ function displayRackCards(racks) {
         return;
     }
 
-    container.innerHTML = racks.map(rack => `
+    container.innerHTML = racks.map(rack => {
+        const imageUrl = rack.rack_image
+            ? `/assets/images/${rack.rack_image}`
+            : null;
+        const imageHtml = imageUrl
+            ? `<img src="${imageUrl}"
+                     alt="${rack.rack_number}"
+                     class="rack-card-image mb-2"
+                     style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;"
+                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="rack-card-placeholder d-none" style="width: 100%; height: 120px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                    <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                </div>`
+            : `<div class="rack-card-placeholder mb-2" style="width: 100%; height: 120px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+            </div>`;
+
+        return `
         <div class="col-md-3 col-sm-4 col-6 mb-3">
             <div class="card rack-card h-100 border border-light position-relative"
                  data-rack-id="${rack.id}"
@@ -1085,13 +1145,15 @@ function displayRackCards(racks) {
                        class="rack-checkbox position-absolute opacity-0"
                        id="rack_${rack.id}"
                        style="pointer-events: none;">
-                <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4"
-                     style="cursor: pointer; min-height: 80px; position: relative;">
-                    <div class="size-value fw-bold text-dark mb-0 fs-5">${rack.rack_number.toUpperCase()}</div>
+                <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-3"
+                     style="cursor: pointer; min-height: 180px; position: relative;">
+                    ${imageHtml}
+                    <div class="size-value fw-bold text-dark mb-0" style="font-size: 0.9rem; line-height: 1.2;">${rack.rack_number.toUpperCase()}</div>
                 </div>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     // 綁定卡片點擊事件
     bindRackCardEvents();

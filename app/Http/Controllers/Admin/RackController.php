@@ -154,6 +154,23 @@ class RackController extends Controller
 
                 $racks = $query->paginate(10);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = Rack::query();
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $baseQuery->where(function($q) use ($search) {
+                        $q->where('rack_number', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $baseQuery->where('rack_status', $request->status_filter);
+                }
+
+                $totalRacks = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->where('rack_status', 'Available')->count();
+                $unavailableCount = (clone $baseQuery)->where('rack_status', 'Unavailable')->count();
+                $withImageCount = (clone $baseQuery)->whereNotNull('rack_image')->count();
+
                 return response()->json([
                     'success' => true,
                     'data' => $racks->items(),
@@ -164,6 +181,12 @@ class RackController extends Controller
                         'total' => $racks->total(),
                         'from' => $racks->firstItem(),
                         'to' => $racks->lastItem(),
+                    ],
+                    'statistics' => [
+                        'total' => $totalRacks,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'with_image' => $withImageCount,
                     ]
                 ]);
             } catch (\Exception $e) {

@@ -189,18 +189,16 @@ class ColorDashboard {
      * @param {Object} response API響應數據
      */
     updateStatistics(response) {
-        const total = response.pagination?.total || 0;
-        $('#total-colors').text(total);
-
-        // 計算活躍和非活躍顏色數量
-        if (response.data) {
-            const activeCount = response.data.filter(color => color.color_status === 'Available').length;
-            const inactiveCount = response.data.filter(color => color.color_status === 'Unavailable').length;
-            const hexCount = response.data.filter(color => color.color_hex).length;
-
-            $('#active-colors').text(activeCount);
-            $('#inactive-colors').text(inactiveCount);
-            $('#hex-colors').text(hexCount);
+        // 使用後端返回的統計信息（全部數據，不受分頁影響）
+        if (response.statistics) {
+            $('#total-colors').text(response.statistics.total || 0);
+            $('#active-colors').text(response.statistics.available || 0);
+            $('#inactive-colors').text(response.statistics.unavailable || 0);
+            $('#hex-colors').text(response.statistics.hex || 0);
+        } else {
+            // 後備方案：使用分頁總數
+            const total = response.pagination?.total || 0;
+            $('#total-colors').text(total);
         }
     }
 
@@ -225,6 +223,13 @@ class ColorDashboard {
         const $tableBody = $('#table-body');
         const html = colors.map(color => this.createColorRow(color)).join('');
         $tableBody.html(html);
+
+        // 初始化所有 Bootstrap dropdown（确保 dropdown-menu-end 类生效）
+        if (typeof bootstrap !== 'undefined') {
+            $tableBody.find('[data-bs-toggle="dropdown"]').each(function() {
+                new bootstrap.Dropdown(this);
+            });
+        }
 
         // 重置勾選框狀態
         this.updateSelectAllCheckbox();
@@ -251,7 +256,7 @@ class ColorDashboard {
                 <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         ${statusMenuItem}
                     </li>
@@ -274,19 +279,21 @@ class ColorDashboard {
                     <input class="color-checkbox form-check-input" type="checkbox" value="${color.id}" id="color-${color.id}">
                 </td>
                 <td>
-                    <div class="rounded border border-2 border-white shadow-sm" style="background-color: ${color.color_hex || '#cccccc'}; width: 2.5rem; height: 2.5rem;"></div>
-                </td>
-                <td>
-                    <div class="fw-bold text-dark mb-1 text-truncate">
-                        <i class="bi bi-palette me-2 text-primary"></i>${color.color_name}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded border border-2 border-white shadow-sm" style="background-color: ${color.color_hex || '#cccccc'}; width: 2.5rem; height: 2.5rem;"></div>
+                        <div class="d-flex flex-column">
+                            <div class="fw-bold text-dark mb-1 text-truncate">
+                                <i class="bi bi-palette me-2 text-primary"></i>${color.color_name}
+                            </div>
+                            <div class="text-muted small" style="line-height: 1.3;">
+                                <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${color.color_hex || 'N/A'}</span>
+                                <span class="mx-2">|</span>
+                                <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${color.color_rgb || 'N/A'}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-muted small" style="line-height: 1.3;">
-                        <i class="bi bi-hash me-1"></i>Hex: <span class="fw-medium">${color.color_hex || 'N/A'}</span>
-                        <span class="mx-2">|</span>
-                        <i class="bi bi-circle-fill me-1"></i>RGB: <span class="fw-medium">${color.color_rgb || 'N/A'}</span>
-                    </div>
                 </td>
-                <td>
+                <td class="text-end pe-4">
                     <span class="badge ${color.color_status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
                         <i class="bi ${color.color_status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${color.color_status}
                     </span>
@@ -476,7 +483,7 @@ class ColorDashboard {
                 <button class="btn btn-sm btn-outline-secondary" title="More" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         ${statusMenuItem}
                     </li>
@@ -492,6 +499,18 @@ class ColorDashboard {
         // 更新操作按鈕列
         const actionsCell = colorRow.find('td:last-child');
         actionsCell.html(actionButtons);
+
+        // 重新初始化 Bootstrap dropdown（确保 dropdown-menu-end 类生效）
+        const dropdownElement = actionsCell.find('[data-bs-toggle="dropdown"]')[0];
+        if (dropdownElement && typeof bootstrap !== 'undefined') {
+            // 销毁旧的 dropdown 实例（如果存在）
+            const existingDropdown = bootstrap.Dropdown.getInstance(dropdownElement);
+            if (existingDropdown) {
+                existingDropdown.dispose();
+            }
+            // 创建新的 dropdown 实例
+            new bootstrap.Dropdown(dropdownElement);
+        }
 
         // 更新狀態標籤顯示（與 createColorRow 中的格式完全一致）
         const statusBadge = newStatus === 'Available'
@@ -534,8 +553,10 @@ class ColorDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Color has been set to available status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateColorRowStatus(colorId, 'Available');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set color available', 'error');
             }
@@ -570,8 +591,10 @@ class ColorDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'Color has been set to unavailable status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateColorRowStatus(colorId, 'Unavailable');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set color unavailable', 'error');
             }
@@ -1119,7 +1142,11 @@ class ColorDashboard {
             if (!response.ok) {
                 if (response.status === 422) {
                     return response.json().then(data => {
-                        throw { status: 422, errors: data.errors || {} };
+                        throw { 
+                            status: 422, 
+                            errors: data.errors || {},
+                            message: data.message || null
+                        };
                     });
                 }
                 return response.json().then(data => {
@@ -1148,7 +1175,18 @@ class ColorDashboard {
             // 处理验证错误 (422)
             if (error.status === 422 && error.errors) {
                 this.displayValidationErrors(error.errors);
-                this.showAlert('Please fill in all required fields', 'warning');
+                // 显示后端返回的具体错误消息（如果有）
+                if (error.message) {
+                    this.showAlert(error.message, 'danger');
+                } else {
+                    // 尝试从 errors 中获取第一个错误消息
+                    const firstError = Object.values(error.errors)[0];
+                    if (firstError && firstError[0]) {
+                        this.showAlert(firstError[0], 'danger');
+                    } else {
+                        this.showAlert('Please fill in all required fields', 'warning');
+                    }
+                }
             } else {
                 let errorMessage = 'Failed to create color';
                 if (error.message) {
@@ -1418,7 +1456,11 @@ class ColorDashboard {
             if (!response.ok) {
                 if (response.status === 422) {
                     return response.json().then(data => {
-                        throw { status: 422, errors: data.errors || {} };
+                        throw { 
+                            status: 422, 
+                            errors: data.errors || {},
+                            message: data.message || null
+                        };
                     });
                 }
                 return response.json().then(data => {
@@ -1447,7 +1489,18 @@ class ColorDashboard {
             // 处理验证错误 (422)
             if (error.status === 422 && error.errors) {
                 this.displayValidationErrors(error.errors);
-                this.showAlert('Please fill in all required fields', 'warning');
+                // 显示后端返回的具体错误消息（如果有）
+                if (error.message) {
+                    this.showAlert(error.message, 'danger');
+                } else {
+                    // 尝试从 errors 中获取第一个错误消息
+                    const firstError = Object.values(error.errors)[0];
+                    if (firstError && firstError[0]) {
+                        this.showAlert(firstError[0], 'danger');
+                    } else {
+                        this.showAlert('Please fill in all required fields', 'warning');
+                    }
+                }
             } else {
                 let errorMessage = 'Failed to update color';
                 if (error.message) {

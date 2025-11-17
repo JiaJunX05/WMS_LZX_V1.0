@@ -155,6 +155,24 @@ class ZoneController extends Controller
 
                 $zones = $query->paginate(10);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = Zone::query();
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $baseQuery->where(function($q) use ($search) {
+                        $q->where('zone_name', 'like', "%{$search}%")
+                          ->orWhere('location', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $baseQuery->where('zone_status', $request->status_filter);
+                }
+
+                $totalZones = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->where('zone_status', 'Available')->count();
+                $unavailableCount = (clone $baseQuery)->where('zone_status', 'Unavailable')->count();
+                $withImageCount = (clone $baseQuery)->whereNotNull('zone_image')->count();
+
                 return response()->json([
                     'success' => true,
                     'data' => $zones->items(),
@@ -165,6 +183,12 @@ class ZoneController extends Controller
                         'total' => $zones->total(),
                         'from' => $zones->firstItem(),
                         'to' => $zones->lastItem(),
+                    ],
+                    'statistics' => [
+                        'total' => $totalZones,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'with_image' => $withImageCount,
                     ]
                 ]);
             } catch (\Exception $e) {

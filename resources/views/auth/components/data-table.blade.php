@@ -28,16 +28,11 @@
                                 <div class="fw-bold text-muted small text-uppercase"></div>
                                 <input type="checkbox" name="select-all" id="select-all" class="form-check-input">
                             </th>
-                            <th style="width: 30%">
-                                <div class="fw-bold text-muted small text-uppercase">USER INFO</div>
-                            </th>
-                            <th style="width: 35%">
-                                <div class="fw-bold text-muted small text-uppercase">EMAIL</div>
-                            </th>
-                            <th style="width: 10%">
+                            <th><div class="fw-bold text-muted small text-uppercase">USER INFORMATION</div></th>
+                            <th class="text-end pe-4" style="width: 20%">
                                 <div class="fw-bold text-muted small text-uppercase">ACCOUNT ROLE</div>
                             </th>
-                            <th style="width: 10%">
+                            <th class="text-end pe-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ACCOUNT STATUS</div>
                             </th>
                             <th class="text-end pe-4" style="width: 10%">
@@ -47,16 +42,11 @@
                             <th class="ps-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ID</div>
                             </th>
-                            <th style="width: 20%">
-                                <div class="fw-bold text-muted small text-uppercase">USER INFO</div>
-                            </th>
-                            <th style="width: 40%">
-                                <div class="fw-bold text-muted small text-uppercase">EMAIL</div>
-                            </th>
-                            <th style="width: 10%">
+                            <th><div class="fw-bold text-muted small text-uppercase">USER INFORMATION</div></th>
+                            <th class="text-end pe-4" style="width: 20%">
                                 <div class="fw-bold text-muted small text-uppercase">ACCOUNT ROLE</div>
                             </th>
-                            <th style="width: 10%">
+                            <th class="text-end pe-4" style="width: 10%">
                                 <div class="fw-bold text-muted small text-uppercase">ACCOUNT STATUS</div>
                             </th>
                             <th class="text-end pe-4" style="width: 10%">
@@ -67,7 +57,7 @@
                 </thead>
                 <tbody id="table-body">
                     <tr>
-                        <td colspan="{{ $globalUserRole === 'SuperAdmin' ? '6' : '6' }}" class="text-center py-4">
+                        <td colspan="{{ $globalUserRole === 'SuperAdmin' ? '5' : '5' }}" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>

@@ -170,6 +170,9 @@
     overflow: hidden;
     position: sticky;
     top: var(--spacing-lg);
+    max-height: calc(100vh - var(--spacing-lg) * 2);
+    display: flex;
+    flex-direction: column;
 }
 
 /* 📋 筛选标题区域 */
@@ -182,6 +185,8 @@
     align-items: center;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
+    z-index: 10;
 }
 
 /* 🎨 筛选标题背景图案 */
@@ -243,6 +248,34 @@
     border-color: rgba(255, 255, 255, 0.5);
     color: white;
     transform: translateY(-1px);
+}
+
+/* 📜 筛选侧边栏内容区域（可滚动） */
+.filter-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+/* 自定义滚动条样式 */
+.filter-sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-sidebar-content::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 3px;
+}
+
+.filter-sidebar-content::-webkit-scrollbar-thumb {
+    background: var(--gray-400);
+    border-radius: 3px;
+    transition: background var(--transition-normal);
+}
+
+.filter-sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-500);
 }
 
 /* 📂 筛选组 */
@@ -483,6 +516,44 @@
 /* 🚫 选中状态隐藏悬停效果 */
 .filter-checkbox-input:checked + .filter-checkbox-label::before {
     display: none;
+}
+
+/* 🖼️ 复选框图标容器 */
+.filter-checkbox-icon {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--spacing-md);
+    flex-shrink: 0;
+    border-radius: var(--border-radius-sm);
+    background: var(--gray-100);
+    overflow: hidden;
+}
+
+/* 🖼️ 复选框图片 */
+.filter-checkbox-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--border-radius-sm);
+}
+
+/* 🎨 复选框图标 */
+.filter-checkbox-icon i {
+    font-size: var(--font-lg);
+    color: var(--gray-500);
+    transition: color var(--transition-normal);
+}
+
+/* ✅ 选中状态图标 */
+.filter-checkbox-input:checked + .filter-checkbox-label .filter-checkbox-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.filter-checkbox-input:checked + .filter-checkbox-label .filter-checkbox-icon i {
+    color: white;
 }
 
 /* 📝 复选框文字 */

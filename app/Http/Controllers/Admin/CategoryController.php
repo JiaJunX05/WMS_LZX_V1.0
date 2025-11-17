@@ -153,6 +153,23 @@ class CategoryController extends Controller
 
                 $categories = $query->paginate(10);
 
+                // 計算全部數據的統計信息（不受分頁影響）
+                $baseQuery = Category::query();
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $baseQuery->where(function($q) use ($search) {
+                        $q->where('category_name', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->has('status_filter') && $request->status_filter) {
+                    $baseQuery->where('category_status', $request->status_filter);
+                }
+
+                $totalCategories = $baseQuery->count();
+                $availableCount = (clone $baseQuery)->where('category_status', 'Available')->count();
+                $unavailableCount = (clone $baseQuery)->where('category_status', 'Unavailable')->count();
+                $withImageCount = (clone $baseQuery)->whereNotNull('category_image')->count();
+
                 return response()->json([
                     'success' => true,
                     'data' => $categories->items(),
@@ -163,6 +180,12 @@ class CategoryController extends Controller
                         'total' => $categories->total(),
                         'from' => $categories->firstItem(),
                         'to' => $categories->lastItem(),
+                    ],
+                    'statistics' => [
+                        'total' => $totalCategories,
+                        'available' => $availableCount,
+                        'unavailable' => $unavailableCount,
+                        'with_image' => $withImageCount,
                     ]
                 ]);
             } catch (\Exception $e) {

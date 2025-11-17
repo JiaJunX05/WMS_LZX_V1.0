@@ -15,8 +15,10 @@
     </div>
     <h4 class="text-secondary fw-semibold mb-3">No Product Data</h4>
     <p class="text-muted small mb-4">No products have been created in the system yet</p>
+    @if(Auth::user()->getAccountRole() === 'Admin')
     <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createProductModal">
         <i class="bi bi-plus-circle-fill me-2"></i>Create First Product
     </button>
+    @endif
 </div>
 

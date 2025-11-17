@@ -148,22 +148,16 @@ class AuthDashboard {
      * @param {Object} response API響應數據
      */
     updateStatistics(response) {
-        const total = response.pagination?.total || 0;
-        $('#total-users').text(total);
-
-        // 計算活躍和非活躍用戶數量
-        if (response.data) {
-            const availableCount = response.data.filter(user => user.status === 'Available').length;
-            const unavailableCount = response.data.filter(user => user.status === 'Unavailable').length;
-
-            // 計算管理員數量（僅 SuperAdmin 可見）
-            const adminCount = response.data.filter(user =>
-                user.role === 'Admin' || user.role === 'SuperAdmin'
-            ).length;
-
-            $('#active-users').text(availableCount);
-            $('#inactive-users').text(unavailableCount);
-            $('#admin-users').text(adminCount);
+        // 使用後端返回的統計信息（全部數據，不受分頁影響）
+        if (response.statistics) {
+            $('#total-users').text(response.statistics.total || 0);
+            $('#active-users').text(response.statistics.available || 0);
+            $('#inactive-users').text(response.statistics.unavailable || 0);
+            $('#admin-users').text(response.statistics.admin || 0);
+        } else {
+            // 後備方案：使用分頁總數
+            const total = response.pagination?.total || 0;
+            $('#total-users').text(total);
         }
     }
 
@@ -238,27 +232,6 @@ class AuthDashboard {
         $('#records-count').text(`${total} records`);
     }
 
-    /**
-     * 更新統計數據
-     * @param {Object} response API響應數據
-     */
-    updateStatistics(response) {
-        const total = response.pagination?.total || 0;
-        $('#total-users').text(total);
-
-        // 計算可用和不可用用戶數量
-        if (response.data) {
-            const activeCount = response.data.filter(user => user.status === 'Available').length;
-            const inactiveCount = response.data.filter(user => user.status === 'Unavailable').length;
-            const adminCount = response.data.filter(user =>
-                user.role === 'Admin' || user.role === 'SuperAdmin'
-            ).length;
-
-            $('#active-users').text(activeCount);
-            $('#inactive-users').text(inactiveCount);
-            $('#admin-users').text(adminCount);
-        }
-    }
 
     // =============================================================================
     // 渲染模塊 (Rendering Module)
@@ -367,28 +340,31 @@ class AuthDashboard {
                 data-user-image="${escapeHtml(user.user_image || '')}">
                 ${firstColumn}
                 <td>
-                    <div class="d-flex align-items-start">
-                        <div class="me-3">
-                            ${userImageUrl ?
-                                `<img src="${userImageUrl}" alt="User Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">` :
-                                `<div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <i class="bi bi-person text-muted"></i>
-                                </div>`
-                            }
-                        </div>
+                    <div class="d-flex align-items-center gap-3">
+                        ${userImageUrl ?
+                            `<img src="${userImageUrl}" alt="User Avatar" class="rounded-circle border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">` :
+                            `<div class="bg-light rounded-circle border border-2 border-white shadow-sm d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                                <i class="bi bi-person text-muted"></i>
+                            </div>`
+                        }
                         <div class="d-flex flex-column">
-                            <span class="fw-medium">${user.name.toUpperCase()}</span>
-                            <span class="text-muted small">${user.username}</span>
+                            <div class="fw-bold text-dark mb-1">
+                                <i class="bi bi-person-badge me-2 text-primary"></i>${user.name.toUpperCase()}
+                            </div>
+                            <div class="text-muted small">
+                                <i class="bi bi-at me-1"></i>${user.username}
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-envelope me-1"></i>${user.email}
+                            </div>
                         </div>
                     </div>
                 </td>
-                <td><span class="text-muted small">${user.email}</span></td>
-                <td>
+                <td class="text-end pe-4">
                     <span class="badge ${user.role === 'SuperAdmin' ? 'bg-danger' : user.role === 'Admin' ? 'bg-warning' : 'bg-success'} px-3 py-2">
                         <i class="bi ${user.role === 'SuperAdmin' ? 'bi-person-fill-gear' : user.role === 'Admin' ? 'bi-shield-check' : 'bi-person-badge'} me-1"></i>${user.role.toUpperCase()}
                     </span>
                 </td>
-                <td>
+                <td class="text-end pe-4">
                     <span class="badge ${user.status === 'Available' ? 'bg-success' : 'bg-danger'} px-3 py-2">
                         <i class="bi ${user.status === 'Available' ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>${user.status}
                     </span>
@@ -549,48 +525,41 @@ class AuthDashboard {
         userRow.removeData('status');
         userRow.removeData('user-image');
 
-        // 更新用戶圖片顯示
-        const imageCell = userRow.find('td').eq(1);
-        if (imageCell.length > 0) {
+        // 更新用戶信息顯示（包含圖片、姓名、用戶名和郵箱）
+        const infoCell = userRow.find('td').eq(1);
+        if (infoCell.length > 0) {
             const userImageUrl = userData.user_image ? `/assets/images/auth/${userData.user_image}` : null;
-            if (userImageUrl) {
-                imageCell.html(`
-                    <div class="d-flex align-items-start">
-                        <div class="me-3">
-                            <img src="${userImageUrl}" alt="User Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                        </div>
-                        <div class="d-flex flex-column">
-                            <span class="fw-medium">${(userData.first_name || '') + ' ' + (userData.last_name || '')}</span>
-                            <span class="text-muted small">${userData.username || userData.account?.username || ''}</span>
-                        </div>
-                    </div>
-                `);
-        } else {
-                imageCell.html(`
-                    <div class="d-flex align-items-start">
-                        <div class="me-3">
-                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="bi bi-person text-muted"></i>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-column">
-                            <span class="fw-medium">${(userData.first_name || '') + ' ' + (userData.last_name || '')}</span>
-                            <span class="text-muted small">${userData.username || userData.account?.username || ''}</span>
-                        </div>
-                    </div>
-                `);
-            }
-        }
+            const userName = (userData.first_name || '') + ' ' + (userData.last_name || '');
+            const username = userData.username || userData.account?.username || '';
+            const email = userData.email || '';
 
-        // 更新郵箱顯示
-        const emailCell = userRow.find('td').eq(2);
-        if (emailCell.length > 0) {
-            emailCell.html(`<span class="text-muted small">${userData.email || ''}</span>`);
+            infoCell.html(`
+                <div class="d-flex align-items-center gap-3">
+                    ${userImageUrl ?
+                        `<img src="${userImageUrl}" alt="User Avatar" class="rounded-circle border border-2 border-white shadow-sm" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">` :
+                        `<div class="bg-light rounded-circle border border-2 border-white shadow-sm d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+                            <i class="bi bi-person text-muted"></i>
+                        </div>`
+                    }
+                    <div class="d-flex flex-column">
+                        <div class="fw-bold text-dark mb-1">
+                            <i class="bi bi-person-badge me-2 text-primary"></i>${userName.toUpperCase()}
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-at me-1"></i>${username}
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-envelope me-1"></i>${email}
+                        </div>
+                    </div>
+                </div>
+            `);
         }
 
         // 更新角色顯示
-        const roleCell = userRow.find('td').eq(3);
+        const roleCell = userRow.find('td').eq(2);
         if (roleCell.length > 0) {
+            // 确保角色列保持 text-end pe-4 类
+            roleCell.attr('class', 'text-end pe-4');
             const role = userData.role || userData.account_role || 'Staff';
             const roleBadge = role === 'SuperAdmin'
                 ? 'bg-danger'
@@ -698,6 +667,8 @@ class AuthDashboard {
         // 更新狀態列顯示（倒數第二列是狀態列）
         const statusCell = userRow.find('td').eq(-2);
         if (statusCell.length > 0) {
+            // 确保状态列保持 text-end pe-4 类
+            statusCell.attr('class', 'text-end pe-4');
             statusCell.html(statusBadge);
         }
     }
@@ -733,8 +704,10 @@ class AuthDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'User has been set to available status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateUserRowStatus(userId, 'Available');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set user available', 'error');
             }
@@ -780,8 +753,10 @@ class AuthDashboard {
         .then(data => {
             if (data.success) {
                 this.showAlert(data.message || 'User has been set to unavailable status', 'success');
-                // 更新 DOM 而不是刷新頁面
-                this.updateUserRowStatus(userId, 'Unavailable');
+                // 刷新頁面以確保所有狀態正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to set user unavailable', 'error');
             }
@@ -822,7 +797,7 @@ class AuthDashboard {
         // 從表格行獲取用戶當前角色
         const userRow = $(`tr[data-user-id="${userId}"]`);
         let currentRole = 'Staff';
-        
+
         if (userRow.length > 0) {
             currentRole = userRow.attr('data-role') || userRow.data('role') || 'Staff';
         }
@@ -887,8 +862,10 @@ class AuthDashboard {
                 if (modal) {
                     modal.hide();
                 }
-                // 重新加載數據
-                this.fetchUsers(this.currentPage);
+                // 刷新頁面以確保所有數據正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             }
         });
     }
@@ -1104,7 +1081,7 @@ class AuthDashboard {
             if (usernameInput) {
                 usernameInput.focus();
             }
-            
+
             // 初始化角色选择事件（仅在 create modal 中）
             if (typeof window.initializeRoleCardSelection === 'function') {
                 window.initializeRoleCardSelection('account_role');
@@ -1260,15 +1237,10 @@ class AuthDashboard {
                     modal.hide();
                 }
 
-                // 如果有圖片，刷新整個頁面；否則只更新 DOM
-                if (hasImage) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // 沒有圖片，重新載入當前頁面以顯示新記錄
-                    this.fetchUsers(1);
-                }
+                // 刷新頁面以確保所有數據正確更新
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 this.showAlert(data.message || 'Failed to create user', 'error');
             }
@@ -2181,15 +2153,10 @@ class AuthDashboard {
                     if (modal) {
                         modal.hide();
                     }
-                    // 如果有图片，刷新整个页面；否则只更新 DOM
-                    if (hasImage) {
-            setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-        } else {
-                        // 没有图片，重新载入当前页面以显示新记录
-                        this.fetchUsers(1);
-        }
+                    // 刷新頁面以確保所有數據正確更新
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
         } else {
                     this.showAlert(response.message || 'Failed to create user', 'error');
                 }
@@ -2382,15 +2349,10 @@ class AuthDashboard {
                     if (modal) {
                         modal.hide();
                     }
-                    // 如果有图片更改，刷新整个页面；否则只更新 DOM
-                    if (hasImageChange) {
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    } else {
-                        // 没有图片更改，只更新 DOM
-                        this.fetchUsers(this.currentPage);
-                    }
+                    // 刷新頁面以確保所有數據正確更新
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     this.showAlert(response.message || 'Failed to update user', 'error');
                 }

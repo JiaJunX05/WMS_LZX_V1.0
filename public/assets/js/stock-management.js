@@ -87,6 +87,7 @@ class StockDashboard {
         // 分頁功能
         const prevBtn = document.getElementById('prev-page');
         const nextBtn = document.getElementById('next-page');
+        const pagination = document.getElementById('pagination');
 
         if (prevBtn) {
             prevBtn.addEventListener('click', (e) => {
@@ -103,6 +104,18 @@ class StockDashboard {
                 e.preventDefault();
                 if (this.currentPage < this.totalPages) {
                     this.currentPage++;
+                    this.loadProducts();
+                }
+            });
+        }
+
+        // 綁定頁碼按鈕點擊事件
+        if (pagination) {
+            $(pagination).on('click', '.pagination-btn', (e) => {
+                e.preventDefault();
+                const page = parseInt($(e.currentTarget).data('page'));
+                if (page && page !== this.currentPage) {
+                    this.currentPage = page;
                     this.loadProducts();
                 }
             });
@@ -362,12 +375,21 @@ class StockDashboard {
     }
 
     /**
-     * 更新分頁按鈕狀態
+     * 更新分頁按鈕狀態（與 subcategory 一致）
      */
     updatePaginationButtons(pagination) {
+        const paginationEl = document.getElementById('pagination');
+        if (!paginationEl) return;
+
+        // 移除所有中間的頁碼按鈕（保留 prev-page 和 next-page）
+        $("#pagination li:not(#prev-page):not(#next-page)").remove();
+
+        if (!pagination.last_page) return;
+
         const prevBtn = document.getElementById('prev-page');
         const nextBtn = document.getElementById('next-page');
 
+        // 更新上一頁按鈕
         if (prevBtn) {
             if (pagination.current_page <= 1) {
                 prevBtn.classList.add('disabled');
@@ -376,12 +398,40 @@ class StockDashboard {
             }
         }
 
+        // 生成頁碼按鈕
+        let paginationHTML = '';
+        if (pagination.last_page > 7) {
+            // 超過7頁時，顯示省略號
+            for (let i = 1; i <= pagination.last_page; i++) {
+                if (i === 1 || i === pagination.last_page || (i >= pagination.current_page - 1 && i <= pagination.current_page + 1)) {
+                    paginationHTML += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                        <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                    </li>`;
+                } else if (i === pagination.current_page - 2 || i === pagination.current_page + 2) {
+                    paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+        } else {
+            // 7頁以內，顯示所有頁碼
+            for (let i = 1; i <= pagination.last_page; i++) {
+                paginationHTML += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link pagination-btn" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            }
+        }
+
+        // 更新下一頁按鈕
         if (nextBtn) {
             if (pagination.current_page >= pagination.last_page) {
                 nextBtn.classList.add('disabled');
             } else {
                 nextBtn.classList.remove('disabled');
             }
+        }
+
+        // 插入頁碼按鈕
+        if (prevBtn) {
+            $('#prev-page').after(paginationHTML);
         }
     }
 
@@ -410,26 +460,24 @@ class StockDashboard {
             // 先打开模态框显示加载状态
             modal.show();
 
-            // 从表格行快速获取基本信息（用于快速显示）
+            // 从表格行快速获取基本信息（用于快速显示，但不包括数量）
             const row = document.querySelector(`tr[data-product-id="${productId}"]`);
             if (row) {
-                const hasCheckbox = window.currentUserRole === 'SuperAdmin' || window.currentUserRole === 'Admin';
-                const stockColIndex = 5;
                 const statusColIndex = 6;
 
                 const quickData = {
                     id: productId,
                     name: row.querySelector('td:nth-child(3) .fw-medium')?.textContent || 'Loading...',
-                    quantity: row.querySelector(`td:nth-child(${stockColIndex}) span`)?.textContent || '0',
+                    quantity: 0, // 不显示，等待 API 返回真实数量
                     product_status: row.querySelector(`td:nth-child(${statusColIndex}) .badge`)?.textContent.trim() || 'Available',
                     cover_image: null // 从 API 获取
                 };
 
-                // 快速渲染基本信息
+                // 快速渲染基本信息（不显示数量）
                 this.renderModalProductDetail(quickData);
             }
 
-            // 从 API 获取完整产品数据
+            // 从 API 获取完整产品数据（直接获取产品的 quantity 字段）
             const response = await fetch(`${window.stockManagementRoute}?search=${productId}`, {
                 method: 'GET',
                 headers: {
@@ -462,10 +510,11 @@ class StockDashboard {
                     window.currentProductId = productId;
                     window.currentProductData = productData;
 
-                    // 使用完整数据重新渲染（包括图片）
+                    // 使用完整数据重新渲染（包括图片和直接从 products 表获取的 quantity）
+                    // quantity 直接从 product.quantity 获取，不依赖 movement
                     this.renderModalProductDetail(productData);
 
-                    // 加载库存历史
+                    // 加载库存历史（不影响数量显示）
                     this.loadModalStockHistory(productId, 1);
                 } else {
                     console.error('Product not found in API response');

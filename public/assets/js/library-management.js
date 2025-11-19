@@ -780,20 +780,10 @@ function deleteLibraryFromView(libraryId) {
                 alert('Library deleted successfully');
             }
 
-            // 刪除成功後，從頁面中移除該行
-            const deletedRow = document.querySelector(`[data-size-library-id="${libraryId}"]`).closest('tr');
-            if (deletedRow) {
-                deletedRow.remove();
-            }
-
-            // 更新表格序号
-            updateTableRowNumbers();
-
-            // 更新統計信息
-            updateViewStatistics();
-
-            // 檢查是否還有資料，如果沒有就跳轉回 index
-            checkAndRedirectIfEmpty();
+            // 刷新頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
             if (typeof window.showAlert === 'function') {
                 window.showAlert('Failed to delete library', 'error');

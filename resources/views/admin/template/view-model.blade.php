@@ -160,8 +160,8 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openUpdateTemplateModal({{ $template->id }})"
+                                            <div class="d-flex gap-2 justify-content-center flex-nowrap" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" onclick="openUpdateTemplateModal({{ $template->id }})"
                                                         data-template-id="{{ $template->id }}"
                                                         data-category-id="{{ $template->category_id }}"
                                                         data-gender="{{ $template->gender }}"
@@ -169,10 +169,10 @@
                                                         data-template-status="{{ $template->template_status }}"
                                                         data-category-name="{{ $template->category->category_name ?? '' }}"
                                                         data-size-value="{{ $template->sizeLibrary->size_value ?? '' }}">
-                                                    <i class="bi bi-pencil me-2"></i>Update
+                                                    <i class="bi bi-pencil me-1"></i>Update
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm" data-template-id="{{ $template->id }}" data-action="delete">
-                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                <button type="button" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" data-template-id="{{ $template->id }}" data-action="delete">
+                                                    <i class="bi bi-trash me-1"></i>Delete
                                                 </button>
                                             </div>
                                         </td>

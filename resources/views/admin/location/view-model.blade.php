@@ -152,18 +152,18 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openUpdateLocationModal({{ $locationItem->id }})"
+                                            <div class="d-flex gap-2 justify-content-center flex-nowrap" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" onclick="openUpdateLocationModal({{ $locationItem->id }})"
                                                         data-location-id="{{ $locationItem->id }}"
                                                         data-zone-id="{{ $locationItem->zone_id }}"
                                                         data-rack-id="{{ $locationItem->rack_id }}"
                                                         data-location-status="{{ $locationItem->location_status }}"
                                                         data-zone-name="{{ $locationItem->zone->zone_name }}"
                                                         data-rack-number="{{ $locationItem->rack->rack_number }}">
-                                                    <i class="bi bi-pencil me-2"></i>Update
+                                                    <i class="bi bi-pencil me-1"></i>Update
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm" data-location-id="{{ $locationItem->id }}" data-action="delete">
-                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                <button type="button" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" data-location-id="{{ $locationItem->id }}" data-action="delete">
+                                                    <i class="bi bi-trash me-1"></i>Delete
                                                 </button>
                                             </div>
                                         </td>

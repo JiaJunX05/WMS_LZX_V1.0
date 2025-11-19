@@ -241,7 +241,7 @@ class StockController extends Controller
                 $product->last_movement = [
                     'quantity' => $lastMovement->quantity ?? 0,
                     'type' => $lastMovement->movement_type ?? null,
-                    'date' => $lastMovement->movement_date ?? null,
+                    'date' => $lastMovement->movement_date ? $lastMovement->movement_date->toIso8601String() : null,
                     'user_name' => $userName,
                     'user_email' => $user->email ?? null,
                     'user_image' => $userImage
@@ -444,7 +444,7 @@ class StockController extends Controller
 
             return [
                 'id' => $movement->id,
-                'date' => $movement->movement_date->format('Y-m-d H:i:s'),
+                'date' => $movement->movement_date->toIso8601String(),
                 'movement_type' => $movement->movement_type,
                 'product_id' => $movement->product_id,
                 'product_name' => $movement->product->name ?? 'N/A',
@@ -855,7 +855,7 @@ class StockController extends Controller
 
                     return [
                         'id' => $movement->id,
-                        'date' => $movement->movement_date->format('Y-m-d H:i:s'),
+                        'date' => $movement->movement_date->toIso8601String(),
                         'movement_type' => $movement->movement_type,
                         'product_id' => $movement->product_id,
                         'product_name' => $movement->product->name ?? 'N/A',
@@ -946,7 +946,7 @@ class StockController extends Controller
 
                         return [
                             'id' => $movement->id,
-                            'date' => $movement->movement_date->format('Y-m-d H:i:s'),
+                            'date' => $movement->movement_date->toIso8601String(),
                             'type' => $movement->movement_type,
                             'sku_code' => $skuCode,
                             'barcode_number' => $movement->variant->barcode_number ?? null,
@@ -1007,8 +1007,13 @@ class StockController extends Controller
                 ->whereBetween('movement_date', [$startDate, $endDate])
                 ->sum('quantity');
 
+            // 总退货数量
+            $totalStockReturn = StockMovement::where('movement_type', 'stock_return')
+                ->whereBetween('movement_date', [$startDate, $endDate])
+                ->sum('quantity');
+
             // 净库存变化
-            $netChange = $totalStockIn + $totalStockOut; // stock_out 已经是负数
+            $netChange = $totalStockIn + $totalStockOut + $totalStockReturn; // stock_out 和 stock_return 已经是负数
 
             // 变动次数
             $totalMovements = StockMovement::whereBetween('movement_date', [$startDate, $endDate])->count();
@@ -1024,6 +1029,7 @@ class StockController extends Controller
                 'statistics' => [
                     'total_stock_in' => abs($totalStockIn),
                     'total_stock_out' => abs($totalStockOut),
+                    'total_stock_return' => abs($totalStockReturn),
                     'net_change' => $netChange,
                     'total_movements' => $totalMovements,
                     'current_total_stock' => $currentTotalStock,

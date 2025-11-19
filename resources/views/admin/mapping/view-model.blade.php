@@ -154,18 +154,18 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openUpdateMappingModal({{ $mappingItem->id }})"
+                                            <div class="d-flex gap-2 justify-content-center flex-nowrap" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" onclick="openUpdateMappingModal({{ $mappingItem->id }})"
                                                         data-mapping-id="{{ $mappingItem->id }}"
                                                         data-category-id="{{ $mappingItem->category_id }}"
                                                         data-subcategory-id="{{ $mappingItem->subcategory_id }}"
                                                         data-mapping-status="{{ $mappingItem->mapping_status }}"
                                                         data-category-name="{{ $mappingItem->category->category_name }}"
                                                         data-subcategory-name="{{ $mappingItem->subcategory->subcategory_name }}">
-                                                    <i class="bi bi-pencil me-2"></i>Update
+                                                    <i class="bi bi-pencil me-1"></i>Update
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm" data-mapping-id="{{ $mappingItem->id }}" data-action="delete">
-                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                <button type="button" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" data-mapping-id="{{ $mappingItem->id }}" data-action="delete">
+                                                    <i class="bi bi-trash me-1"></i>Delete
                                                 </button>
                                             </div>
                                         </td>

@@ -35,6 +35,39 @@ const SCAN_STATES = {
 };
 
 // =============================================================================
+// 工具函數 (Utility Functions)
+// =============================================================================
+
+/**
+ * 格式化日期為本地時間（與 system dashboard 一致）
+ * @param {string|Date} dateString 日期字符串或 Date 對象
+ * @returns {string} 格式化後的日期字符串，格式：Nov 17, 2025
+ */
+function formatLocalDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
+/**
+ * 格式化時間為本地時間（與 system dashboard 一致）
+ * @param {string|Date} dateString 日期字符串或 Date 對象
+ * @returns {string} 格式化後的時間字符串，格式：02:28:52
+ */
+function formatLocalTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+}
+
+// =============================================================================
 // Stock Dashboard 類 (Stock Dashboard Class)
 // =============================================================================
 
@@ -253,8 +286,8 @@ class StockDashboard {
                                  class="rounded flex-shrink-0"
                                  style="width: 50px; height: 50px; object-fit: cover;"
                                  onerror="this.src='${window.defaultProductImage}'">
-                            <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
-                                <div class="fw-medium" style="line-height: 1.4; white-space: normal; word-break: break-word;">${product.name}</div>
+                            <div class="flex-grow-1" style="min-width: 0;">
+                                <div class="fw-medium" style="line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${product.name}</div>
                                 <div class="d-flex align-items-center gap-2 mt-1">
                                     <span class="text-muted small">${product.category?.category_name || 'N/A'}</span>
                                 </div>
@@ -292,7 +325,7 @@ class StockDashboard {
                                                 ${product.last_movement.type === 'stock_out' ? '-' : (product.last_movement.type === 'stock_in' ? '+' : '±')}${Math.abs(product.last_movement.quantity)}
                                             </span>
                                             ${product.last_movement.date ? `
-                                                <small class="text-muted ms-2">${new Date(product.last_movement.date).toLocaleDateString()}</small>
+                                                <small class="text-muted ms-2">${formatLocalDate(product.last_movement.date)}</small>
                                             ` : ''}
                                         </div>
                                         ${product.last_movement.user_name ? `
@@ -646,15 +679,15 @@ class StockDashboard {
                     <span class="fw-medium">#${movement.id}</span>
                 </td>
                 <td>
-                    <div class="fw-medium">${new Date(movement.date).toLocaleDateString()}</div>
-                    <div class="text-muted small">${new Date(movement.date).toLocaleTimeString()}</div>
-                </td>
-                <td>
-                    <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
+                    <div class="fw-medium">${formatLocalDate(movement.date)}</div>
+                    <div class="text-muted small">${formatLocalTime(movement.date)}</div>
+                    <div class="mt-1">
+                        <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
                                       movement.movement_type === 'stock_out' ? 'bg-danger' : 'bg-warning'}">
-                        ${movement.movement_type === 'stock_in' ? 'Stock In' :
-                          movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
-                    </span>
+                            ${movement.movement_type === 'stock_in' ? 'Stock In' :
+                              movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
+                        </span>
+                    </div>
                 </td>
                 <td class="${movement.movement_type === 'stock_out' ? 'text-danger' : 'text-success'}">
                     <span class="fw-bold">${movement.movement_type === 'stock_out' ? '-' : '+'}${Math.abs(movement.quantity)}</span>
@@ -1238,8 +1271,7 @@ class StockHistory {
         const elements = {
             'totalStockIn': statistics.total_stock_in,
             'totalStockOut': statistics.total_stock_out,
-            'netChange': statistics.net_change,
-            'totalMovements': statistics.total_movements,
+            'totalStockReturn': statistics.total_stock_return || 0,
             'currentTotalStock': statistics.current_total_stock,
             'lowStockCount': statistics.low_stock_count
         };
@@ -1282,15 +1314,15 @@ class StockHistory {
                     <span class="fw-medium">#${movement.id}</span>
                 </td>
                 <td>
-                    <div class="fw-medium">${new Date(movement.date).toLocaleDateString()}</div>
-                    <div class="text-muted small">${new Date(movement.date).toLocaleTimeString()}</div>
-                </td>
-                <td>
-                    <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
+                    <div class="fw-medium">${formatLocalDate(movement.date)}</div>
+                    <div class="text-muted small">${formatLocalTime(movement.date)}</div>
+                    <div class="mt-1">
+                        <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
                                           movement.movement_type === 'stock_out' ? 'bg-danger' : 'bg-warning'}">
-                        ${movement.movement_type === 'stock_in' ? 'Stock In' :
-                          movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
-                    </span>
+                            ${movement.movement_type === 'stock_in' ? 'Stock In' :
+                              movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
+                        </span>
+                    </div>
                 </td>
                 <td>
                     <div class="d-flex align-items-start gap-3">
@@ -1298,9 +1330,9 @@ class StockHistory {
                             `<img src="${window.productImagePath}/${movement.product_image}" alt="${movement.product_name}" class="rounded flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.src='${window.defaultProductImage}'">` :
                             `<div class="rounded d-flex align-items-center justify-content-center bg-light flex-shrink-0" style="width: 50px; height: 50px;"><i class="bi bi-image text-muted"></i></div>`
                         }
-                        <div class="flex-grow-1" style="word-wrap: break-word; overflow-wrap: break-word;">
-                            <div class="fw-medium" style="line-height: 1.4;">${movement.product_name || 'N/A'}</div>
-                            <div class="text-muted small">SKU: ${movement.sku_code || 'N/A'}</div>
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            <div class="fw-medium" style="line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${movement.product_name || 'N/A'}</div>
+                            <div class="text-muted small mt-1">SKU: ${movement.sku_code || 'N/A'}</div>
                         </div>
                     </div>
                 </td>
@@ -3162,15 +3194,15 @@ class StockDetail {
                     <span class="fw-medium">#${movement.id}</span>
                 </td>
                 <td>
-                    <div class="fw-medium">${new Date(movement.date).toLocaleDateString()}</div>
-                    <div class="text-muted small">${new Date(movement.date).toLocaleTimeString()}</div>
-                </td>
-                <td>
-                    <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
-                                          movement.movement_type === 'stock_out' ? 'bg-danger' : 'bg-warning'}">
-                        ${movement.movement_type === 'stock_in' ? 'Stock In' :
-                          movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
-                    </span>
+                    <div class="fw-medium">${formatLocalDate(movement.date)}</div>
+                    <div class="text-muted small">${formatLocalTime(movement.date)}</div>
+                    <div class="mt-1">
+                        <span class="badge ${movement.movement_type === 'stock_in' ? 'bg-success' :
+                                      movement.movement_type === 'stock_out' ? 'bg-danger' : 'bg-warning'}">
+                            ${movement.movement_type === 'stock_in' ? 'Stock In' :
+                              movement.movement_type === 'stock_out' ? 'Stock Out' : 'Stock Return'}
+                        </span>
+                    </div>
                 </td>
                 <td class="${movement.movement_type === 'stock_out' ? 'text-danger' : 'text-success'}">
                     <span class="fw-bold">${movement.movement_type === 'stock_out' ? '-' : '+'}${Math.abs(movement.quantity)}</span>

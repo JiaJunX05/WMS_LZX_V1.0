@@ -32,16 +32,6 @@
                                 <a href="tel:+60129778647" class="contact-link">+60 12 977 8647</a>
                             </div>
                         </div>
-
-                        <!-- Development Team -->
-                        <div class="development-team">
-                            <h6 class="team-title">Development Team</h6>
-                            <div class="team-members">
-                                <span class="team-member team-leader">OH JIA JUN <span class="team-role-badge">LEADER</span></span>
-                                <span class="team-member">JAMES POH <span class="team-role-badge">MEMBER</span></span>
-                                <span class="team-member">OON JIE LIN <span class="team-role-badge">MEMBER</span></span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 

@@ -19,14 +19,13 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light sticky-top">
                     <tr>
                         <th class="ps-4" style="width: 5%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
-                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">DATE</div></th>
-                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">TYPE</div></th>
-                        <th style="width: 30%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">DATE / TYPE</div></th>
+                        <th style="width: 35%"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
                         <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">QUANTITY</div></th>
                         <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">BEFORE</div></th>
                         <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">AFTER</div></th>
@@ -36,7 +35,7 @@
                 </thead>
                 <tbody id="history-table-body">
                     <tr>
-                        <td colspan="9" class="text-center py-4">
+                        <td colspan="8" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>

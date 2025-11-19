@@ -80,7 +80,7 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="stats-number" id="total-products">{{ $stats['products']['total'] ?? 0 }}</div>
-                                <div class="small text-muted fw-medium text-uppercase">Available Products</div>
+                                <div class="small text-muted fw-medium text-uppercase">Products</div>
                             </div>
                             <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
                                 <i class="bi bi-box-seam text-white fs-4"></i>
@@ -131,7 +131,7 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="stats-number" id="zones">{{ $stats['locations']['zones'] ?? 0 }}</div>
-                                <div class="small text-muted fw-medium text-uppercase">Available Zones</div>
+                                <div class="small text-muted fw-medium text-uppercase">Zones</div>
                             </div>
                             <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
                                 <i class="bi bi-geo-alt text-white fs-4"></i>
@@ -182,7 +182,7 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="stats-number" id="total-brands">{{ $stats['brands']['total'] ?? 0 }}</div>
-                                <div class="small text-muted fw-medium text-uppercase">Available Brands</div>
+                                <div class="small text-muted fw-medium text-uppercase">Brands</div>
                             </div>
                             <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
                                 <i class="bi bi-award text-white fs-4"></i>
@@ -199,7 +199,7 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="stats-number" id="total-colors">{{ $stats['colors']['total'] ?? 0 }}</div>
-                                <div class="small text-muted fw-medium text-uppercase">Available Colors</div>
+                                <div class="small text-muted fw-medium text-uppercase">Colors</div>
                             </div>
                             <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
                                 <i class="bi bi-palette-fill text-white fs-4"></i>
@@ -230,32 +230,32 @@
 
     <!-- Stock History Section -->
     <section class="stock-history-section mt-5" role="region" aria-label="Recent stock movements">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-0 pb-0">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <div class="d-flex align-items-center justify-content-center rounded me-3" style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <i class="bi bi-clock-history text-white fs-5"></i>
+        <div class="dashboard-header">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 pb-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon-wrapper d-flex align-items-center justify-content-center me-4">
+                                <i class="bi bi-clock-history text-white display-6"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Recent Stock History</h5>
+                                <p class="text-muted small mb-0">Latest inventory movements and transactions</p>
+                            </div>
                         </div>
-                        <div>
-                            <h5 class="mb-0 fw-bold">Recent Stock History</h5>
-                            <p class="text-muted small mb-0">Latest inventory movements and transactions</p>
-                        </div>
+                        <a href="{{ route('stock_history') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-right me-2"></i>View All
+                        </a>
                     </div>
-                    <a href="{{ route('stock_history') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-arrow-right me-2"></i>View All
-                    </a>
                 </div>
-            </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-light sticky-top">
                             <tr>
-                                <th class="ps-4" style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
-                                <th style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">DATE</div></th>
-                                <th style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">TYPE</div></th>
-                                <th style="width: 20%;"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
+                                <th class="ps-4" style="width: 5%;"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
+                                <th style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">DATE / TYPE</div></th>
+                                <th style="width: 35%;"><div class="fw-bold text-muted small text-uppercase">PRODUCT</div></th>
                                 <th style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">QUANTITY</div></th>
                                 <th style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">BEFORE</div></th>
                                 <th style="width: 10%;"><div class="fw-bold text-muted small text-uppercase">AFTER</div></th>
@@ -270,42 +270,42 @@
                                         <span class="fw-medium text-muted">#{{ $movement['id'] }}</span>
                                     </td>
                                     <td>
-                                        <div class="fw-medium">{{ \Carbon\Carbon::parse($movement['date'])->format('M d, Y') }}</div>
-                                        <div class="text-muted small">{{ \Carbon\Carbon::parse($movement['date'])->format('H:i:s') }}</div>
+                                        <div class="fw-medium" data-date="{{ \Carbon\Carbon::parse($movement['date'])->toIso8601String() }}">{{ \Carbon\Carbon::parse($movement['date'])->format('M d, Y') }}</div>
+                                        <div class="text-muted small" data-time="{{ \Carbon\Carbon::parse($movement['date'])->toIso8601String() }}">{{ \Carbon\Carbon::parse($movement['date'])->format('H:i:s') }}</div>
+                                        <div class="mt-1">
+                                            @php
+                                                $typeClass = match($movement['movement_type']) {
+                                                    'stock_in' => 'bg-success',
+                                                    'stock_out' => 'bg-danger',
+                                                    'stock_return' => 'bg-warning',
+                                                    default => 'bg-secondary'
+                                                };
+                                                $typeText = match($movement['movement_type']) {
+                                                    'stock_in' => 'Stock In',
+                                                    'stock_out' => 'Stock Out',
+                                                    'stock_return' => 'Return',
+                                                    default => ucfirst($movement['movement_type'])
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $typeClass }}">{{ $typeText }}</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        @php
-                                            $typeClass = match($movement['movement_type']) {
-                                                'stock_in' => 'bg-success',
-                                                'stock_out' => 'bg-danger',
-                                                'stock_return' => 'bg-warning',
-                                                default => 'bg-secondary'
-                                            };
-                                            $typeText = match($movement['movement_type']) {
-                                                'stock_in' => 'Stock In',
-                                                'stock_out' => 'Stock Out',
-                                                'stock_return' => 'Return',
-                                                default => ucfirst($movement['movement_type'])
-                                            };
-                                        @endphp
-                                        <span class="badge {{ $typeClass }}">{{ $typeText }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
+                                        <div class="d-flex align-items-start gap-3">
                                             @if($movement['product_image'])
                                                 <img src="{{ asset('assets/images/' . $movement['product_image']) }}"
                                                      alt="{{ $movement['product_name'] }}"
-                                                     class="me-2 rounded"
-                                                     style="width: 40px; height: 40px; object-fit: cover;"
+                                                     class="rounded flex-shrink-0"
+                                                     style="width: 50px; height: 50px; object-fit: cover;"
                                                      onerror="this.onerror=null; this.src='{{ asset('assets/img/no-image.png') }}';">
                                             @else
-                                                <div class="me-2 rounded d-flex align-items-center justify-content-center bg-light" style="width: 40px; height: 40px;">
+                                                <div class="rounded d-flex align-items-center justify-content-center bg-light flex-shrink-0" style="width: 50px; height: 50px;">
                                                     <i class="bi bi-image text-muted"></i>
                                                 </div>
                                             @endif
-                                            <div>
-                                                <div class="fw-medium text-truncate" style="max-width: 200px;" title="{{ $movement['product_name'] }}">{{ $movement['product_name'] }}</div>
-                                                <div class="text-muted small">SKU: {{ $movement['sku_code'] }}</div>
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <div class="fw-medium" style="line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">{{ $movement['product_name'] }}</div>
+                                                <div class="text-muted small mt-1">SKU: {{ $movement['sku_code'] }}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -341,7 +341,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center py-5">
+                                    <td colspan="8" class="text-center py-5">
                                         <div class="d-flex flex-column align-items-center">
                                             <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
                                             <p class="text-muted mt-3 mb-0">No stock movements yet</p>
@@ -365,6 +365,7 @@
     // 图片路径配置
     window.productImagePath = "{{ asset('assets/images') }}";
     window.defaultProductImage = "{{ asset('assets/img/no-image.png') }}";
+
 </script>
 <script src="{{ asset('assets/js/system-dashboard.js') }}"></script>
 @endsection

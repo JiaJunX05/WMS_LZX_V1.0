@@ -154,17 +154,17 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openUpdateLibraryModal({{ $sizeLibraryItem->id }})"
+                                            <div class="d-flex gap-2 justify-content-center flex-nowrap" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" onclick="openUpdateLibraryModal({{ $sizeLibraryItem->id }})"
                                                         data-size-library-id="{{ $sizeLibraryItem->id }}"
                                                         data-category-id="{{ $sizeLibraryItem->category_id }}"
                                                         data-size-value="{{ $sizeLibraryItem->size_value }}"
                                                         data-size-status="{{ $sizeLibraryItem->size_status }}"
                                                         data-category-name="{{ $sizeLibraryItem->category->category_name }}">
-                                                    <i class="bi bi-pencil me-2"></i>Update
+                                                    <i class="bi bi-pencil me-1"></i>Update
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm" data-size-library-id="{{ $sizeLibraryItem->id }}" data-action="delete">
-                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                <button type="button" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" data-size-library-id="{{ $sizeLibraryItem->id }}" data-action="delete">
+                                                    <i class="bi bi-trash me-1"></i>Delete
                                                 </button>
                                             </div>
                                         </td>

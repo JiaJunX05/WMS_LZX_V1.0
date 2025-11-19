@@ -205,7 +205,7 @@ class DashboardController extends Controller
         return $query->get()->map(function ($movement) {
             return [
                 'id' => $movement->id,
-                'date' => $movement->movement_date->format('Y-m-d H:i:s'),
+                'date' => $movement->movement_date->toIso8601String(),
                 'movement_type' => $movement->movement_type,
                 'product_name' => $movement->product->name ?? 'N/A',
                 'product_image' => $movement->product->cover_image ?? null,

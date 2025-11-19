@@ -64,35 +64,18 @@
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="ps-4" style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">ID</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">DATE</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">TYPE</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">QUANTITY</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">BEFORE</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">AFTER</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">USER</div>
-                                        </th>
-                                        <th style="width: 10%">
-                                            <div class="fw-bold text-muted small text-uppercase">REFERENCE</div>
-                                        </th>
+                                        <th class="ps-4" style="width: 10%"><div class="fw-bold text-muted small text-uppercase">ID</div></th>
+                                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">DATE / TYPE</div></th>
+                                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">QUANTITY</div></th>
+                                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">BEFORE</div></th>
+                                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">AFTER</div></th>
+                                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">USER</div></th>
+                                        <th style="width: 10%"><div class="fw-bold text-muted small text-uppercase">REFERENCE</div></th>
                                     </tr>
                                 </thead>
                                 <tbody id="modal-history-table-body">
                                     <tr>
-                                        <td colspan="8" class="text-center py-4">
+                                        <td colspan="7" class="text-center py-4">
                                             <div class="spinner-border text-primary" role="status">
                                                 <span class="visually-hidden">Loading...</span>
                                             </div>

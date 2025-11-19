@@ -90,6 +90,39 @@ class DashboardManager {
     }
 }
 
+/**
+ * 转换时间为本地时间（与 stock-management.js 一致）
+ * 在页面加载时自动转换所有带有 data-date 和 data-time 属性的元素
+ */
+function convertTimesToLocal() {
+    // 转换日期
+    document.querySelectorAll('[data-date]').forEach(function(element) {
+        const dateStr = element.getAttribute('data-date');
+        if (dateStr) {
+            const date = new Date(dateStr);
+            element.textContent = date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+    });
+
+    // 转换时间
+    document.querySelectorAll('[data-time]').forEach(function(element) {
+        const timeStr = element.getAttribute('data-time');
+        if (timeStr) {
+            const date = new Date(timeStr);
+            element.textContent = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+    });
+}
+
 // 初始化仪表板
 $(document).ready(function() {
     // 检查当前页面是否是dashboard页面（有stats-number元素）
@@ -97,4 +130,7 @@ $(document).ready(function() {
     if ($('.stats-number').length > 0 && !window.dashboardManager) {
         window.dashboardManager = new DashboardManager();
     }
+
+    // 转换时间为本地时间
+    convertTimesToLocal();
 });

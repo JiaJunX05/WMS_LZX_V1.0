@@ -17,9 +17,9 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light sticky-top">
                     <tr>
                         <th class="ps-4" style="width: 5%">
                             <div class="fw-bold text-muted small text-uppercase"></div>

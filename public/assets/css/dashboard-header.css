@@ -212,9 +212,121 @@
     margin-bottom: var(--spacing-sm);
 }
 
+.statistics-section .stats-card-body .small {
+    font-size: 0.875rem;
+}
+
 .icon-size-3rem {
     width: 3rem;
     height: 3rem;
+}
+
+.icon-size-3rem i {
+    font-size: 1.5rem;
+}
+
+/* =============================================================================
+   大屏幕优化 (100% 缩放时)
+   ============================================================================= */
+
+/* 超大屏幕 (≥1600px) - 缩小字体和间距 */
+@media (min-width: 1600px) {
+    .statistics-section .stats-card-body {
+        padding: calc(var(--spacing-md) - 0.25rem);
+    }
+
+    .statistics-section .stats-number {
+        font-size: 2.25rem;
+    }
+
+    .statistics-section .stats-card-body .small {
+        font-size: 0.8125rem;
+    }
+
+    .icon-size-3rem {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    .icon-size-3rem i {
+        font-size: 1.375rem;
+    }
+
+    .welcome-title {
+        font-size: 2rem;
+    }
+
+    .welcome-subtitle {
+        font-size: var(--font-base);
+    }
+
+    .welcome-banner {
+        padding: var(--spacing-lg);
+    }
+
+    .illustration-container {
+        width: 100px;
+        height: 100px;
+    }
+
+    .illustration-icon {
+        font-size: 3.5rem;
+    }
+
+    .dashboard-header .header-icon-wrapper {
+        width: 3.25rem;
+        height: 3.25rem;
+    }
+}
+
+/* 大屏幕 (≥1400px) - 中等缩小 */
+@media (min-width: 1400px) and (max-width: 1599px) {
+    .statistics-section .stats-card-body {
+        padding: var(--spacing-md);
+    }
+
+    .statistics-section .stats-number {
+        font-size: 2.375rem;
+    }
+
+    .statistics-section .stats-card-body .small {
+        font-size: 0.875rem;
+    }
+
+    .icon-size-3rem {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    .icon-size-3rem i {
+        font-size: 1.375rem;
+    }
+
+    .welcome-title {
+        font-size: 2.125rem;
+    }
+
+    .welcome-subtitle {
+        font-size: var(--font-base);
+    }
+
+    .welcome-banner {
+        padding: calc(var(--spacing-lg) + 0.5rem);
+    }
+
+    .illustration-container {
+        width: 110px;
+        height: 110px;
+    }
+
+    .illustration-icon {
+        font-size: 3.75rem;
+    }
+
+    .dashboard-header .header-icon-wrapper {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
 }
 
 /* =============================================================================
@@ -419,6 +531,48 @@
 /* =============================================================================
    响应式设计
    ============================================================================= */
+
+/* 大屏幕优化 - 内容卡片 */
+@media (min-width: 1400px) {
+    .content-card .card-header,
+    .content-card .card-body,
+    .content-card .card-footer {
+        padding: var(--spacing-md);
+    }
+
+    .content-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 1.125rem;
+    }
+
+    .list-container {
+        max-height: 180px;
+    }
+
+    .list-item .item-text {
+        font-size: var(--font-sm);
+    }
+}
+
+/* 超大屏幕优化 - 内容卡片 */
+@media (min-width: 1600px) {
+    .content-card .card-header,
+    .content-card .card-body,
+    .content-card .card-footer {
+        padding: calc(var(--spacing-md) - 0.25rem);
+    }
+
+    .content-icon {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+    }
+
+    .list-container {
+        max-height: 160px;
+    }
+}
 
 /* 平板端 (≤768px) */
 @media (max-width: 768px) {

@@ -158,10 +158,13 @@ class StockController extends Controller
         if (!$search) return $query;
 
         return $query->where(function($q) use ($search) {
-            // 如果搜索项是纯数字，优先按 ID 精确匹配
+            // 如果搜索项是纯数字，同时搜索 ID 和 barcode number
             if (is_numeric($search) && ctype_digit($search)) {
-                // 纯数字时，优先精确匹配 ID
-                $q->where('id', $search);
+                // 纯数字时，同时匹配 ID 和 barcode number
+                $q->where('id', $search)
+                  ->orWhereHas('variants', function($variant) use ($search) {
+                      $variant->where('barcode_number', $search);
+                  });
             } else {
                 // 非纯数字或包含其他字符时，按名称、SKU、条形码搜索
                 $q->where('name', 'like', "%{$search}%")

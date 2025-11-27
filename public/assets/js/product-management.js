@@ -415,27 +415,37 @@ class ProductDashboard {
      * @returns {string} 產品卡片HTML
      */
     createProductCard(product) {
+        const isAvailable = product.product_status === 'Available';
+        const statusBadge = `
+            <span class="badge position-absolute top-0 end-0 m-2 text-white ${isAvailable ? 'bg-success' : 'bg-danger'}" style="z-index: 10;">
+                <i class="bi ${isAvailable ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>
+                ${product.product_status || 'N/A'}
+            </span>
+        `;
+
         return `
-            <div class="col-sm-6 col-md-4 col-lg-4">
-                <div class="product-card h-100">
-                    <div class="image-container">
+            <div class="col-sm-6 col-md-3 col-lg-3">
+                <div class="card product-card h-100">
+                    <div class="card-header p-0 border-0 position-relative">
+                        ${statusBadge}
                         ${product.cover_image ?
                             `<img src="/assets/images/${product.cover_image}"
                                   alt="Product Image"
-                                  class="img-preview">` :
-                            '<div class="img-placeholder w-100" style="height: 200px;"><i class="bi bi-image text-muted fs-1"></i></div>'
+                                  class="card-img-top w-100"
+                                  style="height: 200px; object-fit: cover;">` :
+                            '<div class="card-img-top w-100 d-flex align-items-center justify-content-center bg-light" style="height: 200px;"><i class="bi bi-image text-muted fs-1"></i></div>'
                         }
                     </div>
 
                     <div class="card-body">
-                        <div class="sku-code">${product.sku_code || 'N/A'}</div>
-                        <h6 class="product-name" title="${product.name || 'N/A'}">
+                        <div class="sku-code mb-2 bg-light border rounded px-2 py-1 text-center">${product.sku_code || 'N/A'}</div>
+                        <h6 class="product-name mb-0" title="${product.name || 'N/A'}">
                             ${product.name ? product.name.toUpperCase() : 'N/A'}
                         </h6>
                     </div>
 
-                    <div class="card-footer">
-                        <a href="${window.viewProductUrl.replace(':id', product.id)}" class="btn btn-primary btn-sm w-100">
+                    <div class="card-footer p-0 border-0">
+                        <a href="${window.viewProductUrl.replace(':id', product.id)}" class="btn btn-primary w-100 rounded-0">
                             <i class="bi bi-eye me-1"></i>
                             <span>View Details</span>
                         </a>
@@ -2271,6 +2281,12 @@ function initUpdateProductModal() {
     const modal = document.getElementById('updateProductModal');
     if (!modal) return;
 
+    // 检查是否已经初始化过（避免重复绑定事件）
+    if (modal.dataset.updateModalInitialized === 'true') {
+        console.log('Update Modal already initialized, skipping...');
+        return;
+    }
+
     // Modal 打开时初始化功能
     $(modal).on('show.bs.modal', function() {
         // 初始化图片上传事件（使用 update 前缀的 ID）
@@ -2295,21 +2311,35 @@ function initUpdateProductModal() {
     // Modal 关闭时清理
     $(modal).on('hidden.bs.modal', function() {
         resetUpdateProductModal();
+        // 清除初始化标记，下次打开时重新初始化
+        if (modal.dataset.imageSystemInitialized) {
+            delete modal.dataset.imageSystemInitialized;
+        }
         // 手动清理 backdrop，确保 modal 完全关闭
         cleanupModalBackdrop();
     });
 
-    // 提交按钮事件
-    $('#submitUpdateProduct').on('click', function(e) {
+    // 提交按钮事件（使用 off 先移除旧的事件，避免重复绑定）
+    $('#submitUpdateProduct').off('click').on('click', function(e) {
         e.preventDefault();
         submitUpdateProductModal();
     });
+
+    // 标记为已初始化
+    modal.dataset.updateModalInitialized = 'true';
 }
 
 /**
  * 初始化 Update Modal 图片系统
  */
 function initUpdateModalImageSystem() {
+    // 检查是否已经初始化过（通过数据属性标记）
+    const modal = document.getElementById('updateProductModal');
+    if (modal && modal.dataset.imageSystemInitialized === 'true') {
+        console.log('Image system already initialized, skipping...');
+        return;
+    }
+
     // 封面图片事件
     const coverImageArea = document.getElementById('update-cover-image-area');
     const coverImageInput = document.getElementById('update_cover_image');
@@ -2336,6 +2366,8 @@ function initUpdateModalImageSystem() {
             if (file) {
                 handleUpdateModalCoverImagePreview(file);
             }
+            // 清空 input 值，允许重复选择同一文件
+            e.target.value = '';
         });
 
         if (updatedRemoveCoverBtn) {
@@ -2351,16 +2383,35 @@ function initUpdateModalImageSystem() {
     const detailImagesInput = document.getElementById('update_detail_images');
 
     if (addDetailImageBtn && detailImagesInput) {
-        addDetailImageBtn.addEventListener('click', function() {
-            detailImagesInput.click();
+        // 移除旧的事件监听器（通过克隆节点）
+        const newAddDetailImageBtn = addDetailImageBtn.cloneNode(true);
+        addDetailImageBtn.parentNode.replaceChild(newAddDetailImageBtn, addDetailImageBtn);
+        const newDetailImagesInput = detailImagesInput.cloneNode(true);
+        detailImagesInput.parentNode.replaceChild(newDetailImagesInput, detailImagesInput);
+
+        // 重新获取元素
+        const updatedAddDetailImageBtn = document.getElementById('add-update-detail-image');
+        const updatedDetailImagesInput = document.getElementById('update_detail_images');
+
+        updatedAddDetailImageBtn.addEventListener('click', function() {
+            updatedDetailImagesInput.click();
         });
 
-        detailImagesInput.addEventListener('change', function(e) {
+        updatedDetailImagesInput.addEventListener('change', function(e) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+            if (files.length === 0) return;
+
+            files.forEach((file) => {
                 handleUpdateModalDetailImagePreview(file);
             });
+            // 清空 input 值，允许重复选择同一文件
+            e.target.value = '';
         });
+    }
+
+    // 标记为已初始化
+    if (modal) {
+        modal.dataset.imageSystemInitialized = 'true';
     }
 }
 
@@ -2420,6 +2471,9 @@ function removeUpdateModalCoverImage() {
     }
 }
 
+// 存储新添加的详细图片文件（用于提交）
+window.updateDetailImageFiles = window.updateDetailImageFiles || [];
+
 /**
  * 处理 Update Modal 详细图片预览
  */
@@ -2428,15 +2482,67 @@ function handleUpdateModalDetailImagePreview(file) {
         return;
     }
 
+    // 初始化文件数组
+    if (!window.updateDetailImageFiles) {
+        window.updateDetailImageFiles = [];
+    }
+
+    // 检查文件是否已经存在（通过文件名、大小和最后修改时间判断）
+    const fileExists = window.updateDetailImageFiles.some(existingFile =>
+        existingFile.name === file.name &&
+        existingFile.size === file.size &&
+        existingFile.lastModified === file.lastModified
+    );
+
+    if (fileExists) {
+        return; // 如果文件已存在，不重复添加
+    }
+
+    // 检查 DOM 中是否已存在相同的图片（通过文件名判断）
+    const grid = document.getElementById('update-detail-images-grid');
+    if (grid) {
+        const existingItems = grid.querySelectorAll('.detail-image-item');
+        for (let i = 0; i < existingItems.length; i++) {
+            const item = existingItems[i];
+            const img = item.querySelector('img');
+            if (img && img.getAttribute('data-file-name') === file.name) {
+                return; // 如果 DOM 中已存在，直接返回
+            }
+        }
+    }
+
+    // 保存文件引用（在添加到数组前）
+    const fileIndex = window.updateDetailImageFiles.length;
+    window.updateDetailImageFiles.push(file);
+
     const reader = new FileReader();
     reader.onload = function(e) {
         const grid = document.getElementById('update-detail-images-grid');
-        if (!grid) return;
+        if (!grid) {
+            // 如果 grid 不存在，从数组中移除文件
+            window.updateDetailImageFiles.splice(fileIndex, 1);
+            return;
+        }
 
+        // 再次检查 DOM（防止异步问题）
+        const existingItems = grid.querySelectorAll('.detail-image-item');
+        for (let i = 0; i < existingItems.length; i++) {
+            const item = existingItems[i];
+            const img = item.querySelector('img');
+            if (img && img.getAttribute('data-file-name') === file.name) {
+                // 从数组中移除，因为 DOM 中已存在
+                window.updateDetailImageFiles.splice(fileIndex, 1);
+                return;
+            }
+        }
+
+        // 创建并添加图片项
         const imageItem = document.createElement('div');
         imageItem.className = 'detail-image-item';
+        imageItem.setAttribute('data-file-index', fileIndex);
+        imageItem.setAttribute('data-file-name', file.name);
         imageItem.innerHTML = `
-            <img src="${e.target.result}" alt="Detail Image">
+            <img src="${e.target.result}" alt="Detail Image" data-file-name="${file.name}">
             <button type="button" class="remove-btn" onclick="removeUpdateModalDetailImage(this)">
                 <i class="bi bi-trash"></i>
             </button>
@@ -2451,7 +2557,24 @@ function handleUpdateModalDetailImagePreview(file) {
  */
 function removeUpdateModalDetailImage(btn) {
     if (btn && btn.closest('.detail-image-item')) {
-        btn.closest('.detail-image-item').remove();
+        const imageItem = btn.closest('.detail-image-item');
+        const fileIndex = imageItem.getAttribute('data-file-index');
+
+        // 从文件数组中移除
+        if (fileIndex !== null && window.updateDetailImageFiles && window.updateDetailImageFiles[fileIndex]) {
+            window.updateDetailImageFiles.splice(fileIndex, 1);
+        }
+
+        imageItem.remove();
+
+        // 更新所有剩余项的索引
+        const grid = document.getElementById('update-detail-images-grid');
+        if (grid) {
+            const items = grid.querySelectorAll('.detail-image-item');
+            items.forEach((item, index) => {
+                item.setAttribute('data-file-index', index);
+            });
+        }
     }
 }
 
@@ -2632,6 +2755,9 @@ function resetUpdateProductModal() {
         detailInput.value = '';
     }
 
+    // 清空详细图片文件数组
+    window.updateDetailImageFiles = [];
+
     // 重置级联选择
     $('#update_rack_id').prop('disabled', true).empty().append('<option value="">Select Rack</option>');
     $('#update_subcategory_id').prop('disabled', true).empty().append('<option value="">Select Subcategory</option>');
@@ -2655,6 +2781,24 @@ function submitUpdateProductModal() {
     const subcategorySelect = document.querySelector('#update_subcategory_id');
     if (subcategorySelect && subcategorySelect.disabled && subcategorySelect.value) {
         subcategorySelect.disabled = false;
+    }
+
+    // 清理 remove_image，只保留选中的值
+    formData.delete('remove_image[]'); // 删除所有 remove_image
+    const removeImageCheckboxes = form.querySelectorAll('input[name="remove_image[]"]:checked');
+    removeImageCheckboxes.forEach(checkbox => {
+        if (checkbox.value && checkbox.value !== '') {
+            formData.append('remove_image[]', checkbox.value);
+        }
+    });
+
+    // 手动添加新上传的详细图片文件到 FormData（覆盖原有的 detail_image[]）
+    // 先删除原有的 detail_image[]（如果有）
+    formData.delete('detail_image[]');
+    if (window.updateDetailImageFiles && window.updateDetailImageFiles.length > 0) {
+        window.updateDetailImageFiles.forEach((file, index) => {
+            formData.append('detail_image[]', file);
+        });
     }
 
     // 显示载入状态

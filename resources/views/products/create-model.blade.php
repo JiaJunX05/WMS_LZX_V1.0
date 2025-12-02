@@ -4,7 +4,7 @@
     ========================================== --}}
 
 <div class="modal fade" id="createProductModal" tabindex="-1" aria-labelledby="createProductModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="createProductModalLabel">
@@ -34,7 +34,7 @@
 
                                     {{-- 封面图片 --}}
                                     <div class="mb-3">
-                                        <label class="form-label">Cover Image</label>
+                                        <label class="form-label">Cover Image <span class="text-danger">*</span></label>
                                         <div class="img-upload-area" id="cover-image-area">
                                             <div class="upload-placeholder" id="cover-upload-placeholder">
                                                 <i class="bi bi-cloud-upload fs-1 text-muted"></i>
@@ -46,7 +46,10 @@
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
-                                        <input type="file" class="d-none" id="cover_image" name="cover_image">
+                                        <input type="file" class="d-none" id="cover_image" name="cover_image" accept="image/jpeg,image/png,image/jpg,image/gif">
+                                        <div class="invalid-feedback" id="cover_image_error">
+                                            Please upload a cover image.
+                                        </div>
                                     </div>
 
                                     {{-- 详细图片 --}}

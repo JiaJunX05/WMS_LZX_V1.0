@@ -3,7 +3,7 @@
     ========================================== --}}
 
 <div class="modal fade" id="stockOutModal" tabindex="-1" aria-labelledby="stockOutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title fw-bold" id="stockOutModalLabel">

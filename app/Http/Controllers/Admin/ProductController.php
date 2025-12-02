@@ -338,14 +338,16 @@ class ProductController extends Controller
         $locations = Location::with('zone', 'rack')->get();
         $mappings = Mapping::with('category', 'subcategory')->get();
 
-        // 计算每个rack的可用容量（按产品数量计算）
+        // 计算每个 Zone-Rack 组合的可用容量（基于 Location 表）
         $rackCapacities = [];
-        foreach ($racks as $rack) {
-            $currentUsage = Product::where('rack_id', $rack->id)->count(); // 按产品数量计算
-            $rackCapacities[$rack->id] = [
-                'capacity' => $rack->capacity,
-                'used' => $currentUsage,
-                'available' => $rack->capacity - $currentUsage
+        foreach ($locations as $location) {
+            $key = $location->zone_id . '_' . $location->rack_id;
+            $rackCapacities[$key] = [
+                'zone_id' => $location->zone_id,
+                'rack_id' => $location->rack_id,
+                'capacity' => $location->rack->capacity ?? 0,
+                'used' => $location->current_usage ?? 0,
+                'available' => ($location->rack->capacity ?? 0) - ($location->current_usage ?? 0)
             ];
         }
 
@@ -391,9 +393,11 @@ class ProductController extends Controller
                             'zone_id' => $location->zone_id,
                             'rack_id' => $location->rack_id,
                             'location_status' => $location->location_status,
+                            'current_usage' => $location->current_usage ?? 0,
                             'rack' => $location->rack ? [
                                 'id' => $location->rack->id,
-                                'rack_number' => $location->rack->rack_number
+                                'rack_number' => $location->rack->rack_number,
+                                'capacity' => $location->rack->capacity ?? 0
                             ] : null
                         ];
                     }),
@@ -461,16 +465,22 @@ class ProductController extends Controller
                 $barcodeNumber = $this->generateBarcodeNumber($skuCode);
             }
 
-            // 检查rack容量（按产品数量计算）
-            if ($request->filled('rack_id')) {
-                $rack = Rack::findOrFail($request->rack_id);
-                $currentUsage = Product::where('rack_id', $request->rack_id)->count(); // 按产品数量计算
-                $requestedItems = 1; // 每个产品占用1个位置
+            // 检查rack容量（基于 Zone-Rack 组合）
+            if ($request->filled('rack_id') && $request->filled('zone_id')) {
+                $location = Location::where('zone_id', $request->zone_id)
+                    ->where('rack_id', $request->rack_id)
+                    ->first();
 
-                if (($currentUsage + $requestedItems) > $rack->capacity) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['rack_id' => "Rack capacity exceeded. Available space: " . ($rack->capacity - $currentUsage) . ", Requested: 1 product"]);
+                if ($location) {
+                    $rack = $location->rack;
+                    $currentUsage = $location->current_usage ?? 0;
+                    $requestedItems = 1; // 每个产品占用1个位置
+
+                    if (($currentUsage + $requestedItems) > $rack->capacity) {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['rack_id' => "Rack capacity exceeded in this zone. Available space: " . ($rack->capacity - $currentUsage) . ", Requested: 1 product"]);
+                    }
                 }
             }
 
@@ -634,14 +644,16 @@ class ProductController extends Controller
             $mappings = Mapping::with('category', 'subcategory')->get();
             $racks = Rack::all();
 
-            // 计算每个rack的可用容量
+            // 计算每个 Zone-Rack 组合的可用容量（基于 Location 表）
             $rackCapacities = [];
-            foreach ($racks as $rack) {
-                $currentUsage = Product::where('rack_id', $rack->id)->count();
-                $rackCapacities[$rack->id] = [
-                    'capacity' => $rack->capacity,
-                    'used' => $currentUsage,
-                    'available' => $rack->capacity - $currentUsage
+            foreach ($locations as $location) {
+                $key = $location->zone_id . '_' . $location->rack_id;
+                $rackCapacities[$key] = [
+                    'zone_id' => $location->zone_id,
+                    'rack_id' => $location->rack_id,
+                    'capacity' => $location->rack->capacity ?? 0,
+                    'used' => $location->current_usage ?? 0,
+                    'available' => ($location->rack->capacity ?? 0) - ($location->current_usage ?? 0)
                 ];
             }
 
@@ -746,26 +758,54 @@ class ProductController extends Controller
         try {
             // 验证请求数据
             $rules = array_merge(self::PRODUCT_RULES, self::PRODUCT_UPDATE_IMAGE_RULES);
+
+            // 获取当前产品的变体ID，用于排除当前记录的唯一性验证
+            $product = Product::with(['variants.attributeVariant'])->findOrFail($id);
+            $variant = $product->variants->first();
+            $variantId = $variant ? $variant->id : null;
+
+            // SKU code 唯一性验证（排除当前变体）
             $rules['sku_code'] = 'required|string|max:255';
+            if ($variantId) {
+                $rules['sku_code'] .= '|unique:product_variants,sku_code,' . $variantId;
+            } else {
+                $rules['sku_code'] .= '|unique:product_variants,sku_code';
+            }
+
+            // Barcode number 唯一性验证（排除当前变体）
             $rules['barcode_number'] = 'required|string|max:255';
+            if ($variantId) {
+                $rules['barcode_number'] .= '|unique:product_variants,barcode_number,' . $variantId;
+            } else {
+                $rules['barcode_number'] .= '|unique:product_variants,barcode_number';
+            }
 
             $request->validate($rules);
 
-            $product = Product::with(['variants.attributeVariant'])->findOrFail($id);
-            $variant = $product->variants->first();
+            // 检查rack容量（基于 Zone-Rack 组合）
+            if ($request->filled('rack_id') && $request->filled('zone_id')) {
+                $location = Location::where('zone_id', $request->zone_id)
+                    ->where('rack_id', $request->rack_id)
+                    ->first();
 
-            // 检查rack容量（按产品数量计算）
-            if ($request->filled('rack_id')) {
-                $rack = Rack::findOrFail($request->rack_id);
-                $currentUsage = Product::where('rack_id', $request->rack_id)
-                    ->where('id', '!=', $id) // 排除当前产品
-                    ->count(); // 按产品数量计算
-                $requestedItems = 1; // 每个产品占用1个位置
+                if ($location) {
+                    $rack = $location->rack;
+                    $currentUsage = $location->current_usage ?? 0;
 
-                if (($currentUsage + $requestedItems) > $rack->capacity) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['rack_id' => "Rack capacity exceeded. Available space: " . ($rack->capacity - $currentUsage) . ", Requested: 1 product"]);
+                    // 如果产品移动到新的位置，需要检查新位置的容量
+                    // 如果产品还在原位置，需要排除当前产品
+                    if ($product->zone_id == $request->zone_id && $product->rack_id == $request->rack_id) {
+                        // 产品还在原位置，排除当前产品
+                        $currentUsage = max(0, $currentUsage - 1);
+                    }
+
+                    $requestedItems = 1; // 每个产品占用1个位置
+
+                    if (($currentUsage + $requestedItems) > $rack->capacity) {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['rack_id' => "Rack capacity exceeded in this zone. Available space: " . ($rack->capacity - $currentUsage) . ", Requested: 1 product"]);
+                    }
                 }
             }
 

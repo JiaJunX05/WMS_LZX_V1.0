@@ -1321,9 +1321,17 @@ function updateRackOptions(zoneId, rackSelect) {
                     const option = document.createElement('option');
                     option.value = location.rack.id;
 
-                    // 添加容量信息到选项文本
-                    const capacityInfo = getRackCapacityInfo(location.rack.id);
-                    const capacityText = capacityInfo ? ` (${capacityInfo.available}/${capacityInfo.capacity})` : '';
+                    // 添加容量信息到选项文本（基于当前 Zone）
+                    const capacityInfo = getRackCapacityInfo(zoneId, location.rack.id);
+                    // 如果找不到容量信息，尝试从 location 数据中获取
+                    let capacityText = '';
+                    if (capacityInfo) {
+                        capacityText = ` (${capacityInfo.available}/${capacityInfo.capacity})`;
+                    } else if (location.current_usage !== undefined && location.rack && location.rack.capacity !== undefined) {
+                        // 从 location 数据中计算容量
+                        const available = location.rack.capacity - (location.current_usage || 0);
+                        capacityText = ` (${available}/${location.rack.capacity})`;
+                    }
                     option.textContent = (location.rack.rack_number || 'Rack ' + location.rack.id) + capacityText;
 
                     // 添加数据属性
@@ -1353,7 +1361,16 @@ function checkRackCapacity(rackId) {
         return;
     }
 
-    const capacityInfo = getRackCapacityInfo(rackId);
+    // 获取当前选择的 Zone ID
+    const zoneSelect = document.querySelector('#update_zone_id') || document.querySelector('#create_zone_id') || document.querySelector('select[name="zone_id"]');
+    const zoneId = zoneSelect ? zoneSelect.value : null;
+
+    if (!zoneId) {
+        hideRackCapacityError();
+        return;
+    }
+
+    const capacityInfo = getRackCapacityInfo(zoneId, rackId);
     if (!capacityInfo) {
         hideRackCapacityError();
         return;
@@ -1386,14 +1403,19 @@ function checkRackCapacity(rackId) {
 }
 
 /**
- * 获取货架容量信息
+ * 获取货架容量信息（基于 Zone 和 Rack 组合）
+ * @param {number|string} zoneId Zone ID
+ * @param {number|string} rackId Rack ID
+ * @returns {Object|null} 容量信息对象
  */
-function getRackCapacityInfo(rackId) {
-    if (!window.rackCapacitiesData || !rackId) {
+function getRackCapacityInfo(zoneId, rackId) {
+    if (!window.rackCapacitiesData || !zoneId || !rackId) {
         return null;
     }
 
-    return window.rackCapacitiesData[rackId] || null;
+    // 使用 zoneId_rackId 作为键
+    const key = `${zoneId}_${rackId}`;
+    return window.rackCapacitiesData[key] || null;
 }
 
 /**
@@ -1489,9 +1511,23 @@ function loadRacks(zoneId, selectedId = null) {
                     const option = document.createElement('option');
                     option.value = rack.id;
 
-                    // 获取容量信息并显示在选项文本中
-                    const capacityInfo = getRackCapacityInfo(rack.id);
-                    const capacityText = capacityInfo ? ` (${capacityInfo.available}/${capacityInfo.capacity})` : '';
+                    // 获取容量信息并显示在选项文本中（基于当前 Zone）
+                    const capacityInfo = getRackCapacityInfo(zoneId, rack.id);
+                    // 如果找不到容量信息，尝试从 location 数据中获取
+                    let capacityText = '';
+                    if (capacityInfo) {
+                        capacityText = ` (${capacityInfo.available}/${capacityInfo.capacity})`;
+                    } else {
+                        // 从 locationsData 中查找对应的 location
+                        const location = window.locationsData?.find(loc =>
+                            parseInt(loc.zone_id) === parseInt(zoneId) &&
+                            loc.rack && parseInt(loc.rack.id) === parseInt(rack.id)
+                        );
+                        if (location && location.current_usage !== undefined && location.rack && location.rack.capacity !== undefined) {
+                            const available = location.rack.capacity - (location.current_usage || 0);
+                            capacityText = ` (${available}/${location.rack.capacity})`;
+                        }
+                    }
                     option.textContent = (rack.rack_number || rack.rack_name || 'Rack ' + rack.id).toUpperCase() + capacityText;
 
                     // 设置容量相关的 data 属性
@@ -1904,15 +1940,29 @@ function clearProductValidationErrors() {
     const form = document.getElementById('createProductForm');
     if (!form) return;
 
-    const inputs = form.querySelectorAll('.form-control, select');
+    const inputs = form.querySelectorAll('.form-control, select, input[type="file"]');
     inputs.forEach(input => {
         input.classList.remove('is-invalid', 'is-valid');
         const feedback = input.parentElement.querySelector('.invalid-feedback') ||
-                        input.closest('.col-12, .col-md-6, .col-md-4')?.querySelector('.invalid-feedback');
+                        input.closest('.col-12, .col-md-6, .col-md-4, .mb-3')?.querySelector('.invalid-feedback');
         if (feedback) {
             feedback.textContent = '';
+            feedback.style.display = 'none';
         }
     });
+
+    // 清除封面图片区域的错误状态
+    const coverImageArea = document.getElementById('cover-image-area');
+    if (coverImageArea) {
+        coverImageArea.classList.remove('border-danger');
+        coverImageArea.style.borderWidth = '';
+    }
+
+    const coverImageError = document.getElementById('cover_image_error');
+    if (coverImageError) {
+        coverImageError.textContent = '';
+        coverImageError.style.display = 'none';
+    }
 }
 
 /**
@@ -1926,6 +1976,7 @@ function displayProductValidationErrors(errors) {
     Object.keys(errors).forEach(field => {
         // 尝试多种可能的字段名格式
         let input = null;
+        let feedback = null;
 
         // 先尝试通过 id 查找（处理 create_xxx 格式）
         const fieldName = field.replace('create_', '');
@@ -1939,12 +1990,36 @@ function displayProductValidationErrors(errors) {
                     document.querySelector(`[name="${fieldName}"]`);
         }
 
+        // 特殊处理封面图片字段（隐藏输入框）
+        if (field === 'cover_image' || fieldName === 'cover_image') {
+            input = document.getElementById('cover_image') || document.querySelector('[name="cover_image"]');
+            feedback = document.getElementById('cover_image_error');
+
+            if (input) {
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+            }
+
+            // 高亮显示上传区域
+            const coverImageArea = document.getElementById('cover-image-area');
+            if (coverImageArea) {
+                coverImageArea.classList.add('border-danger');
+                coverImageArea.style.borderWidth = '2px';
+            }
+
+            if (feedback) {
+                feedback.textContent = errors[field][0] || 'Please upload a cover image.';
+                feedback.style.display = 'block';
+            }
+            return; // 封面图片处理完成，继续下一个字段
+        }
+
         if (input) {
             input.classList.add('is-invalid');
             input.classList.remove('is-valid');
 
             // 显示错误消息 - 查找最近的 invalid-feedback
-            let feedback = input.parentElement.querySelector('.invalid-feedback');
+            feedback = input.parentElement.querySelector('.invalid-feedback');
             if (!feedback) {
                 // 尝试在父容器中查找
                 const parentContainer = input.closest('.col-12, .col-md-6, .col-md-4, .mb-4');
@@ -2177,15 +2252,29 @@ function fillUpdateProductModal(data) {
     const updateUrl = window.updateProductUrl.replace(':id', data.id);
     $('#updateProductForm').attr('action', updateUrl);
 
-    // 状态
+    // 状态 - 先设置 radio，然后触发选择
     if (data.product_status === 'Available') {
         $('#update_status_available').prop('checked', true);
-        $('.status-card[data-status="Available"]').addClass('selected');
-        $('.status-card[data-status="Unavailable"]').removeClass('selected');
+        // 使用 status-management 的选择函数来确保样式正确更新
+        const availableCard = document.querySelector('#updateProductModal .status-card[data-status="Available"]');
+        if (availableCard && typeof window.selectStatusCard === 'function') {
+            window.selectStatusCard(availableCard, 'product_status');
+        } else {
+            // 备用方案：直接设置 class
+            $('#updateProductModal .status-card[data-status="Available"]').addClass('selected');
+            $('#updateProductModal .status-card[data-status="Unavailable"]').removeClass('selected');
+        }
     } else {
         $('#update_status_unavailable').prop('checked', true);
-        $('.status-card[data-status="Unavailable"]').addClass('selected');
-        $('.status-card[data-status="Available"]').removeClass('selected');
+        // 使用 status-management 的选择函数来确保样式正确更新
+        const unavailableCard = document.querySelector('#updateProductModal .status-card[data-status="Unavailable"]');
+        if (unavailableCard && typeof window.selectStatusCard === 'function') {
+            window.selectStatusCard(unavailableCard, 'product_status');
+        } else {
+            // 备用方案：直接设置 class
+            $('#updateProductModal .status-card[data-status="Unavailable"]').addClass('selected');
+            $('#updateProductModal .status-card[data-status="Available"]').removeClass('selected');
+        }
     }
 
     // 级联选择：参考旧的 update 页面处理方式
@@ -2294,6 +2383,13 @@ function initUpdateProductModal() {
 
         // 初始化 SKU/Barcode 生成事件（使用 update 前缀的 ID）
         bindUpdateModalSKUGenerationEvents();
+
+        // 初始化状态卡片选择系统
+        if (typeof window.initializeProductStatusCardSelection === 'function') {
+            window.initializeProductStatusCardSelection();
+        } else if (typeof window.initializeStatusCardSelection === 'function') {
+            window.initializeStatusCardSelection('product_status');
+        }
 
         // 如果数据还没有加载，则加载级联选择所需的数据
         // 注意：如果 openUpdateProductModal 已经加载了数据，这里就不需要重复加载

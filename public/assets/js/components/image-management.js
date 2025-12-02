@@ -913,6 +913,9 @@ function handleProductCoverImagePreview(file) {
         const coverUploadPlaceholder = document.getElementById('cover-upload-placeholder');
         const coverPreview = document.getElementById('cover-preview');
         const removeCoverBtn = document.getElementById('remove-cover-image');
+        const coverImageInput = document.getElementById('cover_image');
+        const coverImageArea = document.getElementById('cover-image-area');
+        const coverImageError = document.getElementById('cover_image_error');
 
         // 隐藏上传提示
         if (coverUploadPlaceholder) {
@@ -928,6 +931,22 @@ function handleProductCoverImagePreview(file) {
         // 显示移除按钮
         if (removeCoverBtn) {
             removeCoverBtn.classList.remove('d-none');
+        }
+
+        // 清除错误状态
+        if (coverImageInput) {
+            coverImageInput.classList.remove('is-invalid');
+            coverImageInput.classList.add('is-valid');
+        }
+
+        if (coverImageArea) {
+            coverImageArea.classList.remove('border-danger');
+            coverImageArea.style.borderWidth = '';
+        }
+
+        if (coverImageError) {
+            coverImageError.textContent = '';
+            coverImageError.style.display = 'none';
         }
 
         // 显示成功提示

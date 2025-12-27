@@ -124,7 +124,7 @@
                 </div>
             </div>
 
-            <!-- Storage Card -->
+            <!-- Zone Card -->
             <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
                 <div class="stats-card theme-purple">
                     <div class="stats-card-body">
@@ -135,6 +135,23 @@
                             </div>
                             <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
                                 <i class="bi bi-geo-alt text-white fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rack Card -->
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                <div class="stats-card theme-purple">
+                    <div class="stats-card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stats-number" id="racks">{{ $stats['locations']['racks'] ?? 0 }}</div>
+                                <div class="small text-muted fw-medium text-uppercase">Racks</div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
+                                <i class="bi bi-stack text-white fs-4"></i>
                             </div>
                         </div>
                     </div>
@@ -209,22 +226,7 @@
                 </div>
             </div>
 
-            <!-- Stock Movements Card -->
-            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
-                <div class="stats-card theme-success">
-                    <div class="stats-card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="stats-number" id="total-stock-movements">{{ isset($stats['stock']) ? ($stats['stock']['total'] ?? 0) : 0 }}</div>
-                                <div class="small text-muted fw-medium text-uppercase">Stock Movements</div>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center rounded icon-size-3rem">
-                                <i class="bi bi-activity text-white fs-4"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </main>
 

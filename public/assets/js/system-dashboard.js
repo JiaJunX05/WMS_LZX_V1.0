@@ -84,9 +84,9 @@ class DashboardManager {
         $('#size-libraries').text(data.sizes?.size_libraries || 0);
         $('#size-templates').text(data.sizes?.size_templates || 0);
         $('#zones').text(data.locations?.zones || 0);
+        $('#racks').text(data.locations?.racks || 0);
         $('#total-brands').text(data.brands?.total || 0);
         $('#total-colors').text(data.colors?.total || 0);
-        $('#total-stock-movements').text(data.stock?.total || 0);
     }
 }
 

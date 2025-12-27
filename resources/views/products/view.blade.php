@@ -39,6 +39,7 @@
     window.availableProductUrl = '{{ route("product.available", ":id") }}';
     window.unavailableProductUrl = '{{ route("product.unavailable", ":id") }}';
     window.productIndexUrl = '{{ route("product.index") }}';
+    window.productManagementRoute = '{{ route("product.index") }}'; // 用於刪除後跳轉
 
     // 预加载 Update Modal 所需的数据（用于级联选择）
     window.productModalData = {

@@ -348,7 +348,7 @@ class StockDashboard {
                     </td>
                     <td class="text-end pe-4">
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="View History" onclick="viewStockHistory(${product.id}, '${product.name}')">
+                            <button class="btn btn-sm btn-outline-primary" title="View History" onclick="viewStockHistory(${product.id})">
                                 <i class="bi bi-clock-history"></i>
                             </button>
                         </div>
@@ -475,9 +475,8 @@ class StockDashboard {
     /**
      * 查看库存历史
      * @param {number} productId 产品ID
-     * @param {string} productName 产品名称
      */
-    viewStockHistory(productId, productName) {
+    viewStockHistory(productId) {
         // 打开库存详情模态框
         const modal = new bootstrap.Modal(document.getElementById('stockDetailModal'));
 
@@ -3479,6 +3478,24 @@ function initStockModals() {
             // 清理数据
             if (window.stockIn) {
                 window.stockIn.scannedProducts = [];
+                // 清空 DOM 中的表格
+                const tableBody = document.getElementById('stock-in-scanned-products-table-body');
+                if (tableBody) tableBody.innerHTML = '';
+                // 重置计数显示
+                const countDisplay = document.getElementById('stock-in-scanned-count');
+                const productCountDisplay = document.getElementById('stock-in-scanned-products-count');
+                if (countDisplay) countDisplay.textContent = '0 items';
+                if (productCountDisplay) productCountDisplay.textContent = '0 products';
+                // 显示空状态
+                const emptyCard = document.getElementById('stock-in-empty-state-card');
+                if (emptyCard) emptyCard.classList.remove('d-none');
+                const scannedCard = document.getElementById('stock-in-scanned-products-card');
+                if (scannedCard) scannedCard.classList.add('d-none');
+                // 重置参考号和二维码输入
+                const refInput = document.getElementById('stock-in-reference-number');
+                if (refInput) refInput.value = '';
+                const scanner = document.getElementById('stock-in-barcode-scanner');
+                if (scanner) scanner.value = '';
                 window.stockIn = null; // 清除实例，下次打开时重新创建
             }
 
@@ -3549,6 +3566,24 @@ function initStockModals() {
             // 清理数据
             if (window.stockOut) {
                 window.stockOut.scannedProducts = [];
+                // 清空 DOM 中的表格
+                const tableBody = document.getElementById('stock-out-scanned-products-table-body');
+                if (tableBody) tableBody.innerHTML = '';
+                // 重置计数显示
+                const countDisplay = document.getElementById('stock-out-scanned-count');
+                const productCountDisplay = document.getElementById('stock-out-scanned-products-count');
+                if (countDisplay) countDisplay.textContent = '0 items';
+                if (productCountDisplay) productCountDisplay.textContent = '0 products';
+                // 显示空状态
+                const emptyCard = document.getElementById('stock-out-empty-state-card');
+                if (emptyCard) emptyCard.classList.remove('d-none');
+                const scannedCard = document.getElementById('stock-out-scanned-products-card');
+                if (scannedCard) scannedCard.classList.add('d-none');
+                // 重置参考号和二维码输入
+                const refInput = document.getElementById('stock-out-reference-number');
+                if (refInput) refInput.value = '';
+                const scanner = document.getElementById('stock-out-barcode-scanner');
+                if (scanner) scanner.value = '';
                 window.stockOut = null; // 清除实例，下次打开时重新创建
             }
 
@@ -3619,6 +3654,24 @@ function initStockModals() {
             // 清理数据
             if (window.stockReturn) {
                 window.stockReturn.scannedProducts = [];
+                // 清空 DOM 中的表格
+                const tableBody = document.getElementById('stock-return-scanned-products-table-body');
+                if (tableBody) tableBody.innerHTML = '';
+                // 重置计数显示
+                const countDisplay = document.getElementById('stock-return-scanned-count');
+                const productCountDisplay = document.getElementById('stock-return-scanned-products-count');
+                if (countDisplay) countDisplay.textContent = '0 items';
+                if (productCountDisplay) productCountDisplay.textContent = '0 products';
+                // 显示空状态
+                const emptyCard = document.getElementById('stock-return-empty-state-card');
+                if (emptyCard) emptyCard.classList.remove('d-none');
+                const scannedCard = document.getElementById('stock-return-scanned-products-card');
+                if (scannedCard) scannedCard.classList.add('d-none');
+                // 重置参考号和二维码输入
+                const refInput = document.getElementById('stock-return-reference-number');
+                if (refInput) refInput.value = '';
+                const scanner = document.getElementById('stock-return-barcode-scanner');
+                if (scanner) scanner.value = '';
                 window.stockReturn = null; // 清除实例，下次打开时重新创建
             }
 
@@ -3669,9 +3722,9 @@ function cleanupModalBackdrop() {
 // =============================================================================
 
 // 導出主要函數到全局作用域
-window.viewStockHistory = function(productId, productName) {
+window.viewStockHistory = function(productId) {
     if (window.stockManagement) {
-        window.stockManagement.viewStockHistory(productId, productName);
+        window.stockManagement.viewStockHistory(productId);
     }
 };
 

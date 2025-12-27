@@ -33,7 +33,7 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithSt
             'category:id,category_name',
             'subcategory:id,subcategory_name',
             'zone:id,zone_name',
-            'rack:id,rack_name',
+            'rack:id,rack_number',
             'variants:id,product_id,sku_code,barcode_number',
             'user:id,first_name,last_name,email',
             'user.account:id,user_id,username'
@@ -115,7 +115,7 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithSt
             $row->category->category_name ?? 'N/A',
             $row->subcategory->subcategory_name ?? 'N/A',
             $row->zone->zone_name ?? 'N/A',
-            $row->rack->rack_name ?? 'N/A',
+            $row->rack->rack_number ?? 'N/A',
             $row->quantity ?? 0,
             $row->price ?? 0,
             $row->product_status ?? 'N/A',

@@ -561,15 +561,39 @@ class ProductDashboard {
             if (data.success) {
                 this.showAlert(data.message || 'Product deleted successfully', 'success');
 
-                // 檢查當前頁面是否還有數據
+                // 如果當前頁面沒有 product-card-container，代表不是 Dashboard（可能在 View 頁面）
+                const container = document.getElementById('product-card-container');
+                if (!container) {
+                    // 在 View 頁面刪除後應跳回 Dashboard（優先使用全局已知路由）
+                    let redirectUrl = window.productManagementRoute || '';
+                    if (!redirectUrl) {
+                        // 退而求其次：從當前路徑推斷父路徑（去掉最後一段）
+                        try {
+                            const parts = window.location.pathname.split('/').filter(Boolean);
+                            if (parts.length > 0) {
+                                parts.pop();
+                                redirectUrl = '/' + parts.join('/');
+                            }
+                        } catch (e) {
+                            redirectUrl = '/products';
+                        }
+                    }
+
+                    // 确保 redirectUrl 有值，再跳轉
+                    if (!redirectUrl || redirectUrl.trim() === '') redirectUrl = '/products';
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                // 檢查當前頁面是否還有數據（Dashboard 內部刷新邏輯）
                 const currentPageData = $('#product-card-container .product-card').length;
 
                 // 如果當前頁面沒有數據且不是第一頁，則返回第一頁
                 if (currentPageData <= 1 && this.currentPage > 1) {
-                    this.fetchProducts(1);
+                    if (typeof this.fetchProducts === 'function') this.fetchProducts(1);
                 } else {
                     // 重新載入當前頁面的產品列表
-                    this.fetchProducts(this.currentPage);
+                    if (typeof this.fetchProducts === 'function') this.fetchProducts(this.currentPage);
                 }
             } else {
                 this.showAlert(data.message || 'Failed to delete product', 'error');
@@ -2078,6 +2102,11 @@ function resetCreateProductModal() {
     if (detailGrid) detailGrid.innerHTML = '';
     if (detailInput) detailInput.value = '';
 
+    // 清空 Create Modal 临时保存的详细图片数组
+    if (window.createDetailImageFiles) {
+        window.createDetailImageFiles = [];
+    }
+
     // 重置级联选择
     $('#create_rack_id').prop('disabled', true).empty().append('<option value="">Select Rack</option>');
     $('#create_subcategory_id').prop('disabled', true).empty().append('<option value="">Select Subcategory</option>');
@@ -2113,6 +2142,31 @@ function submitCreateProductModal() {
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = `<i class="bi bi-spinner-border spinner-border-sm me-2"></i>Creating...`;
     submitBtn.disabled = true;
+
+    // 如果我们维护了 createDetailImageFiles（来自 Create Modal 的自管理文件数组），
+    // 那么优先使用该数组作为要提交的 detail_image[]，避免依赖 input.files（只读且可能未更新）。
+    try {
+        if (window.createDetailImageFiles && window.createDetailImageFiles.length > 0) {
+            // 删除表单自动收集的 detail_image[]（如果存在）
+            formData.delete('detail_image[]');
+            window.createDetailImageFiles.forEach((file) => {
+                formData.append('detail_image[]', file);
+            });
+        }
+    } catch (err) {
+        console.warn('Error preparing create detail images for submit:', err);
+    }
+
+    // 如果用户选择了封面文件（我们保存在 window.createCoverImageFile），优先使用它
+    try {
+        if (window.createCoverImageFile) {
+            // 移除可能由表单自动收集到的同名字段
+            formData.delete('cover_image');
+            formData.append('cover_image', window.createCoverImageFile);
+        }
+    } catch (err) {
+        console.warn('Error preparing create cover image for submit:', err);
+    }
 
     fetch(form.action, {
         method: 'POST',
@@ -2569,6 +2623,201 @@ function removeUpdateModalCoverImage() {
 
 // 存储新添加的详细图片文件（用于提交）
 window.updateDetailImageFiles = window.updateDetailImageFiles || [];
+
+// Create Modal 存储新添加的详细图片文件（用于提交）
+window.createDetailImageFiles = window.createDetailImageFiles || [];
+// Create Modal 存储封面图片 File 对象
+window.createCoverImageFile = window.createCoverImageFile || null;
+
+/**
+ * 绑定 Create Modal 的图片上传与移除事件
+ */
+function bindProductImageEvents() {
+    // 详细图片（Create Modal）
+    const addDetailBtn = document.getElementById('add-detail-image') || document.getElementById('create-add-detail-image');
+    const detailInput = document.getElementById('detail_images');
+
+    if (addDetailBtn && detailInput) {
+        try {
+            // 使用克隆节点移除旧监听器，避免重复绑定
+            const newAdd = addDetailBtn.cloneNode(true);
+            addDetailBtn.parentNode.replaceChild(newAdd, addDetailBtn);
+            const newInput = detailInput.cloneNode(true);
+            detailInput.parentNode.replaceChild(newInput, detailInput);
+
+            const updatedAdd = document.getElementById('add-detail-image') || document.getElementById('create-add-detail-image');
+            const updatedInput = document.getElementById('detail_images');
+
+            updatedAdd.addEventListener('click', function() {
+                updatedInput.click();
+            });
+
+            updatedInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files || []);
+                if (files.length === 0) return;
+                files.forEach(file => handleCreateDetailImagePreview(file));
+                // 清空 input，允许再次选择相同文件
+                e.target.value = '';
+            });
+        } catch (err) {
+            console.warn('bindProductImageEvents detail binding failed:', err);
+        }
+    }
+
+    // 封面图片（Create Modal）
+    try {
+        const coverArea = document.getElementById('cover-image-area');
+        const coverInput = document.getElementById('cover_image');
+        const removeCoverBtn = document.getElementById('remove-cover-image');
+
+        if (coverArea && coverInput) {
+            const newArea = coverArea.cloneNode(true);
+            coverArea.parentNode.replaceChild(newArea, coverArea);
+            const newInput = coverInput.cloneNode(true);
+            coverInput.parentNode.replaceChild(newInput, coverInput);
+
+            const updatedArea = document.getElementById('cover-image-area');
+            const updatedInput = document.getElementById('cover_image');
+            const updatedRemove = document.getElementById('remove-cover-image');
+
+            updatedArea.addEventListener('click', function() {
+                updatedInput.click();
+            });
+
+            updatedInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) handleCreateCoverImagePreview(file);
+                e.target.value = '';
+            });
+
+            if (updatedRemove) {
+                updatedRemove.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeCreateCoverImage();
+                });
+            }
+        }
+    } catch (err) {
+        console.warn('bindProductImageEvents cover binding failed:', err);
+    }
+}
+
+/**
+ * 处理 Create Modal 详细图片预览并保存到 window.createDetailImageFiles
+ */
+function handleCreateDetailImagePreview(file) {
+    if (typeof validateImageFile === 'function' && !validateImageFile(file)) return;
+
+    if (!window.createDetailImageFiles) window.createDetailImageFiles = [];
+
+    const exists = window.createDetailImageFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified);
+    if (exists) return;
+
+    const grid = document.getElementById('detail-images-grid');
+    if (grid) {
+        const existing = grid.querySelectorAll('.detail-image-item');
+        for (let i = 0; i < existing.length; i++) {
+            const img = existing[i].querySelector('img');
+            if (img && img.getAttribute('data-file-name') === file.name) return;
+        }
+    }
+
+    const index = window.createDetailImageFiles.length;
+    window.createDetailImageFiles.push(file);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const grid = document.getElementById('detail-images-grid');
+        if (!grid) {
+            window.createDetailImageFiles.splice(index, 1);
+            return;
+        }
+
+        const existing = grid.querySelectorAll('.detail-image-item');
+        for (let i = 0; i < existing.length; i++) {
+            const img = existing[i].querySelector('img');
+            if (img && img.getAttribute('data-file-name') === file.name) {
+                window.createDetailImageFiles.splice(index, 1);
+                return;
+            }
+        }
+
+        const item = document.createElement('div');
+        item.className = 'detail-image-item';
+        item.setAttribute('data-file-index', index);
+        item.setAttribute('data-file-name', file.name);
+        item.innerHTML = `
+            <img src="${e.target.result}" alt="Detail Image" data-file-name="${file.name}">
+            <button type="button" class="remove-btn" onclick="removeCreateDetailImage(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+        grid.appendChild(item);
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 从 Create Modal 的预览和数组中移除图片
+ */
+function removeCreateDetailImage(btn) {
+    if (btn && btn.closest('.detail-image-item')) {
+        const item = btn.closest('.detail-image-item');
+        const fileIndex = item.getAttribute('data-file-index');
+
+        if (fileIndex !== null && window.createDetailImageFiles && window.createDetailImageFiles[fileIndex]) {
+            window.createDetailImageFiles.splice(fileIndex, 1);
+        }
+
+        item.remove();
+
+        const grid = document.getElementById('detail-images-grid');
+        if (grid) {
+            const items = grid.querySelectorAll('.detail-image-item');
+            items.forEach((it, idx) => it.setAttribute('data-file-index', idx));
+        }
+    }
+}
+
+/**
+ * Create Modal 封面图片预览
+ */
+function handleCreateCoverImagePreview(file) {
+    if (typeof validateImageFile === 'function' && !validateImageFile(file)) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('cover-preview');
+        const placeholder = document.getElementById('cover-upload-placeholder');
+        const removeBtn = document.getElementById('remove-cover-image');
+
+        if (preview) { preview.src = e.target.result; preview.classList.remove('d-none'); }
+        if (placeholder) { placeholder.classList.add('d-none'); }
+        if (removeBtn) { removeBtn.classList.remove('d-none'); }
+    };
+
+    // 保存所选封面文件，供提交时使用（我们清空了 input.value 为了允许重复选择）
+    window.createCoverImageFile = file;
+
+    reader.readAsDataURL(file);
+}
+
+/**
+ * 移除 Create Modal 封面图片
+ */
+function removeCreateCoverImage() {
+    const preview = document.getElementById('cover-preview');
+    const placeholder = document.getElementById('cover-upload-placeholder');
+    const removeBtn = document.getElementById('remove-cover-image');
+    const input = document.getElementById('cover_image');
+
+    if (preview) { preview.src = ''; preview.classList.add('d-none'); }
+    if (placeholder) { placeholder.classList.remove('d-none'); }
+    if (removeBtn) { removeBtn.classList.add('d-none'); }
+    if (input) { input.value = ''; }
+
+    // 清除保留的封面文件引用
+    window.createCoverImageFile = null;
+}
 
 /**
  * 处理 Update Modal 详细图片预览

@@ -2441,34 +2441,67 @@ function bindRoleSelectionEvents() {
 /**
  * 密碼顯示切換
  */
-function togglePassword() {
-    const password = document.getElementById('password');
-    const toggle = document.getElementById('togglePassword');
+function togglePassword(fieldId = 'password', toggleId = 'togglePassword') {
+    // 支持传入元素 id（例如: togglePassword('create-password','toggleCreatePassword')）
+    const password = document.getElementById(fieldId);
+    const toggle = document.getElementById(toggleId);
 
-    if (password.type === 'password') {
-        password.type = 'text';
-        toggle.classList.replace('bi-eye-slash', 'bi-eye');
-    } else {
-        password.type = 'password';
-        toggle.classList.replace('bi-eye', 'bi-eye-slash');
+    if (!password) return; // 找不到输入框则安全退出
+
+    try {
+        if (password.type === 'password') {
+            password.type = 'text';
+            if (toggle) {
+                // 有些图标使用 classList.replace，有些使用 add/remove
+                if (toggle.classList.contains('bi-eye-slash')) {
+                    toggle.classList.replace('bi-eye-slash', 'bi-eye');
+                } else {
+                    toggle.classList.remove('bi-eye-slash');
+                    toggle.classList.add('bi-eye');
+                }
+            }
+        } else {
+            password.type = 'password';
+            if (toggle) {
+                if (toggle.classList.contains('bi-eye')) {
+                    toggle.classList.replace('bi-eye', 'bi-eye-slash');
+                } else {
+                    toggle.classList.remove('bi-eye');
+                    toggle.classList.add('bi-eye-slash');
+                }
+            }
+        }
+    } catch (err) {
+        // 安全容错：不抛出错误到全局
+        console.error('togglePassword error:', err);
     }
 }
 
 /**
  * 確認密碼顯示切換
  */
-function togglePasswordConfirmation() {
-    const passwordField = document.getElementById('password_confirmation');
-    const toggleIcon = document.getElementById('togglePasswordConfirmation');
+function togglePasswordConfirmation(fieldId = 'password_confirmation', toggleId = 'togglePasswordConfirmation') {
+    const passwordField = document.getElementById(fieldId);
+    const toggleIcon = document.getElementById(toggleId);
 
-    if (passwordField.type === 'password') {
-        passwordField.type = 'text';
-        toggleIcon.classList.remove('bi-eye-slash');
-        toggleIcon.classList.add('bi-eye');
-    } else {
-        passwordField.type = 'password';
-        toggleIcon.classList.remove('bi-eye');
-        toggleIcon.classList.add('bi-eye-slash');
+    if (!passwordField) return;
+
+    try {
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            if (toggleIcon) {
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            }
+        } else {
+            passwordField.type = 'password';
+            if (toggleIcon) {
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            }
+        }
+    } catch (err) {
+        console.error('togglePasswordConfirmation error:', err);
     }
 }
 

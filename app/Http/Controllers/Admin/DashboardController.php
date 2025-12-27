@@ -11,6 +11,7 @@ use App\Models\Subcategory;
 use App\Models\SizeLibrary;
 use App\Models\SizeTemplate;
 use App\Models\Zone;
+use App\Models\Rack;
 use App\Models\Brand;
 use App\Models\Color;
 use App\Models\StockMovement;
@@ -81,6 +82,7 @@ class DashboardController extends Controller
         // 存储位置统计
         $locationStats = [
             'zones' => Zone::where('zone_status', 'Available')->count(),
+            'racks' => Rack::where('rack_status', 'Available')->count(),
         ];
 
         // 品牌统计
@@ -93,22 +95,6 @@ class DashboardController extends Controller
             'total' => Color::where('color_status', 'Available')->count(),
         ];
 
-        // 库存统计
-        $userRole = auth()->user()->getAccountRole();
-        $stockQuery = StockMovement::query();
-
-        // 权限控制：Staff 只能看到自己的记录
-        if ($userRole === 'Staff') {
-            $stockQuery->where('user_id', auth()->id());
-        }
-
-        $stockStats = [
-            'total' => (int) $stockQuery->count(),
-            'stock_in' => (int) (clone $stockQuery)->where('movement_type', 'stock_in')->count(),
-            'stock_out' => (int) (clone $stockQuery)->where('movement_type', 'stock_out')->count(),
-            'stock_return' => (int) (clone $stockQuery)->where('movement_type', 'stock_return')->count(),
-        ];
-
         return [
             'products' => $productStats,
             'staff' => $staffStats,
@@ -117,7 +103,6 @@ class DashboardController extends Controller
             'locations' => $locationStats,
             'brands' => $brandStats,
             'colors' => $colorStats,
-            'stock' => $stockStats,
         ];
     }
 
@@ -134,7 +119,6 @@ class DashboardController extends Controller
             'locations' => $stats['locations'],
             'brands' => $stats['brands'],
             'colors' => $stats['colors'],
-            'stock' => $stats['stock'],
         ];
 
         // SuperAdmin 可以看到所有数据包括员工管理
